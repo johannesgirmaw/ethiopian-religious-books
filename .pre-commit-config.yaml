@@ -1,0 +1,34 @@
+# Install: pip install pre-commit && pre-commit install
+# See SETUP.md §4. Add Dart hooks when apps/reader_flutter exists.
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^services/django_api/
+
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 25.1.0
+    hooks:
+      - id: black
+        files: ^services/django_api/
+
+# When Flutter app exists, uncomment:
+#  - repo: local
+#    hooks:
+#      - id: dart-analyze
+#        name: dart analyze
+#        entry: bash -c 'cd apps/reader_flutter && dart analyze'
+#        language: system
+#        pass_filenames: false

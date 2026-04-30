@@ -1,0 +1,163 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../models/admin_book.dart';
+import '../providers/session_notifier.dart';
+import '../screens/account_screen.dart';
+import '../screens/admin/admin_book_detail_screen.dart';
+import '../screens/admin/admin_book_edit_screen.dart';
+import '../screens/admin/admin_books_screen.dart';
+import '../screens/admin/admin_home_screen.dart';
+import '../screens/book_detail_screen.dart';
+import '../screens/home_screen.dart';
+import '../screens/library_screen.dart';
+import '../screens/login_screen.dart';
+import '../screens/main_shell_screen.dart';
+import '../screens/reader_screen.dart';
+import '../screens/register_screen.dart';
+import '../screens/splash_screen.dart';
+
+final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
+
+/// Smooth fade+slide transition for detail / reader pages.
+CustomTransitionPage<T> _fadeSlide<T>({
+  required LocalKey key,
+  required Widget child,
+}) {
+  return CustomTransitionPage<T>(
+    key: key,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 280),
+    reverseTransitionDuration: const Duration(milliseconds: 220),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final curve = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+      return FadeTransition(
+        opacity: curve,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.04),
+            end: Offset.zero,
+          ).animate(curve),
+          child: child,
+        ),
+      );
+    },
+  );
+}
+
+final goRouterProvider = Provider<GoRouter>((ref) {
+  final refresh = ValueNotifier<int>(0);
+  ref.listen(sessionNotifierProvider, (_, __) {
+    refresh.value++;
+  });
+  ref.onDispose(refresh.dispose);
+
+  return GoRouter(
+    navigatorKey: _rootNavigatorKey,
+    refreshListenable: refresh,
+    initialLocation: '/splash',
+    redirect: (context, state) {
+      final loc = state.matchedLocation;
+      final asyncSession = ref.read(sessionNotifierProvider);
+      if (asyncSession.isLoading && loc.startsWith('/admin')) {
+        return null;
+      }
+      final session = asyncSession.valueOrNull;
+      final isAdmin = session?.user?.isSuperuser == true;
+
+      if (loc.startsWith('/admin')) {
+        if (session == null) return '/login';
+        if (!isAdmin) return '/library';
+      }
+      return null;
+    },
+    routes: [
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) => const RegisterScreen(),
+      ),
+      ShellRoute(
+        builder: (context, state, child) => MainShellScreen(child: child),
+        routes: [
+          GoRoute(
+            path: '/home',
+            builder: (context, state) => const HomeScreen(),
+          ),
+          GoRoute(
+            path: '/library',
+            builder: (context, state) => const LibraryScreen(),
+          ),
+          GoRoute(
+            path: '/account',
+            builder: (context, state) => const AccountScreen(),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/book/:id',
+        pageBuilder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return _fadeSlide(
+            key: state.pageKey,
+            child: BookDetailScreen(bookId: id),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/reader/:id',
+        pageBuilder: (context, state) {
+          final id = state.pathParameters['id']!;
+          final chapter = state.uri.queryParameters['chapter'];
+          final page = int.tryParse(state.uri.queryParameters['page'] ?? '');
+          return _fadeSlide(
+            key: state.pageKey,
+            child: ReaderScreen(
+              bookId: id,
+              initialChapterKey: chapter,
+              initialPageNumber: page,
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/admin/books/new',
+        builder: (context, state) => const AdminBookEditScreen(),
+      ),
+      GoRoute(
+        path: '/admin/books/:id/edit',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          final extra =
+              state.extra is AdminBook ? state.extra as AdminBook : null;
+          return AdminBookEditScreen(bookId: id, initialBook: extra);
+        },
+      ),
+      GoRoute(
+        path: '/admin/books/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          final extra =
+              state.extra is AdminBook ? state.extra as AdminBook : null;
+          return AdminBookDetailScreen(bookId: id, initialBook: extra);
+        },
+      ),
+      GoRoute(
+        path: '/admin/books',
+        builder: (context, state) => const AdminBooksScreen(),
+      ),
+      GoRoute(
+        path: '/admin',
+        builder: (context, state) => const AdminHomeScreen(),
+      ),
+    ],
+  );
+});

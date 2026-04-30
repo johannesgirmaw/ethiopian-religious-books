@@ -1,0 +1,528 @@
+{
+  "@@locale": "en",
+  "appTitle": "Ethiopian Reader",
+  "splashTagline": "Sacred texts, timeless wisdom",
+  "cancel": "Cancel",
+  "save": "Save",
+  "close": "Close",
+  "retry": "Retry",
+  "clear": "Clear",
+  "search": "Search",
+  "goBack": "Go back",
+  "generalCategory": "General",
+  "loginFailed": "Login failed",
+  "registrationFailed": "Registration failed",
+  "cachedJustNow": "just now",
+  "cachedMinutesAgo": "{count}m ago",
+  "@cachedMinutesAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "cachedHoursAgo": "{count}h ago",
+  "@cachedHoursAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "cachedDaysAgo": "{count}d ago",
+  "@cachedDaysAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "catalogSynced": "Catalog synced {when}",
+  "@catalogSynced": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "showingLibrarySynced": "Showing library synced {when}",
+  "@showingLibrarySynced": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "navHome": "Home",
+  "navLibrary": "Library",
+  "navAccount": "Account",
+  "searchTooltip": "Search",
+  "homeNoBooksTitle": "No published books yet",
+  "homeNoBooksMessage": "New titles will appear here as soon as they are available.",
+  "openLibrary": "Open Library",
+  "exploreWisdomTitle": "Explore wisdom and history",
+  "exploreWisdomBody": "Browse curated religious texts in a clean editorial layout with fast access to reading.",
+  "searchLibrary": "Search Library",
+  "browseCollections": "Browse Collections",
+  "featuredBooks": "Featured Books",
+  "curatedSelections": "{count} curated selections",
+  "@curatedSelections": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "librarySections": "Library Sections",
+  "viewAll": "View all",
+  "unableToLoadHome": "Unable to load home",
+  "noSummaryYet": "No summary available yet.",
+  "readDetails": "Read details",
+  "unknownAuthor": "Unknown author",
+  "openArticle": "Open article",
+  "libraryTitle": "Library",
+  "filterTooltip": "Filter",
+  "filterByLanguage": "Filter by language",
+  "allLanguages": "All languages",
+  "chapterKeyLabel": "Chapter key",
+  "chapterKeyHint": "Optional server filter",
+  "pageNumberLabel": "Page number",
+  "pageNumberHint": "Optional server filter",
+  "applyFilters": "Apply filters",
+  "libraryEmptyTitle": "Library is empty",
+  "libraryEmptyMessage": "No published books are available right now.",
+  "librarySearchHint": "Search by title, author, or summary",
+  "clearSearchTooltip": "Clear search",
+  "booksAvailable": "{count} book(s) available",
+  "@booksAvailable": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "clearFilter": "Clear filter",
+  "languageChip": "Language: {lang}",
+  "@languageChip": {
+    "placeholders": {
+      "lang": {"type": "String"}
+    }
+  },
+  "chapterChip": "Chapter: {ch}",
+  "@chapterChip": {
+    "placeholders": {
+      "ch": {"type": "String"}
+    }
+  },
+  "pageChip": "Page: {page}",
+  "@pageChip": {
+    "placeholders": {
+      "page": {"type": "int"}
+    }
+  },
+  "noMatchingBooksTitle": "No matching books",
+  "noMatchingBooksMessage": "Try a different keyword or clear filters.",
+  "unableToLoadLibrary": "Unable to load library",
+  "revisionLabel": "Revision {n}",
+  "@revisionLabel": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "open": "Open",
+  "accountTitle": "Account",
+  "readerAccount": "Reader Account",
+  "noEmail": "No email",
+  "adminRoleBadge": "ADMIN",
+  "dashboard": "Dashboard",
+  "inProgressDownloads": "In progress",
+  "failedDownloads": "Failed downloads",
+  "availableBooks": "Available books",
+  "languagesMetric": "Languages",
+  "offlineChapterCache": "Offline chapter cache",
+  "offlineBooksSaved": "{count} book(s) saved offline",
+  "@offlineBooksSaved": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "checkingCache": "Checking cache...",
+  "cacheUnavailable": "Cache unavailable",
+  "clearOfflineCacheTitle": "Clear offline cache?",
+  "clearOfflineCacheBody": "This removes downloaded chapter/page content from this device.",
+  "offlineCacheCleared": "Offline cache cleared",
+  "studyAndReminders": "Study & reminders",
+  "dailyReadingReminders": "Daily reading reminders",
+  "reminderTimeUtc": "UTC {hh}:{mm}{weekdays}",
+  "@reminderTimeUtc": {
+    "placeholders": {
+      "hh": {"type": "String"},
+      "mm": {"type": "String"},
+      "weekdays": {"type": "String"}
+    }
+  },
+  "weekdaysOnlySuffix": " · weekdays only",
+  "reminderUpdateFailed": "Reminder settings could not be updated. Please run backend migrations and try again.",
+  "loadingReminderSettings": "Loading reminder settings...",
+  "reminderSettingsUnavailable": "Reminder settings unavailable",
+  "dailyReadingPlans": "Daily reading plans",
+  "noReadingPlansYet": "No reading plans yet",
+  "readingPlansConfigured": "{count} plan(s) configured",
+  "@readingPlansConfigured": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "tapOpenTodaysReading": " · tap to open today's reading",
+  "createPlanTooltip": "Create plan",
+  "dailyPlanCreateFailed": "Daily plan could not be created. Please run backend migrations and try again.",
+  "accountInfo": "Account Info",
+  "emailLabel": "Email",
+  "displayNameLabel": "Display name",
+  "adminPanel": "Admin panel",
+  "adminPanelSubtitle": "Manage books, visibility, and publishing",
+  "noProfileCached": "No profile cached.",
+  "signOut": "Sign out",
+  "welcomeBack": "Welcome back",
+  "signInSubtitle": "Sign in to continue reading and keep your progress synced.",
+  "emailFieldLabel": "Email",
+  "emailFieldHint": "you@example.com",
+  "emailRequired": "Email is required",
+  "emailInvalid": "Enter a valid email",
+  "passwordFieldLabel": "Password",
+  "passwordMinHelper": "Minimum 10 characters",
+  "passwordRequired": "Password is required",
+  "signIn": "Sign in",
+  "createAccount": "Create an account",
+  "createAccountTitle": "Create account",
+  "registerSubtitle": "Create your profile to save progress, bookmarks, and downloads.",
+  "passwordMinRegisterHelper": "Use at least 10 characters",
+  "passwordTooShort": "Password must be at least 10 characters",
+  "displayNameOptional": "Display name (optional)",
+  "alreadyHaveAccount": "Already have an account? Sign in",
+  "languagePreferenceTitle": "Language",
+  "languagePreferenceSubtitle": "Choose English or Amharic for app menus and buttons.",
+  "languageEnglish": "English",
+  "languageAmharic": "አማርኛ (Amharic)",
+  "saveLanguage": "Save language",
+  "languageSaved": "Language saved",
+  "bookDetailsTitle": "Book Details",
+  "preparingDownload": "Preparing download…",
+  "savedUnderPath": "Saved under {path}",
+  "@savedUnderPath": {
+    "placeholders": {
+      "path": {"type": "String"}
+    }
+  },
+  "downloadFailed": "Download failed: {error}",
+  "@downloadFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "summarySection": "Summary",
+  "readyToRead": "Ready to read",
+  "downloadState": "Download: {state}",
+  "@downloadState": {
+    "placeholders": {
+      "state": {"type": "String"}
+    }
+  },
+  "startReading": "Start Reading",
+  "downloadOffline": "Download for offline reading",
+  "unableToLoadBook": "Unable to load this book",
+  "bookLoadErrorMessage": "The book could not be opened right now. Please try again.",
+  "bookNotInCatalogTitle": "Book not available in reader catalog",
+  "bookNotInCatalogMessage": "This book is likely unpublished or hidden. Publish it from admin and try again.",
+  "readerTitle": "Reader",
+  "bookmarkSavedAt": "Saved at {pct}%",
+  "@bookmarkSavedAt": {
+    "placeholders": {
+      "pct": {"type": "int"}
+    }
+  },
+  "bookmarkRemoved": "Bookmark removed",
+  "bookmarkSaved": "Bookmark saved",
+  "noBookmarksYet": "No bookmarks yet. Tap bookmark in reader controls.",
+  "savedLocation": "Saved location",
+  "removeTooltip": "Remove",
+  "selectChapter": "Select chapter",
+  "selectPage": "Select page",
+  "readerPosition": "Reader position",
+  "readingPosition": "Reading position",
+  "pageCount": "{count} page(s)",
+  "@pageCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "pageNumberTitle": "Page {n}",
+  "@pageNumberTitle": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "choosePage": "Choose page",
+  "jumpToPageSubtitle": "Jump directly to a page",
+  "allChapters": "All chapters",
+  "searchPagesWholeBook": "Search pages across the whole book",
+  "noChapterSelected": "No chapter selected",
+  "cloudBookmarkSaved": "Cloud bookmark saved",
+  "quickNoteLabel": "Quick note",
+  "quickNoteHint": "Write your reflection or summary",
+  "saveNote": "Save note",
+  "noteSaved": "Note saved",
+  "highlightSavedOnPage": "Highlight saved on page {n}",
+  "@highlightSavedOnPage": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "highlightsUnavailable": "Highlights are currently unavailable",
+  "noHighlightsYet": "No highlights yet. Tap the highlighter icon to save one.",
+  "highlightDefaultTitle": "Highlight",
+  "highlightChapterPage": "Chapter {ch} · Page {page}",
+  "@highlightChapterPage": {
+    "placeholders": {
+      "ch": {"type": "String"},
+      "page": {"type": "String"}
+    }
+  },
+  "offlineCopyRemoved": "Offline copy removed",
+  "savedOfflineReading": "Saved for offline reading",
+  "findInBookLabel": "Find in book",
+  "findInBookHint": "Type a word or phrase",
+  "searchOutsideChapter": "Search outside the selected chapter",
+  "noMatchesYet": "No matches yet.",
+  "matchCount": "{count} match(es)",
+  "@matchCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "previousMatch": "Previous match",
+  "nextMatch": "Next match",
+  "typographyCompact": "Compact",
+  "typographyComfort": "Comfort",
+  "typographyLarge": "Large",
+  "typographyPresetsTitle": "Typography presets",
+  "typographyPresetsSubtitle": "Choose the most comfortable reading mode",
+  "typographySizeLine": "Size {size} • Line {line}",
+  "@typographySizeLine": {
+    "placeholders": {
+      "size": {"type": "int"},
+      "line": {"type": "String"}
+    }
+  },
+  "chaptersHeading": "Chapters",
+  "noChapterContentYet": "This book has no chapter/page content yet. Add chapters and pages in Admin, then publish.",
+  "chapterChipRaw": "Chapter: {label}",
+  "@chapterChipRaw": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "pageChipShort": "Page: {n}",
+  "@pageChipShort": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "backToChaptersTooltip": "Back to chapters",
+  "filterChapterTooltip": "Filter chapter",
+  "filterPageTooltip": "Filter page",
+  "removeOfflineCopy": "Remove offline copy",
+  "saveChaptersOffline": "Save chapters offline",
+  "backToChapters": "Back to chapters",
+  "noChapterSelectedShort": "No chapter selected",
+  "typographyPresetsTooltip": "Typography presets",
+  "saveCloudBookmarkTooltip": "Save cloud bookmark",
+  "addNoteTooltip": "Add note",
+  "addHighlightTooltip": "Add highlight",
+  "highlightsTooltip": "Highlights",
+  "pinControls": "Pin controls",
+  "autoHideControls": "Auto-hide controls",
+  "matchOnPage": "Match on page {page}: {snippet}",
+  "@matchOnPage": {
+    "placeholders": {
+      "page": {"type": "int"},
+      "snippet": {"type": "String"}
+    }
+  },
+  "readerChapterLabel": "CHAPTER",
+  "readerPageLabel": "PAGE",
+  "adminHomeTitle": "Admin",
+  "publisherTools": "Publisher tools",
+  "publisherToolsBody": "Manage catalog visibility, book metadata, and publishing. Uploading revision packages still uses presigned URLs from the API (use a desktop workflow or future in-app upload).",
+  "adminBooksMenuTitle": "Books",
+  "adminBooksMenuSubtitle": "List, create, edit, publish / unpublish",
+  "adminBooksListTitle": "Admin · Books",
+  "newBookTooltip": "New book",
+  "noBooksYetTitle": "No books yet",
+  "noBooksYetMessage": "Create your first book to start publishing to readers.",
+  "createFirstBook": "Create first book",
+  "searchBooksLabel": "Search books",
+  "searchBooksHint": "Title, author, language",
+  "filterAll": "All",
+  "filterPublished": "Published",
+  "filterHidden": "Hidden",
+  "sortRecent": "Sort: recent",
+  "sortTitle": "Sort: title",
+  "noBooksMatchFilters": "No books match these filters.",
+  "unableToLoadBooks": "Unable to load books",
+  "visibilityLabel": "Visibility: {vis}",
+  "@visibilityLabel": {
+    "placeholders": {
+      "vis": {"type": "String"}
+    }
+  },
+  "statusLabel": "Status: {status}",
+  "@statusLabel": {
+    "placeholders": {
+      "status": {"type": "String"}
+    }
+  },
+  "publishedStatus": "Published",
+  "draftStatus": "Draft",
+  "statusChip": "{status} · {vis}",
+  "@statusChip": {
+    "placeholders": {
+      "status": {"type": "String"},
+      "vis": {"type": "String"}
+    }
+  },
+  "bookNotFound": "Book not found.",
+  "unpublishFailed": "Unpublish failed",
+  "publishLatestDraftTitle": "Publish latest draft",
+  "publishLatestDraftBody": "This publishes the latest draft revision for this book. If no draft exists, the backend will generate one from current metadata.",
+  "publish": "Publish",
+  "publishedRevisionNumber": "Published revision #{n}",
+  "@publishedRevisionNumber": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "publishedLatestRevision": "Published latest revision",
+  "publishFailed": "Publish failed",
+  "bookFallbackTitle": "Book",
+  "editMetadataTooltip": "Edit metadata",
+  "publishedVisibleBanner": "Published and visible in reader",
+  "draftOnlyBanner": "Draft only - not visible in reader",
+  "visibilityTile": "Visibility",
+  "authorCompilerTile": "Author / compiler",
+  "languageTile": "Language",
+  "draftChaptersPagesTile": "Draft chapters/pages",
+  "noDraftChapters": "No draft chapters",
+  "draftChapterPageCounts": "{chapters} chapter(s), {pages} page(s)",
+  "@draftChapterPageCounts": {
+    "placeholders": {
+      "chapters": {"type": "int"},
+      "pages": {"type": "int"}
+    }
+  },
+  "publishedRevisionTile": "Published revision",
+  "openInReader": "Open in reader",
+  "publishFirstToOpenReader": "Publish this book first to open it in reader mode.",
+  "publishRevision": "Publish revision",
+  "unpublish": "Unpublish",
+  "summaryLabel": "Summary",
+  "createBookFirstValidate": "Create the book first, then run draft validation.",
+  "draftValidationTitle": "Draft validation",
+  "warningsHeading": "Warnings:",
+  "discardUnsavedTitle": "Discard unsaved changes?",
+  "discardUnsavedBody": "You have unsaved edits. If you leave now, those changes will be lost.",
+  "discardUnsavedBodyEditor": "You have unsaved updates in this editor. Leave without saving?",
+  "stay": "Stay",
+  "discard": "Discard",
+  "chooseImage": "Choose image",
+  "removeCover": "Remove cover",
+  "validateDraft": "Validate draft",
+  "addChapter": "Add chapter",
+  "noPagesYet": "No pages yet",
+  "moveUpTooltip": "Move up",
+  "moveDownTooltip": "Move down",
+  "addPageTooltip": "Add page",
+  "editChapterTooltip": "Edit chapter",
+  "deleteChapterTooltip": "Delete chapter",
+  "editPageTooltip": "Edit page",
+  "deletePageTooltip": "Delete page",
+  "addChapterTitle": "Add chapter",
+  "editChapterTitle": "Edit chapter",
+  "chapterKeyHintExample": "e.g. chapter-1",
+  "untitledChapter": "Untitled chapter",
+  "unsupportedEmbeddedContent": "Unsupported embedded content",
+  "editPageTitle": "Edit page",
+  "tagSlugsHint": "Comma-separated, e.g. liturgy, bible",
+  "visibilityHidden": "hidden",
+  "visibilityPublished": "published",
+  "create": "Create",
+  "saveChanges": "Save changes",
+  "commaSeparated": "Comma-separated",
+  "chapterTitleLabel": "Chapter title",
+  "chapterKeyFieldLabel": "Chapter key",
+  "eachChapterNeedsKey": "Each chapter must have a chapter key.",
+  "duplicateChapterKey": "Duplicate chapter key found: {key}",
+  "@duplicateChapterKey": {
+    "placeholders": {
+      "key": {"type": "String"}
+    }
+  },
+  "pageNumberMustBePositive": "Page number must be greater than 0 in chapter {title}.",
+  "@pageNumberMustBePositive": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "duplicatePageNumber": "Duplicate page number {n} in chapter {title}.",
+  "@duplicatePageNumber": {
+    "placeholders": {
+      "n": {"type": "int"},
+      "title": {"type": "String"}
+    }
+  },
+  "draftValidationNoWarnings": "No warnings.\n\nChapters: {chapters}\nPages: {pages}\nEmpty pages: {empty}",
+  "@draftValidationNoWarnings": {
+    "placeholders": {
+      "chapters": {"type": "int"},
+      "pages": {"type": "int"},
+      "empty": {"type": "int"}
+    }
+  },
+  "draftValidationStatsLine": "Chapters: {chapters} · Pages: {pages} · Empty pages: {empty}",
+  "@draftValidationStatsLine": {
+    "placeholders": {
+      "chapters": {"type": "int"},
+      "pages": {"type": "int"},
+      "empty": {"type": "int"}
+    }
+  },
+  "validationFailed": "Validation failed",
+  "saveFailed": "Save failed",
+  "newBookAppBar": "New book",
+  "editBookAppBar": "Edit book",
+  "metadataSection": "Metadata",
+  "titleLabelRequired": "Title *",
+  "titleRequired": "Title is required",
+  "subtitleLabel": "Subtitle",
+  "thumbnailCover": "Thumbnail / cover",
+  "coverFormatHelp": "JPEG, PNG, or WebP. Uploads after you save the book.",
+  "authorCompilerLabel": "Author / compiler",
+  "primaryLanguageCodeLabel": "Primary language code",
+  "languageCodeRequired": "Language code is required",
+  "scriptTagsLabel": "Script tags",
+  "chaptersPagesSection": "Chapters & pages",
+  "noChaptersYetHelp": "No chapters yet. Add chapters and pages for reader navigation.",
+  "chapterKeyPageCount": "{key} · {count} page(s)",
+  "@chapterKeyPageCount": {
+    "placeholders": {
+      "key": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "pageListTitle": "p.{n} · {title}",
+  "@pageListTitle": {
+    "placeholders": {
+      "n": {"type": "int"},
+      "title": {"type": "String"}
+    }
+  },
+  "pageTitleFallback": "Page {n}",
+  "@pageTitleFallback": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "cancelEdit": "Cancel",
+  "tagSlugsCreateOnlyLabel": "Tag slugs (create only)",
+  "catalogVisibilityLabel": "Catalog visibility",
+  "pageNumberFieldLabel": "Page number",
+  "pageTitleFieldLabel": "Page title",
+  "pageContentHeading": "Page content",
+  "pageEditorPlaceholder": "Write this page…"
+}

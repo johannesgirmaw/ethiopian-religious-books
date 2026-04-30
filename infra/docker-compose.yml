@@ -1,0 +1,114 @@
+# Local infrastructure only. Add `api` + `celery_worker` services when Django Dockerfile exists
+# (see SETUP.md and README-IMPLEMENTATION.md §12.1).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-app}
+      POSTGRES_DB: ${POSTGRES_DB:-religious_books}
+    ports:
+      - "${POSTGRES_PORT:-15432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app} -d ${POSTGRES_DB:-religious_books}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-16379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio_secret_change_me}
+    ports:
+      - "${MINIO_API_PORT:-19000}:9000"
+      - "${MINIO_CONSOLE_PORT:-19001}:9001"
+    volumes:
+      - minio_data:/data
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "${MAILHOG_SMTP_PORT:-11025}:1025"
+      - "${MAILHOG_UI_PORT:-18025}:8025"
+
+  api:
+    build:
+      context: ../services/django_api
+      dockerfile: Dockerfile
+    ports:
+      # Bind all interfaces so phones on the same LAN can reach the API (override API_PORT in infra/.env).
+      - "0.0.0.0:${API_PORT:-8000}:8000"
+    environment:
+      DEBUG: "True"
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-dev-insecure-change-me}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app}@postgres:5432/${POSTGRES_DB:-religious_books}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
+      EMAIL_HOST: mailhog
+      EMAIL_PORT: 1025
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minio}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minio_secret_change_me}
+      AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME:-religious-books-dev}
+      AWS_S3_ENDPOINT_URL: http://minio:9000
+      # Must match published MinIO port (override in .env for LAN IP / emulators).
+      AWS_S3_PRESIGN_ENDPOINT_URL: ${AWS_S3_PRESIGN_ENDPOINT_URL:-http://localhost:${MINIO_API_PORT:-19000}}
+      AWS_S3_REGION_NAME: us-east-1
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ../services/django_api:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      mailhog:
+        condition: service_started
+
+  celery_worker:
+    build:
+      context: ../services/django_api
+      dockerfile: Dockerfile
+    entrypoint: ["celery", "-A", "config", "worker", "-l", "info"]
+    environment:
+      DEBUG: "True"
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-dev-insecure-change-me}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app}@postgres:5432/${POSTGRES_DB:-religious_books}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minio}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minio_secret_change_me}
+      AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME:-religious-books-dev}
+      AWS_S3_ENDPOINT_URL: http://minio:9000
+      AWS_S3_PRESIGN_ENDPOINT_URL: ${AWS_S3_PRESIGN_ENDPOINT_URL:-http://localhost:${MINIO_API_PORT:-19000}}
+      AWS_S3_REGION_NAME: us-east-1
+    volumes:
+      - ../services/django_api:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+volumes:
+  pgdata:
+  minio_data:

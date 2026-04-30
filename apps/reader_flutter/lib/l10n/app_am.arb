@@ -1,0 +1,636 @@
+{
+  "@@locale": "am",
+  "appTitle": "የኢትዮጵያ አንባቢ",
+  "splashTagline": "ቅዱስ መጻሕፍት፣ የማይጠፉ ጥበብ",
+  "cancel": "ሰርዝ",
+  "save": "አስቀምጥ",
+  "close": "ዝጋ",
+  "retry": "እንደገና ሞክር",
+  "clear": "አጽዳ",
+  "search": "ፈልግ",
+  "goBack": "ተመለስ",
+  "generalCategory": "አጠቃላይ",
+  "loginFailed": "መግባት አልተሳካም",
+  "registrationFailed": "መመዝገብ አልተሳካም",
+  "cachedJustNow": "አሁን",
+  "cachedMinutesAgo": "ከ{count} ደቂቃ በፊት",
+  "@cachedMinutesAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cachedHoursAgo": "ከ{count} ሰዓት በፊት",
+  "@cachedHoursAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cachedDaysAgo": "ከ{count} ቀን በፊት",
+  "@cachedDaysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "catalogSynced": "የመጽሐፍ ዝርዝር ከ{when} ጋር ተመሳሰለ",
+  "@catalogSynced": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "showingLibrarySynced": "ቤተ-መጽሐፍት ከ{when} ጋር ተመሳሰለ",
+  "@showingLibrarySynced": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "navHome": "መነሻ",
+  "navLibrary": "ቤተ-መጽሐፍት",
+  "navAccount": "መለያ",
+  "searchTooltip": "ፈልግ",
+  "homeNoBooksTitle": "እስካሁን የታተሙ መጽሐፍት የሉም",
+  "homeNoBooksMessage": "አዲስ መጽሐፍት ሲገኙ እዚህ ይታያሉ።",
+  "openLibrary": "ቤተ-መጽሐፍት ክፈት",
+  "exploreWisdomTitle": "ጥበብን እና ታሪክን ያስሱ",
+  "exploreWisdomBody": "የሃይማኖት መጽሐፍትን በንጹህ አቀራረብ ያንብቡ።",
+  "searchLibrary": "ቤተ-መጽሐፍት ፈልግ",
+  "browseCollections": "ስብስቦችን ያስሱ",
+  "featuredBooks": "የተመረጡ መጽሐፍት",
+  "curatedSelections": "{count} የተመረጡ",
+  "@curatedSelections": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "librarySections": "የቤተ-መጽሐፍት ክፍሎች",
+  "viewAll": "ሁሉንም አሳይ",
+  "unableToLoadHome": "መነሻ ገጽ መጫን አልተሳካም",
+  "noSummaryYet": "እስካሁን ማጠቃለያ የለም።",
+  "readDetails": "ዝርዝሮችን አንብብ",
+  "unknownAuthor": "ያልታወቀ ደራሲ",
+  "openArticle": "ጽሑፍ ክፈት",
+  "libraryTitle": "ቤተ-መጽሐፍት",
+  "filterTooltip": "አጣራ",
+  "filterByLanguage": "በቋንቋ አጣራ",
+  "allLanguages": "ሁሉም ቋንቋዎች",
+  "chapterKeyLabel": "የምዕራፍ ቁልፍ",
+  "chapterKeyHint": "አማራጭ የሰርቨር ማጣሪያ",
+  "pageNumberLabel": "የገጽ ቁጥር",
+  "pageNumberHint": "አማራጭ የሰርቨር ማጣሪያ",
+  "applyFilters": "ማጣሪያዎችን ተግብር",
+  "libraryEmptyTitle": "ቤተ-መጽሐፍት ባዶ ነው",
+  "libraryEmptyMessage": "አሁን የታተሙ መጽሐፍት የሉም።",
+  "librarySearchHint": "በርዕስ፣ ደራሲ ወይም ማጠቃለያ ፈልግ",
+  "clearSearchTooltip": "ፍለጋ አጽዳ",
+  "booksAvailable": "{count} መጽሐፍ(ቶች) ይገኛሉ",
+  "@booksAvailable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clearFilter": "ማጣሪያ አጽዳ",
+  "languageChip": "ቋንቋ፦ {lang}",
+  "@languageChip": {
+    "placeholders": {
+      "lang": {
+        "type": "String"
+      }
+    }
+  },
+  "chapterChip": "ምዕራፍ፦ {ch}",
+  "@chapterChip": {
+    "placeholders": {
+      "ch": {
+        "type": "String"
+      }
+    }
+  },
+  "pageChip": "ገጽ፦ {page}",
+  "@pageChip": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      }
+    }
+  },
+  "noMatchingBooksTitle": "የሚዛመዱ መጽሐፍት የሉም",
+  "noMatchingBooksMessage": "ሌላ ቁልፍ ቃል ይሞክሩ ወይም ማጣሪያዎችን ያጽዱ።",
+  "unableToLoadLibrary": "ቤተ-መጽሐፍት መጫን አልተሳካም",
+  "revisionLabel": "ማሻሻያ {n}",
+  "@revisionLabel": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "open": "ክፈት",
+  "accountTitle": "መለያ",
+  "readerAccount": "የአንባቢ መለያ",
+  "noEmail": "ኢሜይል የለም",
+  "adminRoleBadge": "አስተዳዳሪ",
+  "dashboard": "ዳሽቦርድ",
+  "inProgressDownloads": "በሂደት ላይ",
+  "failedDownloads": "የተሳሳቱ ማውረዶች",
+  "availableBooks": "የሚገኙ መጽሐፍት",
+  "languagesMetric": "ቋንቋዎች",
+  "offlineChapterCache": "ከመስመር ውጭ የምዕራፍ ማከማቻ",
+  "offlineBooksSaved": "{count} መጽሐፍ(ቶች) ከመስመር ውጭ ተቀምጠዋል",
+  "@offlineBooksSaved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "checkingCache": "ማከማቻ በመፈተሽ ላይ...",
+  "cacheUnavailable": "ማከማቻ አይገኝም",
+  "clearOfflineCacheTitle": "ከመስመር ውጭ ማከማቻ ይጸዳ?",
+  "clearOfflineCacheBody": "የወረዱ የምዕራፍ/ገጽ ይዘቶች ከመሣሪያው ይወገዳሉ።",
+  "offlineCacheCleared": "ከመስመር ውጭ ማከማቻ ተጸድቋል",
+  "studyAndReminders": "ጥናት እና ማስታወሻዎች",
+  "dailyReadingReminders": "ዕለታዊ የንባብ ማስታወሻዎች",
+  "reminderTimeUtc": "UTC {hh}:{mm}{weekdays}",
+  "@reminderTimeUtc": {
+    "placeholders": {
+      "hh": {
+        "type": "String"
+      },
+      "mm": {
+        "type": "String"
+      },
+      "weekdays": {
+        "type": "String"
+      }
+    }
+  },
+  "weekdaysOnlySuffix": " · በስራ ቀናት ብቻ",
+  "reminderUpdateFailed": "የማስታወሻ ቅንብሮች አልተሻሻሉም።",
+  "loadingReminderSettings": "የማስታወሻ ቅንብሮች በመጫን ላይ...",
+  "reminderSettingsUnavailable": "የማስታወሻ ቅንብሮች አይገኙም",
+  "dailyReadingPlans": "ዕለታዊ የንባብ እቅዶች",
+  "noReadingPlansYet": "እስካሁን እቅዶች የሉም",
+  "readingPlansConfigured": "{count} እቅድ(ዎች) ተዋቅረዋል",
+  "@readingPlansConfigured": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tapOpenTodaysReading": " · የዛሬውን ንባብ ለመክፈት ይንኩ",
+  "createPlanTooltip": "እቅድ ፍጠር",
+  "dailyPlanCreateFailed": "ዕለታዊ እቅድ መፍጠር አልተሳካም።",
+  "accountInfo": "የመለያ መረጃ",
+  "emailLabel": "ኢሜይል",
+  "displayNameLabel": "የማሳያ ስም",
+  "adminPanel": "የአስተዳዳሪ ፓነል",
+  "adminPanelSubtitle": "መጽሐፍት፣ ታይነት እና ህትመት ያቀናብሩ",
+  "noProfileCached": "መገለጫ አልተቀመጠም።",
+  "signOut": "ውጣ",
+  "welcomeBack": "እንኳን በደህና መጡ",
+  "signInSubtitle": "ለመቀጠል ይግቡ እና እድገትዎን ያመሳስሉ።",
+  "emailFieldLabel": "ኢሜይል",
+  "emailFieldHint": "you@example.com",
+  "emailRequired": "ኢሜይል ያስፈልጋል",
+  "emailInvalid": "ትክክለኛ ኢሜይል ያስገቡ",
+  "passwordFieldLabel": "የይለፍ ቃል",
+  "passwordMinHelper": "ቢያንስ 10 ቁምፊዎች",
+  "passwordRequired": "የይለፍ ቃል ያስፈልጋል",
+  "signIn": "ግባ",
+  "createAccount": "መለያ ፍጠር",
+  "createAccountTitle": "መለያ ፍጠር",
+  "registerSubtitle": "እድገት፣ ምልክቶች እና ማውረዶችን ለማስቀመጥ መገለጫ ይፍጠሩ።",
+  "passwordMinRegisterHelper": "ቢያንስ 10 ቁምፊዎች ይጠቀሙ",
+  "passwordTooShort": "የይለፍ ቃል ቢያንስ 10 ቁምፊዎች መሆን አለበት",
+  "displayNameOptional": "የማሳያ ስም (አማራጭ)",
+  "alreadyHaveAccount": "መለያ አለዎት? ይግቡ",
+  "languagePreferenceTitle": "ቋንቋ",
+  "languagePreferenceSubtitle": "ለመተግበሪያው ምናሌዎች እና ቁልፎች እንግሊዝኛ ወይም አማርኛ ይምረጡ።",
+  "languageEnglish": "English",
+  "languageAmharic": "አማርኛ",
+  "saveLanguage": "ቋንቋ አስቀምጥ",
+  "languageSaved": "ቋንቋ ተቀምጧል",
+  "bookDetailsTitle": "የመጽሐፍ ዝርዝሮች",
+  "preparingDownload": "ማውረድ በመዘጋጀት ላይ…",
+  "savedUnderPath": "በ{path} ተቀምጧል",
+  "@savedUnderPath": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadFailed": "ማውረድ አልተሳካም፦ {error}",
+  "@downloadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "summarySection": "ማጠቃለያ",
+  "readyToRead": "ለንባብ ዝግጁ",
+  "downloadState": "ማውረድ፦ {state}",
+  "@downloadState": {
+    "placeholders": {
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "startReading": "ንባብ ጀምር",
+  "downloadOffline": "ለከመስመር ውጭ ንባብ አውርድ",
+  "unableToLoadBook": "ይህን መጽሐፍ መጫን አልተሳካም",
+  "bookLoadErrorMessage": "መጽሐፉ አሁን መክፈት አልተቻለም። እንደገና ይሞክሩ።",
+  "bookNotInCatalogTitle": "መጽሐፉ በአንባቢ ዝርዝር ውስጥ የለም",
+  "bookNotInCatalogMessage": "ያልታተመ ወይም የተደበቀ ሊሆን ይችላል። ከአስተዳዳሪ ይፍቱ።",
+  "readerTitle": "አንባቢ",
+  "bookmarkSavedAt": "በ{pct}% ተቀምጧል",
+  "@bookmarkSavedAt": {
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "bookmarkRemoved": "ምልክት ተወግዷል",
+  "bookmarkSaved": "ምልክት ተቀምጧል",
+  "noBookmarksYet": "እስካሁን ምልክቶች የሉም።",
+  "savedLocation": "የተቀመጠ ቦታ",
+  "removeTooltip": "አስወግድ",
+  "selectChapter": "ምዕራፍ ይምረጡ",
+  "selectPage": "ገጽ ይምረጡ",
+  "readerPosition": "የአንባቢ ቦታ",
+  "readingPosition": "የንባብ ቦታ",
+  "pageCount": "{count} ገጽ(ዎች)",
+  "@pageCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pageNumberTitle": "ገጽ {n}",
+  "@pageNumberTitle": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "choosePage": "ገጽ ይምረጡ",
+  "jumpToPageSubtitle": "በቀጥታ ወደ ገጽ ይዝፉ",
+  "allChapters": "ሁሉም ምዕራፎች",
+  "searchPagesWholeBook": "በመላው መጽሐፍ ገጾችን ፈልግ",
+  "noChapterSelected": "ምዕራፍ አልተመረጠም",
+  "cloudBookmarkSaved": "የደመና ምልክት ተቀምጧል",
+  "quickNoteLabel": "ፈጣን ማስታወሻ",
+  "quickNoteHint": "አስተያየትዎን ይጻፉ",
+  "saveNote": "ማስታወሻ አስቀምጥ",
+  "noteSaved": "ማስታወሻ ተቀምጧል",
+  "highlightSavedOnPage": "በገጽ {n} ማድመቅ ተቀምጧል",
+  "@highlightSavedOnPage": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "highlightsUnavailable": "ማድመቆች አሁን አይገኙም",
+  "noHighlightsYet": "እስካሁን ማድመቆች የሉም።",
+  "highlightDefaultTitle": "ማድመቅ",
+  "highlightChapterPage": "ምዕራፍ {ch} · ገጽ {page}",
+  "@highlightChapterPage": {
+    "placeholders": {
+      "ch": {
+        "type": "String"
+      },
+      "page": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineCopyRemoved": "ከመስመር ውጭ ቅጂ ተወግዷል",
+  "savedOfflineReading": "ለከመስመር ውጭ ንባብ ተቀምጧል",
+  "findInBookLabel": "በመጽሐፍ ውስጥ ፈልግ",
+  "findInBookHint": "ቃል ወይም ሐረግ ይጻፉ",
+  "searchOutsideChapter": "ከተመረጠው ምዕራፍ ውጭ ፈልግ",
+  "noMatchesYet": "እስካሁን ተዛመድ የለም።",
+  "matchCount": "{count} ተዛመድ(ዎች)",
+  "@matchCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "previousMatch": "ቀዳሚ ተዛመድ",
+  "nextMatch": "ቀጣይ ተዛመድ",
+  "typographyCompact": "ጠቅላላ",
+  "typographyComfort": "መጣጣም",
+  "typographyLarge": "ትልቅ",
+  "typographyPresetsTitle": "የፊደል ቅንብሮች",
+  "typographyPresetsSubtitle": "ለእርስዎ የሚስማማውን ይምረጡ",
+  "typographySizeLine": "መጠን {size} · መስመር {line}",
+  "@typographySizeLine": {
+    "placeholders": {
+      "size": {
+        "type": "int"
+      },
+      "line": {
+        "type": "String"
+      }
+    }
+  },
+  "chaptersHeading": "ምዕራፎች",
+  "noChapterContentYet": "ይህ መጽሐፍ እስካሁን ምዕራፍ/ገጽ የለውም። በአስተዳዳሪ ይጨምሩ።",
+  "chapterChipRaw": "ምዕራፍ፦ {label}",
+  "@chapterChipRaw": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "pageChipShort": "ገጽ፦ {n}",
+  "@pageChipShort": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "backToChaptersTooltip": "ወደ ምዕራፎች ተመለስ",
+  "filterChapterTooltip": "ምዕራፍ አጣራ",
+  "filterPageTooltip": "ገጽ አጣራ",
+  "removeOfflineCopy": "ከመስመር ውጭ ቅጂ አስወግድ",
+  "saveChaptersOffline": "ምዕራፎች ከመስመር ውጭ አስቀምጥ",
+  "backToChapters": "ወደ ምዕራፎች ተመለስ",
+  "noChapterSelectedShort": "ምዕራፍ አልተመረጠም",
+  "typographyPresetsTooltip": "የፊደል ቅንብሮች",
+  "saveCloudBookmarkTooltip": "የደመና ምልክት አስቀምጥ",
+  "addNoteTooltip": "ማስታወሻ ጨምር",
+  "addHighlightTooltip": "ማድመቅ ጨምር",
+  "highlightsTooltip": "ማድመቆች",
+  "pinControls": "መቆጣጠሪያዎችን አስይዝ",
+  "autoHideControls": "መቆጣጠሪያዎችን በራስ-ደብቅ",
+  "matchOnPage": "በገጽ {page} ተዛመድ፦ {snippet}",
+  "@matchOnPage": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "snippet": {
+        "type": "String"
+      }
+    }
+  },
+  "readerChapterLabel": "ምዕራፍ",
+  "readerPageLabel": "ገጽ",
+  "adminHomeTitle": "አስተዳዳሪ",
+  "publisherTools": "የማተሚያ መሣሪያዎች",
+  "publisherToolsBody": "የመጽሐፍ ዝርዝር፣ መረጃ እና ህትመት ያቀናብሩ።",
+  "adminBooksMenuTitle": "መጽሐፍት",
+  "adminBooksMenuSubtitle": "ዝርዝር፣ ፍጠር፣ አርትዖት፣ ህትመት",
+  "adminBooksListTitle": "አስተዳዳሪ · መጽሐፍት",
+  "newBookTooltip": "አዲስ መጽሐፍ",
+  "noBooksYetTitle": "እስካሁን መጽሐፍት የሉም",
+  "noBooksYetMessage": "ወደ አንባቢዎች ለማተም የመጀመሪያ መጽሐፍዎን ይፍጠሩ።",
+  "createFirstBook": "የመጀመሪያ መጽሐፍ ፍጠር",
+  "searchBooksLabel": "መጽሐፍት ፈልግ",
+  "searchBooksHint": "ርዕስ፣ ደራሲ፣ ቋንቋ",
+  "filterAll": "ሁሉም",
+  "filterPublished": "የታተመ",
+  "filterHidden": "የተደበቀ",
+  "sortRecent": "ደርድር፦ ቅርብ",
+  "sortTitle": "ደርድር፦ ርዕስ",
+  "noBooksMatchFilters": "ከማጣሪያዎች ጋር የሚዛመድ መጽሐፍ የለም።",
+  "unableToLoadBooks": "መጽሐፍት መጫን አልተሳካም",
+  "visibilityLabel": "ታይነት፦ {vis}",
+  "@visibilityLabel": {
+    "placeholders": {
+      "vis": {
+        "type": "String"
+      }
+    }
+  },
+  "statusLabel": "ሁኔታ፦ {status}",
+  "@statusLabel": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "publishedStatus": "የታተመ",
+  "draftStatus": "ረቂቅ",
+  "statusChip": "{status} · {vis}",
+  "@statusChip": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      },
+      "vis": {
+        "type": "String"
+      }
+    }
+  },
+  "bookNotFound": "መጽሐፍ አልተገኘም።",
+  "unpublishFailed": "ህትመት ማስቆም አልተሳካም",
+  "publishLatestDraftTitle": "የኋለኛውን ረቂቅ አትም",
+  "publishLatestDraftBody": "ለዚህ መጽሐፍ የኋለኛውን ረቂቅ ማሻሻያ ያትማል።",
+  "publish": "አትም",
+  "publishedRevisionNumber": "የታተመ ማሻሻያ #{n}",
+  "@publishedRevisionNumber": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "publishedLatestRevision": "የኋለኛው ማሻሻያ ተታትሟል",
+  "publishFailed": "ህትመት አልተሳካም",
+  "bookFallbackTitle": "መጽሐፍ",
+  "editMetadataTooltip": "መረጃ አርትዖት",
+  "publishedVisibleBanner": "ተታትሞ በአንባቢ ይታያል",
+  "draftOnlyBanner": "ረቂቅ ብቻ - በአንባቢ አይታይም",
+  "visibilityTile": "ታይነት",
+  "authorCompilerTile": "ደራሲ / አዋቂ",
+  "languageTile": "ቋንቋ",
+  "draftChaptersPagesTile": "ረቂቅ ምዕራፎች/ገጾች",
+  "noDraftChapters": "ረቂቅ ምዕራፎች የሉም",
+  "draftChapterPageCounts": "{chapters} ምዕራፍ(ዎች)፣ {pages} ገጽ(ዎች)",
+  "@draftChapterPageCounts": {
+    "placeholders": {
+      "chapters": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  "publishedRevisionTile": "የታተመ ማሻሻያ",
+  "openInReader": "በአንባቢ ውስጥ ክፈት",
+  "publishFirstToOpenReader": "በአንባቢ ለመክፈት መጀመሪያ ያትሙ።",
+  "publishRevision": "ማሻሻያ አትም",
+  "unpublish": "ህትመት አስቆም",
+  "summaryLabel": "ማጠቃለያ",
+  "createBookFirstValidate": "መጀመሪያ መጽሐፉን ይፍጠሩ፣ ከዚያ ረቂቅ ያረጋግጡ።",
+  "draftValidationTitle": "የረቂቅ ማረጋገጫ",
+  "warningsHeading": "ማስጠንቀቂያዎች፦",
+  "discardUnsavedTitle": "ያልተቀመጡ ለውጦች ይወገዱ?",
+  "discardUnsavedBody": "ያልተቀመጡ ለውጦች አሉ። ከዚህ ከወጡ ይጠፋሉ።",
+  "discardUnsavedBodyEditor": "በአርትዖቱ ውስጥ ያልተቀመጡ ለውጦች አሉ። ያለማስቀመጥ ይወጣሉ?",
+  "stay": "Stay",
+  "discard": "Discard",
+  "chooseImage": "ምስል ይምረጡ",
+  "removeCover": "ሽፋን አስወግድ",
+  "validateDraft": "ረቂቅ አረጋግጥ",
+  "addChapter": "ምዕራፍ ጨምር",
+  "noPagesYet": "እስካሁን ገጾች የሉም",
+  "moveUpTooltip": "ወደ ላይ አንቀሳቅስ",
+  "moveDownTooltip": "ወደ ታች አንቀሳቅስ",
+  "addPageTooltip": "ገጽ ጨምር",
+  "editChapterTooltip": "ምዕራፍ አርትዖት",
+  "deleteChapterTooltip": "ምዕራፍ ሰርዝ",
+  "editPageTooltip": "ገጽ አርትዖት",
+  "deletePageTooltip": "ገጽ ሰርዝ",
+  "addChapterTitle": "ምዕራፍ ጨምር",
+  "editChapterTitle": "ምዕራፍ አርትዖት",
+  "chapterKeyHintExample": "ለምሳሌ chapter-1",
+  "untitledChapter": "ርዕስ የሌለው ምዕራፍ",
+  "unsupportedEmbeddedContent": "ያልተደገፈ የተሰካ ይዘት",
+  "editPageTitle": "ገጽ አርትዖት",
+  "tagSlugsHint": "በነጠላ ሰረዝ የተከፈለ፣ ለምሳሌ liturgy, bible",
+  "visibilityHidden": "የተደበቀ",
+  "visibilityPublished": "የታተመ",
+  "create": "Create",
+  "saveChanges": "Save changes",
+  "commaSeparated": "በነጠላ ሰረዝ የተከፈለ",
+  "chapterTitleLabel": "የምዕራፍ ርዕስ",
+  "chapterKeyFieldLabel": "የምዕራፍ ቁልፍ",
+  "eachChapterNeedsKey": "እያንዳንዱ ምዕራፍ ቁልፍ ሊኖረው ይገባል።",
+  "duplicateChapterKey": "የተደጋገመ የምዕራፍ ቁልፍ ተገኝቷል፦ {key}",
+  "@duplicateChapterKey": {
+    "placeholders": {
+      "key": {
+        "type": "String"
+      }
+    }
+  },
+  "pageNumberMustBePositive": "በ{title} ምዕራፍ ውስጥ የገጽ ቁጥር ከዜሮ ላይ ትልቅ መሆን አለበት።",
+  "@pageNumberMustBePositive": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "duplicatePageNumber": "በ{title} ምዕራፍ ውስጥ የተደጋገመ የገጽ ቁጥር {n}",
+  "@duplicatePageNumber": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "draftValidationNoWarnings": "ማስጠንቀቂያ የለም።\n\nምዕራፎች፦ {chapters}\nገጾች፦ {pages}\nባዶ ገጾች፦ {empty}",
+  "@draftValidationNoWarnings": {
+    "placeholders": {
+      "chapters": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      },
+      "empty": {
+        "type": "int"
+      }
+    }
+  },
+  "draftValidationStatsLine": "ምዕራፎች፦ {chapters} · ገጾች፦ {pages} · ባዶ ገጾች፦ {empty}",
+  "@draftValidationStatsLine": {
+    "placeholders": {
+      "chapters": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      },
+      "empty": {
+        "type": "int"
+      }
+    }
+  },
+  "validationFailed": "ማረጋገጫ አልተሳካም",
+  "saveFailed": "ማስቀመጥ አልተሳካም",
+  "newBookAppBar": "አዲስ መጽሐፍ",
+  "editBookAppBar": "መጽሐፍ አርትዖት",
+  "metadataSection": "መረጃ",
+  "titleLabelRequired": "ርዕስ *",
+  "titleRequired": "ርዕስ ያስፈልጋል",
+  "subtitleLabel": "ንዑስ ርዕስ",
+  "thumbnailCover": "አነስተኛ ምስል / ሽፋን",
+  "coverFormatHelp": "JPEG፣ PNG ወይም WebP። ከመጽሐፉን ካስቀመጡ በኋላ ይሰቀላል።",
+  "authorCompilerLabel": "ደራሲ / አዋቂ",
+  "primaryLanguageCodeLabel": "ዋና የቋንቋ ኮድ",
+  "languageCodeRequired": "የቋንቋ ኮድ ያስፈልጋል",
+  "scriptTagsLabel": "የፊደል መለያዎች",
+  "chaptersPagesSection": "ምዕራፎች እና ገጾች",
+  "noChaptersYetHelp": "እስካሁን ምዕራፎች የሉም። ለአንባቢ አሰሳ ምዕራፎችን እና ገጾችን ይጨምሩ።",
+  "chapterKeyPageCount": "{key} · {count} ገጽ(ዎች)",
+  "@chapterKeyPageCount": {
+    "placeholders": {
+      "key": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pageListTitle": "p.{n} · {title}",
+  "@pageListTitle": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "pageTitleFallback": "ገጽ {n}",
+  "@pageTitleFallback": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "cancelEdit": "ሰርዝ",
+  "tagSlugsCreateOnlyLabel": "የመለያ slug (መፍጠር ብቻ)",
+  "catalogVisibilityLabel": "የካታሎግ ታይነት",
+  "pageNumberFieldLabel": "የገጽ ቁጥር",
+  "pageTitleFieldLabel": "የገጽ ርዕስ",
+  "pageContentHeading": "የገጽ ይዘት",
+  "pageEditorPlaceholder": "ይህን ገጽ ይጻፉ…"
+}

@@ -1,0 +1,26 @@
+# Copy to docker-compose.override.yml (gitignored recommended) and rename services to match
+# your real stack when `api` + `celery_worker` exist.
+#
+# Purpose: bind-mount Django code + runserver for fast local iteration.
+#
+#   cp docker-compose.override.example.yml docker-compose.override.yml
+#
+# Uncomment and adapt after you add an `api` service to docker-compose.yml.
+
+# services:
+#   api:
+#     build:
+#       context: ../services/django_api
+#     volumes:
+#       - ../services/django_api:/app:cached
+#     command: python manage.py runserver 0.0.0.0:8000
+#     environment:
+#       DEBUG: "1"
+#       PYTHONUNBUFFERED: "1"
+#     ports:
+#       - "${API_PORT:-8000}:8000"
+#     depends_on:
+#       postgres:
+#         condition: service_healthy
+#       redis:
+#         condition: service_healthy

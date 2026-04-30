@@ -1,0 +1,31 @@
+name: ethiopian_reader
+description: Ethiopian Religious Books — reader app (Android-first; iOS optional).
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  dio: ^5.7.0
+  flutter_riverpod: ^2.6.1
+  flutter_secure_storage: ^9.2.2
+  go_router: ^14.6.2
+  path_provider: ^2.1.4
+  shared_preferences: ^2.5.4
+  flutter_quill: ^11.5.0
+  image_picker: ^1.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  generate: true
+  uses-material-design: true
