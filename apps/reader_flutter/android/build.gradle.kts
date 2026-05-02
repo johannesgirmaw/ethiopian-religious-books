@@ -20,13 +20,6 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
-    dependencyLocking {
-        ignoredDependencies.add("io.flutter:*")
-        lockFile = file("${rootProject.projectDir}/project-${project.name}.lockfile")
-        if (!project.hasProperty("local-engine-repo")) {
-            lockAllConfigurations()
-        }
-    }
 }
 
 tasks.register<Delete>("clean") {

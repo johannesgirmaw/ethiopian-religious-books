@@ -242,26 +242,28 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   onChanged: (value) => setState(() => _query = value.trim()),
                 ),
                 const SizedBox(height: 12),
-                AppBar(
-                  automaticallyImplyLeading: false,
-                  toolbarHeight: 52,
-                  titleSpacing: 0,
-                  title: Text(
-                    l10n.booksAvailable(filteredBooks.length),
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  actions: [
-                    if (_selectedLanguage != null)
-                      TextButton.icon(
-                        onPressed: () => setState(() {
-                          _selectedLanguage = null;
-                          _selectedChapter = null;
-                          _selectedPage = null;
-                        }),
-                        icon: const Icon(Icons.filter_alt_off_outlined, size: 16),
-                        label: Text(l10n.clearFilter),
+                SizedBox(
+                  height: 52,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          l10n.booksAvailable(filteredBooks.length),
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
                       ),
-                  ],
+                      if (_selectedLanguage != null)
+                        TextButton.icon(
+                          onPressed: () => setState(() {
+                            _selectedLanguage = null;
+                            _selectedChapter = null;
+                            _selectedPage = null;
+                          }),
+                          icon: const Icon(Icons.filter_alt_off_outlined, size: 16),
+                          label: Text(l10n.clearFilter),
+                        ),
+                    ],
+                  ),
                 ),
                 if (_selectedLanguage != null)
                   Wrap(
