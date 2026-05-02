@@ -8,13 +8,22 @@ Document? documentFromStoredSummary(String? raw) {
   if (text.isEmpty) return null;
   try {
     final parsed = jsonDecode(text);
+    List<dynamic>? ops;
     if (parsed is List) {
-      final ops = parsed
+      ops = parsed;
+    } else if (parsed is Map) {
+      final rawOps = Map<String, dynamic>.from(parsed)['ops'];
+      if (rawOps is List) {
+        ops = rawOps;
+      }
+    }
+    if (ops != null && ops.isNotEmpty) {
+      final opMaps = ops
           .whereType<Map>()
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
-      if (ops.isNotEmpty) {
-        return Document.fromJson(ops);
+      if (opMaps.isNotEmpty) {
+        return Document.fromJson(opMaps);
       }
     }
   } catch (_) {}

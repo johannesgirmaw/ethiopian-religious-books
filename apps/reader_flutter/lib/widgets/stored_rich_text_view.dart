@@ -8,10 +8,13 @@ class StoredRichTextView extends StatelessWidget {
     super.key,
     required this.raw,
     this.fallbackStyle,
+    /// When set, merged into Quill [DefaultStyles] so read-only views match surrounding typography.
+    this.paragraphStyle,
   });
 
   final String raw;
   final TextStyle? fallbackStyle;
+  final TextStyle? paragraphStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -27,15 +30,51 @@ class StoredRichTextView extends StatelessWidget {
       selection: const TextSelection.collapsed(offset: 0),
       config: const QuillControllerConfig(),
     );
+    final customStyles = paragraphStyle == null
+        ? null
+        : DefaultStyles.getInstance(context).merge(
+            DefaultStyles(
+              paragraph: DefaultTextBlockStyle(
+                paragraphStyle!,
+                const HorizontalSpacing(0, 0),
+                VerticalSpacing.zero,
+                VerticalSpacing.zero,
+                null,
+              ),
+              lists: DefaultListBlockStyle(
+                paragraphStyle!,
+                const HorizontalSpacing(0, 0),
+                const VerticalSpacing(6, 0),
+                const VerticalSpacing(0, 6),
+                null,
+                null,
+              ),
+              quote: DefaultTextBlockStyle(
+                paragraphStyle!,
+                const HorizontalSpacing(0, 0),
+                VerticalSpacing.zero,
+                VerticalSpacing.zero,
+                null,
+              ),
+              code: DefaultTextBlockStyle(
+                paragraphStyle!,
+                const HorizontalSpacing(0, 0),
+                VerticalSpacing.zero,
+                VerticalSpacing.zero,
+                null,
+              ),
+            ),
+          );
     return QuillEditor.basic(
       controller: controller,
-      config: const QuillEditorConfig(
+      config: QuillEditorConfig(
         padding: EdgeInsets.zero,
         showCursor: false,
         expands: false,
         scrollable: false,
-        embedBuilders: [],
-        unknownEmbedBuilder: _UnknownEmbedBuilder(),
+        embedBuilders: const [],
+        unknownEmbedBuilder: const _UnknownEmbedBuilder(),
+        customStyles: customStyles,
       ),
     );
   }

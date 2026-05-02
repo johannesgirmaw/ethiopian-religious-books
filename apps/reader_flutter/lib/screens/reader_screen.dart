@@ -11,6 +11,8 @@ import '../providers/catalog_providers.dart';
 import '../providers/study_providers.dart';
 import '../storage/book_content_cache_storage.dart';
 import '../storage/reader_prefs_storage.dart';
+import '../utils/rich_text_codec.dart' show plainTextFromStoredSummary;
+import '../widgets/stored_rich_text_view.dart';
 
 class ReaderScreen extends ConsumerStatefulWidget {
   const ReaderScreen({
@@ -611,7 +613,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   Future<void> _addQuickHighlight(BookSummary book) async {
     final section = _currentSectionFromProgress();
     if (section == null) return;
-    final excerpt = section.body.trim();
+    final excerpt = plainTextFromStoredSummary(section.body).trim();
     final sample = excerpt.length > 160 ? '${excerpt.substring(0, 160)}...' : excerpt;
     final dio = ref.read(apiDioProvider);
     await dio.post<void>(
@@ -753,7 +755,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             final query = value.trim().toLowerCase();
             final matches = <String>[];
             for (final section in scopeSections()) {
-              final all = '${section.title} ${section.body}'.toLowerCase();
+              final all =
+                  '${section.title} ${plainTextFromStoredSummary(section.body)}'
+                      .toLowerCase();
               if (query.isNotEmpty && all.contains(query)) {
                 matches.add(_locationId(section.chapterKey, section.pageNumber));
               }
@@ -1472,7 +1476,9 @@ List<_ReaderSection> _buildSectionsFromTree(
     }
     for (final page in chapter.pages) {
       final body = page.body.trim();
-      final preview = body.length > 56 ? '${body.substring(0, 56)}...' : body;
+      final plainBody = plainTextFromStoredSummary(body).trim();
+      final preview =
+          plainBody.length > 56 ? '${plainBody.substring(0, 56)}...' : plainBody;
       sections.add(
         _ReaderSection(
           index: index,
@@ -1724,15 +1730,24 @@ class _ReaderBookPage extends StatelessWidget {
                         ),
                         Padding(
                           padding: const EdgeInsets.fromLTRB(26, 16, 28, 20),
-                          child: Text(
-                            section.body,
-                            textAlign: TextAlign.start,
-                            style: TextStyle(
-                              fontFamily: serif,
-                              color: textColor,
-                              fontSize: fontSize,
-                              height: lineHeight,
-                              letterSpacing: 0.2,
+                          child: Align(
+                            alignment: AlignmentDirectional.topStart,
+                            child: StoredRichTextView(
+                              raw: section.body,
+                              fallbackStyle: TextStyle(
+                                fontFamily: serif,
+                                color: textColor,
+                                fontSize: fontSize,
+                                height: lineHeight,
+                                letterSpacing: 0.2,
+                              ),
+                              paragraphStyle: TextStyle(
+                                fontFamily: serif,
+                                color: textColor,
+                                fontSize: fontSize,
+                                height: lineHeight,
+                                letterSpacing: 0.2,
+                              ),
                             ),
                           ),
                         ),
