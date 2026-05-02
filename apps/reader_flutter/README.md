@@ -28,6 +28,25 @@ Default **product** target is **Android** (`10.0.2.2` → host API in code and w
 
 Or: **`make reader-setup`**, **`make reader-run`**, **`make reader-run-android`**, **`make reader-run-macos`**.
 
+## Release APK (why it is slow, and a faster build)
+
+The first **`flutter build apk --release`** on a laptop often takes **10–20+ minutes**. Gradle must download the Android plugin stack and dependencies; Flutter then builds native code for **several CPU ABIs** in one “fat” APK. That is expected—**let the first run finish** so caches populate; canceling mid-way often forces a full redo.
+
+**Faster default for real devices (arm64 only):**
+
+```bash
+# from repo root
+./scripts/build_reader_apk_release.sh
+# or: make reader-build-apk-release
+```
+
+APK path: **`apps/reader_flutter/build/app/outputs/flutter-apk/app-release.apk`**.
+
+- **x86_64 Android emulator (common on Intel Macs):** `READER_APK_ABI=x64 ./scripts/build_reader_apk_release.sh`
+- **Fat APK, all ABIs (slowest):** `READER_APK_ABI=all ./scripts/build_reader_apk_release.sh`
+
+Later rebuilds are usually much quicker (Gradle daemon + build cache).
+
 ## Optional: iOS (later / not default)
 
 CocoaPods is **skipped** unless you opt in:

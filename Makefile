@@ -1,4 +1,4 @@
-.PHONY: help infra-up infra-down infra-logs dev seed openapi-export print-api-url reader-setup reader-run reader-run-android reader-run-macos reader-run-ios reader-pubget reader-test pre-commit
+.PHONY: help infra-up infra-down infra-logs dev seed openapi-export print-api-url reader-setup reader-run reader-run-android reader-run-macos reader-run-ios reader-build-apk-release reader-pubget reader-test pre-commit
 
 help:
 	@echo "Targets:"
@@ -16,6 +16,7 @@ help:
 	@echo "  make reader-run-macos   - macOS desktop only"
 	@echo "  make reader-run-ios     - ./scripts/run_reader_flutter.sh ios (optional)"
 	@echo "  make reader-pubget      - flutter pub get only"
+	@echo "  make reader-build-apk-release - fast release APK (arm64 only; see script --help)"
 	@echo "  make reader-test        - flutter test"
 	@echo "  make pre-commit   - run all pre-commit hooks on repo"
 
@@ -67,6 +68,10 @@ reader-run-macos:
 reader-run-ios:
 	@chmod +x scripts/run_reader_flutter.sh 2>/dev/null || true
 	@./scripts/run_reader_flutter.sh ios
+
+reader-build-apk-release:
+	@chmod +x scripts/build_reader_apk_release.sh 2>/dev/null || true
+	@./scripts/build_reader_apk_release.sh
 
 reader-pubget:
 	cd apps/reader_flutter && flutter pub get

@@ -6,9 +6,12 @@ DEBUG = False
 
 _mw = list(MIDDLEWARE)
 _wn = "whitenoise.middleware.WhiteNoiseMiddleware"
+_collapse = "config.middleware.CollapseDuplicatePathSlashesMiddleware"
 if _wn not in _mw:
     try:
         _i = _mw.index("django.middleware.security.SecurityMiddleware") + 1
+        if _collapse in _mw:
+            _i = _mw.index(_collapse) + 1
     except ValueError:
         _i = 0
     _mw.insert(_i, _wn)
