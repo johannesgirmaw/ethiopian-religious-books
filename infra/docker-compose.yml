@@ -54,6 +54,7 @@ services:
       # Bind all interfaces so phones on the same LAN can reach the API (override API_PORT in infra/.env).
       - "0.0.0.0:${API_PORT:-8000}:8000"
     environment:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
       DEBUG: "True"
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-dev-insecure-change-me}
       DATABASE_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app}@postgres:5432/${POSTGRES_DB:-religious_books}
@@ -88,6 +89,7 @@ services:
       dockerfile: Dockerfile
     entrypoint: ["celery", "-A", "config", "worker", "-l", "info"]
     environment:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
       DEBUG: "True"
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-dev-insecure-change-me}
       DATABASE_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app}@postgres:5432/${POSTGRES_DB:-religious_books}

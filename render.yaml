@@ -1,0 +1,33 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# Deploy: connect the repo in Render → New Blueprint → select render.yaml, or paste this file.
+#
+# After first deploy, set in the web service Environment (or extend this file):
+#   CORS_ALLOWED_ORIGINS — comma-separated origins for your Flutter/admin apps
+#   AWS_* / AWS_S3_* — object storage (S3, R2, etc.); presign URL host must be reachable by clients
+#   CELERY_BROKER_URL, CELERY_RESULT_BACKEND — if you add a Celery worker + Redis
+
+databases:
+  - name: religious-books-postgres
+    plan: free
+    databaseName: religious_books
+
+services:
+  - type: web
+    name: religious-books-api
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./services/django_api/Dockerfile
+    dockerContext: ./services/django_api
+    healthCheckPath: /healthz/
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.prod
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: religious-books-postgres
+          property: connectionString
