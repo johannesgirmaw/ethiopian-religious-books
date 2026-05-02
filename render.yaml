@@ -5,6 +5,7 @@
 #   CORS_ALLOWED_ORIGINS — comma-separated origins for your Flutter/admin apps
 #   AWS_* / AWS_S3_* — object storage (S3, R2, etc.); presign URL host must be reachable by clients
 #   CELERY_BROKER_URL, CELERY_RESULT_BACKEND — if you add a Celery worker + Redis
+#   BOOTSTRAP_SUPERUSER_EMAIL, BOOTSTRAP_SUPERUSER_PASSWORD — one-time admin (see below)
 
 databases:
   - name: religious-books-postgres
@@ -31,3 +32,8 @@ services:
         fromDatabase:
           name: religious-books-postgres
           property: connectionString
+      # Idempotent: creates superuser only if this email is missing. Rotate the password in admin after login.
+      - key: BOOTSTRAP_SUPERUSER_EMAIL
+        value: admin@gmail.com
+      - key: BOOTSTRAP_SUPERUSER_PASSWORD
+        value: admin

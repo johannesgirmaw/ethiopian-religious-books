@@ -18,6 +18,11 @@ COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 COPY . .
 
+# Bake admin / DRF static into the image (no runtime dependency on external storage).
+RUN DJANGO_SECRET_KEY=collectstatic-build-only \
+    DATABASE_URL=sqlite:////tmp/collectstatic.db \
+    python manage.py collectstatic --noinput
+
 # Compose maps host:8000 → container:8000 with PORT unset (${PORT:-8000}). Render sets PORT (often 10000).
 EXPOSE 8000
 ENTRYPOINT ["/entrypoint.sh"]
