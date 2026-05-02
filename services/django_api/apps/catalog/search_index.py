@@ -47,14 +47,10 @@ def rebuild_revision_index(revision: BookRevision) -> None:
     BookPage.objects.filter(revision=revision).delete()
     BookContentIndex.objects.filter(revision=revision).delete()
 
-    chunks = _parse_manifest(revision)
-    if not chunks:
-        return
-
-    page_number = 1
+    # Prefer book JSON draft so publishing works without object storage (manifest may be unset).
     draft = revision.book.chapters_draft if isinstance(revision.book.chapters_draft, list) else []
-
     if draft:
+        page_number = 1
         for ordinal, chapter_draft in enumerate(draft):
             if not isinstance(chapter_draft, dict):
                 continue
@@ -96,6 +92,12 @@ def rebuild_revision_index(revision: BookRevision) -> None:
                 )
                 page_number = max(page_number + 1, page_num + 1)
         return
+
+    chunks = _parse_manifest(revision)
+    if not chunks:
+        return
+
+    page_number = 1
 
     # Most revisions in this project currently store one content object.
     content_html = ""

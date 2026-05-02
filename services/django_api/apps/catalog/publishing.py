@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 from typing import Any
@@ -14,7 +15,7 @@ from django.shortcuts import get_object_or_404
 
 from apps.catalog.models import Book, BookChapter, BookPage, BookRevision
 from apps.catalog.search_index import rebuild_revision_index
-from apps.catalog.storage_s3 import ensure_bucket, put_bytes
+from apps.catalog.storage_s3 import ensure_bucket, is_object_storage_configured, put_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -261,11 +262,15 @@ def should_refresh_html_blobs_after_db_sync(rev: BookRevision) -> bool:
     ck = (rev.content_object_key or "").lower()
     if ck.endswith(".enc"):
         return False
+    if not is_object_storage_configured():
+        return False
     return True
 
 
 def refresh_revision_html_blobs(rev: BookRevision, book: Book) -> None:
     """Upload manifest + HTML derived from ``book.chapters_draft`` for this revision."""
+    if not is_object_storage_configured():
+        return
     if not settings.AWS_STORAGE_BUCKET_NAME or not settings.AWS_S3_ENDPOINT_URL:
         raise RuntimeError("Object storage is not configured (bucket / endpoint).")
 
@@ -294,7 +299,12 @@ def refresh_revision_html_blobs(rev: BookRevision, book: Book) -> None:
 
 
 def create_quick_draft_revision(book: Book, user) -> BookRevision:
-    """Create a draft revision from ``book.chapters_draft`` and upload manifest + HTML to storage."""
+    """Create a draft revision from ``book.chapters_draft``; upload to storage when configured."""
+    manifest_body, html_body = draft_manifest_and_html(book)
+    manifest_sha = hashlib.sha256(manifest_body).hexdigest()
+    content_sha = hashlib.sha256(html_body).hexdigest()
+    total_bytes = len(manifest_body) + len(html_body)
+
     with transaction.atomic():
         last = book.revisions.aggregate(m=Max("revision_number"))["m"] or 0
         rev = BookRevision.objects.create(
@@ -304,21 +314,21 @@ def create_quick_draft_revision(book: Book, user) -> BookRevision:
             content_format="html_chunks",
             created_by=user,
         )
-        prefix = f"admin/quick_draft/{book.id}/{rev.id}"
-        manifest_key = f"{prefix}/manifest.json"
-        content_key = f"{prefix}/content.html"
-
-        manifest_body, html_body = draft_manifest_and_html(book)
-
-        ensure_bucket()
-        manifest_sha = put_bytes(manifest_key, manifest_body, "application/json")
-        content_sha = put_bytes(content_key, html_body, "text/html")
-
-        rev.manifest_object_key = manifest_key
-        rev.content_object_key = content_key
+        if is_object_storage_configured():
+            prefix = f"admin/quick_draft/{book.id}/{rev.id}"
+            manifest_key = f"{prefix}/manifest.json"
+            content_key = f"{prefix}/content.html"
+            ensure_bucket()
+            manifest_sha = put_bytes(manifest_key, manifest_body, "application/json")
+            content_sha = put_bytes(content_key, html_body, "text/html")
+            rev.manifest_object_key = manifest_key
+            rev.content_object_key = content_key
+        else:
+            rev.manifest_object_key = ""
+            rev.content_object_key = ""
         rev.manifest_sha256 = manifest_sha
         rev.content_sha256 = content_sha
-        rev.total_bytes = len(manifest_body) + len(html_body)
+        rev.total_bytes = total_bytes
         rev.save(
             update_fields=[
                 "manifest_object_key",
@@ -346,6 +356,10 @@ class PublishBookOutcome:
         self.book = book
         self.error = error
         self.status_code = status_code
+
+
+def _revision_blocks_publish_without_blob_refresh(rev: BookRevision) -> bool:
+    return (rev.content_object_key or "").lower().endswith(".enc")
 
 
 def publish_book(book: Book, user, revision_id: UUID | None = None) -> PublishBookOutcome:
@@ -398,7 +412,22 @@ def publish_book(book: Book, user, revision_id: UUID | None = None) -> PublishBo
             )
 
     if synced_from_db:
-        if not should_refresh_html_blobs_after_db_sync(rev):
+        if should_refresh_html_blobs_after_db_sync(rev):
+            try:
+                refresh_revision_html_blobs(rev, book)
+            except Exception as exc:
+                logger.exception("refresh revision blobs failed: %s", exc)
+                return PublishBookOutcome(
+                    ok=False,
+                    error={
+                        "error": {
+                            "code": "STORAGE_REFRESH_FAILED",
+                            "message": f"Could not update revision files in storage: {exc}",
+                        }
+                    },
+                    status_code=500,
+                )
+        elif _revision_blocks_publish_without_blob_refresh(rev):
             return PublishBookOutcome(
                 ok=False,
                 error={
@@ -412,27 +441,8 @@ def publish_book(book: Book, user, revision_id: UUID | None = None) -> PublishBo
                 },
                 status_code=400,
             )
-        try:
-            refresh_revision_html_blobs(rev, book)
-        except Exception as exc:
-            logger.exception("refresh revision blobs failed: %s", exc)
-            return PublishBookOutcome(
-                ok=False,
-                error={
-                    "error": {
-                        "code": "STORAGE_REFRESH_FAILED",
-                        "message": f"Could not update revision files in storage: {exc}",
-                    }
-                },
-                status_code=500,
-            )
 
-    if not rev.manifest_object_key:
-        return PublishBookOutcome(
-            ok=False,
-            error={"error": {"code": "INVALID_REVISION", "message": "Revision has no manifest key."}},
-            status_code=400,
-        )
+    # Manifest/object keys may be empty when object storage is disabled; index is built from ``chapters_draft``.
 
     with transaction.atomic():
         BookRevision.objects.filter(book=book, status=BookRevision.Status.PUBLISHED).update(

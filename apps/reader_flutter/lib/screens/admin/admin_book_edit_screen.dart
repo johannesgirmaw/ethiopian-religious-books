@@ -15,6 +15,9 @@ import '../../providers/api_client.dart';
 import '../../utils/api_error_message.dart';
 import '../../utils/rich_text_codec.dart' show documentFromStoredSummary, plainTextFromStoredSummary;
 
+/// Set true when cover presign + object storage are enabled for publishers.
+const bool kAdminCoverUploadEnabled = false;
+
 /// Create (`bookId == null`) or edit existing metadata (`bookId` set).
 class AdminBookEditScreen extends ConsumerStatefulWidget {
   const AdminBookEditScreen({super.key, this.bookId, this.initialBook});
@@ -490,7 +493,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
           },
         );
         final newId = res.data?['id'] as String?;
-        if (newId != null) {
+        if (newId != null && kAdminCoverUploadEnabled) {
           await _uploadCoverForBook(dio, newId);
         }
       } else {
@@ -508,7 +511,9 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
             'catalog_visibility': _visibility,
           },
         );
-        await _uploadCoverForBook(dio, bookId);
+        if (kAdminCoverUploadEnabled) {
+          await _uploadCoverForBook(dio, bookId);
+        }
       }
       ref.invalidate(adminBooksProvider);
       if (!mounted) return;
@@ -607,72 +612,75 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                   onChanged: (_) => _markDirty(),
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  l10n.thumbnailCover,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        width: 96,
-                        height: 128,
-                        color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                        child: _pendingCoverBytes != null
-                            ? Image.memory(
-                                _pendingCoverBytes!,
-                                fit: BoxFit.cover,
-                              )
-                            : (!_clearCoverOnSave &&
-                                    _serverCoverGetUrl != null &&
-                                    _serverCoverGetUrl!.isNotEmpty)
-                                ? Image.network(
-                                    _serverCoverGetUrl!,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => const Center(
-                                      child: Icon(Icons.broken_image_outlined),
+                if (kAdminCoverUploadEnabled) ...[
+                  Text(
+                    l10n.thumbnailCover,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          width: 96,
+                          height: 128,
+                          color:
+                              Theme.of(context).colorScheme.surfaceContainerHigh,
+                          child: _pendingCoverBytes != null
+                              ? Image.memory(
+                                  _pendingCoverBytes!,
+                                  fit: BoxFit.cover,
+                                )
+                              : (!_clearCoverOnSave &&
+                                      _serverCoverGetUrl != null &&
+                                      _serverCoverGetUrl!.isNotEmpty)
+                                  ? Image.network(
+                                      _serverCoverGetUrl!,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => const Center(
+                                        child: Icon(Icons.broken_image_outlined),
+                                      ),
+                                    )
+                                  : const Center(
+                                      child: Icon(Icons.image_outlined, size: 36),
                                     ),
-                                  )
-                                : const Center(
-                                    child: Icon(Icons.image_outlined, size: 36),
-                                  ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          OutlinedButton.icon(
-                            onPressed: _pickCoverImage,
-                            icon: const Icon(Icons.photo_library_outlined),
-                            label: Text(l10n.chooseImage),
-                          ),
-                          const SizedBox(height: 8),
-                          TextButton(
-                            onPressed: (_pendingCoverBytes != null ||
-                                    (!_clearCoverOnSave &&
-                                        (_serverCoverGetUrl != null &&
-                                            _serverCoverGetUrl!.isNotEmpty)))
-                                ? _clearCover
-                                : null,
-                            child: Text(l10n.removeCover),
-                          ),
-                          Text(
-                            l10n.coverFormatHelp,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ],
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: _pickCoverImage,
+                              icon: const Icon(Icons.photo_library_outlined),
+                              label: Text(l10n.chooseImage),
+                            ),
+                            const SizedBox(height: 8),
+                            TextButton(
+                              onPressed: (_pendingCoverBytes != null ||
+                                      (!_clearCoverOnSave &&
+                                          (_serverCoverGetUrl != null &&
+                                              _serverCoverGetUrl!.isNotEmpty)))
+                                  ? _clearCover
+                                  : null,
+                              child: Text(l10n.removeCover),
+                            ),
+                            Text(
+                              l10n.coverFormatHelp,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 TextField(
                   controller: _author,
                   decoration: InputDecoration(labelText: l10n.authorCompilerLabel),

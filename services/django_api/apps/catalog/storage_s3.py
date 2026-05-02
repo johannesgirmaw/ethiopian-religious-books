@@ -16,6 +16,14 @@ from django.http import HttpRequest
 logger = logging.getLogger(__name__)
 
 
+def is_object_storage_configured() -> bool:
+    """True when server-side uploads (put_object) are expected to work."""
+    return bool(
+        (getattr(settings, "AWS_STORAGE_BUCKET_NAME", None) or "").strip()
+        and (getattr(settings, "AWS_S3_ENDPOINT_URL", None) or "").strip()
+    )
+
+
 def _client_config() -> Config:
     return Config(
         signature_version="s3v4",
@@ -47,11 +55,8 @@ def get_s3_client(
 
 
 def ensure_bucket() -> None:
-    if not settings.AWS_STORAGE_BUCKET_NAME:
-        logger.warning("AWS_STORAGE_BUCKET_NAME not set; skip ensure_bucket")
-        return
-    if not settings.AWS_S3_ENDPOINT_URL:
-        logger.warning("AWS_S3_ENDPOINT_URL not set; skip ensure_bucket")
+    if not is_object_storage_configured():
+        logger.warning("Object storage not fully configured; skip ensure_bucket")
         return
     client = get_s3_client(for_presign=False)
     name = settings.AWS_STORAGE_BUCKET_NAME
