@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 
 from apps.catalog.etag import catalog_response_extras, compute_catalog_etag
 from apps.catalog.models import Book, BookChapter, BookContentIndex, BookPage, BookRevision
+from apps.catalog.search_index import ensure_revision_index_from_book_draft
 from apps.catalog.search_normalization import normalize_search_text
 from apps.catalog.serializers import BookListSerializer
 from apps.catalog.storage_s3 import dev_presign_endpoint_from_request, head_object, presign_get
@@ -326,6 +327,8 @@ class BookContentView(APIView):
         rev = book.published_revision
         if rev is None or not settings.FEATURE_BOOK_CONTENT_INDEX:
             return Response({"chapters": [], "total_pages": 0})
+
+        ensure_revision_index_from_book_draft(book, rev)
 
         chapters = BookChapter.objects.filter(revision=rev).order_by("ordinal")
         pages = (

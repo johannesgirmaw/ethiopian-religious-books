@@ -443,6 +443,21 @@ def publish_book(book: Book, user, revision_id: UUID | None = None) -> PublishBo
             )
 
     # Manifest/object keys may be empty when object storage is disabled; index is built from ``chapters_draft``.
+    # Rebuild before flipping published so we never expose a published revision with an empty index.
+    try:
+        rebuild_revision_index(rev)
+    except Exception as exc:
+        logger.exception("revision index rebuild failed for %s", rev.id)
+        return PublishBookOutcome(
+            ok=False,
+            error={
+                "error": {
+                    "code": "INDEX_REBUILD_FAILED",
+                    "message": f"Could not build reader content index: {exc}",
+                }
+            },
+            status_code=500,
+        )
 
     with transaction.atomic():
         BookRevision.objects.filter(book=book, status=BookRevision.Status.PUBLISHED).update(
@@ -453,11 +468,6 @@ def publish_book(book: Book, user, revision_id: UUID | None = None) -> PublishBo
         book.published_revision = rev
         book.catalog_visibility = Book.Visibility.PUBLISHED
         book.save()
-
-    try:
-        rebuild_revision_index(rev)
-    except Exception as exc:
-        logger.warning("revision index rebuild failed for %s: %s", rev.id, exc)
 
     return PublishBookOutcome(ok=True, book=book)
 

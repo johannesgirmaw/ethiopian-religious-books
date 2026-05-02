@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 
-from apps.catalog.models import BookChapter, BookContentIndex, BookPage, BookRevision
+from apps.catalog.models import Book, BookChapter, BookContentIndex, BookPage, BookRevision
 from apps.catalog.search_normalization import normalize_search_text
 from apps.catalog.storage_s3 import get_object_bytes
+
+logger = logging.getLogger(__name__)
 
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
 _SPACE_RE = re.compile(r"\s+")
@@ -42,13 +45,52 @@ def _parse_manifest(revision: BookRevision) -> list[dict]:
     return []
 
 
+def _draft_has_indexable_pages(book: Book) -> bool:
+    """True when ``chapters_draft`` lists at least one chapter with one page dict."""
+    draft = book.chapters_draft if isinstance(book.chapters_draft, list) else []
+    chapter_count = 0
+    page_count = 0
+    for chapter in draft:
+        if not isinstance(chapter, dict):
+            continue
+        chapter_count += 1
+        pages = chapter.get("pages")
+        if not isinstance(pages, list):
+            continue
+        for page in pages:
+            if isinstance(page, dict):
+                page_count += 1
+    return chapter_count > 0 and page_count > 0
+
+
+def ensure_revision_index_from_book_draft(book: Book, revision: BookRevision) -> None:
+    """
+    If ``revision`` has no indexed pages but ``book.chapters_draft`` does, rebuild the index.
+
+    Repairs reader ``/content`` after a failed publish rebuild or historical drift.
+    """
+    if BookPage.objects.filter(revision=revision).exists():
+        return
+    if not _draft_has_indexable_pages(book):
+        return
+    logger.info(
+        "Rebuilding revision %s index from book %s chapters_draft (lazy content repair)",
+        revision.id,
+        book.id,
+    )
+    rebuild_revision_index(revision)
+
+
 def rebuild_revision_index(revision: BookRevision) -> None:
     BookChapter.objects.filter(revision=revision).delete()
     BookPage.objects.filter(revision=revision).delete()
     BookContentIndex.objects.filter(revision=revision).delete()
 
+    # Fresh row so we never read a stale cached ``revision.book`` after sync_book_chapters_draft_from_revision.
+    book = Book.objects.get(pk=revision.book_id)
+
     # Prefer book JSON draft so publishing works without object storage (manifest may be unset).
-    draft = revision.book.chapters_draft if isinstance(revision.book.chapters_draft, list) else []
+    draft = book.chapters_draft if isinstance(book.chapters_draft, list) else []
     if draft:
         page_number = 1
         for ordinal, chapter_draft in enumerate(draft):
@@ -82,7 +124,7 @@ def rebuild_revision_index(revision: BookRevision) -> None:
                     text_plain=page_text,
                 )
                 BookContentIndex.objects.create(
-                    book=revision.book,
+                    book=book,
                     revision=revision,
                     chunk_key=chapter_key,
                     chapter_key=chapter_key,
@@ -130,7 +172,7 @@ def rebuild_revision_index(revision: BookRevision) -> None:
                 text_plain=page_text,
             )
             BookContentIndex.objects.create(
-                book=revision.book,
+                book=book,
                 revision=revision,
                 chunk_key=chapter_key,
                 chapter_key=chapter_key,

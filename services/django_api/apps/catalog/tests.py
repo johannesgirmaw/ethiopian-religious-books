@@ -3,7 +3,8 @@ from django.test import RequestFactory, TestCase, override_settings
 from rest_framework.test import APIClient
 
 from apps.catalog.models import Book, BookChapter, BookPage, BookRevision
-from apps.catalog.publishing import revision_chapters_draft_from_db
+from apps.catalog.publishing import revision_chapters_draft_from_db, sync_book_chapters_draft_from_revision
+from apps.catalog.search_index import rebuild_revision_index
 from apps.catalog.search_normalization import normalize_search_text
 from apps.catalog.storage_s3 import dev_presign_endpoint_from_request
 
@@ -101,3 +102,66 @@ class RevisionDraftSyncTests(TestCase):
         self.assertEqual(len(draft), 1)
         self.assertTrue(str(draft[0]["chapter_key"]).startswith("misc-pages"))
         self.assertEqual(draft[0]["pages"][0]["body"], "a")
+
+
+class BookContentLazyIndexTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.user = user_model.objects.create_user(email="reader2@example.com", password="pw123456")
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
+    @override_settings(FEATURE_BOOK_CONTENT_INDEX=True)
+    def test_content_endpoint_rebuilds_empty_index_from_chapters_draft(self):
+        book = Book.objects.create(
+            title="Indexed Book",
+            chapters_draft=[
+                {
+                    "chapter_key": "ch1",
+                    "title": "Chapter One",
+                    "pages": [{"page_number": 1, "title": "Page 1", "body": "Hello reader"}],
+                }
+            ],
+            catalog_visibility=Book.Visibility.PUBLISHED,
+        )
+        rev = BookRevision.objects.create(
+            book=book,
+            revision_number=1,
+            status=BookRevision.Status.PUBLISHED,
+        )
+        book.published_revision = rev
+        book.save(update_fields=["published_revision"])
+
+        response = self.client.get(f"/v1/books/{book.id}/content")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["chapters"]), 1)
+        self.assertEqual(response.data["total_pages"], 1)
+        self.assertEqual(response.data["chapters"][0]["pages"][0]["body"], "Hello reader")
+
+    def test_rebuild_reads_fresh_chapters_draft_from_db(self):
+        """Avoid stale revision.book cache after syncing draft from revision rows."""
+        book = Book.objects.create(title="Sync Book", chapters_draft=[])
+        rev = BookRevision.objects.create(book=book, revision_number=1, status=BookRevision.Status.DRAFT)
+        ch = BookChapter.objects.create(revision=rev, chapter_key="k", title="T", ordinal=1)
+        BookPage.objects.create(
+            revision=rev,
+            chapter=ch,
+            page_number=1,
+            page_title="P",
+            text_plain="synced body",
+        )
+        rebuild_revision_index(rev)
+        book.refresh_from_db()
+        self.assertEqual(len(book.chapters_draft), 0)
+        # Simulate publish_book: sync copies rows onto JSON (fresh DB state).
+        self.assertTrue(sync_book_chapters_draft_from_revision(book, rev))
+        book.refresh_from_db()
+        self.assertTrue(book.chapters_draft)
+        BookChapter.objects.filter(revision=rev).delete()
+        BookPage.objects.filter(revision=rev).delete()
+        rebuild_revision_index(rev)
+        self.assertEqual(BookPage.objects.filter(revision=rev).count(), 1)
+        self.assertEqual(
+            BookPage.objects.get(revision=rev).text_plain,
+            "synced body",
+        )
