@@ -124,10 +124,17 @@ final bookContentProvider = FutureProvider.autoDispose
       try {
         final res = await dio.get<Map<String, dynamic>>('books/$bookId/content');
         final payload = res.data ?? const <String, dynamic>{};
-        if ((payload['chapters'] as List<dynamic>? ?? const []).isNotEmpty) {
+        final remote = BookContentTree.fromJson(payload);
+        if (remote.chapters.isNotEmpty) {
           await BookContentCacheStorage.writeBookContent(bookId, payload);
+          return remote;
         }
-        return BookContentTree.fromJson(payload);
+        // API can return empty when content index is off or revision is missing;
+        // prefer a non-empty local cache so chapters/pages still render.
+        if (cached != null && cached.chapters.isNotEmpty) {
+          return cached;
+        }
+        return remote;
       } catch (_) {
         if (cached != null) return cached;
         rethrow;

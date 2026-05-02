@@ -1046,4 +1046,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pageEditorPlaceholder => 'Write this page…';
+
+  @override
+  String get pageEditorFormattingToggle => 'Formatting';
+
+  @override
+  String get pageEditorFormattingHide => 'Hide tools';
 }

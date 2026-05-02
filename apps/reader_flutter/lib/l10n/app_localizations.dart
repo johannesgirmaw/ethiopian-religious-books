@@ -1963,6 +1963,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Write this page…'**
   String get pageEditorPlaceholder;
+
+  /// No description provided for @pageEditorFormattingToggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Formatting'**
+  String get pageEditorFormattingToggle;
+
+  /// No description provided for @pageEditorFormattingHide.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide tools'**
+  String get pageEditorFormattingHide;
 }
 
 class _AppLocalizationsDelegate

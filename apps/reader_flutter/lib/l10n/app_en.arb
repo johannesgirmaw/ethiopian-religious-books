@@ -524,5 +524,7 @@
   "pageNumberFieldLabel": "Page number",
   "pageTitleFieldLabel": "Page title",
   "pageContentHeading": "Page content",
-  "pageEditorPlaceholder": "Write this page…"
+  "pageEditorPlaceholder": "Write this page…",
+  "pageEditorFormattingToggle": "Formatting",
+  "pageEditorFormattingHide": "Hide tools"
 }

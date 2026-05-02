@@ -1024,4 +1024,10 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get pageEditorPlaceholder => 'ይህን ገጽ ይጻፉ…';
+
+  @override
+  String get pageEditorFormattingToggle => 'ቅርጸት';
+
+  @override
+  String get pageEditorFormattingHide => 'መሳሪያ ደብቅ';
 }
