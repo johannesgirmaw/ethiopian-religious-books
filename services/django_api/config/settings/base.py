@@ -3,6 +3,10 @@ import datetime
 import environ
 from pathlib import Path
 
+from django.templatetags.static import static
+from django.urls import reverse_lazy
+from django.utils.translation import gettext_lazy as _
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 env = environ.Env(
@@ -14,6 +18,9 @@ DEBUG = env.bool("DEBUG", default=False)
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1", "api"])
 
 INSTALLED_APPS = [
+    "unfold",
+    "unfold.contrib.filters",
+    "unfold.contrib.forms",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -66,11 +73,12 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
 
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -155,3 +163,157 @@ FEATURE_BOOK_CONTENT_INDEX = env.bool("FEATURE_BOOK_CONTENT_INDEX", default=True
 FEATURE_CATALOG_TOLERANT_SEARCH = env.bool("FEATURE_CATALOG_TOLERANT_SEARCH", default=True)
 FEATURE_STUDY_TOOLS = env.bool("FEATURE_STUDY_TOOLS", default=True)
 FEATURE_DAILY_PLAN_REMINDERS = env.bool("FEATURE_DAILY_PLAN_REMINDERS", default=True)
+
+
+def _admin_environment(request):
+    if DEBUG:
+        return ["Debug", "warning"]
+    return ["Production", "success"]
+
+
+UNFOLD = {
+    "SITE_TITLE": _("Ethiopian Religious Books"),
+    "SITE_HEADER": _("Religious Books"),
+    "SITE_SUBHEADER": _("Catalog, readers, and study tools"),
+    "SITE_SYMBOL": "menu_book",
+    "SITE_FAVICONS": [
+        {
+            "rel": "icon",
+            "sizes": "32x32",
+            "type": "image/svg+xml",
+            "href": lambda _request: static("admin/img/icon-book.svg"),
+        },
+    ],
+    "SHOW_LANGUAGES": False,
+    "ENVIRONMENT": "config.settings.base._admin_environment",
+    "DASHBOARD_CALLBACK": "config.dashboard.dashboard_callback",
+    "LOGIN": {
+        "image": lambda _request: static("admin/img/login-bg.svg"),
+    },
+    "COLORS": {
+        "primary": {
+            "50": "oklch(97% .02 175)",
+            "100": "oklch(92% .05 175)",
+            "200": "oklch(85% .08 175)",
+            "300": "oklch(78% .11 175)",
+            "400": "oklch(68% .14 175)",
+            "500": "oklch(55% .14 175)",
+            "600": "oklch(48% .13 175)",
+            "700": "oklch(40% .11 175)",
+            "800": "oklch(32% .09 175)",
+            "900": "oklch(26% .07 175)",
+            "950": "oklch(18% .05 175)",
+        },
+    },
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": True,
+        "navigation": [
+            {
+                "title": _("Overview"),
+                "separator": True,
+                "items": [
+                    {
+                        "title": _("Dashboard"),
+                        "icon": "dashboard",
+                        "link": reverse_lazy("admin:index"),
+                    },
+                    {
+                        "title": _("OpenAPI docs"),
+                        "icon": "description",
+                        "link": reverse_lazy("swagger-ui"),
+                    },
+                ],
+            },
+            {
+                "title": _("People & access"),
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Users"),
+                        "icon": "person",
+                        "link": reverse_lazy("admin:accounts_user_changelist"),
+                    },
+                    {
+                        "title": _("Groups"),
+                        "icon": "group",
+                        "link": reverse_lazy("admin:auth_group_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Catalog & content"),
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Books"),
+                        "icon": "menu_book",
+                        "link": reverse_lazy("admin:catalog_book_changelist"),
+                    },
+                    {
+                        "title": _("Book revisions"),
+                        "icon": "history",
+                        "link": reverse_lazy("admin:catalog_bookrevision_changelist"),
+                    },
+                    {
+                        "title": _("Tags"),
+                        "icon": "label",
+                        "link": reverse_lazy("admin:catalog_tag_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Reader activity (study)"),
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Reader events"),
+                        "icon": "analytics",
+                        "link": reverse_lazy("admin:study_readerevent_changelist"),
+                    },
+                    {
+                        "title": _("Reading progress"),
+                        "icon": "percent",
+                        "link": reverse_lazy("admin:study_userreadingprogress_changelist"),
+                    },
+                    {
+                        "title": _("Bookmarks"),
+                        "icon": "bookmark",
+                        "link": reverse_lazy("admin:study_userbookmark_changelist"),
+                    },
+                    {
+                        "title": _("Highlights"),
+                        "icon": "format_paint",
+                        "link": reverse_lazy("admin:study_userhighlight_changelist"),
+                    },
+                    {
+                        "title": _("Notes"),
+                        "icon": "note",
+                        "link": reverse_lazy("admin:study_usernote_changelist"),
+                    },
+                    {
+                        "title": _("Daily plans"),
+                        "icon": "calendar_month",
+                        "link": reverse_lazy("admin:study_dailyreadingplan_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Compliance"),
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Legal documents"),
+                        "icon": "gavel",
+                        "link": reverse_lazy("admin:legal_legaldocument_changelist"),
+                    },
+                    {
+                        "title": _("Legal acceptances"),
+                        "icon": "verified_user",
+                        "link": reverse_lazy("admin:legal_legalacceptance_changelist"),
+                    },
+                ],
+            },
+        ],
+    },
+}

@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import hashlib
+import ipaddress
 import logging
 from typing import Any
+from urllib.parse import urlparse
 
 import boto3
 from botocore.client import Config
 from django.conf import settings
+from django.http import HttpRequest
 
 logger = logging.getLogger(__name__)
 
@@ -20,12 +23,19 @@ def _client_config() -> Config:
     )
 
 
-def get_s3_client(*, for_presign: bool = False) -> Any:
+def get_s3_client(
+    *,
+    for_presign: bool = False,
+    presign_endpoint_url: str | None = None,
+) -> Any:
     """Internal API calls use AWS_S3_ENDPOINT_URL; presigned URLs use PRESIGN endpoint when set."""
     endpoint = settings.AWS_S3_ENDPOINT_URL or None
     if for_presign:
-        pe = settings.AWS_S3_PRESIGN_ENDPOINT_URL or settings.AWS_S3_ENDPOINT_URL
-        endpoint = pe or None
+        if presign_endpoint_url:
+            endpoint = presign_endpoint_url
+        else:
+            pe = settings.AWS_S3_PRESIGN_ENDPOINT_URL or settings.AWS_S3_ENDPOINT_URL
+            endpoint = pe or None
     return boto3.client(
         "s3",
         endpoint_url=endpoint,
@@ -52,8 +62,44 @@ def ensure_bucket() -> None:
     logger.info("Created bucket %s", name)
 
 
-def presign_get(object_key: str, expires_in: int = 900) -> str:
-    client = get_s3_client(for_presign=True)
+def dev_presign_endpoint_from_request(request: HttpRequest) -> str | None:
+    """
+    DEBUG-only: mobile clients send X-Dev-S3-Origin so presigned MinIO URLs use a host
+    the device can reach (same host as API_BASE_URL, MinIO host port, e.g. :19000).
+    Ignored when DEBUG is False.
+    """
+    if not settings.DEBUG:
+        return None
+    raw = (request.META.get("HTTP_X_DEV_S3_ORIGIN") or "").strip()
+    if not raw:
+        return None
+    parsed = urlparse(raw)
+    if parsed.scheme not in ("http", "https"):
+        return None
+    host = (parsed.hostname or "").lower()
+    if not host:
+        return None
+    port = parsed.port
+    if port is None:
+        return None
+    if host == "localhost":
+        host = "127.0.0.1"
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return None
+    if not (ip.is_loopback or ip.is_private):
+        return None
+    return f"{parsed.scheme}://{host}:{port}"
+
+
+def presign_get(
+    object_key: str,
+    expires_in: int = 900,
+    *,
+    presign_endpoint_url: str | None = None,
+) -> str:
+    client = get_s3_client(for_presign=True, presign_endpoint_url=presign_endpoint_url)
     return client.generate_presigned_url(
         "get_object",
         Params={"Bucket": settings.AWS_STORAGE_BUCKET_NAME, "Key": object_key},
@@ -76,8 +122,10 @@ def presign_put(
     object_key: str,
     expires_in: int = 900,
     content_type: str | None = None,
+    *,
+    presign_endpoint_url: str | None = None,
 ) -> str:
-    client = get_s3_client(for_presign=True)
+    client = get_s3_client(for_presign=True, presign_endpoint_url=presign_endpoint_url)
     params: dict[str, Any] = {
         "Bucket": settings.AWS_STORAGE_BUCKET_NAME,
         "Key": object_key,

@@ -53,6 +53,7 @@ Only if building for **iOS**: `cd ios && pod install` (after `INSTALL_READER_IOS
 
 | Target | Typical `API_BASE_URL` |
 |--------|-------------------------|
+| **Release / profile** (no override) | `https://religious-books-api.onrender.com/v1/` (`AppConfig`) |
 | **Android emulator** (default in `lib/config/app_config.dart`) | `http://10.0.2.2:8000/v1` |
 | Physical Android device | `http://<your-LAN-IP>:8000/v1` |
 | iOS Simulator | `http://127.0.0.1:8000/v1` |

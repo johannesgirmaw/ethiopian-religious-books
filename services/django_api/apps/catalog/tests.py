@@ -1,9 +1,48 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import RequestFactory, TestCase, override_settings
 from rest_framework.test import APIClient
 
 from apps.catalog.models import Book
 from apps.catalog.search_normalization import normalize_search_text
+from apps.catalog.storage_s3 import dev_presign_endpoint_from_request
+
+
+class DevPresignOriginTests(TestCase):
+    def test_ignored_when_debug_false(self):
+        rf = RequestFactory()
+        req = rf.get("/", HTTP_X_DEV_S3_ORIGIN="http://192.168.1.5:19000")
+        with override_settings(DEBUG=False):
+            self.assertIsNone(dev_presign_endpoint_from_request(req))
+
+    @override_settings(DEBUG=True)
+    def test_accepts_private_lan(self):
+        rf = RequestFactory()
+        req = rf.get("/", HTTP_X_DEV_S3_ORIGIN="http://192.168.1.5:19000")
+        self.assertEqual(
+            dev_presign_endpoint_from_request(req),
+            "http://192.168.1.5:19000",
+        )
+
+    @override_settings(DEBUG=True)
+    def test_localhost_normalized(self):
+        rf = RequestFactory()
+        req = rf.get("/", HTTP_X_DEV_S3_ORIGIN="http://localhost:19000")
+        self.assertEqual(
+            dev_presign_endpoint_from_request(req),
+            "http://127.0.0.1:19000",
+        )
+
+    @override_settings(DEBUG=True)
+    def test_rejects_public_ip(self):
+        rf = RequestFactory()
+        req = rf.get("/", HTTP_X_DEV_S3_ORIGIN="http://8.8.8.8:19000")
+        self.assertIsNone(dev_presign_endpoint_from_request(req))
+
+    @override_settings(DEBUG=True)
+    def test_rejects_missing_port(self):
+        rf = RequestFactory()
+        req = rf.get("/", HTTP_X_DEV_S3_ORIGIN="http://192.168.1.5")
+        self.assertIsNone(dev_presign_endpoint_from_request(req))
 
 
 class SearchNormalizationTests(TestCase):

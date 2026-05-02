@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config/dev_object_storage_origin.dart';
 import '../models/book_models.dart';
 import '../models/download_payload.dart';
 import '../storage/book_content_cache_storage.dart';
@@ -153,7 +154,10 @@ final offlineBookCachedProvider =
 final downloadInfoProvider =
     FutureProvider.autoDispose.family<DownloadPayload, String>((ref, id) async {
   final dio = ref.watch(apiDioProvider);
-  final res = await dio.get<Map<String, dynamic>>('books/$id/download');
+  final res = await dio.get<Map<String, dynamic>>(
+    'books/$id/download',
+    options: Options(headers: devObjectStorageOriginHeaders()),
+  );
   return DownloadPayload.fromJson(res.data!);
 });
 

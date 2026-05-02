@@ -12,7 +12,7 @@ from apps.catalog.etag import catalog_response_extras, compute_catalog_etag
 from apps.catalog.models import Book, BookChapter, BookContentIndex, BookPage, BookRevision
 from apps.catalog.search_normalization import normalize_search_text
 from apps.catalog.serializers import BookListSerializer
-from apps.catalog.storage_s3 import head_object, presign_get
+from apps.catalog.storage_s3 import dev_presign_endpoint_from_request, head_object, presign_get
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +142,6 @@ class BookDownloadView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, book_id):
-        del request
         if not settings.FEATURE_BOOK_CONTENT_INDEX:
             return Response({"items": []})
         try:
@@ -182,8 +181,12 @@ class BookDownloadView(APIView):
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
+        presign_endpoint = dev_presign_endpoint_from_request(request)
         try:
-            manifest_url = presign_get(rev.manifest_object_key)
+            manifest_url = presign_get(
+                rev.manifest_object_key,
+                presign_endpoint_url=presign_endpoint,
+            )
         except Exception as exc:
             logger.exception("presign manifest failed: %s", exc)
             return Response(
@@ -194,7 +197,10 @@ class BookDownloadView(APIView):
         package_parts: list[dict] = []
         if rev.content_object_key:
             try:
-                content_url = presign_get(rev.content_object_key)
+                content_url = presign_get(
+                    rev.content_object_key,
+                    presign_endpoint_url=presign_endpoint,
+                )
                 size_bytes = 0
                 try:
                     size_bytes = int(head_object(rev.content_object_key)["ContentLength"])

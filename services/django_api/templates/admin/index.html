@@ -1,0 +1,133 @@
+{% extends 'admin/base.html' %}
+
+{% load i18n %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+    {% include "unfold/helpers/site_branding.html" %}
+{% endblock %}
+
+{% block content %}
+    {% if dashboard %}
+        <div class="mb-8 flex flex-col gap-6">
+            <div>
+                <h1 class="text-font-important-light text-xl font-semibold dark:text-font-important-dark">
+                    {% trans "Operations overview" %}
+                </h1>
+                <p class="mt-1 text-sm text-font-subtle-light dark:text-font-subtle-dark">
+                    {% trans "Live counts and reader telemetry from the same data the mobile apps use." %}
+                </p>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div class="rounded-default border border-base-200 bg-white p-4 shadow-xs dark:border-base-800 dark:bg-base-900">
+                    <p class="text-xs font-medium uppercase tracking-wide text-font-subtle-light dark:text-font-subtle-dark">{% trans "Users" %}</p>
+                    <p class="mt-2 text-2xl font-semibold text-font-important-light dark:text-font-important-dark">{{ dashboard.counts.users }}</p>
+                    <p class="mt-1 text-xs text-font-subtle-light dark:text-font-subtle-dark">
+                        {% blocktrans with n=dashboard.counts.active_users %}{{ n }} active{% endblocktrans %}
+                    </p>
+                </div>
+                <div class="rounded-default border border-base-200 bg-white p-4 shadow-xs dark:border-base-800 dark:bg-base-900">
+                    <p class="text-xs font-medium uppercase tracking-wide text-font-subtle-light dark:text-font-subtle-dark">{% trans "Books" %}</p>
+                    <p class="mt-2 text-2xl font-semibold text-font-important-light dark:text-font-important-dark">{{ dashboard.counts.books }}</p>
+                    <p class="mt-1 text-xs text-font-subtle-light dark:text-font-subtle-dark">
+                        {% blocktrans with p=dashboard.counts.published_books h=dashboard.counts.hidden_books %}{{ p }} published · {{ h }} hidden{% endblocktrans %}
+                    </p>
+                </div>
+                <div class="rounded-default border border-base-200 bg-white p-4 shadow-xs dark:border-base-800 dark:bg-base-900">
+                    <p class="text-xs font-medium uppercase tracking-wide text-font-subtle-light dark:text-font-subtle-dark">{% trans "Reader events (7d)" %}</p>
+                    <p class="mt-2 text-2xl font-semibold text-primary-600 dark:text-primary-400">{{ dashboard.activity.reader_events_week }}</p>
+                    <p class="mt-1 text-xs text-font-subtle-light dark:text-font-subtle-dark">
+                        {% blocktrans with n=dashboard.activity.reader_events_day %}{{ n }} in the last 24h{% endblocktrans %}
+                    </p>
+                </div>
+                <div class="rounded-default border border-base-200 bg-white p-4 shadow-xs dark:border-base-800 dark:bg-base-900">
+                    <p class="text-xs font-medium uppercase tracking-wide text-font-subtle-light dark:text-font-subtle-dark">{% trans "Study items" %}</p>
+                    <p class="mt-2 text-lg font-semibold leading-snug text-font-important-light dark:text-font-important-dark">
+                        {% blocktrans with b=dashboard.counts.bookmarks h=dashboard.counts.highlights n=dashboard.counts.notes %}{{ b }} bookmarks · {{ h }} highlights · {{ n }} notes{% endblocktrans %}
+                    </p>
+                    <p class="mt-1 text-xs text-font-subtle-light dark:text-font-subtle-dark">
+                        {% blocktrans with d=dashboard.counts.draft_revisions %}{{ d }} draft revisions{% endblocktrans %}
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid gap-6 lg:grid-cols-2">
+                <div class="rounded-default border border-base-200 bg-white p-5 shadow-xs dark:border-base-800 dark:bg-base-900">
+                    <h2 class="text-sm font-semibold text-font-important-light dark:text-font-important-dark">{% trans "Events by type (7 days)" %}</h2>
+                    <ul class="mt-4 space-y-2">
+                        {% for row in dashboard.charts.events_by_name %}
+                            <li class="flex items-center justify-between gap-3 text-sm">
+                                <span class="truncate font-mono text-font-default-light dark:text-font-default-dark">{{ row.event_name }}</span>
+                                <span class="shrink-0 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-800 dark:bg-primary-950 dark:text-primary-200">{{ row.total }}</span>
+                            </li>
+                        {% empty %}
+                            <li class="text-sm text-font-subtle-light dark:text-font-subtle-dark">{% trans "No reader events in the last week." %}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="rounded-default border border-base-200 bg-white p-5 shadow-xs dark:border-base-800 dark:bg-base-900">
+                    <h2 class="text-sm font-semibold text-font-important-light dark:text-font-important-dark">{% trans "Events per day (7 days)" %}</h2>
+                    <div class="mt-4 flex h-36 items-end gap-1">
+                        {% for row in dashboard.charts.events_by_day %}
+                            <div class="flex min-w-0 flex-1 flex-col items-center justify-end gap-1">
+                                <div class="w-full max-w-[2rem] rounded-t bg-primary-500 dark:bg-primary-600" style="height: {{ row.bar_height }}px; max-height: 120px;"></div>
+                                <span class="max-w-full truncate text-center text-[10px] text-font-subtle-light dark:text-font-subtle-dark">{{ row.day|date:"M j" }}</span>
+                            </div>
+                        {% empty %}
+                            <p class="text-sm text-font-subtle-light dark:text-font-subtle-dark">{% trans "No activity to chart yet." %}</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-default border border-base-200 bg-white p-5 shadow-xs dark:border-base-800 dark:bg-base-900">
+                <div class="flex flex-wrap items-end justify-between gap-2">
+                    <h2 class="text-sm font-semibold text-font-important-light dark:text-font-important-dark">{% trans "Latest reader events" %}</h2>
+                    <p class="text-xs text-font-subtle-light dark:text-font-subtle-dark">
+                        {% blocktrans with s=dashboard.activity.signups_week %}{{ s }} new accounts (7d){% endblocktrans %}
+                    </p>
+                </div>
+                <div class="mt-4 overflow-x-auto">
+                    <table class="min-w-full text-left text-sm">
+                        <thead>
+                            <tr class="border-b border-base-200 text-xs uppercase tracking-wide text-font-subtle-light dark:border-base-800 dark:text-font-subtle-dark">
+                                <th class="py-2 pr-4 font-medium">{% trans "When" %}</th>
+                                <th class="py-2 pr-4 font-medium">{% trans "User" %}</th>
+                                <th class="py-2 pr-4 font-medium">{% trans "Book" %}</th>
+                                <th class="py-2 pr-4 font-medium">{% trans "Event" %}</th>
+                                <th class="py-2 font-medium">{% trans "Location" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-base-200 dark:divide-base-800">
+                            {% for ev in dashboard.recent_events %}
+                                <tr class="text-font-default-light dark:text-font-default-dark">
+                                    <td class="py-2 pr-4 whitespace-nowrap text-xs text-font-subtle-light dark:text-font-subtle-dark">{{ ev.created_at|date:"Y-m-d H:i" }}</td>
+                                    <td class="py-2 pr-4 max-w-[10rem] truncate">{{ ev.user__email }}</td>
+                                    <td class="py-2 pr-4 max-w-[12rem] truncate">{{ ev.book__title }}</td>
+                                    <td class="py-2 pr-4 font-mono text-xs">{{ ev.event_name }}</td>
+                                    <td class="py-2 text-xs text-font-subtle-light dark:text-font-subtle-dark">
+                                        {% if ev.chapter_key or ev.page_number %}
+                                            {{ ev.chapter_key }} {% if ev.page_number %}· p.{{ ev.page_number }}{% endif %}
+                                        {% else %}—{% endif %}
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="5" class="py-6 text-center text-font-subtle-light dark:text-font-subtle-dark">{% trans "No events recorded yet." %}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="flex flex-col lg:flex-row lg:gap-8">
+        <div class="grow">
+            {% include "unfold/helpers/app_list_default.html" %}
+        </div>
+
+        {% include "unfold/helpers/history.html" %}
+    </div>
+{% endblock %}

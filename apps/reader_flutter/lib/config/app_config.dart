@@ -1,12 +1,15 @@
 import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, kIsWeb, TargetPlatform;
+    show defaultTargetPlatform, kDebugMode, kIsWeb, TargetPlatform;
 
 import 'resolve_api_host_stub.dart'
     if (dart.library.io) 'resolve_api_host_io.dart';
 
 /// API base including `/v1` prefix (must end with `/` for correct path joining in Dio).
 ///
-/// Defaults by platform (Docker maps API to host **8000** — see `infra/docker-compose.yml`):
+/// **Release / profile builds** (`!kDebugMode`): default is production on Render unless
+/// `--dart-define=API_BASE_URL=...` is set.
+///
+/// **Debug builds:** defaults by platform (Docker maps API to host **8000** — see `infra/docker-compose.yml`):
 /// - **Android (emulator):** `http://10.0.2.2:8000/v1/` — use `--dart-define=API_BASE_URL=...` on a **physical** Android device.
 /// - **iOS simulator:** `http://127.0.0.1:8000/v1/`
 /// - **macOS desktop:** after [ensureInitialized], prefers this machine’s primary **LAN IPv4**
@@ -21,6 +24,9 @@ import 'resolve_api_host_stub.dart'
 /// `flutter run --dart-define=API_BASE_URL=http://192.168.1.10:8000/v1`
 class AppConfig {
   AppConfig._();
+
+  static const String _productionApiBaseUrl =
+      'https://religious-books-api.onrender.com/v1/';
 
   /// Dart's [Uri.resolve] drops `/v1` if the base has no trailing `/`.
   static String _withTrailingSlash(String base) {
@@ -47,6 +53,9 @@ class AppConfig {
   static String get apiBaseUrl {
     if (_fromEnvironment.isNotEmpty) {
       return _withTrailingSlash(_fromEnvironment);
+    }
+    if (!kDebugMode) {
+      return _productionApiBaseUrl;
     }
     if (kIsWeb) {
       return 'http://localhost:8000/v1/';

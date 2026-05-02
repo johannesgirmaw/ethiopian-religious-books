@@ -165,6 +165,9 @@ echo "==> flutter run -d ${DEVICE_ID} (platform=${PLATFORM}, API_BASE_URL=${DEF_
 if [[ "${PLATFORM}" == "android" ]]; then
   echo "    Tip: Emulator → host API: 10.0.2.2:<API_PORT> (default 8000)."
   echo "    Tip: MinIO presign: AWS_S3_PRESIGN_ENDPOINT_URL=http://10.0.2.2:19000 in infra/.env"
+elif [[ "${PLATFORM}" == "ios" ]]; then
+  echo "    Tip: If \"Download\" fails with localhost:19000, Django DEBUG + debug app sends X-Dev-S3-Origin."
+  echo "    Tip: Release / production builds: set AWS_S3_PRESIGN_ENDPOINT_URL to a LAN URL in infra/.env."
 elif [[ "${PLATFORM}" == "macos" ]]; then
   echo "    Tip: macOS uses localhost for API and MinIO (defaults in compose usually work)."
 fi
