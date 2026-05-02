@@ -1,7 +1,9 @@
 from django.contrib import admin
+from django.contrib.admin.sites import NotRegistered
 from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.contrib.auth.models import Group
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from unfold.admin import ModelAdmin
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 
@@ -47,7 +49,11 @@ class GroupAdmin(BaseGroupAdmin, ModelAdmin):
     pass
 
 
-from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+for jwt_model in (OutstandingToken, BlacklistedToken):
+    try:
+        admin.site.unregister(jwt_model)
+    except NotRegistered:
+        pass
 
 
 @admin.register(OutstandingToken)
