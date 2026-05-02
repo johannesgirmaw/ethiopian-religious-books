@@ -48,7 +48,8 @@ fi
 
 echo ""
 echo "==> flutter doctor -v (summary)"
-flutter doctor -v | head -40
+# Avoid broken pipe from `head` closing early while flutter is still writing.
+flutter doctor -v | sed -n '1,40p'
 
 echo ""
 echo "Next — start API + seed (if not already):"

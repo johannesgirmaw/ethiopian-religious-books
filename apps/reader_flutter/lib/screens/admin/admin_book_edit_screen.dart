@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -701,14 +702,18 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                 ),
                 const SizedBox(height: 18),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      l10n.chaptersPagesSection,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                    Expanded(
+                      child: Text(
+                        l10n.chaptersPagesSection,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
                     ),
-                    const Spacer(),
                     if (!isNew)
                       TextButton.icon(
                         onPressed: _busy ? null : _validateDraftOnServer,
@@ -1032,135 +1037,216 @@ class _DraftPageEditorDialogState extends State<_DraftPageEditorDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    // Dialog uses IntrinsicWidth upstream; Column + Expanded needs a tight
-    // height or layout fails and only the modal barrier is visible.
-    final size = MediaQuery.sizeOf(context);
-    final viewInsets = MediaQuery.viewInsetsOf(context);
-    final maxH = size.height - viewInsets.vertical - 48;
-    final dialogWidth = (size.width - 32).clamp(280.0, 520.0);
-    final dialogHeight = maxH.clamp(320.0, 560.0);
+    final mq = MediaQuery.of(context);
+    final size = mq.size;
+    final viewInsets = mq.viewInsets;
+    // Portrait vs landscape: never invert min/max (e.g. .clamp(360.0, hOuter) throws when hOuter < 360).
+    const verticalBudgetLoss = 88.0;
+    final outerMaxH = math.max(size.height - verticalBudgetLoss, 120.0);
+    final horizontalGutter = mq.padding.horizontal + 32;
+    final maxDialogW =
+        math.min(560.0, math.max(280.0, size.width - horizontalGutter));
+    final dialogWidthPref =
+        math.min(maxDialogW, math.max(280.0, size.width - horizontalGutter));
+    final dialogHeightPref =
+        math.min(math.min(outerMaxH * 0.95, 680.0), outerMaxH);
 
     return Dialog(
+      clipBehavior: Clip.antiAlias,
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      child: SizedBox(
-        width: dialogWidth,
-        height: dialogHeight,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                widget.isNewPage ? l10n.addPageTooltip : l10n.editPageTitle,
-                style: Theme.of(context).textTheme.titleLarge,
+      constraints: BoxConstraints(
+        minWidth: 280,
+        maxWidth: maxDialogW,
+        minHeight: math.min(80.0, outerMaxH),
+        maxHeight: outerMaxH,
+      ),
+      child: LayoutBuilder(
+        builder: (dialogContext, outerConstraints) {
+          final parentW =
+              outerConstraints.maxWidth.isFinite &&
+                      outerConstraints.hasBoundedWidth
+                  ? outerConstraints.maxWidth.clamp(280.0, maxDialogW)
+                  : dialogWidthPref;
+          final parentH =
+              outerConstraints.maxHeight.isFinite &&
+                      outerConstraints.maxHeight > 0
+                  ? outerConstraints.maxHeight
+                  : outerMaxH;
+
+          final wBody = math.min(dialogWidthPref, parentW);
+          final hBody = math.min(dialogHeightPref, parentH);
+
+          const horizontalPad = 20.0;
+
+          return SizedBox(
+            width: wBody,
+            height: hBody,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                horizontalPad,
+                16,
+                horizontalPad,
+                math.max(12, viewInsets.bottom),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _pageNumber,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: l10n.pageNumberFieldLabel),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _title,
-                decoration: InputDecoration(labelText: l10n.pageTitleFieldLabel),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                l10n.pageContentHeading,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-              const SizedBox(height: 6),
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.outlineVariant,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      QuillSimpleToolbar(
-                        controller: _bodyQuill,
-                        config: const QuillSimpleToolbarConfig(
-                          multiRowsDisplay: true,
-                          embedButtons: [],
-                          showUndo: true,
-                          showRedo: true,
-                          showBoldButton: true,
-                          showItalicButton: true,
-                          showUnderLineButton: true,
-                          showStrikeThrough: true,
-                          showHeaderStyle: false,
-                          showListBullets: true,
-                          showListNumbers: true,
-                          showQuote: true,
-                          showLink: true,
-                          showCodeBlock: true,
-                          showAlignmentButtons: true,
-                          showSubscript: false,
-                          showSuperscript: false,
-                          showSearchButton: false,
-                          showFontFamily: false,
-                          showFontSize: false,
-                          showDirection: false,
-                          showInlineCode: true,
-                          showIndent: true,
-                        ),
-                      ),
-                      const Divider(height: 1),
-                      Expanded(
-                        child: QuillEditor.basic(
-                          controller: _bodyQuill,
-                          config: QuillEditorConfig(
-                            placeholder: l10n.pageEditorPlaceholder,
-                            expands: true,
-                            padding: const EdgeInsets.all(12),
-                            embedBuilders: const [],
-                            unknownEmbedBuilder: const _UnsupportedEmbedBuilder(),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text(l10n.cancel),
+                  Text(
+                    widget.isNewPage ? l10n.addPageTooltip : l10n.editPageTitle,
+                    style: Theme.of(dialogContext).textTheme.titleLarge,
                   ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: () {
-                      final pageNumber =
-                          int.tryParse(_pageNumber.text.trim()) ?? 1;
-                      final n = pageNumber < 1 ? 1 : pageNumber;
-                      final t = _title.text.trim();
-                      final body =
-                          jsonEncode(_bodyQuill.document.toDelta().toJson());
-                      Navigator.of(context).pop(
-                        AdminDraftPage(
-                          pageNumber: n,
-                          title: t.isEmpty ? l10n.pageTitleFallback(n) : t,
-                          body: body,
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _pageNumber,
+                    keyboardType: TextInputType.number,
+                    decoration:
+                        InputDecoration(labelText: l10n.pageNumberFieldLabel),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _title,
+                    decoration:
+                        InputDecoration(labelText: l10n.pageTitleFieldLabel),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    l10n.pageContentHeading,
+                    style:
+                        Theme.of(dialogContext).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                  ),
+                  const SizedBox(height: 6),
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (editorContext, editorConstraints) {
+                        final innerW =
+                            editorConstraints.maxWidth.isFinite &&
+                                    editorConstraints.hasBoundedWidth
+                                ? editorConstraints.maxWidth
+                                : wBody - 2 * horizontalPad;
+                        final innerWClamp = math.max(innerW, 200.0);
+                        return DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: Theme.of(editorContext)
+                                .colorScheme
+                                .surfaceContainerHigh,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Theme.of(editorContext)
+                                  .colorScheme
+                                  .outlineVariant,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              SizedBox(
+                                width: innerWClamp,
+                                child: QuillSimpleToolbar(
+                                  controller: _bodyQuill,
+                                  config: const QuillSimpleToolbarConfig(
+                                    // Wrap avoids Horizontal scroll + ∞-width quirks in dialogs.
+                                    multiRowsDisplay: true,
+                                    embedButtons: [],
+                                    showUndo: true,
+                                    showRedo: true,
+                                    showBoldButton: true,
+                                    showItalicButton: true,
+                                    showUnderLineButton: true,
+                                    showStrikeThrough: true,
+                                    showHeaderStyle: false,
+                                    showListBullets: true,
+                                    showListNumbers: true,
+                                    showQuote: true,
+                                    showLink: true,
+                                    showCodeBlock: true,
+                                    showAlignmentButtons: true,
+                                    showSubscript: false,
+                                    showSuperscript: false,
+                                    showSearchButton: false,
+                                    showFontFamily: false,
+                                    showFontSize: false,
+                                    showDirection: false,
+                                    showInlineCode: true,
+                                    showIndent: true,
+                                  ),
+                                ),
+                              ),
+                              const Divider(height: 1),
+                              Expanded(
+                                child: LayoutBuilder(
+                                  builder: (ctx, vc) {
+                                    final h =
+                                        vc.maxHeight.isFinite && vc.maxHeight > 0
+                                            ? vc.maxHeight
+                                            : 200.0;
+                                    return QuillEditor.basic(
+                                      controller: _bodyQuill,
+                                      config: QuillEditorConfig(
+                                        placeholder: l10n.pageEditorPlaceholder,
+                                        // expands:true uses BoxConstraints.expand() inside Quill's
+                                        // Container; enforcing infinite mins throws with our layout.
+                                        expands: false,
+                                        scrollable: true,
+                                        minHeight: h,
+                                        maxHeight: h,
+                                        padding:
+                                            const EdgeInsets.all(12),
+                                        embedBuilders: const [],
+                                        unknownEmbedBuilder:
+                                            const _UnsupportedEmbedBuilder(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text(l10n.cancel),
                         ),
-                      );
-                    },
-                    child: Text(l10n.save),
+                        const SizedBox(width: 8),
+                        FilledButton(
+                          onPressed: () {
+                            final pageNumber =
+                                int.tryParse(_pageNumber.text.trim()) ?? 1;
+                            final n = pageNumber < 1 ? 1 : pageNumber;
+                            final t = _title.text.trim();
+                            final body = jsonEncode(
+                              _bodyQuill.document.toDelta().toJson(),
+                            );
+                            Navigator.of(context).pop(
+                              AdminDraftPage(
+                                pageNumber: n,
+                                title: t.isEmpty
+                                    ? l10n.pageTitleFallback(n)
+                                    : t,
+                                body: body,
+                              ),
+                            );
+                          },
+                          child: Text(l10n.save),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
