@@ -1,7 +1,14 @@
-from django.contrib import admin
-from django.urls import reverse
+from uuid import UUID
+
+from django.contrib import admin, messages
+from django.db import models
+from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404
+from django.urls import path, reverse
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin, TabularInline
+from unfold.contrib.forms.widgets import WysiwygWidget
+from unfold.widgets import UnfoldAdminTextareaWidget
 
 from apps.catalog.models import (
     Book,
@@ -12,6 +19,7 @@ from apps.catalog.models import (
     BookTag,
     Tag,
 )
+from apps.catalog.publishing import publish_book, unpublish_book, validate_draft_warnings
 
 
 class BookRevisionInline(TabularInline):
@@ -39,6 +47,18 @@ class BookTagInline(TabularInline):
 
 @admin.register(Book)
 class BookAdmin(ModelAdmin):
+    change_form_after_template = "admin/catalog/book/publish_panel.html"
+    formfield_overrides = {
+        models.TextField: {"widget": WysiwygWidget()},
+        models.JSONField: {
+            "widget": UnfoldAdminTextareaWidget(
+                attrs={
+                    "rows": 22,
+                    "class": "font-mono text-xs min-h-[20rem] w-full max-w-full",
+                }
+            )
+        },
+    }
     list_display = (
         "title",
         "catalog_visibility",
@@ -65,7 +85,18 @@ class BookAdmin(ModelAdmin):
                 )
             },
         ),
-        ("Draft structure", {"fields": ("chapters_draft",), "classes": ("wide",)}),
+        (
+            "Draft structure",
+            {
+                "fields": ("chapters_draft",),
+                "classes": ("wide",),
+                "description": (
+                    "JSON array of chapters used to build the packaged book when you publish. "
+                    "Example: [{\"chapter_key\":\"intro\",\"title\":\"Introduction\","
+                    "\"pages\":[{\"page_number\":1,\"title\":\"Page 1\",\"body\":\"<p>HTML or plain text</p>\"}]}]"
+                ),
+            },
+        ),
         ("Object storage", {"fields": ("cover_object_key",)}),
         (
             "System",
@@ -83,6 +114,87 @@ class BookAdmin(ModelAdmin):
             return "—"
         url = reverse("admin:catalog_bookrevision_change", args=[rev.pk])
         return format_html('<a href="{}">#{} ({})</a>', url, rev.revision_number, rev.status)
+
+    def get_urls(self):
+        info = self.opts.app_label, self.opts.model_name
+        return [
+            path(
+                "<uuid:object_id>/publish/",
+                self.admin_site.admin_view(self.publish_from_admin),
+                name=f"{info[0]}_{info[1]}_publish",
+            ),
+            path(
+                "<uuid:object_id>/unpublish/",
+                self.admin_site.admin_view(self.unpublish_from_admin),
+                name=f"{info[0]}_{info[1]}_unpublish",
+            ),
+            *super().get_urls(),
+        ]
+
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        extra_context = extra_context or {}
+        if object_id:
+            book = Book.objects.filter(pk=object_id).first()
+            if book:
+                extra_context["draft_validation"] = validate_draft_warnings(
+                    book.chapters_draft if isinstance(book.chapters_draft, list) else []
+                )
+                extra_context["draft_revisions"] = list(
+                    BookRevision.objects.filter(book=book, status=BookRevision.Status.DRAFT).order_by(
+                        "-revision_number"
+                    )
+                )
+        return super().changeform_view(request, object_id, form_url, extra_context)
+
+    def publish_from_admin(self, request, object_id):
+        if not request.user.is_superuser:
+            self.message_user(
+                request,
+                "Only superusers can publish books.",
+                level=messages.ERROR,
+            )
+            return HttpResponseRedirect(reverse("admin:catalog_book_change", args=[object_id]))
+        if request.method != "POST":
+            return HttpResponseRedirect(reverse("admin:catalog_book_change", args=[object_id]))
+        book = get_object_or_404(Book, pk=object_id)
+        raw_rid = (request.POST.get("revision_id") or "").strip()
+        revision_id = None
+        if raw_rid:
+            try:
+                revision_id = UUID(raw_rid)
+            except ValueError:
+                revision_id = None
+        outcome = publish_book(book, request.user, revision_id)
+        if outcome.ok:
+            self.message_user(request, "Book published successfully.", level=messages.SUCCESS)
+        else:
+            msg = "Publish failed."
+            payload = outcome.error or {}
+            err = payload.get("error")
+            if isinstance(err, dict) and err.get("message"):
+                msg = str(err["message"])
+            val = payload.get("validation")
+            if isinstance(val, dict):
+                warns = val.get("warnings") or []
+                if warns:
+                    msg = f"{msg} ({warns[0]})"
+            self.message_user(request, msg, level=messages.ERROR)
+        return HttpResponseRedirect(reverse("admin:catalog_book_change", args=[object_id]))
+
+    def unpublish_from_admin(self, request, object_id):
+        if not request.user.is_superuser:
+            self.message_user(
+                request,
+                "Only superusers can unpublish books.",
+                level=messages.ERROR,
+            )
+            return HttpResponseRedirect(reverse("admin:catalog_book_change", args=[object_id]))
+        if request.method != "POST":
+            return HttpResponseRedirect(reverse("admin:catalog_book_change", args=[object_id]))
+        book = get_object_or_404(Book, pk=object_id)
+        unpublish_book(book)
+        self.message_user(request, "Book unpublished (hidden from catalog).", level=messages.SUCCESS)
+        return HttpResponseRedirect(reverse("admin:catalog_book_change", args=[object_id]))
 
 
 class BookChapterInline(TabularInline):
@@ -144,6 +256,9 @@ class BookTagAdmin(ModelAdmin):
 
 @admin.register(BookChapter)
 class BookChapterAdmin(ModelAdmin):
+    fieldsets = (
+        (None, {"fields": ("revision", "chapter_key", "title", "ordinal", "start_chunk", "end_chunk")}),
+    )
     list_display = ("revision", "ordinal", "chapter_key", "title")
     list_filter = ("revision__book",)
     search_fields = ("chapter_key", "title", "revision__book__title")
@@ -153,6 +268,29 @@ class BookChapterAdmin(ModelAdmin):
 
 @admin.register(BookPage)
 class BookPageAdmin(ModelAdmin):
+    formfield_overrides = {
+        models.TextField: {"widget": WysiwygWidget()},
+    }
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": ("revision", "chapter", "page_number", "page_title", "chunk_key"),
+            },
+        ),
+        (
+            "Page body",
+            {
+                "fields": ("text_plain",),
+                "classes": ("wide",),
+                "description": (
+                    "Rich text for this indexed page. When you publish, admin-built chapters/pages "
+                    "are copied back into “Draft structure” first; encrypted (.enc) revisions cannot "
+                    "be refreshed from the DB."
+                ),
+            },
+        ),
+    )
     list_display = ("revision", "page_number", "page_title", "text_preview", "chunk_key")
     list_filter = ("revision__book",)
     search_fields = ("page_title", "chunk_key", "text_plain", "revision__book__title")

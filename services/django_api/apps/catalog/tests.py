@@ -2,7 +2,8 @@ from django.contrib.auth import get_user_model
 from django.test import RequestFactory, TestCase, override_settings
 from rest_framework.test import APIClient
 
-from apps.catalog.models import Book
+from apps.catalog.models import Book, BookChapter, BookPage, BookRevision
+from apps.catalog.publishing import revision_chapters_draft_from_db
 from apps.catalog.search_normalization import normalize_search_text
 from apps.catalog.storage_s3 import dev_presign_endpoint_from_request
 
@@ -77,3 +78,26 @@ class CatalogSearchApiTests(TestCase):
         response = self.client.get("/v1/books", {"q": "liturgy"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data["items"]), 1)
+
+
+class RevisionDraftSyncTests(TestCase):
+    def test_builds_draft_from_chapters_and_pages(self):
+        book = Book.objects.create(title="Book", chapters_draft=[])
+        rev = BookRevision.objects.create(book=book, revision_number=1, status=BookRevision.Status.DRAFT)
+        ch = BookChapter.objects.create(revision=rev, chapter_key="intro", title="Intro", ordinal=1)
+        BookPage.objects.create(revision=rev, chapter=ch, page_number=2, page_title="Second", text_plain="<p>x</p>")
+        draft = revision_chapters_draft_from_db(rev)
+        self.assertEqual(len(draft), 1)
+        self.assertEqual(draft[0]["chapter_key"], "intro")
+        self.assertEqual(len(draft[0]["pages"]), 1)
+        self.assertEqual(draft[0]["pages"][0]["page_number"], 2)
+        self.assertEqual(draft[0]["pages"][0]["body"], "<p>x</p>")
+
+    def test_orphan_pages_become_synthetic_chapter(self):
+        book = Book.objects.create(title="Book", chapters_draft=[])
+        rev = BookRevision.objects.create(book=book, revision_number=1, status=BookRevision.Status.DRAFT)
+        BookPage.objects.create(revision=rev, chapter=None, page_number=1, page_title="Only", text_plain="a")
+        draft = revision_chapters_draft_from_db(rev)
+        self.assertEqual(len(draft), 1)
+        self.assertTrue(str(draft[0]["chapter_key"]).startswith("misc-pages"))
+        self.assertEqual(draft[0]["pages"][0]["body"], "a")

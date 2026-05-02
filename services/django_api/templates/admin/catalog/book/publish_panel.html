@@ -1,0 +1,95 @@
+{% load i18n %}
+
+{% if original %}
+<div class="mb-6 rounded-default border border-base-200 bg-white p-5 shadow-xs dark:border-base-800 dark:bg-base-900">
+    <h3 class="text-base font-semibold text-font-important-light dark:text-font-important-dark">
+        {% trans "Create & publish from the admin" %}
+    </h3>
+    <p class="mt-2 text-sm text-font-subtle-light dark:text-font-subtle-dark">
+        {% trans "Chapters and pages for the mobile app are defined in “Draft structure” below (JSON). When you publish, the API builds storage files and rebuilds the searchable chapter/page tables used by readers." %}
+    </p>
+
+    <ol class="mt-4 list-decimal space-y-2 pl-5 text-sm text-font-default-light dark:text-font-default-dark">
+        <li>{% trans "Fill title, summary (rich text), and tags as needed." %}</li>
+        <li>{% trans "Either edit “Draft structure” (JSON) or build chapters and pages in the admin on a draft revision — on publish, rows in the database replace the JSON and refresh packaged html_chunks files when safe." %}</li>
+        <li>{% trans "Save the book, then use Publish below (superuser only). Optional: pick a specific draft revision if you upload content via the API." %}</li>
+        <li>{% trans "After publishing, review chapters and pages under Catalog — they are rebuilt from your draft for search and navigation." %}</li>
+    </ol>
+
+    {% if draft_validation %}
+    <div class="mt-4 rounded-default border border-base-200 bg-base-50 px-3 py-2 text-sm dark:border-base-800 dark:bg-base-950">
+        <span class="font-medium text-font-important-light dark:text-font-important-dark">{% trans "Draft check" %}:</span>
+        {% with s=draft_validation.stats %}
+        <span class="text-font-default-light dark:text-font-default-dark">
+            {% blocktrans with ch=s.chapters pg=s.pages ep=s.empty_pages %}{{ ch }} chapters · {{ pg }} pages · {{ ep }} empty bodies{% endblocktrans %}
+        </span>
+        {% endwith %}
+        {% if draft_validation.warnings %}
+        <ul class="mt-2 list-disc space-y-1 pl-5 text-font-subtle-light dark:text-font-subtle-dark">
+            {% for w in draft_validation.warnings|slice:":8" %}
+            <li>{{ w }}</li>
+            {% endfor %}
+            {% if draft_validation.warnings|length > 8 %}
+            <li>… {% trans "more warnings (see OpenAPI validate-draft)." %}</li>
+            {% endif %}
+        </ul>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="mt-4 flex flex-wrap gap-3">
+        <a
+            class="inline-flex items-center gap-1 rounded-default border border-base-300 bg-white px-3 py-2 text-sm font-medium text-primary-700 hover:bg-base-50 dark:border-base-700 dark:bg-base-900 dark:text-primary-300 dark:hover:bg-base-800"
+            href="{% url 'admin:catalog_bookchapter_changelist' %}?revision__book__id__exact={{ original.pk }}"
+        >
+            {% trans "View chapters for this book’s revisions" %}
+        </a>
+        <a
+            class="inline-flex items-center gap-1 rounded-default border border-base-300 bg-white px-3 py-2 text-sm font-medium text-primary-700 hover:bg-base-50 dark:border-base-700 dark:bg-base-900 dark:text-primary-300 dark:hover:bg-base-800"
+            href="{% url 'admin:catalog_bookpage_changelist' %}?revision__book__id__exact={{ original.pk }}"
+        >
+            {% trans "View pages for this book’s revisions" %}
+        </a>
+        <a
+            class="inline-flex items-center gap-1 rounded-default border border-base-300 bg-white px-3 py-2 text-sm font-medium text-font-default-light hover:bg-base-50 dark:border-base-700 dark:bg-base-900 dark:text-font-default-dark dark:hover:bg-base-800"
+            href="{% url 'swagger-ui' %}"
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+            {% trans "OpenAPI (presign, manual revisions)" %}
+        </a>
+    </div>
+
+    {% if request.user.is_superuser %}
+    <div class="mt-6 border-t border-base-200 pt-4 dark:border-base-800">
+        <p class="text-sm font-medium text-font-important-light dark:text-font-important-dark">{% trans "Publishing" %}</p>
+        <div class="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end">
+            <form method="post" action="{% url 'admin:catalog_book_publish' original.pk %}" class="flex flex-col gap-2">
+                {% csrf_token %}
+                <label class="text-xs font-medium uppercase tracking-wide text-font-subtle-light dark:text-font-subtle-dark" for="id_publish_revision">{% trans "Draft revision (optional)" %}</label>
+                <select name="revision_id" id="id_publish_revision" class="max-w-md rounded-default border border-base-300 bg-white px-3 py-2 text-sm dark:border-base-700 dark:bg-base-900">
+                    <option value="">{% trans "Latest draft, or auto-build from JSON draft" %}</option>
+                    {% for rev in draft_revisions %}
+                    <option value="{{ rev.pk }}">{% trans "Revision" %} #{{ rev.revision_number }} ({% trans "draft" %})</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="inline-flex w-fit items-center rounded-default bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600">
+                    {% trans "Publish book" %}
+                </button>
+            </form>
+            <form method="post" action="{% url 'admin:catalog_book_unpublish' original.pk %}" onsubmit="return confirm('Hide this book from the catalog?');">
+                {% csrf_token %}
+                <button type="submit" class="rounded-default border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-800 dark:bg-base-900 dark:text-red-300 dark:hover:bg-base-800">
+                    {% trans "Unpublish (hide)" %}
+                </button>
+            </form>
+        </div>
+        <p class="mt-3 text-xs text-font-subtle-light dark:text-font-subtle-dark">
+            {% trans "Same rules as POST /v1/admin/books/<id>/publish — requires superuser." %}
+        </p>
+    </div>
+    {% else %}
+    <p class="mt-4 text-xs text-font-subtle-light dark:text-font-subtle-dark">{% trans "Only superusers can publish or unpublish from here." %}</p>
+    {% endif %}
+</div>
+{% endif %}

@@ -261,6 +261,16 @@ UNFOLD = {
                         "icon": "label",
                         "link": reverse_lazy("admin:catalog_tag_changelist"),
                     },
+                    {
+                        "title": _("Book chapters"),
+                        "icon": "format_list_numbered",
+                        "link": reverse_lazy("admin:catalog_bookchapter_changelist"),
+                    },
+                    {
+                        "title": _("Book pages"),
+                        "icon": "article",
+                        "link": reverse_lazy("admin:catalog_bookpage_changelist"),
+                    },
                 ],
             },
             {
