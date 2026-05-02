@@ -1185,6 +1185,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                           icon: Icon(Icons.arrow_back_rounded, color: text),
                         ),
                         Expanded(
+                          flex: 2,
                           child: Text(
                             book.title,
                             maxLines: 1,
@@ -1195,47 +1196,67 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                             ),
                           ),
                         ),
-                        IconButton(
-                          onPressed: () => _openTocSheet(book.title, sections, contentTree),
-                          icon: Icon(Icons.toc_rounded, color: text),
-                        ),
-                        IconButton(
-                          tooltip: l10n.backToChaptersTooltip,
-                          onPressed: _selectedChapterKey == null
-                              ? null
-                              : _returnToChapters,
-                          icon: Icon(Icons.view_list_rounded, color: text),
-                        ),
-                        IconButton(
-                          tooltip: l10n.filterChapterTooltip,
-                          onPressed: (contentTree == null || contentTree.chapters.isEmpty)
-                              ? null
-                              : () => _pickChapter(contentTree.chapters),
-                          icon: Icon(Icons.menu_book_outlined, color: text),
-                        ),
-                        IconButton(
-                          tooltip: l10n.filterPageTooltip,
-                          onPressed: sections.isEmpty ? null : _pickPage,
-                          icon: Icon(Icons.filter_1_rounded, color: text),
-                        ),
-                        IconButton(
-                          onPressed: _openFindSheet,
-                          icon: Icon(Icons.find_in_page_outlined, color: text),
-                        ),
-                        IconButton(
-                          onPressed: _openBookmarksSheet,
-                          icon: Icon(Icons.bookmarks_outlined, color: text),
-                        ),
-                        IconButton(
-                          tooltip: offlineCached
-                              ? l10n.removeOfflineCopy
-                              : l10n.saveChaptersOffline,
-                          onPressed: () => _toggleOfflineCache(offlineCached),
-                          icon: Icon(
-                            offlineCached
-                                ? Icons.cloud_done_outlined
-                                : Icons.cloud_download_outlined,
-                            color: text,
+                        Flexible(
+                          flex: 1,
+                          fit: FlexFit.loose,
+                          child: Align(
+                            alignment: AlignmentDirectional.centerEnd,
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    onPressed: () => _openTocSheet(
+                                      book.title,
+                                      sections,
+                                      contentTree,
+                                    ),
+                                    icon: Icon(Icons.toc_rounded, color: text),
+                                  ),
+                                  IconButton(
+                                    tooltip: l10n.backToChaptersTooltip,
+                                    onPressed: _selectedChapterKey == null
+                                        ? null
+                                        : _returnToChapters,
+                                    icon: Icon(Icons.view_list_rounded, color: text),
+                                  ),
+                                  IconButton(
+                                    tooltip: l10n.filterChapterTooltip,
+                                    onPressed: (contentTree == null ||
+                                            contentTree.chapters.isEmpty)
+                                        ? null
+                                        : () => _pickChapter(contentTree.chapters),
+                                    icon: Icon(Icons.menu_book_outlined, color: text),
+                                  ),
+                                  IconButton(
+                                    tooltip: l10n.filterPageTooltip,
+                                    onPressed: sections.isEmpty ? null : _pickPage,
+                                    icon: Icon(Icons.filter_1_rounded, color: text),
+                                  ),
+                                  IconButton(
+                                    onPressed: _openFindSheet,
+                                    icon: Icon(Icons.find_in_page_outlined, color: text),
+                                  ),
+                                  IconButton(
+                                    onPressed: _openBookmarksSheet,
+                                    icon: Icon(Icons.bookmarks_outlined, color: text),
+                                  ),
+                                  IconButton(
+                                    tooltip: offlineCached
+                                        ? l10n.removeOfflineCopy
+                                        : l10n.saveChaptersOffline,
+                                    onPressed: () => _toggleOfflineCache(offlineCached),
+                                    icon: Icon(
+                                      offlineCached
+                                          ? Icons.cloud_done_outlined
+                                          : Icons.cloud_download_outlined,
+                                      color: text,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -1305,91 +1326,97 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            IconButton(
-                              onPressed: () async {
-                                final next = (_fontSize - 1).clamp(15, 28);
-                                setState(() => _fontSize = next.toDouble());
-                                await ReaderPrefsStorage.writeFontSize(
-                                  widget.bookId,
-                                  _fontSize,
-                                );
-                              },
-                              icon: const Icon(Icons.text_decrease_rounded),
+                        SizedBox(
+                          height: 48,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  onPressed: () async {
+                                    final next = (_fontSize - 1).clamp(15, 28);
+                                    setState(() => _fontSize = next.toDouble());
+                                    await ReaderPrefsStorage.writeFontSize(
+                                      widget.bookId,
+                                      _fontSize,
+                                    );
+                                  },
+                                  icon: const Icon(Icons.text_decrease_rounded),
+                                ),
+                                IconButton(
+                                  onPressed: () async {
+                                    final next = (_fontSize + 1).clamp(15, 28);
+                                    setState(() => _fontSize = next.toDouble());
+                                    await ReaderPrefsStorage.writeFontSize(
+                                      widget.bookId,
+                                      _fontSize,
+                                    );
+                                  },
+                                  icon: const Icon(Icons.text_increase_rounded),
+                                ),
+                                IconButton(
+                                  tooltip: l10n.typographyPresetsTooltip,
+                                  onPressed: _openTypographySheet,
+                                  icon: const Icon(Icons.text_fields_rounded),
+                                ),
+                                IconButton(
+                                  onPressed: _toggleBookmark,
+                                  icon: const Icon(Icons.bookmark_add_outlined),
+                                ),
+                                IconButton(
+                                  tooltip: l10n.saveCloudBookmarkTooltip,
+                                  onPressed: () => _saveCloudBookmark(book),
+                                  icon: const Icon(Icons.cloud_upload_outlined),
+                                ),
+                                IconButton(
+                                  tooltip: l10n.addNoteTooltip,
+                                  onPressed: () => _createQuickNote(book),
+                                  icon: const Icon(Icons.sticky_note_2_outlined),
+                                ),
+                                IconButton(
+                                  tooltip: l10n.addHighlightTooltip,
+                                  onPressed: () => _addQuickHighlight(book),
+                                  icon: const Icon(Icons.highlight_alt_outlined),
+                                ),
+                                IconButton(
+                                  tooltip: l10n.highlightsTooltip,
+                                  onPressed: _openHighlightsSheet,
+                                  icon: const Icon(Icons.format_paint_outlined),
+                                ),
+                                IconButton(
+                                  tooltip: _autoHideEnabled
+                                      ? l10n.pinControls
+                                      : l10n.autoHideControls,
+                                  onPressed: () {
+                                    setState(() {
+                                      _autoHideEnabled = !_autoHideEnabled;
+                                      _showChrome = true;
+                                    });
+                                    if (_autoHideEnabled) _scheduleAutoHide();
+                                  },
+                                  icon: Icon(
+                                    _autoHideEnabled
+                                        ? Icons.push_pin_outlined
+                                        : Icons.push_pin,
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: () async {
+                                    final modes = ['light', 'sepia', 'dark'];
+                                    final index = modes.indexOf(_mode);
+                                    final next = modes[(index + 1) % modes.length];
+                                    setState(() => _mode = next);
+                                    await ReaderPrefsStorage.writeThemeMode(
+                                      widget.bookId,
+                                      next,
+                                    );
+                                  },
+                                  icon: const Icon(Icons.palette_outlined),
+                                ),
+                              ],
                             ),
-                            IconButton(
-                              onPressed: () async {
-                                final next = (_fontSize + 1).clamp(15, 28);
-                                setState(() => _fontSize = next.toDouble());
-                                await ReaderPrefsStorage.writeFontSize(
-                                  widget.bookId,
-                                  _fontSize,
-                                );
-                              },
-                              icon: const Icon(Icons.text_increase_rounded),
-                            ),
-                            IconButton(
-                              tooltip: l10n.typographyPresetsTooltip,
-                              onPressed: _openTypographySheet,
-                              icon: const Icon(Icons.text_fields_rounded),
-                            ),
-                            IconButton(
-                              onPressed: _toggleBookmark,
-                              icon: const Icon(Icons.bookmark_add_outlined),
-                            ),
-                            IconButton(
-                              tooltip: l10n.saveCloudBookmarkTooltip,
-                              onPressed: () => _saveCloudBookmark(book),
-                              icon: const Icon(Icons.cloud_upload_outlined),
-                            ),
-                            IconButton(
-                              tooltip: l10n.addNoteTooltip,
-                              onPressed: () => _createQuickNote(book),
-                              icon: const Icon(Icons.sticky_note_2_outlined),
-                            ),
-                            IconButton(
-                              tooltip: l10n.addHighlightTooltip,
-                              onPressed: () => _addQuickHighlight(book),
-                              icon: const Icon(Icons.highlight_alt_outlined),
-                            ),
-                            IconButton(
-                              tooltip: l10n.highlightsTooltip,
-                              onPressed: _openHighlightsSheet,
-                              icon: const Icon(Icons.format_paint_outlined),
-                            ),
-                            const Spacer(),
-                            IconButton(
-                              tooltip: _autoHideEnabled
-                                  ? l10n.pinControls
-                                  : l10n.autoHideControls,
-                              onPressed: () {
-                                setState(() {
-                                  _autoHideEnabled = !_autoHideEnabled;
-                                  _showChrome = true;
-                                });
-                                if (_autoHideEnabled) _scheduleAutoHide();
-                              },
-                              icon: Icon(
-                                _autoHideEnabled
-                                    ? Icons.push_pin_outlined
-                                    : Icons.push_pin,
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () async {
-                                final modes = ['light', 'sepia', 'dark'];
-                                final index = modes.indexOf(_mode);
-                                final next = modes[(index + 1) % modes.length];
-                                setState(() => _mode = next);
-                                await ReaderPrefsStorage.writeThemeMode(
-                                  widget.bookId,
-                                  next,
-                                );
-                              },
-                              icon: const Icon(Icons.palette_outlined),
-                            ),
-                          ],
+                          ),
                         ),
                       ],
                     ),

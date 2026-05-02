@@ -632,5 +632,7 @@
   "pageNumberFieldLabel": "የገጽ ቁጥር",
   "pageTitleFieldLabel": "የገጽ ርዕስ",
   "pageContentHeading": "የገጽ ይዘት",
-  "pageEditorPlaceholder": "ይህን ገጽ ይጻፉ…"
+  "pageEditorPlaceholder": "ይህን ገጽ ይጻፉ…",
+  "pageEditorFormattingToggle": "ቅርጸት",
+  "pageEditorFormattingHide": "መሳሪያ ደብቅ"
 }

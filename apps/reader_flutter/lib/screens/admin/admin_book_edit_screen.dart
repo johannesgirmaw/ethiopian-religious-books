@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -304,13 +303,16 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     final chapter = _chaptersDraft[chapterIndex];
     final editing = pageIndex != null ? chapter.pages[pageIndex] : null;
     final initialPageNumber = editing?.pageNumber ?? (chapter.pages.length + 1);
-    final result = await showDialog<AdminDraftPage>(
-      context: context,
-      builder: (dialogContext) => _DraftPageEditorDialog(
-        isNewPage: pageIndex == null,
-        initialPageNumber: initialPageNumber,
-        initialTitle: editing?.title ?? '',
-        initialBody: editing?.body ?? '',
+    final result = await Navigator.of(context, rootNavigator: true)
+        .push<AdminDraftPage>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (ctx) => _DraftPageEditorDialog(
+          isNewPage: pageIndex == null,
+          initialPageNumber: initialPageNumber,
+          initialTitle: editing?.title ?? '',
+          initialBody: editing?.body ?? '',
+        ),
       ),
     );
     if (result == null) return;
@@ -1002,6 +1004,8 @@ class _DraftPageEditorDialogState extends State<_DraftPageEditorDialog> {
   late final TextEditingController _pageNumber;
   late final TextEditingController _title;
   late final QuillController _bodyQuill;
+  /// Full Quill toolbar lives in the bottom sheet; collapsed by default for typing space.
+  bool _toolbarExpanded = false;
 
   @override
   void initState() {
@@ -1034,219 +1038,205 @@ class _DraftPageEditorDialogState extends State<_DraftPageEditorDialog> {
     super.dispose();
   }
 
+  void _saveAndPop() {
+    final l10n = AppLocalizations.of(context)!;
+    final pageNumber = int.tryParse(_pageNumber.text.trim()) ?? 1;
+    final n = pageNumber < 1 ? 1 : pageNumber;
+    final t = _title.text.trim();
+    final body = jsonEncode(_bodyQuill.document.toDelta().toJson());
+    Navigator.of(context).pop(
+      AdminDraftPage(
+        pageNumber: n,
+        title: t.isEmpty ? l10n.pageTitleFallback(n) : t,
+        body: body,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final mq = MediaQuery.of(context);
-    final size = mq.size;
-    final viewInsets = mq.viewInsets;
-    // Portrait vs landscape: never invert min/max (e.g. .clamp(360.0, hOuter) throws when hOuter < 360).
-    const verticalBudgetLoss = 88.0;
-    final outerMaxH = math.max(size.height - verticalBudgetLoss, 120.0);
-    final horizontalGutter = mq.padding.horizontal + 32;
-    final maxDialogW =
-        math.min(560.0, math.max(280.0, size.width - horizontalGutter));
-    final dialogWidthPref =
-        math.min(maxDialogW, math.max(280.0, size.width - horizontalGutter));
-    final dialogHeightPref =
-        math.min(math.min(outerMaxH * 0.95, 680.0), outerMaxH);
+    final theme = Theme.of(context);
 
-    return Dialog(
-      clipBehavior: Clip.antiAlias,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      constraints: BoxConstraints(
-        minWidth: 280,
-        maxWidth: maxDialogW,
-        minHeight: math.min(80.0, outerMaxH),
-        maxHeight: outerMaxH,
+    return Scaffold(
+      resizeToAvoidBottomInset: true,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        centerTitle: true,
+        title: Text(
+          widget.isNewPage ? l10n.addPageTooltip : l10n.editPageTitle,
+        ),
+        actions: [
+          IconButton(
+            tooltip: l10n.cancel,
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
       ),
-      child: LayoutBuilder(
-        builder: (dialogContext, outerConstraints) {
-          final parentW =
-              outerConstraints.maxWidth.isFinite &&
-                      outerConstraints.hasBoundedWidth
-                  ? outerConstraints.maxWidth.clamp(280.0, maxDialogW)
-                  : dialogWidthPref;
-          final parentH =
-              outerConstraints.maxHeight.isFinite &&
-                      outerConstraints.maxHeight > 0
-                  ? outerConstraints.maxHeight
-                  : outerMaxH;
-
-          final wBody = math.min(dialogWidthPref, parentW);
-          final hBody = math.min(dialogHeightPref, parentH);
-
-          const horizontalPad = 20.0;
-
-          return SizedBox(
-            width: wBody,
-            height: hBody,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                horizontalPad,
-                16,
-                horizontalPad,
-                math.max(12, viewInsets.bottom),
+      body: SafeArea(
+        bottom: false,
+        child: CustomScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextField(
+                      controller: _pageNumber,
+                      keyboardType: TextInputType.number,
+                      decoration:
+                          InputDecoration(labelText: l10n.pageNumberFieldLabel),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _title,
+                      decoration:
+                          InputDecoration(labelText: l10n.pageTitleFieldLabel),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      l10n.pageContentHeading,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    widget.isNewPage ? l10n.addPageTooltip : l10n.editPageTitle,
-                    style: Theme.of(dialogContext).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _pageNumber,
-                    keyboardType: TextInputType.number,
-                    decoration:
-                        InputDecoration(labelText: l10n.pageNumberFieldLabel),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _title,
-                    decoration:
-                        InputDecoration(labelText: l10n.pageTitleFieldLabel),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    l10n.pageContentHeading,
-                    style:
-                        Theme.of(dialogContext).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                  ),
-                  const SizedBox(height: 6),
-                  Expanded(
-                    child: LayoutBuilder(
-                      builder: (editorContext, editorConstraints) {
-                        final innerW =
-                            editorConstraints.maxWidth.isFinite &&
-                                    editorConstraints.hasBoundedWidth
-                                ? editorConstraints.maxWidth
-                                : wBody - 2 * horizontalPad;
-                        final innerWClamp = math.max(innerW, 200.0);
-                        return DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: Theme.of(editorContext)
-                                .colorScheme
-                                .surfaceContainerHigh,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Theme.of(editorContext)
-                                  .colorScheme
-                                  .outlineVariant,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              SizedBox(
-                                width: innerWClamp,
-                                child: QuillSimpleToolbar(
-                                  controller: _bodyQuill,
-                                  config: const QuillSimpleToolbarConfig(
-                                    // Wrap avoids Horizontal scroll + ∞-width quirks in dialogs.
-                                    multiRowsDisplay: true,
-                                    embedButtons: [],
-                                    showUndo: true,
-                                    showRedo: true,
-                                    showBoldButton: true,
-                                    showItalicButton: true,
-                                    showUnderLineButton: true,
-                                    showStrikeThrough: true,
-                                    showHeaderStyle: false,
-                                    showListBullets: true,
-                                    showListNumbers: true,
-                                    showQuote: true,
-                                    showLink: true,
-                                    showCodeBlock: true,
-                                    showAlignmentButtons: true,
-                                    showSubscript: false,
-                                    showSuperscript: false,
-                                    showSearchButton: false,
-                                    showFontFamily: false,
-                                    showFontSize: false,
-                                    showDirection: false,
-                                    showInlineCode: true,
-                                    showIndent: true,
-                                  ),
-                                ),
-                              ),
-                              const Divider(height: 1),
-                              Expanded(
-                                child: LayoutBuilder(
-                                  builder: (ctx, vc) {
-                                    final h =
-                                        vc.maxHeight.isFinite && vc.maxHeight > 0
-                                            ? vc.maxHeight
-                                            : 200.0;
-                                    return QuillEditor.basic(
-                                      controller: _bodyQuill,
-                                      config: QuillEditorConfig(
-                                        placeholder: l10n.pageEditorPlaceholder,
-                                        // expands:true uses BoxConstraints.expand() inside Quill's
-                                        // Container; enforcing infinite mins throws with our layout.
-                                        expands: false,
-                                        scrollable: true,
-                                        minHeight: h,
-                                        maxHeight: h,
-                                        padding:
-                                            const EdgeInsets.all(12),
-                                        embedBuilders: const [],
-                                        unknownEmbedBuilder:
-                                            const _UnsupportedEmbedBuilder(),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+              sliver: SliverFillRemaining(
+                hasScrollBody: true,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: theme.colorScheme.outlineVariant,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: AlignmentDirectional.centerEnd,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(11),
+                    child: QuillEditor.basic(
+                      controller: _bodyQuill,
+                      config: QuillEditorConfig(
+                        placeholder: l10n.pageEditorPlaceholder,
+                        expands: false,
+                        scrollable: true,
+                        padding: const EdgeInsets.all(12),
+                        embedBuilders: const [],
+                        unknownEmbedBuilder:
+                            const _UnsupportedEmbedBuilder(),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Material(
+          elevation: 10,
+          color: theme.colorScheme.surface,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Material(
+                color: theme.colorScheme.surfaceContainerHighest
+                    .withValues(alpha: 0.55),
+                child: InkWell(
+                  onTap: () =>
+                      setState(() => _toolbarExpanded = !_toolbarExpanded),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: Text(l10n.cancel),
+                        Icon(
+                          Icons.edit_note_outlined,
+                          color: theme.colorScheme.primary,
                         ),
-                        const SizedBox(width: 8),
-                        FilledButton(
-                          onPressed: () {
-                            final pageNumber =
-                                int.tryParse(_pageNumber.text.trim()) ?? 1;
-                            final n = pageNumber < 1 ? 1 : pageNumber;
-                            final t = _title.text.trim();
-                            final body = jsonEncode(
-                              _bodyQuill.document.toDelta().toJson(),
-                            );
-                            Navigator.of(context).pop(
-                              AdminDraftPage(
-                                pageNumber: n,
-                                title: t.isEmpty
-                                    ? l10n.pageTitleFallback(n)
-                                    : t,
-                                body: body,
-                              ),
-                            );
-                          },
-                          child: Text(l10n.save),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _toolbarExpanded
+                                ? l10n.pageEditorFormattingHide
+                                : l10n.pageEditorFormattingToggle,
+                            style: theme.textTheme.titleSmall,
+                          ),
+                        ),
+                        Icon(
+                          _toolbarExpanded
+                              ? Icons.expand_less
+                              : Icons.expand_more,
                         ),
                       ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-          );
-        },
+              AnimatedSize(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeInOut,
+                alignment: Alignment.topCenter,
+                child: _toolbarExpanded
+                    ? ColoredBox(
+                        color: theme.colorScheme.surfaceContainerHigh,
+                        child: QuillSimpleToolbar(
+                          controller: _bodyQuill,
+                          config: const QuillSimpleToolbarConfig(
+                            multiRowsDisplay: true,
+                            embedButtons: [],
+                            showUndo: true,
+                            showRedo: true,
+                            showBoldButton: true,
+                            showItalicButton: true,
+                            showUnderLineButton: true,
+                            showStrikeThrough: true,
+                            showHeaderStyle: false,
+                            showListBullets: true,
+                            showListNumbers: true,
+                            showQuote: true,
+                            showLink: true,
+                            showCodeBlock: true,
+                            showAlignmentButtons: true,
+                            showSubscript: false,
+                            showSuperscript: false,
+                            showSearchButton: false,
+                            showFontFamily: false,
+                            showFontSize: false,
+                            showDirection: false,
+                            showInlineCode: true,
+                            showIndent: true,
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _saveAndPop,
+                    child: Text(l10n.save),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
