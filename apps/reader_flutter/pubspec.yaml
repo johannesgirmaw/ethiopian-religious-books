@@ -29,3 +29,8 @@ dev_dependencies:
 flutter:
   generate: true
   uses-material-design: true
+  assets:
+    - assets/images/bg1.png
+    - assets/images/slice.png
+    - assets/images/mobile-logo.png
+    - assets/images/drawer-bg.png

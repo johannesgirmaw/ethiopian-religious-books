@@ -27,18 +27,22 @@ class EthiopianReaderApp extends ConsumerWidget {
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       theme: ThemeData(
-        colorScheme:
-            ColorScheme.fromSeed(seedColor: AppColors.primary).copyWith(
-          primary: AppColors.primary,
-          onPrimary: Colors.white,
-          surface: AppColors.surfaceSoft,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.referencePrimary,
+          brightness: Brightness.light,
+        ).copyWith(
+          primary: AppColors.referencePrimary,
+          onPrimary: const Color(0xFF1F2937),
+          secondary: AppColors.referenceAccent,
+          onSecondary: const Color(0xFF1F2937),
+          surface: AppColors.referencePageBg,
           surfaceContainer: AppColors.surfaceCard,
-          surfaceContainerHigh: AppColors.surfaceSoft,
+          surfaceContainerHigh: AppColors.surfaceStrong,
           surfaceContainerHighest: AppColors.surfaceStrong,
           outlineVariant: AppColors.border,
         ),
         useMaterial3: true,
-        scaffoldBackgroundColor: AppColors.background,
+        scaffoldBackgroundColor: AppColors.referencePageBg,
         appBarTheme: const AppBarTheme(
           centerTitle: false,
           backgroundColor: AppColors.background,
@@ -53,14 +57,14 @@ class EthiopianReaderApp extends ConsumerWidget {
         ),
         navigationBarTheme: NavigationBarThemeData(
           backgroundColor: AppColors.surfaceCard,
-          indicatorColor: AppColors.surfaceStrong,
+          indicatorColor: AppColors.referencePrimary.withValues(alpha: 0.35),
           labelTextStyle: WidgetStateProperty.all(
             const TextStyle(fontWeight: FontWeight.w600),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: AppColors.surfaceSoft,
+          fillColor: AppColors.background,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.sm),
             borderSide: const BorderSide(color: AppColors.border),
@@ -71,7 +75,10 @@ class EthiopianReaderApp extends ConsumerWidget {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.sm),
-            borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
+            borderSide: const BorderSide(
+              color: AppColors.referencePrimary,
+              width: 1.4,
+            ),
           ),
         ),
         chipTheme: ChipThemeData(
@@ -90,8 +97,8 @@ class EthiopianReaderApp extends ConsumerWidget {
         ),
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(
-            backgroundColor: AppColors.primaryDeep,
-            foregroundColor: Colors.white,
+            backgroundColor: AppColors.referencePrimary,
+            foregroundColor: const Color(0xFF1F2937),
             minimumSize: const Size.fromHeight(48),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.sm),

@@ -218,11 +218,257 @@ abstract class AppLocalizations {
   /// **'Library'**
   String get navLibrary;
 
+  /// No description provided for @navBrowse.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse'**
+  String get navBrowse;
+
   /// No description provided for @navAccount.
   ///
   /// In en, this message translates to:
-  /// **'Account'**
+  /// **'Profile'**
   String get navAccount;
+
+  /// No description provided for @navProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get navProfile;
+
+  /// No description provided for @drawerHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get drawerHome;
+
+  /// No description provided for @drawerBrowse.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse books'**
+  String get drawerBrowse;
+
+  /// No description provided for @drawerAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get drawerAccount;
+
+  /// No description provided for @drawerProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get drawerProfile;
+
+  /// No description provided for @drawerSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get drawerSettings;
+
+  /// No description provided for @drawerAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get drawerAbout;
+
+  /// No description provided for @drawerContinueReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue reading'**
+  String get drawerContinueReading;
+
+  /// No description provided for @profileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profileTitle;
+
+  /// No description provided for @settingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTitle;
+
+  /// No description provided for @settingsCacheSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage & cache'**
+  String get settingsCacheSection;
+
+  /// No description provided for @aboutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get aboutTitle;
+
+  /// No description provided for @aboutAppSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About this app'**
+  String get aboutAppSectionTitle;
+
+  /// No description provided for @aboutAppSectionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Ethiopian Reader helps you browse, read, and study religious texts with offline support and reading progress.'**
+  String get aboutAppSectionBody;
+
+  /// No description provided for @aboutVersionSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get aboutVersionSectionTitle;
+
+  /// No description provided for @aboutVersionValue.
+  ///
+  /// In en, this message translates to:
+  /// **'1.0.0'**
+  String get aboutVersionValue;
+
+  /// No description provided for @aboutDevelopersSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Developers'**
+  String get aboutDevelopersSectionTitle;
+
+  /// No description provided for @aboutDevelopersBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Ethiopian Religious Books project'**
+  String get aboutDevelopersBody;
+
+  /// No description provided for @homeQuickProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile'**
+  String get homeQuickProfile;
+
+  /// No description provided for @homeQuickProfileSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account and sign in'**
+  String get homeQuickProfileSubtitle;
+
+  /// No description provided for @homeQuickSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get homeQuickSettings;
+
+  /// No description provided for @homeQuickSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Language, offline cache, and reminders'**
+  String get homeQuickSettingsSubtitle;
+
+  /// No description provided for @actionRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get actionRead;
+
+  /// No description provided for @actionInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Info'**
+  String get actionInfo;
+
+  /// No description provided for @continueReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue reading'**
+  String get continueReading;
+
+  /// No description provided for @resumeReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get resumeReading;
+
+  /// No description provided for @readNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Read now'**
+  String get readNow;
+
+  /// No description provided for @recentlyOpened.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently opened'**
+  String get recentlyOpened;
+
+  /// No description provided for @homeQuickBrowse.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse all books'**
+  String get homeQuickBrowse;
+
+  /// No description provided for @homeQuickBrowseSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search and filter the full catalog'**
+  String get homeQuickBrowseSubtitle;
+
+  /// No description provided for @homeQuickDownloads.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloads'**
+  String get homeQuickDownloads;
+
+  /// No description provided for @homeQuickDownloadsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Books saved for offline reading'**
+  String get homeQuickDownloadsSubtitle;
+
+  /// No description provided for @homeQuickAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account & sync'**
+  String get homeQuickAccount;
+
+  /// No description provided for @homeQuickAccountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile, plans, and preferences'**
+  String get homeQuickAccountSubtitle;
+
+  /// No description provided for @browseByCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse by category'**
+  String get browseByCategory;
+
+  /// No description provided for @booksInCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} books'**
+  String booksInCategory(int count);
+
+  /// No description provided for @readFullBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Read full book'**
+  String get readFullBook;
+
+  /// No description provided for @headerCategoriesStat.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} categories'**
+  String headerCategoriesStat(int count);
+
+  /// No description provided for @headerBooksStat.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} books'**
+  String headerBooksStat(int count);
+
+  /// No description provided for @mostReadSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently opened'**
+  String get mostReadSection;
 
   /// No description provided for @searchTooltip.
   ///
@@ -643,6 +889,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Account Info'**
   String get accountInfo;
+
+  /// No description provided for @profileAccountDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Account details'**
+  String get profileAccountDetails;
+
+  /// No description provided for @profileUserIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'User ID'**
+  String get profileUserIdLabel;
+
+  /// No description provided for @profileRoleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get profileRoleLabel;
+
+  /// No description provided for @profilePreferredLanguageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferred language'**
+  String get profilePreferredLanguageLabel;
+
+  /// No description provided for @profileSuperuserLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrator access'**
+  String get profileSuperuserLabel;
+
+  /// No description provided for @profileValueNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get profileValueNotSet;
+
+  /// No description provided for @profileYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get profileYes;
+
+  /// No description provided for @profileNo.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get profileNo;
+
+  /// No description provided for @profileOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get profileOpenSettings;
 
   /// No description provided for @emailLabel.
   ///

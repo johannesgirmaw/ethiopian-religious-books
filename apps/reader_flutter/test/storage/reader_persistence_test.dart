@@ -45,4 +45,21 @@ void main() {
     expect(progress, closeTo(0.4, 0.0001));
     expect(fontSize, 22);
   });
+
+  test('last opened book persists title and id', () async {
+    await ReaderPrefsStorage.writeLastOpenedBook(
+      LastOpenedBook(
+        bookId: 'book-42',
+        title: 'Test Book',
+        updatedAtEpochMs: 1700000000000,
+      ),
+    );
+
+    final last = await ReaderPrefsStorage.readLastOpenedBook();
+
+    expect(last, isNotNull);
+    expect(last!.bookId, 'book-42');
+    expect(last.title, 'Test Book');
+    expect(last.updatedAtEpochMs, 1700000000000);
+  });
 }

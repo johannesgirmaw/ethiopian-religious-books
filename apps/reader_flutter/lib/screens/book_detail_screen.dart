@@ -200,7 +200,15 @@ class BookDetailScreen extends ConsumerWidget {
                     raw: book.summaryRichRaw ?? book.summary!),
               ),
             ],
-            // Actions section
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () => context.push('/reader/$bookId'),
+                icon: const Icon(Icons.chrome_reader_mode_rounded),
+                label: Text(l10n.readNow),
+              ),
+            ),
             const SizedBox(height: 24),
             Text(
               l10n.readyToRead,
@@ -261,9 +269,9 @@ class BookDetailScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-            FilledButton.icon(
+            OutlinedButton.icon(
               onPressed: () => context.push('/reader/$bookId'),
-              icon: const Icon(Icons.chrome_reader_mode_rounded),
+              icon: const Icon(Icons.chrome_reader_mode_outlined),
               label: Text(l10n.startReading),
             ),
             const SizedBox(height: 10),

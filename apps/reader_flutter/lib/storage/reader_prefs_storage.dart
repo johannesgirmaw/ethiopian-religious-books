@@ -32,8 +32,36 @@ class ReaderBookmark {
   }
 }
 
+class LastOpenedBook {
+  LastOpenedBook({
+    required this.bookId,
+    required this.title,
+    required this.updatedAtEpochMs,
+  });
+
+  final String bookId;
+  final String title;
+  final int updatedAtEpochMs;
+
+  Map<String, dynamic> toJson() => {
+        'book_id': bookId,
+        'title': title,
+        'updated_at': updatedAtEpochMs,
+      };
+
+  factory LastOpenedBook.fromJson(Map<String, dynamic> json) {
+    return LastOpenedBook(
+      bookId: json['book_id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      updatedAtEpochMs: (json['updated_at'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
 class ReaderPrefsStorage {
   ReaderPrefsStorage._();
+
+  static const _lastOpenedKey = 'reader_last_opened_book';
 
   static String _progressKey(String bookId) => 'reader_progress_$bookId';
   static String _fontSizeKey(String bookId) => 'reader_font_size_$bookId';
@@ -87,5 +115,19 @@ class ReaderPrefsStorage {
     final prefs = await SharedPreferences.getInstance();
     final raw = jsonEncode(bookmarks.map((e) => e.toJson()).toList());
     await prefs.setString(_bookmarksKey(bookId), raw);
+  }
+
+  static Future<LastOpenedBook?> readLastOpenedBook() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_lastOpenedKey);
+    if (raw == null || raw.isEmpty) return null;
+    return LastOpenedBook.fromJson(
+      jsonDecode(raw) as Map<String, dynamic>,
+    );
+  }
+
+  static Future<void> writeLastOpenedBook(LastOpenedBook book) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_lastOpenedKey, jsonEncode(book.toJson()));
   }
 }

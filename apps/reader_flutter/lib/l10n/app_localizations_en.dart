@@ -79,7 +79,138 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navLibrary => 'Library';
 
   @override
-  String get navAccount => 'Account';
+  String get navBrowse => 'Browse';
+
+  @override
+  String get navAccount => 'Profile';
+
+  @override
+  String get navProfile => 'Profile';
+
+  @override
+  String get drawerHome => 'Home';
+
+  @override
+  String get drawerBrowse => 'Browse books';
+
+  @override
+  String get drawerAccount => 'Account';
+
+  @override
+  String get drawerProfile => 'Profile';
+
+  @override
+  String get drawerSettings => 'Settings';
+
+  @override
+  String get drawerAbout => 'About';
+
+  @override
+  String get drawerContinueReading => 'Continue reading';
+
+  @override
+  String get profileTitle => 'Profile';
+
+  @override
+  String get settingsTitle => 'Settings';
+
+  @override
+  String get settingsCacheSection => 'Storage & cache';
+
+  @override
+  String get aboutTitle => 'About';
+
+  @override
+  String get aboutAppSectionTitle => 'About this app';
+
+  @override
+  String get aboutAppSectionBody =>
+      'Ethiopian Reader helps you browse, read, and study religious texts with offline support and reading progress.';
+
+  @override
+  String get aboutVersionSectionTitle => 'Version';
+
+  @override
+  String get aboutVersionValue => '1.0.0';
+
+  @override
+  String get aboutDevelopersSectionTitle => 'Developers';
+
+  @override
+  String get aboutDevelopersBody => 'Ethiopian Religious Books project';
+
+  @override
+  String get homeQuickProfile => 'Your profile';
+
+  @override
+  String get homeQuickProfileSubtitle => 'Account and sign in';
+
+  @override
+  String get homeQuickSettings => 'Settings';
+
+  @override
+  String get homeQuickSettingsSubtitle =>
+      'Language, offline cache, and reminders';
+
+  @override
+  String get actionRead => 'Read';
+
+  @override
+  String get actionInfo => 'Info';
+
+  @override
+  String get continueReading => 'Continue reading';
+
+  @override
+  String get resumeReading => 'Resume';
+
+  @override
+  String get readNow => 'Read now';
+
+  @override
+  String get recentlyOpened => 'Recently opened';
+
+  @override
+  String get homeQuickBrowse => 'Browse all books';
+
+  @override
+  String get homeQuickBrowseSubtitle => 'Search and filter the full catalog';
+
+  @override
+  String get homeQuickDownloads => 'Downloads';
+
+  @override
+  String get homeQuickDownloadsSubtitle => 'Books saved for offline reading';
+
+  @override
+  String get homeQuickAccount => 'Account & sync';
+
+  @override
+  String get homeQuickAccountSubtitle => 'Profile, plans, and preferences';
+
+  @override
+  String get browseByCategory => 'Browse by category';
+
+  @override
+  String booksInCategory(int count) {
+    return '$count books';
+  }
+
+  @override
+  String get readFullBook => 'Read full book';
+
+  @override
+  String headerCategoriesStat(int count) {
+    return '$count categories';
+  }
+
+  @override
+  String headerBooksStat(int count) {
+    return '$count books';
+  }
+
+  @override
+  String get mostReadSection => 'Recently opened';
 
   @override
   String get searchTooltip => 'Search';
@@ -315,6 +446,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountInfo => 'Account Info';
+
+  @override
+  String get profileAccountDetails => 'Account details';
+
+  @override
+  String get profileUserIdLabel => 'User ID';
+
+  @override
+  String get profileRoleLabel => 'Role';
+
+  @override
+  String get profilePreferredLanguageLabel => 'Preferred language';
+
+  @override
+  String get profileSuperuserLabel => 'Administrator access';
+
+  @override
+  String get profileValueNotSet => 'Not set';
+
+  @override
+  String get profileYes => 'Yes';
+
+  @override
+  String get profileNo => 'No';
+
+  @override
+  String get profileOpenSettings => 'Settings';
 
   @override
   String get emailLabel => 'Email';

@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../models/admin_book.dart';
 import '../providers/session_notifier.dart';
-import '../screens/account_screen.dart';
+import '../screens/about_screen.dart';
+import '../screens/profile_screen.dart';
+import '../screens/settings_screen.dart';
 import '../screens/admin/admin_book_detail_screen.dart';
 import '../screens/admin/admin_book_edit_screen.dart';
 import '../screens/admin/admin_books_screen.dart';
@@ -97,10 +99,25 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const LibraryScreen(),
           ),
           GoRoute(
+            path: '/profile',
+            builder: (context, state) => const ProfileScreen(),
+          ),
+          GoRoute(
+            path: '/settings',
+            builder: (context, state) => const SettingsScreen(),
+          ),
+          GoRoute(
             path: '/account',
-            builder: (context, state) => const AccountScreen(),
+            redirect: (context, state) => '/profile',
           ),
         ],
+      ),
+      GoRoute(
+        path: '/about',
+        pageBuilder: (context, state) => _fadeSlide(
+          key: state.pageKey,
+          child: const AboutScreen(),
+        ),
       ),
       GoRoute(
         path: '/book/:id',

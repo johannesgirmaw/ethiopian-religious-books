@@ -8,6 +8,7 @@ import '../l10n/app_localizations.dart';
 import '../models/book_models.dart';
 import '../providers/api_client.dart';
 import '../providers/catalog_providers.dart';
+import '../providers/continue_reading_provider.dart';
 import '../providers/study_providers.dart';
 import '../storage/book_content_cache_storage.dart';
 import '../storage/reader_prefs_storage.dart';
@@ -61,6 +62,29 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     _restoreReaderState();
     _scrollController.addListener(_onScroll);
     _scheduleAutoHide();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _recordLastOpened());
+  }
+
+  Future<void> _recordLastOpened() async {
+    try {
+      final book = await ref.read(bookDetailProvider(widget.bookId).future);
+      await ReaderPrefsStorage.writeLastOpenedBook(
+        LastOpenedBook(
+          bookId: widget.bookId,
+          title: book.title,
+          updatedAtEpochMs: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
+      ref.invalidate(lastOpenedBookProvider);
+    } catch (_) {
+      await ReaderPrefsStorage.writeLastOpenedBook(
+        LastOpenedBook(
+          bookId: widget.bookId,
+          title: widget.bookId,
+          updatedAtEpochMs: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
+    }
   }
 
   Future<void> _restoreReaderState() async {

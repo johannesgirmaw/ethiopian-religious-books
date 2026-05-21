@@ -1,74 +1,68 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../design/app_tokens.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/app_locale_provider.dart';
 
-class LanguagePreferenceCard extends ConsumerStatefulWidget {
+/// Compact app language control — EN / አማርኛ.
+class LanguagePreferenceCard extends ConsumerWidget {
   const LanguagePreferenceCard({super.key});
 
   @override
-  ConsumerState<LanguagePreferenceCard> createState() =>
-      _LanguagePreferenceCardState();
-}
-
-class _LanguagePreferenceCardState extends ConsumerState<LanguagePreferenceCard> {
-  late String _draftCode;
-
-  @override
-  void initState() {
-    super.initState();
-    _draftCode = ref.read(appLocaleProvider).languageCode;
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final current = ref.watch(appLocaleProvider).languageCode;
+
     return Card(
+      margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 12, 8, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
           children: [
-            ListTile(
-              title: Text(l10n.languagePreferenceTitle),
-              subtitle: Text(l10n.languagePreferenceSubtitle),
+            Icon(
+              Icons.language_rounded,
+              size: 22,
+              color: AppColors.referencePrimary,
             ),
-            RadioListTile<String>(
-              title: Text(l10n.languageEnglish),
-              value: 'en',
-              groupValue: _draftCode,
-              onChanged: (v) {
-                if (v == null) return;
-                setState(() => _draftCode = v);
-              },
-            ),
-            RadioListTile<String>(
-              title: Text(l10n.languageAmharic),
-              value: 'am',
-              groupValue: _draftCode,
-              onChanged: (v) {
-                if (v == null) return;
-                setState(() => _draftCode = v);
-              },
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 8, bottom: 4),
-                child: FilledButton(
-                  onPressed: () async {
-                    final locale =
-                        _draftCode == 'am' ? const Locale('am') : const Locale('en');
-                    await ref.setAppLocale(locale);
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(l10n.languageSaved)),
-                    );
-                  },
-                  child: Text(l10n.saveLanguage),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                l10n.languagePreferenceTitle,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
               ),
+            ),
+            SegmentedButton<String>(
+              style: SegmentedButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              segments: [
+                ButtonSegment(
+                  value: 'en',
+                  label: Text(
+                    l10n.languageEnglish,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+                ButtonSegment(
+                  value: 'am',
+                  label: Text(
+                    l10n.languageAmharic,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+              ],
+              selected: {current},
+              onSelectionChanged: (selection) async {
+                final code = selection.first;
+                final locale =
+                    code == 'am' ? const Locale('am') : const Locale('en');
+                await ref.setAppLocale(locale);
+              },
             ),
           ],
         ),

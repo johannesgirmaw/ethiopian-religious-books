@@ -79,7 +79,137 @@ class AppLocalizationsAm extends AppLocalizations {
   String get navLibrary => 'ቤተ-መጽሐፍት';
 
   @override
-  String get navAccount => 'መለያ';
+  String get navBrowse => 'መጽሐፍት';
+
+  @override
+  String get navAccount => 'መገለጫ';
+
+  @override
+  String get navProfile => 'መገለጫ';
+
+  @override
+  String get drawerHome => 'መነሻ';
+
+  @override
+  String get drawerBrowse => 'መጽሐፍት ያስሱ';
+
+  @override
+  String get drawerAccount => 'መለያ';
+
+  @override
+  String get drawerProfile => 'መገለጫ';
+
+  @override
+  String get drawerSettings => 'ቅንብሮች';
+
+  @override
+  String get drawerAbout => 'ስለ መተግበሪያው';
+
+  @override
+  String get drawerContinueReading => 'ንባብ ይቀጥሉ';
+
+  @override
+  String get profileTitle => 'መገለጫ';
+
+  @override
+  String get settingsTitle => 'ቅንብሮች';
+
+  @override
+  String get settingsCacheSection => 'ማከማቻ እና ቤተ-መጻሕፍት';
+
+  @override
+  String get aboutTitle => 'ስለ መተግበሪያው';
+
+  @override
+  String get aboutAppSectionTitle => 'ስለ መተግበሪያው';
+
+  @override
+  String get aboutAppSectionBody =>
+      'የኢትዮጵያ አንባቢ ሃይማኖታዊ መጽሐፍትን ለማሰስ፣ ለንባብ እና ለመማር ከኦፍላይን ድጋፍ ጋር ያግዛል።';
+
+  @override
+  String get aboutVersionSectionTitle => 'ስሪት';
+
+  @override
+  String get aboutVersionValue => '1.0.0';
+
+  @override
+  String get aboutDevelopersSectionTitle => 'አበልጻጊዎች';
+
+  @override
+  String get aboutDevelopersBody => 'የኢትዮጵያ ሃይማኖታዊ መጽሐፍት ፕሮጀክት';
+
+  @override
+  String get homeQuickProfile => 'መገለጫዎ';
+
+  @override
+  String get homeQuickProfileSubtitle => 'መለያ እና መግባት';
+
+  @override
+  String get homeQuickSettings => 'ቅንብሮች';
+
+  @override
+  String get homeQuickSettingsSubtitle => 'ቋንቋ፣ ኦፍላይን መደበር እና ማስታወሻ';
+
+  @override
+  String get actionRead => 'አንብብ';
+
+  @override
+  String get actionInfo => 'መረጃ';
+
+  @override
+  String get continueReading => 'ንባብ ይቀጥሉ';
+
+  @override
+  String get resumeReading => 'ቀጥል';
+
+  @override
+  String get readNow => 'አሁን አንብብ';
+
+  @override
+  String get recentlyOpened => 'በቅርብ የተከፈቱ';
+
+  @override
+  String get homeQuickBrowse => 'ሁሉንም መጽሐፍት';
+
+  @override
+  String get homeQuickBrowseSubtitle => 'የሙሉ ዝርዝር ፍለጋ እና ማጣሪያ';
+
+  @override
+  String get homeQuickDownloads => 'የወረዱ';
+
+  @override
+  String get homeQuickDownloadsSubtitle => 'ለኦፍላይን የተቀመጡ መጽሐፍት';
+
+  @override
+  String get homeQuickAccount => 'መለያ እና ማመሳሰል';
+
+  @override
+  String get homeQuickAccountSubtitle => 'መገለጫ፣ ዕቅዶች እና ምርጫዎች';
+
+  @override
+  String get browseByCategory => 'በምድብ ያስሱ';
+
+  @override
+  String booksInCategory(int count) {
+    return '$count መጽሐፍት';
+  }
+
+  @override
+  String get readFullBook => 'ሙሉ መጽሐፍ አንብብ';
+
+  @override
+  String headerCategoriesStat(int count) {
+    return '$count ምድቦች';
+  }
+
+  @override
+  String headerBooksStat(int count) {
+    return '$count መጽሐፍት';
+  }
+
+  @override
+  String get mostReadSection => 'በቅርብ የተከፈቱ';
 
   @override
   String get searchTooltip => 'ፈልግ';
@@ -308,6 +438,33 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get accountInfo => 'የመለያ መረጃ';
+
+  @override
+  String get profileAccountDetails => 'የመለያ ዝርዝሮች';
+
+  @override
+  String get profileUserIdLabel => 'የተጠቃሚ መለያ';
+
+  @override
+  String get profileRoleLabel => 'ሚና';
+
+  @override
+  String get profilePreferredLanguageLabel => 'የተመረጠ ቋንቋ';
+
+  @override
+  String get profileSuperuserLabel => 'የአስተዳዳሪ መዳረሻ';
+
+  @override
+  String get profileValueNotSet => 'አልተመረጠም';
+
+  @override
+  String get profileYes => 'አዎ';
+
+  @override
+  String get profileNo => 'አይ';
+
+  @override
+  String get profileOpenSettings => 'ቅንብሮች';
 
   @override
   String get emailLabel => 'ኢሜይል';
