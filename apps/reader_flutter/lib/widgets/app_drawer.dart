@@ -49,7 +49,7 @@ class AppDrawer extends ConsumerWidget {
                 ),
                 DecoratedBox(
                   decoration: BoxDecoration(
-                    color: AppColors.referencePrimary.withValues(alpha: 0.5),
+                    color: AppColors.referencePrimary.withValues(alpha: 0.4),
                   ),
                 ),
                 Positioned(
@@ -59,7 +59,7 @@ class AppDrawer extends ConsumerWidget {
                     width: 60,
                     height: 60,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      // color: Colors.white,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(

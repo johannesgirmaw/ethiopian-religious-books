@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/dev_object_storage_origin.dart';
 import '../models/book_models.dart';
 import '../models/download_payload.dart';
+import '../models/offline_cached_book.dart';
 import '../storage/book_content_cache_storage.dart';
 import '../storage/catalog_cache_storage.dart';
 import 'api_client.dart';
@@ -43,13 +44,6 @@ final catalogProvider = FutureProvider.autoDispose<CatalogPage>((ref) async {
     etag: fallback.headers.value('etag'),
   );
   return CatalogPage.fromJson(fallback.data!);
-});
-
-final bookDetailProvider =
-    FutureProvider.autoDispose.family<BookSummary, String>((ref, id) async {
-  final dio = ref.watch(apiDioProvider);
-  final res = await dio.get<Map<String, dynamic>>('books/$id');
-  return BookSummary.fromJson(res.data!);
 });
 
 class CatalogSearchFilters {
@@ -127,7 +121,25 @@ final bookContentProvider = FutureProvider.autoDispose
         final payload = res.data ?? const <String, dynamic>{};
         final remote = BookContentTree.fromJson(payload);
         if (remote.chapters.isNotEmpty) {
-          await BookContentCacheStorage.writeBookContent(bookId, payload);
+          BookCacheMeta? meta;
+          try {
+            final catalog = await ref.read(catalogProvider.future);
+            for (final b in catalog.items) {
+              if (b.id == bookId) {
+                meta = BookCacheMeta(
+                  title: b.title,
+                  authorCompiler: b.authorCompiler,
+                  primaryLanguage: b.primaryLanguage,
+                );
+                break;
+              }
+            }
+          } catch (_) {}
+          await BookContentCacheStorage.writeBookContent(
+            bookId,
+            payload,
+            meta: meta,
+          );
           return remote;
         }
         // API can return empty when content index is off or revision is missing;
@@ -137,7 +149,7 @@ final bookContentProvider = FutureProvider.autoDispose
         }
         return remote;
       } catch (_) {
-        if (cached != null) return cached;
+        if (cached != null && cached.chapters.isNotEmpty) return cached;
         rethrow;
       }
     });
@@ -164,3 +176,125 @@ final downloadInfoProvider =
 final catalogCachedAtProvider = FutureProvider.autoDispose<DateTime?>((ref) {
   return CatalogCacheStorage.readSavedAt();
 });
+
+/// Resolves book metadata: catalog → local meta → cached content → API.
+Future<BookSummary> resolveBookSummary(
+  Ref ref,
+  String bookId,
+) async {
+  try {
+    final catalog = await ref.read(catalogProvider.future);
+    final match = catalog.items.where((b) => b.id == bookId).toList();
+    if (match.isNotEmpty) return match.first;
+  } catch (_) {}
+
+  final meta = await BookContentCacheStorage.readBookMeta(bookId);
+  final cached = await BookContentCacheStorage.readBookContent(bookId);
+  if (meta != null && meta.title.isNotEmpty) {
+    return BookSummary(
+      id: bookId,
+      title: meta.title,
+      authorCompiler: meta.authorCompiler,
+      primaryLanguage: meta.primaryLanguage,
+    );
+  }
+  if (cached != null && cached.chapters.isNotEmpty) {
+    final inferred = BookContentCacheStorage.titleFromContentTree(cached);
+    return BookSummary(
+      id: bookId,
+      title: inferred ?? bookId,
+      primaryLanguage: null,
+    );
+  }
+
+  final dio = ref.read(apiDioProvider);
+  final res = await dio.get<Map<String, dynamic>>('books/$bookId');
+  final book = BookSummary.fromJson(res.data!);
+  await BookContentCacheStorage.writeBookMeta(
+    bookId,
+    BookCacheMeta(
+      title: book.title,
+      authorCompiler: book.authorCompiler,
+      primaryLanguage: book.primaryLanguage,
+      savedAtEpochMs: DateTime.now().millisecondsSinceEpoch,
+    ),
+  );
+  return book;
+}
+
+final bookDetailProvider =
+    FutureProvider.autoDispose.family<BookSummary, String>((ref, id) async {
+  return resolveBookSummary(ref, id);
+});
+
+final offlineDownloadsListProvider =
+    FutureProvider.autoDispose<List<OfflineCachedBook>>((ref) async {
+  final ids = await BookContentCacheStorage.listCachedBookIds();
+  if (ids.isEmpty) return const [];
+
+  var catalogById = <String, BookSummary>{};
+  try {
+    final catalog = await ref.watch(catalogProvider.future);
+    catalogById = {for (final b in catalog.items) b.id: b};
+  } catch (_) {}
+
+  final rows = <OfflineCachedBook>[];
+  for (final id in ids) {
+    final tree = await BookContentCacheStorage.readBookContent(id);
+    final meta = await BookContentCacheStorage.readBookMeta(id);
+    final catalogBook = catalogById[id];
+    final chapterCount = tree?.chapters.length ?? 0;
+    final pageCount = tree?.chapters.fold<int>(
+          0,
+          (sum, c) => sum + c.pages.length,
+        ) ??
+        0;
+    final hasReadable = chapterCount > 0 && pageCount > 0;
+
+    String title;
+    String? author;
+    String? language;
+    if (catalogBook != null) {
+      title = catalogBook.title;
+      author = catalogBook.authorCompiler;
+      language = catalogBook.primaryLanguage;
+    } else if (meta != null && meta.title.isNotEmpty) {
+      title = meta.title;
+      author = meta.authorCompiler;
+      language = meta.primaryLanguage;
+    } else {
+      title = BookContentCacheStorage.titleFromContentTree(tree) ?? id;
+    }
+
+    if (catalogBook != null &&
+        (meta == null || meta.title.isEmpty || meta.title == id)) {
+      await BookContentCacheStorage.writeBookMeta(
+        id,
+        BookCacheMeta(
+          title: catalogBook.title,
+          authorCompiler: catalogBook.authorCompiler,
+          primaryLanguage: catalogBook.primaryLanguage,
+          savedAtEpochMs: meta?.savedAtEpochMs,
+        ),
+      );
+    }
+
+    rows.add(
+      OfflineCachedBook(
+        id: id,
+        title: title,
+        authorCompiler: author,
+        primaryLanguage: language,
+        chapterCount: chapterCount,
+        pageCount: pageCount,
+        hasReadableContent: hasReadable,
+        inCatalog: catalogBook != null,
+        catalogBook: catalogBook,
+        savedAtEpochMs: meta?.savedAtEpochMs,
+      ),
+    );
+  }
+  rows.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+  return rows;
+});
+

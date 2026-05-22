@@ -7,11 +7,10 @@ import '../providers/session_notifier.dart';
 import '../screens/about_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/settings_screen.dart';
-import '../screens/admin/admin_book_detail_screen.dart';
 import '../screens/admin/admin_book_edit_screen.dart';
 import '../screens/admin/admin_books_screen.dart';
-import '../screens/admin/admin_home_screen.dart';
 import '../screens/book_detail_screen.dart';
+import '../screens/downloads_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/library_screen.dart';
 import '../screens/login_screen.dart';
@@ -99,6 +98,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const LibraryScreen(),
           ),
           GoRoute(
+            path: '/downloads',
+            builder: (context, state) => const DownloadsScreen(),
+          ),
+          GoRoute(
             path: '/profile',
             builder: (context, state) => const ProfileScreen(),
           ),
@@ -160,11 +163,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/admin/books/:id',
-        builder: (context, state) {
+        redirect: (context, state) {
           final id = state.pathParameters['id']!;
-          final extra =
-              state.extra is AdminBook ? state.extra as AdminBook : null;
-          return AdminBookDetailScreen(bookId: id, initialBook: extra);
+          return '/admin/books/$id/edit';
         },
       ),
       GoRoute(
@@ -173,7 +174,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/admin',
-        builder: (context, state) => const AdminHomeScreen(),
+        builder: (context, state) => const AdminBooksScreen(),
       ),
     ],
   );

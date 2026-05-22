@@ -81,6 +81,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
       return 2;
     }
     if (location.startsWith('/library')) return 1;
+    if (location.startsWith('/downloads')) return 0;
     return 0;
   }
 }

@@ -79,6 +79,30 @@
   "homeQuickBrowseSubtitle": "Search and filter the full catalog",
   "homeQuickDownloads": "Downloads",
   "homeQuickDownloadsSubtitle": "Books saved for offline reading",
+  "downloadsPageTitle": "Downloads",
+  "downloadsEmptyTitle": "Nothing downloaded yet",
+  "downloadsEmptyMessage": "Save books for offline reading from a book's detail page or while reading.",
+  "downloadsSavedSection": "Saved on this device",
+  "downloadsActiveSection": "Downloading",
+  "downloadsFailedSection": "Failed downloads",
+  "downloadsNoSavedYet": "No books saved offline yet. Open a book and use Save offline.",
+  "unableToLoadDownloads": "Unable to load downloads",
+  "savedOfflineBadge": "Available offline",
+  "downloadInProgress": "Download in progress…",
+  "downloadFailedGeneric": "Download failed",
+  "downloadsSyncCache": "Sync from server",
+  "downloadsClearBookCache": "Remove offline copy",
+  "downloadsClearAllCache": "Clear all offline copies",
+  "downloadsSyncDone": "Offline copy updated",
+  "downloadsClearBookTitle": "Remove \"{title}\"?",
+  "@downloadsClearBookTitle": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "downloadsClearBookBody": "This removes saved chapters and pages for this book on this device only.",
+  "downloadsCacheInvalid": "No readable content — sync or remove",
+  "downloadsNotInCatalogHint": "This book is not in the public catalog; details are from your offline copy only.",
   "homeQuickAccount": "Account & sync",
   "homeQuickAccountSubtitle": "Profile, plans, and preferences",
   "browseByCategory": "Browse by category",
@@ -393,6 +417,11 @@
   "highlightsTooltip": "Highlights",
   "pinControls": "Pin controls",
   "autoHideControls": "Auto-hide controls",
+  "readerExpandTools": "Show reading tools",
+  "readerCollapseTools": "Hide reading tools",
+  "readerPageCurlOn": "Turn page curl on",
+  "readerPageCurlOff": "Turn page curl off",
+  "readerPageCurlHint": "Drag up-left from the bottom-right corner to curl the page",
   "matchOnPage": "Match on page {page}: {snippet}",
   "@matchOnPage": {
     "placeholders": {
@@ -407,11 +436,20 @@
   "publisherToolsBody": "Manage catalog visibility, book metadata, and publishing. Uploading revision packages still uses presigned URLs from the API (use a desktop workflow or future in-app upload).",
   "adminBooksMenuTitle": "Books",
   "adminBooksMenuSubtitle": "List, create, edit, publish / unpublish",
-  "adminBooksListTitle": "Admin · Books",
+  "adminBooksListTitle": "Manage books",
+  "adminBooksCount": "{shown} of {total} books",
+  "@adminBooksCount": {
+    "placeholders": {
+      "shown": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "adminEditAction": "Edit",
+  "adminBookActionsTooltip": "Book actions",
   "newBookTooltip": "New book",
   "noBooksYetTitle": "No books yet",
   "noBooksYetMessage": "Create your first book to start publishing to readers.",
-  "createFirstBook": "Create first book",
+  "createFirstBook": "Create",
   "searchBooksLabel": "Search books",
   "searchBooksHint": "Title, author, language",
   "filterAll": "All",

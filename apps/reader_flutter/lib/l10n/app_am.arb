@@ -89,6 +89,30 @@
   "homeQuickBrowseSubtitle": "የሙሉ ዝርዝር ፍለጋ እና ማጣሪያ",
   "homeQuickDownloads": "የወረዱ",
   "homeQuickDownloadsSubtitle": "ለኦፍላይን የተቀመጡ መጽሐፍት",
+  "downloadsPageTitle": "የወረዱ",
+  "downloadsEmptyTitle": "እስካሁን ምንም አልወረደም",
+  "downloadsEmptyMessage": "ከመጽሐፍ ዝርዝር ወይንም በማንበብ ወቅት ለኦፍላይን ያስቀምጡ።",
+  "downloadsSavedSection": "በዚህ መሳሪያ ላይ የተቀመጡ",
+  "downloadsActiveSection": "በመውረድ ላይ",
+  "downloadsFailedSection": "የተሳሳቱ ማውረዶች",
+  "downloadsNoSavedYet": "እስካሁን ምንም ከመስመር ውጭ አልተቀመጠም። መጽሐፍ ክፈትና ከመስመር ውጭ አስቀምጥ ተጠቀም።",
+  "unableToLoadDownloads": "የወረዱን ማስገባት አልተቻለም",
+  "savedOfflineBadge": "ከመስመር ውጭ ይገኛል",
+  "downloadInProgress": "በመውረድ ላይ…",
+  "downloadFailedGeneric": "ማውረድ አልተሳካም",
+  "downloadsSyncCache": "ከሰርቨር አመሳስል",
+  "downloadsClearBookCache": "ከመስመር ውጭ ቅጂ አስወግድ",
+  "downloadsClearAllCache": "ሁሉንም ከመስመር ውጭ ቅጂዎች አጽዳ",
+  "downloadsSyncDone": "ከመስመር ውጭ ቅጂ ታድሷል",
+  "downloadsClearBookTitle": "\"{title}\" ይወገድ?",
+  "@downloadsClearBookTitle": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "downloadsClearBookBody": "በዚህ መሳሪያ ላይ ለዚህ መጽሐፍ የተቀመጡ ምዕራፎችንና ገጾችን ብቻ ያስወግዳል።",
+  "downloadsCacheInvalid": "ሊነበብ የሚችል ይዘት የለም — አመሳስል ወይም አስወግድ",
+  "downloadsNotInCatalogHint": "ይህ መጽሐፍ በህዝብ ካታሎጉ ላይ አይደለም፤ ዝርዝሩ ከኦፍላይን ቅጂዎ ይታያል።",
   "homeQuickAccount": "መለያ እና ማመሳሰል",
   "homeQuickAccountSubtitle": "መገለጫ፣ ዕቅዶች እና ምርጫዎች",
   "browseByCategory": "በምድብ ያስሱ",
@@ -459,6 +483,11 @@
   "highlightsTooltip": "ማድመቆች",
   "pinControls": "መቆጣጠሪያዎችን አስይዝ",
   "autoHideControls": "መቆጣጠሪያዎችን በራስ-ደብቅ",
+  "readerExpandTools": "የንባብ መሳሪያዎችን አሳይ",
+  "readerCollapseTools": "የንባብ መሳሪያዎችን ደብቅ",
+  "readerPageCurlOn": "የገጽ መጠገን ሁኔታን አብራ",
+  "readerPageCurlOff": "የገጽ መጠገን ሁኔታን አጥፋ",
+  "readerPageCurlHint": "ገጹን ለመጠገን ከታች ቀኝ ማዕዘን ወደ ላይ-ግራ ይጎትቱ",
   "matchOnPage": "በገጽ {page} ተዛመድ፦ {snippet}",
   "@matchOnPage": {
     "placeholders": {
@@ -477,11 +506,20 @@
   "publisherToolsBody": "የመጽሐፍ ዝርዝር፣ መረጃ እና ህትመት ያቀናብሩ።",
   "adminBooksMenuTitle": "መጽሐፍት",
   "adminBooksMenuSubtitle": "ዝርዝር፣ ፍጠር፣ አርትዖት፣ ህትመት",
-  "adminBooksListTitle": "አስተዳዳሪ · መጽሐፍት",
+  "adminBooksListTitle": "መጽሐፍት ያቀናብሩ",
+  "adminBooksCount": "{shown} ከ {total} መጽሐፍት",
+  "@adminBooksCount": {
+    "placeholders": {
+      "shown": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "adminEditAction": "አርትዕ",
+  "adminBookActionsTooltip": "የመጽሐፍ ተግባራት",
   "newBookTooltip": "አዲስ መጽሐፍ",
   "noBooksYetTitle": "እስካሁን መጽሐፍት የሉም",
   "noBooksYetMessage": "ወደ አንባቢዎች ለማተም የመጀመሪያ መጽሐፍዎን ይፍጠሩ።",
-  "createFirstBook": "የመጀመሪያ መጽሐፍ ፍጠር",
+  "createFirstBook": "መጽሐፍ ፍጠር",
   "searchBooksLabel": "መጽሐፍት ፈልግ",
   "searchBooksHint": "ርዕስ፣ ደራሲ፣ ቋንቋ",
   "filterAll": "ሁሉም",

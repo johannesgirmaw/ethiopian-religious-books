@@ -422,6 +422,120 @@ abstract class AppLocalizations {
   /// **'Books saved for offline reading'**
   String get homeQuickDownloadsSubtitle;
 
+  /// No description provided for @downloadsPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloads'**
+  String get downloadsPageTitle;
+
+  /// No description provided for @downloadsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing downloaded yet'**
+  String get downloadsEmptyTitle;
+
+  /// No description provided for @downloadsEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Save books for offline reading from a book\'s detail page or while reading.'**
+  String get downloadsEmptyMessage;
+
+  /// No description provided for @downloadsSavedSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved on this device'**
+  String get downloadsSavedSection;
+
+  /// No description provided for @downloadsActiveSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading'**
+  String get downloadsActiveSection;
+
+  /// No description provided for @downloadsFailedSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed downloads'**
+  String get downloadsFailedSection;
+
+  /// No description provided for @downloadsNoSavedYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No books saved offline yet. Open a book and use Save offline.'**
+  String get downloadsNoSavedYet;
+
+  /// No description provided for @unableToLoadDownloads.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load downloads'**
+  String get unableToLoadDownloads;
+
+  /// No description provided for @savedOfflineBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Available offline'**
+  String get savedOfflineBadge;
+
+  /// No description provided for @downloadInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Download in progress…'**
+  String get downloadInProgress;
+
+  /// No description provided for @downloadFailedGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Download failed'**
+  String get downloadFailedGeneric;
+
+  /// No description provided for @downloadsSyncCache.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync from server'**
+  String get downloadsSyncCache;
+
+  /// No description provided for @downloadsClearBookCache.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove offline copy'**
+  String get downloadsClearBookCache;
+
+  /// No description provided for @downloadsClearAllCache.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all offline copies'**
+  String get downloadsClearAllCache;
+
+  /// No description provided for @downloadsSyncDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline copy updated'**
+  String get downloadsSyncDone;
+
+  /// No description provided for @downloadsClearBookTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove \"{title}\"?'**
+  String downloadsClearBookTitle(String title);
+
+  /// No description provided for @downloadsClearBookBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes saved chapters and pages for this book on this device only.'**
+  String get downloadsClearBookBody;
+
+  /// No description provided for @downloadsCacheInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'No readable content — sync or remove'**
+  String get downloadsCacheInvalid;
+
+  /// No description provided for @downloadsNotInCatalogHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This book is not in the public catalog; details are from your offline copy only.'**
+  String get downloadsNotInCatalogHint;
+
   /// No description provided for @homeQuickAccount.
   ///
   /// In en, this message translates to:
@@ -1562,6 +1676,36 @@ abstract class AppLocalizations {
   /// **'Auto-hide controls'**
   String get autoHideControls;
 
+  /// No description provided for @readerExpandTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Show reading tools'**
+  String get readerExpandTools;
+
+  /// No description provided for @readerCollapseTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide reading tools'**
+  String get readerCollapseTools;
+
+  /// No description provided for @readerPageCurlOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn page curl on'**
+  String get readerPageCurlOn;
+
+  /// No description provided for @readerPageCurlOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn page curl off'**
+  String get readerPageCurlOff;
+
+  /// No description provided for @readerPageCurlHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag up-left from the bottom-right corner to curl the page'**
+  String get readerPageCurlHint;
+
   /// No description provided for @matchOnPage.
   ///
   /// In en, this message translates to:
@@ -1613,8 +1757,26 @@ abstract class AppLocalizations {
   /// No description provided for @adminBooksListTitle.
   ///
   /// In en, this message translates to:
-  /// **'Admin · Books'**
+  /// **'Manage books'**
   String get adminBooksListTitle;
+
+  /// No description provided for @adminBooksCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{shown} of {total} books'**
+  String adminBooksCount(int shown, int total);
+
+  /// No description provided for @adminEditAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get adminEditAction;
+
+  /// No description provided for @adminBookActionsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Book actions'**
+  String get adminBookActionsTooltip;
 
   /// No description provided for @newBookTooltip.
   ///
@@ -1637,7 +1799,7 @@ abstract class AppLocalizations {
   /// No description provided for @createFirstBook.
   ///
   /// In en, this message translates to:
-  /// **'Create first book'**
+  /// **'Create'**
   String get createFirstBook;
 
   /// No description provided for @searchBooksLabel.

@@ -33,10 +33,12 @@ class HomeScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final async = ref.watch(catalogProvider);
     final lastOpened = ref.watch(lastOpenedBookProvider).valueOrNull;
-    final downloadCount = ref.watch(downloadJobsProvider).valueOrNull
-            ?.where((j) => j.state == 'completed')
-            .length ??
-        0;
+    final offlineCount =
+        ref.watch(offlineBookCountProvider).valueOrNull ?? 0;
+    final downloadJobs = ref.watch(downloadJobsProvider).valueOrNull ?? const [];
+    final inProgressCount = downloadJobs
+        .where((j) => j.state == 'in_progress' || j.state == 'pending')
+        .length;
 
     return Scaffold(
       backgroundColor: AppColors.referencePageBg,
@@ -74,6 +76,9 @@ class HomeScreen extends ConsumerWidget {
                   onRefresh: () async {
                     ref.invalidate(catalogProvider);
                     ref.invalidate(lastOpenedBookProvider);
+                    ref.invalidate(offlineBookCountProvider);
+                    ref.invalidate(offlineDownloadsListProvider);
+                    ref.invalidate(downloadJobsProvider);
                     await ref.read(catalogProvider.future);
                   },
                   child: ListView(
@@ -93,13 +98,15 @@ class HomeScreen extends ConsumerWidget {
                       const SizedBox(height: 16),
                       SummaryHubCard(
                         title: l10n.homeQuickDownloads,
-                        categoryLabel: l10n.downloadOffline,
+                        categoryLabel: inProgressCount > 0
+                            ? l10n.inProgressDownloads
+                            : l10n.downloadOffline,
                         categoryIcon: Icons.download_outlined,
-                        contentLabel: downloadCount > 0
-                            ? '$downloadCount'
+                        contentLabel: offlineCount > 0
+                            ? l10n.offlineBooksSaved(offlineCount)
                             : l10n.homeQuickDownloadsSubtitle,
                         contentIcon: Icons.download_done_outlined,
-                        onTap: () => context.go('/library'),
+                        onTap: () => context.go('/downloads'),
                       ),
                       if (lastOpened != null && lastOpened.bookId.isNotEmpty) ...[
                         const SizedBox(height: 24),

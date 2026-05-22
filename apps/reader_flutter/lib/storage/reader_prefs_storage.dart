@@ -66,6 +66,7 @@ class ReaderPrefsStorage {
   static String _progressKey(String bookId) => 'reader_progress_$bookId';
   static String _fontSizeKey(String bookId) => 'reader_font_size_$bookId';
   static String _themeKey(String bookId) => 'reader_theme_$bookId';
+  static String _pageCurlKey(String bookId) => 'reader_page_curl_$bookId';
   static String _bookmarksKey(String bookId) => 'reader_bookmarks_$bookId';
 
   static Future<double> readProgress(String bookId) async {
@@ -96,6 +97,16 @@ class ReaderPrefsStorage {
   static Future<void> writeThemeMode(String bookId, String mode) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_themeKey(bookId), mode);
+  }
+
+  static Future<bool> readPageCurlMode(String bookId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_pageCurlKey(bookId)) ?? false;
+  }
+
+  static Future<void> writePageCurlMode(String bookId, bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_pageCurlKey(bookId), enabled);
   }
 
   static Future<List<ReaderBookmark>> readBookmarks(String bookId) async {

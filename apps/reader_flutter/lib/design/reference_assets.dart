@@ -5,5 +5,5 @@ class ReferenceAssets {
   static const String bgPattern = 'assets/images/bg1.png';
   static const String headerSlice = 'assets/images/slice.png';
   static const String appLogo = 'assets/images/mobile-logo.png';
-  static const String drawerHero = 'assets/images/drawer-bg.png';
+  static const String drawerHero = 'assets/images/bg1.png';
 }

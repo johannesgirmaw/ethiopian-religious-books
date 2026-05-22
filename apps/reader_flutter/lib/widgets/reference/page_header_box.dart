@@ -58,7 +58,7 @@ class _PageHeaderBoxState extends State<PageHeaderBox> {
             padding: const EdgeInsets.only(top: 35),
             decoration: const BoxDecoration(
               image: DecorationImage(
-                opacity: 0.16,
+                opacity: 0.5,
                 image: AssetImage(ReferenceAssets.bgPattern),
                 fit: BoxFit.cover,
               ),
@@ -108,20 +108,20 @@ class _PageHeaderBoxState extends State<PageHeaderBox> {
               ],
             ),
           ),
-          Positioned(
-            top: -50,
-            right: 0,
-            child: Container(
-              width: 200,
-              height: 250,
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage(ReferenceAssets.headerSlice),
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
+          // Positioned(
+          //   top: -50,
+          //   right: 0,
+          //   child: Container(
+          //     width: 200,
+          //     height: 250,
+          //     decoration: const BoxDecoration(
+          //       image: DecorationImage(
+          //         image: AssetImage(ReferenceAssets.headerSlice),
+          //         fit: BoxFit.contain,
+          //       ),
+          //     ),
+          //   ),
+          // ),
           Positioned(
             top: ReferenceMenuLayout.top(context),
             left: ReferenceMenuLayout.left,

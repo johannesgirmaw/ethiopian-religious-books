@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
+import '../design/reference_assets.dart';
 import '../l10n/app_localizations.dart';
 import '../models/book_models.dart';
 import '../providers/api_client.dart';
@@ -13,6 +13,7 @@ import '../providers/study_providers.dart';
 import '../storage/book_content_cache_storage.dart';
 import '../storage/reader_prefs_storage.dart';
 import '../utils/rich_text_codec.dart' show plainTextFromStoredSummary;
+import '../widgets/reader_book_page_curl_view.dart';
 import '../widgets/stored_rich_text_view.dart';
 
 class ReaderScreen extends ConsumerStatefulWidget {
@@ -42,6 +43,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   String _mode = 'light';
   List<ReaderBookmark> _bookmarks = const [];
   final TextEditingController _findController = TextEditingController();
+  final FocusNode _findFocusNode = FocusNode();
+  bool _showFindBar = false;
+  bool _footerExpanded = false;
+  bool _pageCurlEnabled = false;
+  final ReaderPageCurlController _pageCurlController = ReaderPageCurlController();
+  bool _searchAllChapters = true;
   String _findQuery = '';
   List<String> _matchedLocations = const [];
   List<BookSearchHit> _searchHits = const [];
@@ -61,8 +68,20 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     _selectedPageNumber = widget.initialPageNumber;
     _restoreReaderState();
     _scrollController.addListener(_onScroll);
+    _findFocusNode.addListener(_onFindFocusChanged);
     _scheduleAutoHide();
     WidgetsBinding.instance.addPostFrameCallback((_) => _recordLastOpened());
+  }
+
+  void _onFindFocusChanged() {
+    if (!_findFocusNode.hasFocus) return;
+    _idleTimer?.cancel();
+    if (mounted && (!_showChrome || !_showFindBar)) {
+      setState(() {
+        _showChrome = true;
+        _showFindBar = true;
+      });
+    }
   }
 
   Future<void> _recordLastOpened() async {
@@ -94,12 +113,16 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final restoredMode = await ReaderPrefsStorage.readThemeMode(widget.bookId);
     final restoredBookmarks =
         await ReaderPrefsStorage.readBookmarks(widget.bookId);
+    final restoredPageCurl =
+        await ReaderPrefsStorage.readPageCurlMode(widget.bookId);
     if (!mounted) return;
     setState(() {
       _progress = restoredProgress;
       _fontSize = restoredFont;
       _mode = restoredMode;
       _bookmarks = restoredBookmarks;
+      _pageCurlEnabled = restoredPageCurl;
+      if (restoredPageCurl) _showChrome = true;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
@@ -144,6 +167,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
   void _scheduleAutoHide() {
     if (!_autoHideEnabled) return;
+    if (_pageCurlEnabled) return;
+    if (_showFindBar || _findFocusNode.hasFocus) return;
     _idleTimer?.cancel();
     _idleTimer = Timer(const Duration(seconds: 3), () {
       if (!mounted) return;
@@ -152,6 +177,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 
   void _toggleChrome() {
+    if (_pageCurlEnabled) {
+      setState(() => _showChrome = true);
+      return;
+    }
     setState(() => _showChrome = !_showChrome);
     if (_showChrome) _scheduleAutoHide();
   }
@@ -347,7 +376,75 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     return '$chapterKey::$pageNumber';
   }
 
+  int _pageIndexFromProgress(int sectionCount) {
+    if (sectionCount <= 1) return 0;
+    return (_progress.clamp(0, 1) * (sectionCount - 1))
+        .round()
+        .clamp(0, sectionCount - 1);
+  }
+
+  void _handleCurlPageChanged(int index, List<_ReaderSection> sections) {
+    if (index < 0 || index >= sections.length) return;
+    final newProgress = sections.length <= 1
+        ? 0.0
+        : index / (sections.length - 1);
+    final page = sections[index].pageNumber;
+    if ((newProgress - _progress).abs() < 0.005 &&
+        _selectedPageNumber == page) {
+      return;
+    }
+    setState(() {
+      _progress = newProgress;
+      _selectedPageNumber = page;
+    });
+    ReaderPrefsStorage.writeProgress(widget.bookId, newProgress);
+    _scheduleCloudProgressSync();
+  }
+
+  Future<void> _togglePageCurlMode() async {
+    final next = !_pageCurlEnabled;
+    setState(() {
+      _pageCurlEnabled = next;
+      _showChrome = true;
+      if (next) _footerExpanded = true;
+    });
+    await ReaderPrefsStorage.writePageCurlMode(widget.bookId, next);
+    if (!mounted) return;
+    if (next) {
+      _idleTimer?.cancel();
+      setState(() => _showChrome = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.readerPageCurlHint),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      if (_renderedSections.isNotEmpty) {
+        final index = _pageIndexFromProgress(_renderedSections.length);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _pageCurlController.goToPage(index);
+          _handleCurlPageChanged(index, _renderedSections);
+        });
+      }
+    } else if (_renderedSections.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _jumpToSection(_pageIndexFromProgress(_renderedSections.length));
+      });
+    }
+  }
+
   void _jumpToSection(int index) {
+    if (_pageCurlEnabled && _renderedSections.isNotEmpty) {
+      final safe = index.clamp(0, _renderedSections.length - 1);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _pageCurlController.goToPage(safe);
+      });
+      _handleCurlPageChanged(safe, _renderedSections);
+      return;
+    }
     final sectionKey = _sectionKeys[index];
     if (sectionKey == null) return;
     final sectionContext = sectionKey.currentContext;
@@ -751,7 +848,20 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           .toList(),
       'total_pages': tree.totalPages,
     };
-    await BookContentCacheStorage.writeBookContent(widget.bookId, raw);
+    final book = ref.read(bookDetailProvider(widget.bookId)).valueOrNull;
+    await BookContentCacheStorage.writeBookContent(
+      widget.bookId,
+      raw,
+      meta: BookCacheMeta(
+        title: book?.title ??
+            BookContentCacheStorage.titleFromContentTree(tree) ??
+            widget.bookId,
+        authorCompiler: book?.authorCompiler,
+        primaryLanguage: book?.primaryLanguage,
+        savedAtEpochMs: DateTime.now().millisecondsSinceEpoch,
+      ),
+    );
+    ref.invalidate(offlineDownloadsListProvider);
     ref.invalidate(offlineBookCachedProvider(widget.bookId));
     ref.invalidate(offlineBookCountProvider);
     if (mounted) {
@@ -761,129 +871,179 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     }
   }
 
-  Future<void> _openFindSheet() async {
-    _findController.text = _findQuery;
-    final hasSelectedChapter =
-        _selectedChapterKey != null && _selectedChapterKey!.isNotEmpty;
-    var allChapters = !hasSelectedChapter;
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setSheetState) {
-          List<_ReaderSection> scopeSections() {
-            return allChapters ? _allSections : _renderedSections;
-          }
+  bool get _hasSelectedChapter =>
+      _selectedChapterKey != null && _selectedChapterKey!.isNotEmpty;
 
-          void updateLocalMatches(String value) {
-            final query = value.trim().toLowerCase();
-            final matches = <String>[];
-            for (final section in scopeSections()) {
-              final all =
-                  '${section.title} ${plainTextFromStoredSummary(section.body)}'
-                      .toLowerCase();
-              if (query.isNotEmpty && all.contains(query)) {
-                matches.add(_locationId(section.chapterKey, section.pageNumber));
-              }
-            }
-            setState(() {
-              _findQuery = value.trim();
-              _matchedLocations = matches;
-              _searchHits = const [];
-              _activeMatchPointer = matches.isEmpty ? -1 : 0;
-            });
-          }
+  void _updateFindMatches(String value, {bool? allChapters}) {
+    final scopeAll = allChapters ??
+        (_searchAllChapters || !_hasSelectedChapter);
+    final sections = scopeAll ? _allSections : _renderedSections;
+    final query = value.trim().toLowerCase();
+    final matches = <String>[];
+    for (final section in sections) {
+      final haystack =
+          '${section.title} ${plainTextFromStoredSummary(section.body)}'
+              .toLowerCase();
+      if (query.isNotEmpty && haystack.contains(query)) {
+        matches.add(_locationId(section.chapterKey, section.pageNumber));
+      }
+    }
+    setState(() {
+      _findQuery = value.trim();
+      _matchedLocations = matches;
+      _searchHits = const [];
+      _activeMatchPointer = matches.isEmpty ? -1 : 0;
+    });
+  }
 
-          return SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: _findController,
-                    textInputAction: TextInputAction.search,
-                    decoration: InputDecoration(
-                      labelText: l10n.findInBookLabel,
-                      hintText: l10n.findInBookHint,
-                      prefixIcon: const Icon(Icons.search_rounded),
-                    ),
-                    onChanged: updateLocalMatches,
-                    onSubmitted: (_) {
-                      Navigator.of(context).pop();
-                      final trimmed = _findController.text.trim();
-                      if (trimmed.isNotEmpty) {
-                        _runServerSearch(trimmed, allChapters: allChapters);
-                      } else {
-                        _goToActiveMatch();
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: allChapters,
-                    onChanged: hasSelectedChapter
-                        ? (value) {
-                            setSheetState(() => allChapters = value);
-                            updateLocalMatches(_findController.text);
-                          }
-                        : null,
-                    title: Text(l10n.allChapters),
-                    subtitle: Text(
-                      hasSelectedChapter
-                          ? l10n.searchOutsideChapter
-                          : l10n.noChapterSelected,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _matchedLocations.isEmpty
-                              ? l10n.noMatchesYet
-                              : l10n.matchCount(_matchedLocations.length),
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: l10n.previousMatch,
-                        onPressed: _matchedLocations.length < 2
-                            ? null
-                            : () => _cycleMatch(-1),
-                        icon: const Icon(Icons.keyboard_arrow_up_rounded),
-                      ),
-                      IconButton(
-                        tooltip: l10n.nextMatch,
-                        onPressed: _matchedLocations.length < 2
-                            ? null
-                            : () => _cycleMatch(1),
-                        icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                      ),
-                      FilledButton(
-                        onPressed: _matchedLocations.isEmpty
-                            ? (_findController.text.trim().isEmpty
-                                  ? null
-                                  : () {
-                                      Navigator.of(context).pop();
-                                      _runServerSearch(
-                                        _findController.text.trim(),
-                                        allChapters: allChapters,
-                                      );
-                                    })
-                            : () {
-                                Navigator.of(context).pop();
-                                _goToActiveMatch();
-                              },
-                        child: Text(l10n.search),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+  void _toggleFindBar() {
+    setState(() {
+      _showFindBar = !_showFindBar;
+      _showChrome = true;
+      if (_showFindBar) {
+        _findController.text = _findQuery;
+        _searchAllChapters = !_hasSelectedChapter;
+      }
+    });
+    if (_showFindBar) {
+      _idleTimer?.cancel();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _findFocusNode.requestFocus();
+      });
+    } else {
+      _findFocusNode.unfocus();
+      _scheduleAutoHide();
+    }
+  }
+
+  void _submitFind() {
+    final trimmed = _findController.text.trim();
+    if (trimmed.isEmpty) {
+      _goToActiveMatch();
+      return;
+    }
+    if (_matchedLocations.isNotEmpty) {
+      _goToActiveMatch();
+      return;
+    }
+    _runServerSearch(trimmed, allChapters: _searchAllChapters);
+  }
+
+  double _readerTopChromeInset(bool showChrome) {
+    if (!showChrome) return 20;
+    return 64;
+  }
+
+  int _readerFooterActionCount({required bool hasChapter}) {
+    var count = 15;
+    if (hasChapter) count += 3;
+    return count;
+  }
+
+  Widget _buildPageCurlReader({
+    required List<_ReaderSection> sections,
+    required bool dark,
+    required bool sepia,
+    required Color text,
+    required ColorScheme colorScheme,
+  }) {
+    final startIndex = _pageIndexFromProgress(sections.length);
+    final paper = _readerPaperBase(dark, sepia);
+    return ReaderBookPageCurlView(
+      key: ValueKey(
+        'curl-${widget.bookId}-${_selectedChapterKey ?? ''}-${sections.length}',
+      ),
+      controller: _pageCurlController,
+      pageCount: sections.length,
+      initialPage: startIndex,
+      backgroundColor: paper,
+      onPageChanged: (index) => _handleCurlPageChanged(index, sections),
+      pageBuilder: (context, index) {
+        final section = sections[index];
+        final locationId =
+            _locationId(section.chapterKey, section.pageNumber);
+        final isMatch = _matchedLocations.contains(locationId);
+        final isActiveMatch = isMatch &&
+            _activeMatchPointer >= 0 &&
+            _matchedLocations[_activeMatchPointer] == locationId;
+        return ColoredBox(
+          color: paper,
+          child: SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            child: _ReaderBookPage(
+              section: section,
+              dark: dark,
+              sepia: sepia,
+              textColor: text,
+              fontSize: _fontSize,
+              lineHeight: _lineHeight,
+              isMatch: isMatch,
+              isActiveMatch: isActiveMatch,
+              colorScheme: colorScheme,
             ),
-          );
-        },
+          ),
+        );
+      },
+    );
+  }
+
+  double _readerFindPanelHeight({required bool hasChapter}) {
+    var h = 52.0 + 44.0;
+    if (hasChapter) h += 56;
+    return h + 24;
+  }
+
+  static const double _readerToolbarCollapsedHeight = 52;
+
+  double _readerToolbarHeight({
+    required bool hasChapter,
+    required bool expanded,
+  }) {
+    if (!expanded) return _readerToolbarCollapsedHeight + 24;
+    const iconsPerRow = 6;
+    const rowHeight = 40.0;
+    final rows =
+        (_readerFooterActionCount(hasChapter: hasChapter) / iconsPerRow).ceil();
+    return 28.0 + rows * rowHeight + 16 + 24;
+  }
+
+  double _readerBottomChromeInset(
+    bool showChrome, {
+    required bool hasChapter,
+    bool findBar = false,
+    bool keyboardOpen = false,
+    bool footerExpanded = false,
+  }) {
+    if (!showChrome) return 28;
+    if (keyboardOpen && findBar) {
+      return _readerFindPanelHeight(hasChapter: hasChapter) + 16;
+    }
+    var h = _readerToolbarHeight(
+      hasChapter: hasChapter,
+      expanded: footerExpanded,
+    );
+    if (findBar) {
+      h += _readerFindPanelHeight(hasChapter: hasChapter) + 8;
+    }
+    return h + 12;
+  }
+
+  void _toggleFooterExpanded() {
+    setState(() => _footerExpanded = !_footerExpanded);
+    _idleTimer?.cancel();
+    if (_footerExpanded) _scheduleAutoHide();
+  }
+
+  BoxDecoration _readerChromePanelDecoration({
+    required Color bg,
+    required Color text,
+    required bool dark,
+  }) {
+    return BoxDecoration(
+      color: bg.withValues(alpha: 0.97),
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(
+        color: text.withValues(alpha: dark ? 0.22 : 0.14),
       ),
     );
   }
@@ -996,6 +1156,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     _progressSyncTimer?.cancel();
     _scrollController.dispose();
     _findController.dispose();
+    _findFocusNode.dispose();
     super.dispose();
   }
 
@@ -1011,11 +1172,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       data: (book) {
         final dark = _mode == 'dark';
         final sepia = _mode == 'sepia';
-        final bg = dark
-            ? const Color(0xFF121826)
-            : sepia
-                ? const Color(0xFFF6E9D1)
-                : Colors.white;
+        final bg = _readerPaperBase(dark, sepia);
         final text = dark ? const Color(0xFFE6EDF7) : const Color(0xFF0F172A);
 
         final hasTree = contentTree != null && contentTree.chapters.isNotEmpty;
@@ -1060,18 +1217,63 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             );
           });
         }
-        final currentSection = sections.isEmpty
-            ? null
-            : sections[(_progress.clamp(0, 1) * (sections.length - 1))
-                .round()
-                .clamp(0, sections.length - 1)];
+        final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+        final findPanelH =
+            _readerFindPanelHeight(hasChapter: _hasSelectedChapter);
+        final curlReading = _pageCurlEnabled &&
+            _selectedChapterKey != null &&
+            sections.isNotEmpty;
+        final showChromeUi = _showChrome || curlReading;
+        final showFindPanel = showChromeUi && _showFindBar;
+        final showToolbarPanel =
+            showChromeUi && !(keyboardOpen && _showFindBar);
+        final findBottom = showChromeUi ? 8.0 : -(findPanelH + 24);
+        final toolbarH = _readerToolbarHeight(
+          hasChapter: _hasSelectedChapter,
+          expanded: _footerExpanded,
+        );
+        final toolbarBottom = showChromeUi
+            ? 8.0 + (showFindPanel ? findPanelH + 8 : 0)
+            : -(toolbarH + 24);
+        final contentTop =
+            showChromeUi ? _readerTopChromeInset(true) : 20.0;
+        final contentBottom = showChromeUi
+            ? _readerBottomChromeInset(
+                true,
+                hasChapter: _hasSelectedChapter,
+                findBar: _showFindBar,
+                keyboardOpen: keyboardOpen,
+                footerExpanded: _footerExpanded,
+              )
+            : 28.0;
 
         return Scaffold(
           backgroundColor: bg,
+          resizeToAvoidBottomInset: true,
           body: SafeArea(
             child: Stack(
               children: [
-                GestureDetector(
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: _readerPageBackgroundDecoration(dark, sepia),
+                  ),
+                ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: contentTop,
+                  bottom: contentBottom,
+                  child: curlReading
+                      ? ClipRect(
+                          child: _buildPageCurlReader(
+                            sections: sections,
+                            dark: dark,
+                            sepia: sepia,
+                            text: text,
+                            colorScheme: Theme.of(context).colorScheme,
+                          ),
+                        )
+                      : GestureDetector(
                   onTap: _toggleChrome,
                   onPanDown: (_) {
                     if (!_showChrome) setState(() => _showChrome = true);
@@ -1080,31 +1282,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                   child: ListView(
                     controller: _scrollController,
                     padding: EdgeInsets.fromLTRB(
-                      20,
-                      _showChrome ? 78 : 20,
-                      20,
-                      _showChrome ? 100 : 28,
+                      _selectedChapterKey != null ? 0 : 16,
+                      0,
+                      _selectedChapterKey != null ? 0 : 16,
+                      0,
                     ),
                     children: [
-                      Text(
-                        book.title,
-                        style:
-                            Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  color: text,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                      ),
-                      if (book.subtitle?.isNotEmpty == true) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          book.subtitle!,
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: text.withValues(alpha: 0.8),
-                                  ),
-                        ),
-                      ],
-                      const SizedBox(height: 18),
                       if (hasTree && _selectedChapterKey == null) ...[
                         Text(
                           l10n.chaptersHeading,
@@ -1115,12 +1298,29 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                         ),
                         const SizedBox(height: 10),
                         ...contentTree.chapters.map(
-                          (chapter) => Card(
-                            child: ListTile(
-                              leading: const Icon(Icons.menu_book_rounded),
-                              title: Text(chapter.title),
-                              subtitle: Text(l10n.pageCount(chapter.pages.length)),
-                              trailing: const Icon(Icons.chevron_right_rounded),
+                          (chapter) {
+                            final cardPaper = _readerPaperForPage(
+                              bg,
+                              _readerPageAccent(chapter.chapterKey.hashCode, dark, sepia),
+                              chapter.chapterKey.hashCode,
+                            );
+                            return Card(
+                              color: cardPaper,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                side: BorderSide(
+                                  color: text.withValues(alpha: dark ? 0.2 : 0.1),
+                                ),
+                              ),
+                              child: ListTile(
+                              leading: Icon(Icons.menu_book_rounded, color: text.withValues(alpha: 0.7)),
+                              title: Text(chapter.title, style: TextStyle(color: text)),
+                              subtitle: Text(
+                                l10n.pageCount(chapter.pages.length),
+                                style: TextStyle(color: text.withValues(alpha: 0.65)),
+                              ),
+                              trailing: Icon(Icons.chevron_right_rounded, color: text.withValues(alpha: 0.5)),
                               onTap: () {
                                 setState(() {
                                   _selectedChapterKey = chapter.chapterKey;
@@ -1128,7 +1328,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                 });
                               },
                             ),
-                          ),
+                            );
+                          },
                         ),
                         const SizedBox(height: 80),
                       ] else if (asyncContentTree.isLoading) ...[
@@ -1149,31 +1350,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                         ),
                         const SizedBox(height: 80),
                       ] else ...[
-                      if (_selectedChapterKey != null || _selectedPageNumber != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: Wrap(
-                            spacing: 8,
-                            children: [
-                              if (_selectedChapterKey != null)
-                                Chip(
-                                  label: Text(
-                                    selectedChapter == null
-                                        ? l10n.chapterChipRaw(_selectedChapterKey!)
-                                        : l10n.chapterChipRaw(selectedChapter.title),
-                                  ),
-                                  onDeleted: _returnToChapters,
-                                ),
-                              if (_selectedPageNumber != null)
-                                Chip(
-                                  label: Text(
-                                    l10n.pageChipShort(_selectedPageNumber!),
-                                  ),
-                                  onDeleted: () => setState(() => _selectedPageNumber = null),
-                                ),
-                            ],
-                          ),
-                        ),
                       ...sections.map((section) {
                         final locationId =
                             _locationId(section.chapterKey, section.pageNumber);
@@ -1198,270 +1374,515 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                     ],
                   ),
                 ),
+                ),
                 AnimatedPositioned(
                   duration: const Duration(milliseconds: 220),
-                  top: _showChrome ? 0 : -84,
+                  top: showChromeUi ? 0 : -72,
                   left: 0,
                   right: 0,
-                  child: Container(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {},
+                    child: Material(
                     color: bg.withValues(alpha: 0.97),
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          onPressed: () => context.pop(),
-                          icon: Icon(Icons.arrow_back_rounded, color: text),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            book.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: text,
-                              fontWeight: FontWeight.w700,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(4, 4, 12, 10),
+                      child: Row(
+                        children: [
+                          _ReaderChromeIcon(
+                            onPressed: () => context.pop(),
+                            icon: Icons.arrow_back_rounded,
+                            color: text,
+                          ),
+                          Expanded(
+                            child: Text(
+                              book.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: text,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 17,
+                                height: 1.25,
+                              ),
                             ),
                           ),
-                        ),
-                        Flexible(
-                          flex: 1,
-                          fit: FlexFit.loose,
-                          child: Align(
-                            alignment: AlignmentDirectional.centerEnd,
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
+                        ],
+                      ),
+                    ),
+                  ),
+                  ),
+                ),
+                if (showFindPanel)
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 220),
+                    left: 12,
+                    right: 12,
+                    bottom: findBottom,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {},
+                      child: Material(
+                        color: Colors.transparent,
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: _readerChromePanelDecoration(
+                            bg: bg,
+                            text: text,
+                            dark: dark,
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TextField(
+                                focusNode: _findFocusNode,
+                                controller: _findController,
+                                style: TextStyle(color: text, fontSize: 15),
+                                textInputAction: TextInputAction.search,
+                                decoration: InputDecoration(
+                                  isDense: true,
+                                  hintText: l10n.findInBookHint,
+                                  hintStyle: TextStyle(
+                                    color: text.withValues(alpha: 0.45),
+                                  ),
+                                  prefixIcon: Icon(
+                                    Icons.search_rounded,
+                                    color: text.withValues(alpha: 0.7),
+                                    size: 22,
+                                  ),
+                                  suffixIcon: IconButton(
+                                    tooltip: l10n.search,
+                                    onPressed: _submitFind,
+                                    icon: Icon(
+                                      Icons.check_rounded,
+                                      color: text,
+                                    ),
+                                  ),
+                                  filled: true,
+                                  fillColor: dark
+                                      ? const Color(0xFF243044)
+                                      : text.withValues(alpha: 0.06),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                ),
+                                onChanged: (v) => _updateFindMatches(
+                                  v,
+                                  allChapters: _searchAllChapters,
+                                ),
+                                onSubmitted: (_) => _submitFind(),
+                              ),
+                              if (_hasSelectedChapter)
+                                SwitchListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  dense: true,
+                                  value: _searchAllChapters,
+                                  onChanged: (value) {
+                                    setState(() => _searchAllChapters = value);
+                                    _updateFindMatches(
+                                      _findController.text,
+                                      allChapters: value,
+                                    );
+                                  },
+                                  title: Text(
+                                    l10n.allChapters,
+                                    style: TextStyle(color: text, fontSize: 13),
+                                  ),
+                                  subtitle: Text(
+                                    l10n.searchOutsideChapter,
+                                    style: TextStyle(
+                                      color: text.withValues(alpha: 0.6),
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              Row(
                                 children: [
+                                  Expanded(
+                                    child: Text(
+                                      _matchedLocations.isEmpty
+                                          ? l10n.noMatchesYet
+                                          : l10n.matchCount(
+                                              _matchedLocations.length,
+                                            ),
+                                      style: TextStyle(
+                                        color: text.withValues(alpha: 0.7),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
                                   IconButton(
+                                    tooltip: l10n.previousMatch,
+                                    visualDensity: VisualDensity.compact,
+                                    onPressed: _matchedLocations.length < 2
+                                        ? null
+                                        : () {
+                                            _cycleMatch(-1);
+                                            _goToActiveMatch();
+                                          },
+                                    icon: Icon(
+                                      Icons.keyboard_arrow_up_rounded,
+                                      color: text,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: l10n.nextMatch,
+                                    visualDensity: VisualDensity.compact,
+                                    onPressed: _matchedLocations.length < 2
+                                        ? null
+                                        : () {
+                                            _cycleMatch(1);
+                                            _goToActiveMatch();
+                                          },
+                                    icon: Icon(
+                                      Icons.keyboard_arrow_down_rounded,
+                                      color: text,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    visualDensity: VisualDensity.compact,
+                                    onPressed: () {
+                                      setState(() => _showFindBar = false);
+                                      _findFocusNode.unfocus();
+                                      _scheduleAutoHide();
+                                    },
+                                    icon: Icon(
+                                      Icons.close_rounded,
+                                      color: text,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (showToolbarPanel)
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 220),
+                    left: 12,
+                    right: 12,
+                    bottom: toolbarBottom,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {},
+                      child: Material(
+                        color: Colors.transparent,
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: _readerChromePanelDecoration(
+                            bg: bg,
+                            text: text,
+                            dark: dark,
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: LinearProgressIndicator(
+                                      value: _progress.clamp(0, 1),
+                                      minHeight: 4,
+                                      borderRadius: BorderRadius.circular(99),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${(_progress * 100).round()}%',
+                                    style: TextStyle(
+                                      color: text,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  _ReaderChromeIcon(
+                                    tooltip: _footerExpanded
+                                        ? l10n.readerCollapseTools
+                                        : l10n.readerExpandTools,
+                                    onPressed: _toggleFooterExpanded,
+                                    icon: _footerExpanded
+                                        ? Icons.keyboard_arrow_down_rounded
+                                        : Icons.keyboard_arrow_up_rounded,
+                                    color: text,
+                                  ),
+                                ],
+                              ),
+                              AnimatedSize(
+                                duration: const Duration(milliseconds: 220),
+                                curve: Curves.easeOutCubic,
+                                alignment: Alignment.topCenter,
+                                child: _footerExpanded
+                                    ? Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const SizedBox(height: 8),
+                                          Wrap(
+                                            spacing: 4,
+                                            runSpacing: 4,
+                                            alignment: WrapAlignment.center,
+                                            children: [
+                                  if (_hasSelectedChapter)
+                                    _ReaderChromeIcon(
+                                      tooltip: l10n.backToChaptersTooltip,
+                                      onPressed: _returnToChapters,
+                                      icon: Icons.grid_view_rounded,
+                                      color: text,
+                                    ),
+                                  _ReaderChromeIcon(
                                     onPressed: () => _openTocSheet(
                                       book.title,
                                       sections,
                                       contentTree,
                                     ),
-                                    icon: Icon(Icons.toc_rounded, color: text),
+                                    icon: Icons.toc_rounded,
+                                    color: text,
                                   ),
-                                  IconButton(
-                                    tooltip: l10n.backToChaptersTooltip,
-                                    onPressed: _selectedChapterKey == null
-                                        ? null
-                                        : _returnToChapters,
-                                    icon: Icon(Icons.view_list_rounded, color: text),
+                                  if (_hasSelectedChapter) ...[
+                                    _ReaderChromeIcon(
+                                      tooltip: l10n.filterChapterTooltip,
+                                      onPressed: (contentTree == null ||
+                                              contentTree.chapters.isEmpty)
+                                          ? null
+                                          : () => _pickChapter(
+                                                contentTree.chapters,
+                                              ),
+                                      icon: Icons.swap_horiz_rounded,
+                                      color: text,
+                                    ),
+                                    _ReaderChromeIcon(
+                                      tooltip: l10n.filterPageTooltip,
+                                      onPressed:
+                                          sections.isEmpty ? null : _pickPage,
+                                      icon: Icons.tag_rounded,
+                                      color: text,
+                                    ),
+                                  ],
+                                  _ReaderChromeIcon(
+                                    tooltip: _pageCurlEnabled
+                                        ? l10n.readerPageCurlOff
+                                        : l10n.readerPageCurlOn,
+                                    onPressed: _togglePageCurlMode,
+                                    icon: _pageCurlEnabled
+                                        ? Icons.auto_stories
+                                        : Icons.menu_book_outlined,
+                                    color: _pageCurlEnabled
+                                        ? Theme.of(context).colorScheme.primary
+                                        : text,
                                   ),
-                                  IconButton(
-                                    tooltip: l10n.filterChapterTooltip,
-                                    onPressed: (contentTree == null ||
-                                            contentTree.chapters.isEmpty)
-                                        ? null
-                                        : () => _pickChapter(contentTree.chapters),
-                                    icon: Icon(Icons.menu_book_outlined, color: text),
+                                  _ReaderChromeIcon(
+                                    tooltip: l10n.findInBookLabel,
+                                    onPressed: _toggleFindBar,
+                                    icon: _showFindBar
+                                        ? Icons.search_off_rounded
+                                        : Icons.search_rounded,
+                                    color: text,
                                   ),
-                                  IconButton(
-                                    tooltip: l10n.filterPageTooltip,
-                                    onPressed: sections.isEmpty ? null : _pickPage,
-                                    icon: Icon(Icons.filter_1_rounded, color: text),
-                                  ),
-                                  IconButton(
-                                    onPressed: _openFindSheet,
-                                    icon: Icon(Icons.find_in_page_outlined, color: text),
-                                  ),
-                                  IconButton(
+                                  _ReaderChromeIcon(
                                     onPressed: _openBookmarksSheet,
-                                    icon: Icon(Icons.bookmarks_outlined, color: text),
+                                    icon: Icons.bookmarks_outlined,
+                                    color: text,
                                   ),
-                                  IconButton(
+                                  _ReaderChromeIcon(
                                     tooltip: offlineCached
                                         ? l10n.removeOfflineCopy
                                         : l10n.saveChaptersOffline,
-                                    onPressed: () => _toggleOfflineCache(offlineCached),
-                                    icon: Icon(
-                                      offlineCached
-                                          ? Icons.cloud_done_outlined
-                                          : Icons.cloud_download_outlined,
-                                      color: text,
-                                    ),
+                                    onPressed: () =>
+                                        _toggleOfflineCache(offlineCached),
+                                    icon: offlineCached
+                                        ? Icons.cloud_done_outlined
+                                        : Icons.cloud_download_outlined,
+                                    color: text,
                                   ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                if (_selectedChapterKey != null)
-                  AnimatedPositioned(
-                    duration: const Duration(milliseconds: 220),
-                    left: 12,
-                    right: 12,
-                    bottom: _showChrome ? 128 : 18,
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: FilledButton.icon(
-                        onPressed: _returnToChapters,
-                        icon: const Icon(Icons.view_list_rounded),
-                        label: Text(l10n.backToChapters),
-                      ),
-                    ),
-                  ),
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 220),
-                  left: 12,
-                  right: 12,
-                  bottom: _showChrome ? 8 : -120,
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: dark
-                          ? const Color(0xFF1E293B)
-                          : const Color(0xFFEAF3FF).withValues(alpha: 0.96),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: dark
-                            ? const Color(0xFF334155)
-                            : const Color(0xFFC4D7F2),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                currentSection == null
-                                    ? l10n.noChapterSelectedShort
-                                    : '${currentSection.chapterTitle} · p.${currentSection.pageNumber}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(color: text),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${(_progress * 100).round()}%',
-                              style: TextStyle(color: text),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: LinearProgressIndicator(
-                                value: _progress.clamp(0, 1),
-                                minHeight: 6,
-                                borderRadius: BorderRadius.circular(99),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          height: 48,
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  onPressed: () async {
-                                    final next = (_fontSize - 1).clamp(15, 28);
-                                    setState(() => _fontSize = next.toDouble());
-                                    await ReaderPrefsStorage.writeFontSize(
-                                      widget.bookId,
-                                      _fontSize,
-                                    );
-                                  },
-                                  icon: const Icon(Icons.text_decrease_rounded),
-                                ),
-                                IconButton(
-                                  onPressed: () async {
-                                    final next = (_fontSize + 1).clamp(15, 28);
-                                    setState(() => _fontSize = next.toDouble());
-                                    await ReaderPrefsStorage.writeFontSize(
-                                      widget.bookId,
-                                      _fontSize,
-                                    );
-                                  },
-                                  icon: const Icon(Icons.text_increase_rounded),
-                                ),
-                                IconButton(
-                                  tooltip: l10n.typographyPresetsTooltip,
-                                  onPressed: _openTypographySheet,
-                                  icon: const Icon(Icons.text_fields_rounded),
-                                ),
-                                IconButton(
-                                  onPressed: _toggleBookmark,
-                                  icon: const Icon(Icons.bookmark_add_outlined),
-                                ),
-                                IconButton(
-                                  tooltip: l10n.saveCloudBookmarkTooltip,
-                                  onPressed: () => _saveCloudBookmark(book),
-                                  icon: const Icon(Icons.cloud_upload_outlined),
-                                ),
-                                IconButton(
-                                  tooltip: l10n.addNoteTooltip,
-                                  onPressed: () => _createQuickNote(book),
-                                  icon: const Icon(Icons.sticky_note_2_outlined),
-                                ),
-                                IconButton(
-                                  tooltip: l10n.addHighlightTooltip,
-                                  onPressed: () => _addQuickHighlight(book),
-                                  icon: const Icon(Icons.highlight_alt_outlined),
-                                ),
-                                IconButton(
-                                  tooltip: l10n.highlightsTooltip,
-                                  onPressed: _openHighlightsSheet,
-                                  icon: const Icon(Icons.format_paint_outlined),
-                                ),
-                                IconButton(
-                                  tooltip: _autoHideEnabled
-                                      ? l10n.pinControls
-                                      : l10n.autoHideControls,
-                                  onPressed: () {
-                                    setState(() {
-                                      _autoHideEnabled = !_autoHideEnabled;
-                                      _showChrome = true;
-                                    });
-                                    if (_autoHideEnabled) _scheduleAutoHide();
-                                  },
-                                  icon: Icon(
-                                    _autoHideEnabled
+                                  _ReaderChromeIcon(
+                                    onPressed: () async {
+                                      final next =
+                                          (_fontSize - 1).clamp(15, 28);
+                                      setState(
+                                        () => _fontSize = next.toDouble(),
+                                      );
+                                      await ReaderPrefsStorage.writeFontSize(
+                                        widget.bookId,
+                                        _fontSize,
+                                      );
+                                    },
+                                    icon: Icons.text_decrease_rounded,
+                                    color: text,
+                                  ),
+                                  _ReaderChromeIcon(
+                                    onPressed: () async {
+                                      final next =
+                                          (_fontSize + 1).clamp(15, 28);
+                                      setState(
+                                        () => _fontSize = next.toDouble(),
+                                      );
+                                      await ReaderPrefsStorage.writeFontSize(
+                                        widget.bookId,
+                                        _fontSize,
+                                      );
+                                    },
+                                    icon: Icons.text_increase_rounded,
+                                    color: text,
+                                  ),
+                                  _ReaderChromeIcon(
+                                    tooltip: l10n.typographyPresetsTooltip,
+                                    onPressed: _openTypographySheet,
+                                    icon: Icons.text_fields_rounded,
+                                    color: text,
+                                  ),
+                                  _ReaderChromeIcon(
+                                    onPressed: _toggleBookmark,
+                                    icon: Icons.bookmark_add_outlined,
+                                    color: text,
+                                  ),
+                                  _ReaderChromeIcon(
+                                    tooltip: l10n.saveCloudBookmarkTooltip,
+                                    onPressed: () => _saveCloudBookmark(book),
+                                    icon: Icons.cloud_upload_outlined,
+                                    color: text,
+                                  ),
+                                  _ReaderChromeIcon(
+                                    tooltip: l10n.addNoteTooltip,
+                                    onPressed: () => _createQuickNote(book),
+                                    icon: Icons.sticky_note_2_outlined,
+                                    color: text,
+                                  ),
+                                  _ReaderChromeIcon(
+                                    tooltip: l10n.addHighlightTooltip,
+                                    onPressed: () => _addQuickHighlight(book),
+                                    icon: Icons.highlight_alt_outlined,
+                                    color: text,
+                                  ),
+                                  _ReaderChromeIcon(
+                                    tooltip: l10n.highlightsTooltip,
+                                    onPressed: _openHighlightsSheet,
+                                    icon: Icons.format_paint_outlined,
+                                    color: text,
+                                  ),
+                                  _ReaderChromeIcon(
+                                    tooltip: _autoHideEnabled
+                                        ? l10n.pinControls
+                                        : l10n.autoHideControls,
+                                    onPressed: () {
+                                      setState(() {
+                                        _autoHideEnabled = !_autoHideEnabled;
+                                        _showChrome = true;
+                                      });
+                                      if (_autoHideEnabled) _scheduleAutoHide();
+                                    },
+                                    icon: _autoHideEnabled
                                         ? Icons.push_pin_outlined
                                         : Icons.push_pin,
+                                    color: text,
                                   ),
-                                ),
-                                IconButton(
-                                  onPressed: () async {
-                                    final modes = ['light', 'sepia', 'dark'];
-                                    final index = modes.indexOf(_mode);
-                                    final next = modes[(index + 1) % modes.length];
-                                    setState(() => _mode = next);
-                                    await ReaderPrefsStorage.writeThemeMode(
-                                      widget.bookId,
-                                      next,
-                                    );
-                                  },
-                                  icon: const Icon(Icons.palette_outlined),
-                                ),
-                              ],
-                            ),
+                                  _ReaderChromeIcon(
+                                    onPressed: () async {
+                                      final modes = ['light', 'sepia', 'dark'];
+                                      final index = modes.indexOf(_mode);
+                                      final next =
+                                          modes[(index + 1) % modes.length];
+                                      setState(() => _mode = next);
+                                      await ReaderPrefsStorage.writeThemeMode(
+                                        widget.bookId,
+                                        next,
+                                      );
+                                    },
+                                    icon: Icons.palette_outlined,
+                                    color: text,
+                                  ),
+                                            ],
+                                          ),
+                                        ],
+                                      )
+                                    : const SizedBox.shrink(),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
         );
       },
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
-      error: (e, _) => Scaffold(
-        appBar: AppBar(title: Text(l10n.readerTitle)),
-        body: Center(child: Text('$e')),
-      ),
+      loading: () {
+        final dark = _mode == 'dark';
+        final sepia = _mode == 'sepia';
+        return Scaffold(
+          backgroundColor: _readerPaperBase(dark, sepia),
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: _readerPageBackgroundDecoration(dark, sepia),
+                ),
+              ),
+              const Center(child: CircularProgressIndicator()),
+            ],
+          ),
+        );
+      },
+      error: (e, _) {
+        final dark = _mode == 'dark';
+        final sepia = _mode == 'sepia';
+        final bg = _readerPaperBase(dark, sepia);
+        return Scaffold(
+          backgroundColor: bg,
+          appBar: AppBar(
+            title: Text(l10n.readerTitle),
+            backgroundColor: bg.withValues(alpha: 0.97),
+            foregroundColor: dark ? const Color(0xFFE6EDF7) : const Color(0xFF0F172A),
+            elevation: 0,
+            scrolledUnderElevation: 0,
+          ),
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: _readerPageBackgroundDecoration(dark, sepia),
+                ),
+              ),
+              Center(child: Text('$e')),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Compact toolbar control for reader chrome (top and bottom bars).
+class _ReaderChromeIcon extends StatelessWidget {
+  const _ReaderChromeIcon({
+    required this.icon,
+    required this.color,
+    this.onPressed,
+    this.tooltip,
+  });
+
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onPressed;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onPressed,
+      tooltip: tooltip,
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+      iconSize: 20,
+      icon: Icon(icon, color: color),
     );
   }
 }
@@ -1539,6 +1960,23 @@ Color _readerPaperBase(bool dark, bool sepia) {
   return const Color(0xFFFFFCF8);
 }
 
+/// Full-page background — reference `bg1` pattern blended with reader paper tone.
+BoxDecoration _readerPageBackgroundDecoration(bool dark, bool sepia) {
+  final base = _readerPaperBase(dark, sepia);
+  return BoxDecoration(
+    color: base,
+    image: DecorationImage(
+      image: const AssetImage(ReferenceAssets.bgPattern),
+      fit: BoxFit.cover,
+      opacity: dark ? 0.22 : sepia ? 0.42 : 0.5,
+      colorFilter: ColorFilter.mode(
+        base.withValues(alpha: dark ? 0.78 : 0.58),
+        BlendMode.srcATop,
+      ),
+    ),
+  );
+}
+
 Color _readerPaperForPage(Color base, Color accent, int seed) {
   final mix = 0.028 + (seed % 7) * 0.005;
   return Color.lerp(base, accent, mix.clamp(0.0, 0.07)) ?? base;
@@ -1603,32 +2041,21 @@ class _ReaderBookPage extends StatelessWidget {
             ? colorScheme.tertiary.withValues(alpha: 0.55)
             : accent.withValues(alpha: dark ? 0.42 : 0.32);
     final borderW = isActiveMatch ? 2.0 : 1.0;
-    final radius = 4.0 + (seed % 4);
 
     const serif = 'serif';
+    const contentPadH = 14.0;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 28),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(radius),
-          border: Border.all(color: borderColor, width: borderW),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: dark ? 0.42 : 0.08),
-              blurRadius: dark ? 16 : 11,
-              offset: const Offset(0, 6),
-              spreadRadius: dark ? 0 : -1,
-            ),
-          ],
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: paper,
+        border: Border(
+          bottom: BorderSide(color: borderColor, width: borderW),
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(radius),
-          child: Material(
-            color: paper,
-            child: IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+      ),
+      child: Material(
+        color: paper,
+        child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     width: 5,
@@ -1649,7 +2076,12 @@ class _ReaderBookPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                          padding: EdgeInsets.fromLTRB(
+                            contentPadH,
+                            14,
+                            contentPadH,
+                            8,
+                          ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -1740,7 +2172,7 @@ class _ReaderBookPage extends StatelessWidget {
                           ),
                         ),
                         Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 20),
+                          margin: EdgeInsets.symmetric(horizontal: contentPadH),
                           height: 1,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
@@ -1753,7 +2185,12 @@ class _ReaderBookPage extends StatelessWidget {
                           ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(26, 16, 28, 20),
+                          padding: EdgeInsets.fromLTRB(
+                            contentPadH,
+                            14,
+                            contentPadH,
+                            18,
+                          ),
                           child: Align(
                             alignment: AlignmentDirectional.topStart,
                             child: StoredRichTextView(
@@ -1795,9 +2232,6 @@ class _ReaderBookPage extends StatelessWidget {
                   ),
                 ],
               ),
-            ),
-          ),
-        ),
       ),
     );
   }

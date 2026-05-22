@@ -183,6 +183,69 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeQuickDownloadsSubtitle => 'Books saved for offline reading';
 
   @override
+  String get downloadsPageTitle => 'Downloads';
+
+  @override
+  String get downloadsEmptyTitle => 'Nothing downloaded yet';
+
+  @override
+  String get downloadsEmptyMessage =>
+      'Save books for offline reading from a book\'s detail page or while reading.';
+
+  @override
+  String get downloadsSavedSection => 'Saved on this device';
+
+  @override
+  String get downloadsActiveSection => 'Downloading';
+
+  @override
+  String get downloadsFailedSection => 'Failed downloads';
+
+  @override
+  String get downloadsNoSavedYet =>
+      'No books saved offline yet. Open a book and use Save offline.';
+
+  @override
+  String get unableToLoadDownloads => 'Unable to load downloads';
+
+  @override
+  String get savedOfflineBadge => 'Available offline';
+
+  @override
+  String get downloadInProgress => 'Download in progress…';
+
+  @override
+  String get downloadFailedGeneric => 'Download failed';
+
+  @override
+  String get downloadsSyncCache => 'Sync from server';
+
+  @override
+  String get downloadsClearBookCache => 'Remove offline copy';
+
+  @override
+  String get downloadsClearAllCache => 'Clear all offline copies';
+
+  @override
+  String get downloadsSyncDone => 'Offline copy updated';
+
+  @override
+  String downloadsClearBookTitle(String title) {
+    return 'Remove \"$title\"?';
+  }
+
+  @override
+  String get downloadsClearBookBody =>
+      'This removes saved chapters and pages for this book on this device only.';
+
+  @override
+  String get downloadsCacheInvalid => 'No readable content — sync or remove';
+
+  @override
+  String get downloadsNotInCatalogHint =>
+      'This book is not in the public catalog; details are from your offline copy only.';
+
+  @override
   String get homeQuickAccount => 'Account & sync';
 
   @override
@@ -817,6 +880,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get autoHideControls => 'Auto-hide controls';
 
   @override
+  String get readerExpandTools => 'Show reading tools';
+
+  @override
+  String get readerCollapseTools => 'Hide reading tools';
+
+  @override
+  String get readerPageCurlOn => 'Turn page curl on';
+
+  @override
+  String get readerPageCurlOff => 'Turn page curl off';
+
+  @override
+  String get readerPageCurlHint =>
+      'Drag up-left from the bottom-right corner to curl the page';
+
+  @override
   String matchOnPage(int page, String snippet) {
     return 'Match on page $page: $snippet';
   }
@@ -845,7 +924,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'List, create, edit, publish / unpublish';
 
   @override
-  String get adminBooksListTitle => 'Admin · Books';
+  String get adminBooksListTitle => 'Manage books';
+
+  @override
+  String adminBooksCount(int shown, int total) {
+    return '$shown of $total books';
+  }
+
+  @override
+  String get adminEditAction => 'Edit';
+
+  @override
+  String get adminBookActionsTooltip => 'Book actions';
 
   @override
   String get newBookTooltip => 'New book';
@@ -858,7 +948,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Create your first book to start publishing to readers.';
 
   @override
-  String get createFirstBook => 'Create first book';
+  String get createFirstBook => 'Create';
 
   @override
   String get searchBooksLabel => 'Search books';

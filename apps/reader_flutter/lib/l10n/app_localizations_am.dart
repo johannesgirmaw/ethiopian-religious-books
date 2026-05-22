@@ -182,6 +182,68 @@ class AppLocalizationsAm extends AppLocalizations {
   String get homeQuickDownloadsSubtitle => 'ለኦፍላይን የተቀመጡ መጽሐፍት';
 
   @override
+  String get downloadsPageTitle => 'የወረዱ';
+
+  @override
+  String get downloadsEmptyTitle => 'እስካሁን ምንም አልወረደም';
+
+  @override
+  String get downloadsEmptyMessage => 'ከመጽሐፍ ዝርዝር ወይንም በማንበብ ወቅት ለኦፍላይን ያስቀምጡ።';
+
+  @override
+  String get downloadsSavedSection => 'በዚህ መሳሪያ ላይ የተቀመጡ';
+
+  @override
+  String get downloadsActiveSection => 'በመውረድ ላይ';
+
+  @override
+  String get downloadsFailedSection => 'የተሳሳቱ ማውረዶች';
+
+  @override
+  String get downloadsNoSavedYet =>
+      'እስካሁን ምንም ከመስመር ውጭ አልተቀመጠም። መጽሐፍ ክፈትና ከመስመር ውጭ አስቀምጥ ተጠቀም።';
+
+  @override
+  String get unableToLoadDownloads => 'የወረዱን ማስገባት አልተቻለም';
+
+  @override
+  String get savedOfflineBadge => 'ከመስመር ውጭ ይገኛል';
+
+  @override
+  String get downloadInProgress => 'በመውረድ ላይ…';
+
+  @override
+  String get downloadFailedGeneric => 'ማውረድ አልተሳካም';
+
+  @override
+  String get downloadsSyncCache => 'ከሰርቨር አመሳስል';
+
+  @override
+  String get downloadsClearBookCache => 'ከመስመር ውጭ ቅጂ አስወግድ';
+
+  @override
+  String get downloadsClearAllCache => 'ሁሉንም ከመስመር ውጭ ቅጂዎች አጽዳ';
+
+  @override
+  String get downloadsSyncDone => 'ከመስመር ውጭ ቅጂ ታድሷል';
+
+  @override
+  String downloadsClearBookTitle(String title) {
+    return '\"$title\" ይወገድ?';
+  }
+
+  @override
+  String get downloadsClearBookBody =>
+      'በዚህ መሳሪያ ላይ ለዚህ መጽሐፍ የተቀመጡ ምዕራፎችንና ገጾችን ብቻ ያስወግዳል።';
+
+  @override
+  String get downloadsCacheInvalid => 'ሊነበብ የሚችል ይዘት የለም — አመሳስል ወይም አስወግድ';
+
+  @override
+  String get downloadsNotInCatalogHint =>
+      'ይህ መጽሐፍ በህዝብ ካታሎጉ ላይ አይደለም፤ ዝርዝሩ ከኦፍላይን ቅጂዎ ይታያል።';
+
+  @override
   String get homeQuickAccount => 'መለያ እና ማመሳሰል';
 
   @override
@@ -802,6 +864,21 @@ class AppLocalizationsAm extends AppLocalizations {
   String get autoHideControls => 'መቆጣጠሪያዎችን በራስ-ደብቅ';
 
   @override
+  String get readerExpandTools => 'የንባብ መሳሪያዎችን አሳይ';
+
+  @override
+  String get readerCollapseTools => 'የንባብ መሳሪያዎችን ደብቅ';
+
+  @override
+  String get readerPageCurlOn => 'የገጽ መጠገን ሁኔታን አብራ';
+
+  @override
+  String get readerPageCurlOff => 'የገጽ መጠገን ሁኔታን አጥፋ';
+
+  @override
+  String get readerPageCurlHint => 'ገጹን ለመጠገን ከታች ቀኝ ማዕዘን ወደ ላይ-ግራ ይጎትቱ';
+
+  @override
   String matchOnPage(int page, String snippet) {
     return 'በገጽ $page ተዛመድ፦ $snippet';
   }
@@ -828,7 +905,18 @@ class AppLocalizationsAm extends AppLocalizations {
   String get adminBooksMenuSubtitle => 'ዝርዝር፣ ፍጠር፣ አርትዖት፣ ህትመት';
 
   @override
-  String get adminBooksListTitle => 'አስተዳዳሪ · መጽሐፍት';
+  String get adminBooksListTitle => 'መጽሐፍት ያቀናብሩ';
+
+  @override
+  String adminBooksCount(int shown, int total) {
+    return '$shown ከ $total መጽሐፍት';
+  }
+
+  @override
+  String get adminEditAction => 'አርትዕ';
+
+  @override
+  String get adminBookActionsTooltip => 'የመጽሐፍ ተግባራት';
 
   @override
   String get newBookTooltip => 'አዲስ መጽሐፍ';
@@ -840,7 +928,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get noBooksYetMessage => 'ወደ አንባቢዎች ለማተም የመጀመሪያ መጽሐፍዎን ይፍጠሩ።';
 
   @override
-  String get createFirstBook => 'የመጀመሪያ መጽሐፍ ፍጠር';
+  String get createFirstBook => 'መጽሐፍ ፍጠር';
 
   @override
   String get searchBooksLabel => 'መጽሐፍት ፈልግ';
