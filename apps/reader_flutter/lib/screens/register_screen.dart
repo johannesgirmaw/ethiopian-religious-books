@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../config/app_config.dart';
 import '../design/app_tokens.dart';
 import '../l10n/app_localizations.dart';
+import '../providers/app_locale_provider.dart';
 import '../providers/session_notifier.dart';
 import '../utils/api_error_message.dart';
 import '../utils/dio_connection_message.dart';
@@ -81,13 +82,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
-          children: [
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+            // Language toggle
+            const Align(
+              alignment: Alignment.centerRight,
+              child: _LangToggle(),
+            ),
+            const SizedBox(height: 16),
+            // Brand mark
             Container(
               width: 56,
               height: 56,
@@ -158,9 +168,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     validator: (value) {
                       final v = value ?? '';
                       if (v.isEmpty) return l10n.passwordRequired;
-                      if (v.length < 10) {
-                        return l10n.passwordTooShort;
-                      }
+                      if (v.length < 10) return l10n.passwordTooShort;
                       return null;
                     },
                   ),
@@ -176,9 +184,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),
-              Text(
-                _error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.errorSurface,
+                  border: Border.all(color: AppColors.errorBorder, width: 1.5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline_rounded, size: 18, color: Color(0xFFB91C1C)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _error!,
+                        style: const TextStyle(color: Color(0xFFB91C1C), fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
             const SizedBox(height: 24),
@@ -188,20 +212,54 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ? const SizedBox(
                       width: 22,
                       height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
                   : Text(l10n.createAccountTitle),
             ),
             const SizedBox(height: 8),
             TextButton(
               onPressed: () => context.go('/login'),
-              child: Text(l10n.alreadyHaveAccount),
+              child: Text(
+                l10n.alreadyHaveAccount,
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
-          ],
-        ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _LangToggle extends ConsumerWidget {
+  const _LangToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final code = ref.watch(appLocaleProvider).languageCode;
+    return SegmentedButton<String>(
+      style: SegmentedButton.styleFrom(
+        visualDensity: VisualDensity.compact,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      segments: const [
+        ButtonSegment(
+          value: 'en',
+          label: Text('EN', style: TextStyle(fontSize: 12)),
+        ),
+        ButtonSegment(
+          value: 'am',
+          label: Text('አማ', style: TextStyle(fontSize: 12)),
+        ),
+      ],
+      selected: {code},
+      onSelectionChanged: (s) async => ref.setAppLocale(Locale(s.first)),
     );
   }
 }

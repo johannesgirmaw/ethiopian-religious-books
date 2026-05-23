@@ -1,11 +1,12 @@
-.PHONY: help infra-up infra-down infra-logs dev seed openapi-export print-api-url reader-setup reader-run reader-run-android reader-run-macos reader-run-ios reader-build-apk-release reader-pubget reader-test pre-commit
+.PHONY: help infra-up infra-down infra-logs dev run-dev seed openapi-export print-api-url reader-setup reader-run reader-run-android reader-run-macos reader-run-ios reader-build-apk-release reader-pubget reader-test pre-commit
 
 help:
 	@echo "Targets:"
 	@echo "  make infra-up     - start postgres, redis, minio, mailhog"
 	@echo "  make infra-down   - stop infra services"
 	@echo "  make infra-logs   - follow infra logs"
-	@echo "  make dev          - ./scripts/dev.sh (full compose; add api when defined)"
+	@echo "  make dev          - ./scripts/dev.sh (full compose in foreground)"
+	@echo "  make run-dev      - ./scripts/run_dev.sh (Docker API + Flutter reader)"
 	@echo "  make seed         - run Django seed_dev (when api container exists)"
 	@echo "  make print-api-url  - show Swagger/health URLs (respects infra/.env API_PORT)"
 	@echo "  make openapi-export - save OpenAPI JSON (API must be running; use print-api-url for port)"
@@ -35,6 +36,10 @@ infra-logs:
 dev:
 	@chmod +x scripts/dev.sh 2>/dev/null || true
 	@./scripts/dev.sh
+
+run-dev:
+	@chmod +x scripts/run_dev.sh 2>/dev/null || true
+	@./scripts/run_dev.sh
 
 seed:
 	docker compose -f infra/docker-compose.yml --env-file infra/.env exec api python manage.py seed_dev

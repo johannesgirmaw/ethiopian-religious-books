@@ -25,6 +25,12 @@ if ! command -v flutter >/dev/null 2>&1; then
 fi
 
 cd "${APP}"
+
+if [[ "$(uname -s)" == "Darwin" ]] && [[ -d macos/Runner ]]; then
+  echo "==> flutter config --enable-macos-desktop"
+  flutter config --enable-macos-desktop
+fi
+
 echo "==> flutter pub get"
 flutter pub get
 

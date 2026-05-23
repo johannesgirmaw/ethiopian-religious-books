@@ -64,8 +64,8 @@ class LiquidGlassNavBar extends StatelessWidget {
   final ValueChanged<int> onSelected;
   final List<LiquidNavItem> items;
 
-  static const double barHeight = 72;
-  static const double bottomInset = 96;
+  static const double barHeight = 80;
+  static const double bottomInset = 110;
   static const double _hitSize = 56;
 
   @override
@@ -136,15 +136,35 @@ class LiquidGlassNavBar extends StatelessWidget {
                                       customBorder: const CircleBorder(),
                                       onTap: () => onSelected(index),
                                       child: Center(
-                                        child: Icon(
-                                          selected
-                                              ? item.selectedIcon
-                                              : item.icon,
-                                          size: 26,
-                                          color: _iconColor(
-                                            isDark: isDark,
-                                            selected: selected,
-                                          ),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              selected
+                                                  ? item.selectedIcon
+                                                  : item.icon,
+                                              size: 24,
+                                              color: _iconColor(
+                                                isDark: isDark,
+                                                selected: selected,
+                                              ),
+                                            ),
+                                            if (item.label != null) ...[
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                item.label!,
+                                                style: TextStyle(
+                                                  fontSize: 9,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: _iconColor(
+                                                    isDark: isDark,
+                                                    selected: selected,
+                                                  ),
+                                                  letterSpacing: 0.3,
+                                                ),
+                                              ),
+                                            ],
+                                          ],
                                         ),
                                       ),
                                     ),

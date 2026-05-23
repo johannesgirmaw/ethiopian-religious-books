@@ -84,7 +84,7 @@ class HomeScreen extends ConsumerWidget {
                   child: ListView(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
-                      vertical: 40,
+                      vertical: 24,
                     ),
                     children: [
                       SummaryHubCard(
@@ -110,7 +110,11 @@ class HomeScreen extends ConsumerWidget {
                       ),
                       if (lastOpened != null && lastOpened.bookId.isNotEmpty) ...[
                         const SizedBox(height: 24),
-                        _ContinueSection(lastOpened: lastOpened, featured: featured),
+                        AnimatedOpacity(
+                          opacity: 1.0,
+                          duration: const Duration(milliseconds: 300),
+                          child: _ContinueSection(lastOpened: lastOpened, featured: featured),
+                        ),
                       ],
                     ],
                   ),
@@ -172,10 +176,10 @@ class _ContinueSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionTitleBar(title: l10n.mostReadSection),
+          SectionTitleBar(title: l10n.resumeReading),
           const SizedBox(height: 16),
           SizedBox(
-            height: 100,
+            height: 120,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: (featured.length + 1).clamp(1, 6),
@@ -199,10 +203,6 @@ class _ContinueSection extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.referencePrimary,
-                foregroundColor: Colors.black87,
-              ),
               onPressed: () => context.push('/reader/${lastOpened.bookId}'),
               icon: const Icon(Icons.play_arrow_rounded),
               label: Text(l10n.resumeReading),

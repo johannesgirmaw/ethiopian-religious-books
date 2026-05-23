@@ -3,23 +3,29 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  /// Reference app palette — `/home/teddy3/code/mobile/lib/utils/app_colors.dart`
-  static const Color referencePrimary = Color(0xFF7FCAEF);
-  static const Color referenceAccent = Color(0xFFFFDE9D); // shiroColor
-  static const Color referenceSurfaceAccent = Color(0xFFFCF3C3); // accentColor
-  static const Color referenceSecondary = Color(0xFFAD2B31);
-  static const Color referencePageBg = Color(0xFFFAFAFA); // Colors.grey[50]
+  /// Ethiopian sacred aesthetic palette.
+  static const Color referencePrimary = Color(0xFF5B3B8C);      // ecclesiastical violet
+  static const Color referenceAccent = Color(0xFFD4A017);        // Ethiopian gold
+  static const Color referenceSurfaceAccent = Color(0xFFFDF3D0); // gold tint surface
+  static const Color referenceSecondary = Color(0xFF8B1A1A);     // deep crimson
+  static const Color referencePageBg = Color(0xFFFAF7F2);        // warm parchment
 
-  /// Reader theme — same hues as reference for consistency.
+  /// Reader theme tokens.
   static const Color primary = referencePrimary;
-  static const Color primaryDeep = Color(0xFF5AB0D9);
-  static const Color background = Colors.white;
+  static const Color primaryDeep = Color(0xFF3B2460);
+  static const Color accent = referenceAccent;
+  static const Color background = Color(0xFFFFFDF9);   // warm off-white
   static const Color surfaceSoft = referencePageBg;
   static const Color surfaceCard = Colors.white;
-  static const Color surfaceStrong = Color(0xFFF0F0F0);
-  static const Color border = Color(0xFFE5E5E5);
-  static const Color textPrimary = Color(0xFF0F172A);
-  static const Color textSecondary = Color(0xFF475569);
+  static const Color surfaceStrong = Color(0xFFF0EBE3); // warm tone
+  static const Color border = Color(0xFFE5DDD0);        // warm hairline
+  static const Color textPrimary = Color(0xFF1A1008);   // warm near-black
+  static const Color textSecondary = Color(0xFF5C4E3A); // warm mid-brown
+
+  /// Semantic tokens.
+  static const Color errorSurface = Color(0xFFFEF2F2);
+  static const Color errorBorder = Color(0xFFF87171);
+  static const Color successSurface = Color(0xFFF0FDF4);
 }
 
 class AppSpace {

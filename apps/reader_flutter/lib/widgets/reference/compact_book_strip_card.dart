@@ -22,15 +22,15 @@ class CompactBookStripCard extends StatelessWidget {
     return Container(
       width: 150,
       decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        color: AppColors.surfaceSoft,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: AppColors.border),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
@@ -38,7 +38,7 @@ class CompactBookStripCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(icon, size: 16, color: AppColors.referencePrimary),
+                    Icon(icon, size: 16, color: AppColors.primary),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -46,7 +46,7 @@ class CompactBookStripCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          color: AppColors.textPrimary,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -55,8 +55,8 @@ class CompactBookStripCard extends StatelessWidget {
                   ],
                 ),
                 const Spacer(),
-                Icon(Icons.arrow_forward_ios,
-                    size: 14, color: Colors.grey[600]),
+                const Icon(Icons.arrow_forward_ios,
+                    size: 14, color: AppColors.textSecondary),
               ],
             ),
           ),
@@ -79,8 +79,8 @@ class ReferenceBookSearchRow extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.surfaceCard,
+        borderRadius: BorderRadius.circular(AppRadius.md),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.06),
@@ -98,7 +98,7 @@ class ReferenceBookSearchRow extends StatelessWidget {
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.black87,
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 10),
@@ -106,10 +106,6 @@ class ReferenceBookSearchRow extends StatelessWidget {
             children: [
               Expanded(
                 child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.referencePrimary,
-                    foregroundColor: Colors.black87,
-                  ),
                   onPressed: () => context.push('/reader/$bookId'),
                   child: Text(l10n.actionRead),
                 ),

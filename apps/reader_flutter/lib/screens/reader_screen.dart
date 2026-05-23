@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../design/app_tokens.dart';
 import '../design/reference_assets.dart';
 import '../l10n/app_localizations.dart';
 import '../models/book_models.dart';
@@ -1307,27 +1308,47 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                             return Card(
                               color: cardPaper,
                               elevation: 0,
+                              clipBehavior: Clip.antiAlias,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(AppRadius.sm),
                                 side: BorderSide(
                                   color: text.withValues(alpha: dark ? 0.2 : 0.1),
                                 ),
                               ),
-                              child: ListTile(
-                              leading: Icon(Icons.menu_book_rounded, color: text.withValues(alpha: 0.7)),
-                              title: Text(chapter.title, style: TextStyle(color: text)),
-                              subtitle: Text(
-                                l10n.pageCount(chapter.pages.length),
-                                style: TextStyle(color: text.withValues(alpha: 0.65)),
+                              child: IntrinsicHeight(
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    Container(
+                                      width: 4,
+                                      decoration: BoxDecoration(
+                                        color: _readerPageAccent(chapter.chapterKey.hashCode, dark, sepia),
+                                        borderRadius: const BorderRadius.only(
+                                          topLeft: Radius.circular(AppRadius.sm),
+                                          bottomLeft: Radius.circular(AppRadius.sm),
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: ListTile(
+                                        leading: Icon(Icons.menu_book_rounded, color: text.withValues(alpha: 0.7)),
+                                        title: Text(chapter.title, style: TextStyle(color: text)),
+                                        subtitle: Text(
+                                          l10n.pageCount(chapter.pages.length),
+                                          style: TextStyle(color: text.withValues(alpha: 0.65)),
+                                        ),
+                                        trailing: Icon(Icons.chevron_right_rounded, color: text.withValues(alpha: 0.5)),
+                                        onTap: () {
+                                          setState(() {
+                                            _selectedChapterKey = chapter.chapterKey;
+                                            _selectedPageNumber = null;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              trailing: Icon(Icons.chevron_right_rounded, color: text.withValues(alpha: 0.5)),
-                              onTap: () {
-                                setState(() {
-                                  _selectedChapterKey = chapter.chapterKey;
-                                  _selectedPageNumber = null;
-                                });
-                              },
-                            ),
                             );
                           },
                         ),
@@ -1385,30 +1406,41 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                     onTap: () {},
                     child: Material(
                     color: bg.withValues(alpha: 0.97),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(4, 4, 12, 10),
-                      child: Row(
-                        children: [
-                          _ReaderChromeIcon(
-                            onPressed: () => context.pop(),
-                            icon: Icons.arrow_back_rounded,
-                            color: text,
-                          ),
-                          Expanded(
-                            child: Text(
-                              book.title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(4, 4, 12, 6),
+                          child: Row(
+                            children: [
+                              _ReaderChromeIcon(
+                                onPressed: () => context.pop(),
+                                icon: Icons.arrow_back_rounded,
                                 color: text,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 17,
-                                height: 1.25,
                               ),
-                            ),
+                              Expanded(
+                                child: Text(
+                                  book.title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: text,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 17,
+                                    height: 1.25,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                        LinearProgressIndicator(
+                          value: _progress.clamp(0.0, 1.0),
+                          minHeight: 2,
+                          backgroundColor: text.withValues(alpha: 0.10),
+                          color: AppColors.accent,
+                        ),
+                      ],
                     ),
                   ),
                   ),
@@ -1625,7 +1657,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                           const SizedBox(height: 8),
                                           Wrap(
                                             spacing: 4,
-                                            runSpacing: 4,
+                                            runSpacing: 6,
                                             alignment: WrapAlignment.center,
                                             children: [
                                   if (_hasSelectedChapter)
@@ -1684,6 +1716,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                         : Icons.search_rounded,
                                     color: text,
                                   ),
+                                  const SizedBox(width: double.infinity),
+                                  Container(
+                                    width: double.infinity,
+                                    height: 1,
+                                    color: text.withValues(alpha: 0.14),
+                                  ),
                                   _ReaderChromeIcon(
                                     onPressed: _openBookmarksSheet,
                                     icon: Icons.bookmarks_outlined,
@@ -1735,6 +1773,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                     onPressed: _openTypographySheet,
                                     icon: Icons.text_fields_rounded,
                                     color: text,
+                                  ),
+                                  const SizedBox(width: double.infinity),
+                                  Container(
+                                    width: double.infinity,
+                                    height: 1,
+                                    color: text.withValues(alpha: 0.14),
                                   ),
                                   _ReaderChromeIcon(
                                     onPressed: _toggleBookmark,

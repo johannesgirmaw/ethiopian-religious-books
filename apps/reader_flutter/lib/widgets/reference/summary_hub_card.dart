@@ -29,7 +29,7 @@ class SummaryHubCard extends StatelessWidget {
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.black87,
+          color: AppColors.textPrimary,
           borderRadius: BorderRadius.circular(20),
           image: const DecorationImage(
             image: AssetImage(ReferenceAssets.bgPattern),
@@ -55,7 +55,7 @@ class SummaryHubCard extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(categoryIcon, color: Colors.blue, size: 20),
+                Icon(categoryIcon, color: AppColors.accent, size: 20),
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text(

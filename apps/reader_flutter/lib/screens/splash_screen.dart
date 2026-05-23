@@ -55,23 +55,24 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: Center(
+      body: SafeArea(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              const Spacer(),
               Container(
-                width: 72,
-                height: 72,
+                width: 80,
+                height: 80,
                 decoration: BoxDecoration(
                   color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Icon(
                   Icons.auto_stories_rounded,
                   color: Colors.white,
-                  size: 36,
+                  size: 40,
                 ),
               ),
               const SizedBox(height: 20),
@@ -89,12 +90,26 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       color: AppColors.textSecondary,
                     ),
               ),
-              const SizedBox(height: 28),
-              const SizedBox(
-                width: 28,
-                height: 28,
-                child: CircularProgressIndicator(strokeWidth: 2.5),
+              const Spacer(),
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 1,
+                  color: AppColors.accent.withValues(alpha: 0.4),
+                ),
               ),
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 48),
+                child: LinearProgressIndicator(
+                  value: null,
+                  minHeight: 3,
+                  borderRadius: BorderRadius.circular(99),
+                  backgroundColor: AppColors.accent.withValues(alpha: 0.15),
+                  color: AppColors.accent,
+                ),
+              ),
+              const SizedBox(height: 32),
             ],
           ),
         ),

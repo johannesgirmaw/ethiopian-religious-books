@@ -32,9 +32,9 @@ class EthiopianReaderApp extends ConsumerWidget {
           brightness: Brightness.light,
         ).copyWith(
           primary: AppColors.referencePrimary,
-          onPrimary: const Color(0xFF1F2937),
+          onPrimary: Colors.white,
           secondary: AppColors.referenceAccent,
-          onSecondary: const Color(0xFF1F2937),
+          onSecondary: AppColors.textPrimary,
           surface: AppColors.referencePageBg,
           surfaceContainer: AppColors.surfaceCard,
           surfaceContainerHigh: AppColors.surfaceStrong,
@@ -98,7 +98,7 @@ class EthiopianReaderApp extends ConsumerWidget {
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(
             backgroundColor: AppColors.referencePrimary,
-            foregroundColor: const Color(0xFF1F2937),
+            foregroundColor: Colors.white,
             minimumSize: const Size.fromHeight(48),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -109,7 +109,8 @@ class EthiopianReaderApp extends ConsumerWidget {
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(
             minimumSize: const Size.fromHeight(46),
-            side: const BorderSide(color: AppColors.border),
+            foregroundColor: AppColors.primary,
+            side: const BorderSide(color: AppColors.primary, width: 1.5),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.sm),
             ),

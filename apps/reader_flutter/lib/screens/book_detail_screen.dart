@@ -97,188 +97,209 @@ class BookDetailScreen extends ConsumerWidget {
         title: Text(l10n.bookDetailsTitle),
       ),
       body: asyncBook.when(
-        data: (book) => ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        data: (book) => Stack(
           children: [
-            // Hero header
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    AppColors.surfaceCard,
-                    AppColors.surfaceSoft,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(color: AppColors.border),
+            ListView(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                12,
+                20,
+                100 + MediaQuery.paddingOf(context).bottom,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              children: [
+                // Hero header
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.primary.withValues(alpha: 0.07),
+                        AppColors.accent.withValues(alpha: 0.05),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Cover art placeholder
+                      Container(
+                        height: 140,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.accent.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.auto_stories_rounded,
+                            size: 52,
+                            color: AppColors.accent,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          book.primaryLanguage ?? l10n.generalCategory,
+                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        book.title,
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                      ),
+                      if (book.subtitle != null && book.subtitle!.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          book.subtitle!,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                        ),
+                      ],
+                      if (book.authorCompiler != null &&
+                          book.authorCompiler!.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.person_outline_rounded,
+                              size: 16,
+                              color: AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                book.authorCompiler!,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(color: AppColors.textSecondary),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                // Summary section
+                if (book.summary != null && book.summary!.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    l10n.summarySection,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 8),
                   Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceSoft,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: StoredRichTextView(
+                        raw: book.summaryRichRaw ?? book.summary!),
+                  ),
+                ],
+                const SizedBox(height: 20),
+                Text(
+                  l10n.readyToRead,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 10),
+                if (currentJob != null)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
+                      horizontal: 14,
+                      vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
+                      color: currentJob.state == 'completed'
+                          ? Colors.green.shade50
+                          : currentJob.state == 'failed'
+                              ? Colors.red.shade50
+                              : AppColors.surfaceSoft,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      border: Border.all(
+                        color: currentJob.state == 'completed'
+                            ? Colors.green.shade200
+                            : currentJob.state == 'failed'
+                                ? Colors.red.shade200
+                                : AppColors.border,
+                      ),
                     ),
-                    child: Text(
-                      book.primaryLanguage ?? l10n.generalCategory,
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    book.title,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                  ),
-                  if (book.subtitle != null && book.subtitle!.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      book.subtitle!,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                    ),
-                  ],
-                  if (book.authorCompiler != null &&
-                      book.authorCompiler!.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Row(
+                    child: Row(
                       children: [
-                        const Icon(
-                          Icons.person_outline_rounded,
-                          size: 16,
-                          color: AppColors.textSecondary,
+                        Icon(
+                          currentJob.state == 'completed'
+                              ? Icons.check_circle_outline_rounded
+                              : currentJob.state == 'failed'
+                                  ? Icons.error_outline_rounded
+                                  : Icons.downloading_rounded,
+                          size: 20,
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 10),
                         Expanded(
-                          child: Text(
-                            book.authorCompiler!,
-                            style:
-                                Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: AppColors.textSecondary,
-                                    ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                l10n.downloadState(currentJob.state),
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                              if (currentJob.errorMessage != null)
+                                Text(
+                                  currentJob.errorMessage!,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ],
-              ),
-            ),
-            // Summary section
-            if (book.summary != null && book.summary!.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Text(
-                l10n.summarySection,
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceSoft,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                  border: Border.all(color: AppColors.border),
+                  ),
+                OutlinedButton.icon(
+                  onPressed: () => _downloadSample(context, ref),
+                  icon: const Icon(Icons.download_outlined),
+                  label: Text(l10n.downloadOffline),
                 ),
-                child: StoredRichTextView(
-                    raw: book.summaryRichRaw ?? book.summary!),
-              ),
-            ],
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
+              ],
+            ),
+            // Sticky "Read Now" CTA
+            Positioned(
+              left: 20,
+              right: 20,
+              bottom: 20 + MediaQuery.paddingOf(context).bottom,
               child: FilledButton.icon(
                 onPressed: () => context.push('/reader/$bookId'),
                 icon: const Icon(Icons.chrome_reader_mode_rounded),
                 label: Text(l10n.readNow),
               ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              l10n.readyToRead,
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: 10),
-            if (currentJob != null)
-              Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: currentJob.state == 'completed'
-                      ? Colors.green.shade50
-                      : currentJob.state == 'failed'
-                          ? Colors.red.shade50
-                          : AppColors.surfaceSoft,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                  border: Border.all(
-                    color: currentJob.state == 'completed'
-                        ? Colors.green.shade200
-                        : currentJob.state == 'failed'
-                            ? Colors.red.shade200
-                            : AppColors.border,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      currentJob.state == 'completed'
-                          ? Icons.check_circle_outline_rounded
-                          : currentJob.state == 'failed'
-                              ? Icons.error_outline_rounded
-                              : Icons.downloading_rounded,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            l10n.downloadState(currentJob.state),
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                          if (currentJob.errorMessage != null)
-                            Text(
-                              currentJob.errorMessage!,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            OutlinedButton.icon(
-              onPressed: () => context.push('/reader/$bookId'),
-              icon: const Icon(Icons.chrome_reader_mode_outlined),
-              label: Text(l10n.startReading),
-            ),
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: () => _downloadSample(context, ref),
-              icon: const Icon(Icons.download_outlined),
-              label: Text(l10n.downloadOffline),
             ),
           ],
         ),

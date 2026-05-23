@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../design/app_tokens.dart';
 import '../../design/reference_assets.dart';
 import 'reference_menu_button.dart';
 
@@ -19,14 +20,13 @@ class HomeHeroHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 250,
+      height: 200,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           Container(
-            height: 250,
+            height: 200,
             width: double.infinity,
-            padding: const EdgeInsets.only(top: 35),
             decoration: const BoxDecoration(
               image: DecorationImage(
                 opacity: 0.5,
@@ -34,61 +34,66 @@ class HomeHeroHeader extends StatelessWidget {
                 fit: BoxFit.cover,
               ),
             ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 120,
-                    height: 100,
-                    child: Image.asset(
-                      ReferenceAssets.appLogo,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  if (subtitle != null && subtitle!.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Text(
-                        subtitle!,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[800],
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+            child: Stack(
+              children: [
+                // Gradient overlay — faint violet tint from top
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AppColors.primary.withValues(alpha: 0.08),
+                          Colors.transparent,
+                        ],
                       ),
                     ),
-                  ],
-                ],
-              ),
+                  ),
+                ),
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 120,
+                        height: 80,
+                        child: Image.asset(
+                          ReferenceAssets.appLogo,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      if (subtitle != null && subtitle!.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Text(
+                            subtitle!,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textSecondary,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          // Positioned(
-          //   top: -50,
-          //   right: 0,
-          //   child: Container(
-          //     width: 200,
-          //     height: 250,
-          //     decoration: const BoxDecoration(
-          //       image: DecorationImage(
-          //         image: AssetImage(ReferenceAssets.headerSlice),
-          //         fit: BoxFit.contain,
-          //       ),
-          //     ),
-          //   ),
-          // ),
           if (showMenu)
             Positioned(
               top: ReferenceMenuLayout.top(context),

@@ -48,7 +48,7 @@ class _SkeletonLoaderState extends State<SkeletonLoader>
           width: widget.width,
           height: widget.height,
           decoration: BoxDecoration(
-            color: AppColors.textPrimary.withValues(alpha: opacity),
+            color: Color.lerp(AppColors.surfaceSoft, AppColors.accent, opacity * 0.6)!,
             borderRadius: BorderRadius.circular(widget.borderRadius),
           ),
         );
