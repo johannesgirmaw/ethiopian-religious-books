@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../design/app_tokens.dart';
-import '../../design/reference_assets.dart';
 import 'reference_menu_button.dart';
 
-/// Browse/list header — matches mobile `HeaderBox` (bg1, slice, search pill).
+/// Premium gradient page header with embedded search — Library / Browse screen.
 class PageHeaderBox extends StatefulWidget {
   const PageHeaderBox({
     super.key,
@@ -28,180 +27,227 @@ class PageHeaderBox extends StatefulWidget {
 }
 
 class _PageHeaderBoxState extends State<PageHeaderBox> {
-  late final TextEditingController _searchController;
-  bool _searchFocused = false;
+  late final TextEditingController _searchCtrl;
+  bool _focused = false;
 
   @override
   void initState() {
     super.initState();
-    _searchController = TextEditingController(text: widget.initialQuery);
+    _searchCtrl = TextEditingController(text: widget.initialQuery);
   }
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _searchCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final hint = widget.searchHint ?? 'Search...';
+    final hasSearch = widget.onSearchChanged != null;
 
-    return SizedBox(
-      height: 250,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            height: 250,
-            width: double.infinity,
-            padding: const EdgeInsets.only(top: 35),
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                opacity: 0.5,
-                image: AssetImage(ReferenceAssets.bgPattern),
-                fit: BoxFit.cover,
-              ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Text(
-                    widget.title,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.category_outlined,
-                      size: 15,
-                      color: Colors.blue,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      widget.categoryLabel,
-                      style: const TextStyle(fontSize: 15, color: Colors.black),
-                    ),
-                    const SizedBox(width: 10),
-                    const Icon(
-                      Icons.library_books_outlined,
-                      size: 15,
-                      color: Colors.blue,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      widget.bookLabel,
-                      style: const TextStyle(fontSize: 15, color: Colors.black),
-                    ),
-                  ],
-                ),
-              ],
+    return Stack(
+      children: [
+        // Gradient panel — rounded bottom corners
+        Container(
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: AppGradients.hero,
+            borderRadius: BorderRadius.vertical(
+              bottom: Radius.circular(AppRadius.xxl),
             ),
           ),
-          // Positioned(
-          //   top: -50,
-          //   right: 0,
-          //   child: Container(
-          //     width: 200,
-          //     height: 250,
-          //     decoration: const BoxDecoration(
-          //       image: DecorationImage(
-          //         image: AssetImage(ReferenceAssets.headerSlice),
-          //         fit: BoxFit.contain,
-          //       ),
-          //     ),
-          //   ),
-          // ),
-          Positioned(
-            top: ReferenceMenuLayout.top(context),
-            left: ReferenceMenuLayout.left,
-            child: const ReferenceMenuButton(),
-          ),
-          if (widget.onSearchChanged != null)
-            Positioned(
-              left: 30,
-              right: 30,
-              bottom: 10,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: _searchController,
-                  builder: (context, value, _) {
-                    return TextField(
-                      controller: _searchController,
-                      onChanged: widget.onSearchChanged,
-                      onTap: () => setState(() => _searchFocused = true),
-                      onSubmitted: (_) =>
-                          setState(() => _searchFocused = false),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.black87,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: hint,
-                        hintStyle: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: 16,
-                        ),
-                        prefixIcon: Icon(
-                          Icons.search,
-                          color: _searchFocused
-                              ? AppColors.referencePrimary
-                              : Colors.grey[400],
-                          size: 24,
-                        ),
-                        suffixIcon: value.text.isNotEmpty
-                            ? IconButton(
-                                icon: Icon(
-                                  Icons.clear,
-                                  color: Colors.grey[400],
-                                  size: 20,
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                  24, 16, 24, hasSearch ? 80 : 24),
+              child: Column(
+                children: [
+                  // Title row — centred between menu-button gap and right pad
+                  Row(
+                    children: [
+                      const SizedBox(width: 40),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Text(
+                              widget.title,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.3,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.center,
+                              children: [
+                                _StatPill(
+                                  icon: Icons.category_outlined,
+                                  label: widget.categoryLabel,
                                 ),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  widget.onSearchChanged?.call('');
-                                  setState(() => _searchFocused = false);
-                                },
-                              )
-                            : null,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide.none,
+                                const SizedBox(width: 10),
+                                _StatPill(
+                                  icon: Icons.library_books_outlined,
+                                  label: widget.bookLabel,
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: const BorderSide(
-                            color: AppColors.referencePrimary,
-                            width: 2,
-                          ),
-                        ),
-                        filled: false,
-                        contentPadding:
-                            const EdgeInsets.symmetric(vertical: 0),
                       ),
-                    );
-                  },
-                ),
+                      const SizedBox(width: 40),
+                    ],
+                  ),
+                ],
               ),
             ),
+          ),
+        ),
+
+        // Menu button
+        Positioned(
+          top: ReferenceMenuLayout.top(context),
+          left: ReferenceMenuLayout.left,
+          child: const ReferenceMenuButton(),
+        ),
+
+        // Floating search bar — overlaps the gradient bottom edge
+        if (hasSearch)
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 12,
+            child: _SearchBar(
+              controller: _searchCtrl,
+              hint: widget.searchHint ?? 'Search…',
+              focused: _focused,
+              onFocusChanged: (v) => setState(() => _focused = v),
+              onChanged: widget.onSearchChanged!,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _StatPill extends StatelessWidget {
+  const _StatPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border:
+            Border.all(color: Colors.white.withValues(alpha: 0.20)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: AppColors.accent),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _SearchBar extends StatelessWidget {
+  const _SearchBar({
+    required this.controller,
+    required this.hint,
+    required this.focused,
+    required this.onFocusChanged,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final String hint;
+  final bool focused;
+  final ValueChanged<bool> onFocusChanged;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 50,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceCard,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        boxShadow: AppShadows.elevated,
+        border: Border.all(
+          color:
+              focused ? AppColors.primary : AppColors.border,
+          width: focused ? 1.8 : 1.0,
+        ),
+      ),
+      child: Focus(
+        onFocusChange: onFocusChanged,
+        child: ValueListenableBuilder<TextEditingValue>(
+          valueListenable: controller,
+          builder: (context, value, _) {
+            return TextField(
+              controller: controller,
+              onChanged: onChanged,
+              style: const TextStyle(
+                fontSize: 15,
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+              decoration: InputDecoration(
+                hintText: hint,
+                hintStyle: const TextStyle(
+                  color: AppColors.textTertiary,
+                  fontSize: 15,
+                ),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  color: focused
+                      ? AppColors.primary
+                      : AppColors.textTertiary,
+                  size: 22,
+                ),
+                suffixIcon: value.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: AppColors.textTertiary,
+                          size: 18,
+                        ),
+                        onPressed: () {
+                          controller.clear();
+                          onChanged('');
+                        },
+                      )
+                    : null,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                filled: false,
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 13),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

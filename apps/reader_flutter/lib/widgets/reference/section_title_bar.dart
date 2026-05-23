@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../design/app_tokens.dart';
 
-/// Section heading with left accent bar — mirrors mobile "most read" header.
+/// Bold section heading with a gold left-bar accent.
 class SectionTitleBar extends StatelessWidget {
   const SectionTitleBar({super.key, required this.title});
 
@@ -11,22 +11,25 @@ class SectionTitleBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        // Gold left bar
         Container(
           width: 4,
-          height: 24,
+          height: 22,
           decoration: BoxDecoration(
-            color: AppColors.referencePrimary,
-            borderRadius: BorderRadius.circular(2),
+            gradient: AppGradients.gold,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Text(
           title,
           style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
             color: AppColors.textPrimary,
+            letterSpacing: -0.2,
           ),
         ),
       ],

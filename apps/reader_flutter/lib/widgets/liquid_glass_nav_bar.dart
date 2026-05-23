@@ -222,14 +222,31 @@ class _SelectionOrb extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.22)
-            : Colors.white.withValues(alpha: 0.92),
+        gradient: isDark
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.28),
+                  Colors.white.withValues(alpha: 0.14),
+                ],
+              )
+            : const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.white, Color(0xFFF8F5FF)],
+              ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.12),
-            blurRadius: 12,
+            color: const Color(0xFF5B3B8C)
+                .withValues(alpha: isDark ? 0.20 : 0.18),
+            blurRadius: 16,
             offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.08),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),

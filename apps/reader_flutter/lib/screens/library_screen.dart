@@ -24,7 +24,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   String? _selectedLanguage;
   bool _gridView = false;
 
-  List<String> _languageLabels(List<BookSummary> books, AppLocalizations l10n) {
+  List<String> _languageLabels(
+      List<BookSummary> books, AppLocalizations l10n) {
     final set = <String>{};
     for (final b in books) {
       final key = (b.primaryLanguage ?? '').trim().isEmpty
@@ -32,8 +33,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           : b.primaryLanguage!.trim();
       set.add(key);
     }
-    final list = set.toList()..sort();
-    return list;
+    return set.toList()..sort();
   }
 
   @override
@@ -55,9 +55,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   title: l10n.drawerBrowse,
                   categoryLabel: l10n.headerCategoriesStat(0),
                   bookLabel: l10n.headerBooksStat(0),
-                  searchHint: l10n.librarySearchHint,
-                  onSearchChanged: (q) => setState(() => _query = q),
-                  initialQuery: _query,
                 ),
                 Expanded(
                   child: AppStateView(
@@ -74,38 +71,42 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             children: [
               PageHeaderBox(
                 title: l10n.drawerBrowse,
-                categoryLabel: l10n.headerCategoriesStat(languages.length),
-                bookLabel: l10n.headerBooksStat(filteredBooks.length),
+                categoryLabel:
+                    l10n.headerCategoriesStat(languages.length),
+                bookLabel:
+                    l10n.headerBooksStat(filteredBooks.length),
                 searchHint: l10n.librarySearchHint,
-                onSearchChanged: (q) => setState(() => _query = q),
+                onSearchChanged: (q) =>
+                    setState(() => _query = q),
                 initialQuery: _query,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               LanguageFilterChips(
                 languages: languages,
                 selectedLanguage: _selectedLanguage,
-                onSelected: (lang) => setState(() => _selectedLanguage = lang),
+                onSelected: (lang) =>
+                    setState(() => _selectedLanguage = lang),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
                 child: Align(
                   alignment: Alignment.centerRight,
-                  child: IconButton(
-                    icon: Icon(
-                      _gridView ? Icons.view_list_rounded : Icons.grid_view_rounded,
-                      color: AppColors.primary,
-                    ),
-                    onPressed: () => setState(() => _gridView = !_gridView),
+                  child: _ViewToggle(
+                    isGrid: _gridView,
+                    onToggle: () =>
+                        setState(() => _gridView = !_gridView),
                   ),
                 ),
               ),
               Expanded(
                 child: RefreshIndicator(
+                  color: AppColors.primary,
                   onRefresh: () async {
                     ref.invalidate(catalogProvider);
                     await ref.read(catalogProvider.future);
                   },
-                  child: _buildBookList(context, l10n, filteredBooks),
+                  child: _buildBookList(
+                      context, l10n, filteredBooks),
                 ),
               ),
             ],
@@ -117,7 +118,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               title: l10n.drawerBrowse,
               categoryLabel: '…',
               bookLabel: '…',
-              searchHint: l10n.librarySearchHint,
             ),
             const Expanded(child: SkeletonCardGroup(count: 4)),
           ],
@@ -128,7 +128,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               title: l10n.drawerBrowse,
               categoryLabel: l10n.headerCategoriesStat(0),
               bookLabel: l10n.headerBooksStat(0),
-              searchHint: l10n.librarySearchHint,
             ),
             Expanded(
               child: AppStateView(
@@ -167,23 +166,23 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     }
 
     final sorted = [...books]
-      ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+      ..sort(
+          (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
 
     final listView = ListView.builder(
       key: const ValueKey('list'),
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
       itemCount: sorted.length,
-      itemBuilder: (context, index) {
-        return BookExpansionCard(book: sorted[index], index: index);
-      },
+      itemBuilder: (context, index) =>
+          BookExpansionCard(book: sorted[index], index: index),
     );
 
     final gridView = GridView.builder(
       key: const ValueKey('grid'),
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
@@ -191,10 +190,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 0.72,
+        childAspectRatio: 0.70,
       ),
       itemCount: sorted.length,
-      itemBuilder: (context, index) => _BookGridCard(book: sorted[index]),
+      itemBuilder: (context, index) =>
+          _BookGridCard(book: sorted[index]),
     );
 
     return AnimatedSwitcher(
@@ -209,7 +209,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         : book.primaryLanguage!.trim();
   }
 
-  List<BookSummary> _applyFilters(List<BookSummary> books, AppLocalizations l10n) {
+  List<BookSummary> _applyFilters(
+      List<BookSummary> books, AppLocalizations l10n) {
     final q = _query.trim().toLowerCase();
     return books.where((book) {
       if (_selectedLanguage != null &&
@@ -229,6 +230,54 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   }
 }
 
+// ─── View toggle button ───────────────────────────────────────────────────────
+
+class _ViewToggle extends StatelessWidget {
+  const _ViewToggle({required this.isGrid, required this.onToggle});
+
+  final bool isGrid;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onToggle,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceCard,
+          borderRadius: BorderRadius.circular(AppRadius.xs),
+          border: Border.all(color: AppColors.border),
+          boxShadow: AppShadows.card,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isGrid
+                  ? Icons.view_list_rounded
+                  : Icons.grid_view_rounded,
+              size: 18,
+              color: AppColors.primary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              isGrid ? 'List' : 'Grid',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Grid card ───────────────────────────────────────────────────────────────
+
 class _BookGridCard extends StatelessWidget {
   const _BookGridCard({required this.book});
 
@@ -242,66 +291,86 @@ class _BookGridCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.surfaceCard,
           borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: AppColors.border),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          border: Border.all(color: AppColors.borderSubtle),
+          boxShadow: AppShadows.card,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.10),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(AppRadius.md),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Cover placeholder with gradient
+              Expanded(
+                flex: 3,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: AppGradients.hero,
                   ),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.menu_book_outlined,
-                    size: 40,
-                    color: AppColors.accent,
-                  ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    book.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  if (book.authorCompiler?.isNotEmpty == true) ...[
-                    const SizedBox(height: 3),
-                    Text(
-                      book.authorCompiler!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
+                  child: Stack(
+                    children: [
+                      // Decorative circle top-right
+                      Positioned(
+                        top: -16,
+                        right: -16,
+                        child: Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color:
+                                Colors.white.withValues(alpha: 0.07),
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
-                ],
+                      const Center(
+                        child: Icon(
+                          Icons.menu_book_rounded,
+                          size: 36,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ],
+              // Info area
+              Expanded(
+                flex: 2,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        book.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                          height: 1.3,
+                        ),
+                      ),
+                      if (book.authorCompiler?.isNotEmpty == true) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          book.authorCompiler!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

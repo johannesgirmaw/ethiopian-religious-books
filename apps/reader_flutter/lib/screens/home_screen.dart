@@ -35,7 +35,8 @@ class HomeScreen extends ConsumerWidget {
     final lastOpened = ref.watch(lastOpenedBookProvider).valueOrNull;
     final offlineCount =
         ref.watch(offlineBookCountProvider).valueOrNull ?? 0;
-    final downloadJobs = ref.watch(downloadJobsProvider).valueOrNull ?? const [];
+    final downloadJobs =
+        ref.watch(downloadJobsProvider).valueOrNull ?? const [];
     final inProgressCount = downloadJobs
         .where((j) => j.state == 'in_progress' || j.state == 'pending')
         .length;
@@ -63,7 +64,7 @@ class HomeScreen extends ConsumerWidget {
 
           final catCount = _languageCategoryCount(page.items, l10n);
           final bookCount = page.items.length;
-          final featured = page.items.take(5).toList();
+          final featured = page.items.take(6).toList();
 
           return Column(
             children: [
@@ -73,6 +74,7 @@ class HomeScreen extends ConsumerWidget {
               ),
               Expanded(
                 child: RefreshIndicator(
+                  color: AppColors.primary,
                   onRefresh: () async {
                     ref.invalidate(catalogProvider);
                     ref.invalidate(lastOpenedBookProvider);
@@ -82,20 +84,19 @@ class HomeScreen extends ConsumerWidget {
                     await ref.read(catalogProvider.future);
                   },
                   child: ListView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 24,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
                     children: [
+                      // Quick-access hub cards
                       SummaryHubCard(
                         title: l10n.homeQuickBrowse,
-                        categoryLabel: l10n.headerCategoriesStat(catCount),
+                        categoryLabel:
+                            l10n.headerCategoriesStat(catCount),
                         categoryIcon: Icons.category_outlined,
                         contentLabel: l10n.headerBooksStat(bookCount),
                         contentIcon: Icons.library_books_outlined,
                         onTap: () => context.go('/library'),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       SummaryHubCard(
                         title: l10n.homeQuickDownloads,
                         categoryLabel: inProgressCount > 0
@@ -108,12 +109,14 @@ class HomeScreen extends ConsumerWidget {
                         contentIcon: Icons.download_done_outlined,
                         onTap: () => context.go('/downloads'),
                       ),
-                      if (lastOpened != null && lastOpened.bookId.isNotEmpty) ...[
-                        const SizedBox(height: 24),
-                        AnimatedOpacity(
-                          opacity: 1.0,
-                          duration: const Duration(milliseconds: 300),
-                          child: _ContinueSection(lastOpened: lastOpened, featured: featured),
+
+                      // Continue reading / featured strip
+                      if (lastOpened != null &&
+                          lastOpened.bookId.isNotEmpty) ...[
+                        const SizedBox(height: 28),
+                        _ContinueSection(
+                          lastOpened: lastOpened,
+                          featured: featured,
                         ),
                       ],
                     ],
@@ -162,33 +165,29 @@ class _ContinueSection extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: AppColors.surfaceCard,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.card,
+        border: Border.all(color: AppColors.borderSubtle),
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SectionTitleBar(title: l10n.resumeReading),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           SizedBox(
-            height: 120,
+            height: 130,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: (featured.length + 1).clamp(1, 6),
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemCount: (featured.length + 1).clamp(1, 7),
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
               itemBuilder: (context, index) {
                 if (index == 0) {
                   return CompactBookStripCard(
                     title: lastOpened.title,
-                    onTap: () => context.push('/reader/${lastOpened.bookId}'),
+                    onTap: () =>
+                        context.push('/reader/${lastOpened.bookId}'),
                   );
                 }
                 final book = featured[(index - 1) % featured.length];
@@ -199,13 +198,40 @@ class _ContinueSection extends StatelessWidget {
               },
             ),
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () => context.push('/reader/${lastOpened.bookId}'),
-              icon: const Icon(Icons.play_arrow_rounded),
-              label: Text(l10n.resumeReading),
+          const SizedBox(height: 14),
+          // Gradient CTA
+          GestureDetector(
+            onTap: () =>
+                context.push('/reader/${lastOpened.bookId}'),
+            child: Container(
+              height: 48,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: AppGradients.hero,
+                borderRadius:
+                    BorderRadius.circular(AppRadius.sm),
+                boxShadow: AppShadows.floatingBtn,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.play_arrow_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.resumeReading,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

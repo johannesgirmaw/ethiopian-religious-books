@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 
-/// Horizontal language filter chips (All + one chip per language).
+/// Premium horizontal language filter pills.
 class LanguageFilterChips extends StatelessWidget {
   const LanguageFilterChips({
     super.key,
@@ -13,7 +13,6 @@ class LanguageFilterChips extends StatelessWidget {
     this.allLabel,
   });
 
-  /// Display labels including [generalCategory] for books without a language.
   final List<String> languages;
   final String? selectedLanguage;
   final ValueChanged<String?> onSelected;
@@ -25,12 +24,12 @@ class LanguageFilterChips extends StatelessWidget {
     final all = allLabel ?? l10n.filterAll;
 
     return SizedBox(
-      height: 44,
+      height: 40,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
-          _LanguageChip(
+          _LanguagePill(
             label: all,
             selected: selectedLanguage == null,
             onTap: () => onSelected(null),
@@ -39,7 +38,7 @@ class LanguageFilterChips extends StatelessWidget {
           ...languages.map(
             (lang) => Padding(
               padding: const EdgeInsets.only(right: 8),
-              child: _LanguageChip(
+              child: _LanguagePill(
                 label: lang,
                 selected: selectedLanguage == lang,
                 onTap: () => onSelected(lang),
@@ -52,8 +51,8 @@ class LanguageFilterChips extends StatelessWidget {
   }
 }
 
-class _LanguageChip extends StatelessWidget {
-  const _LanguageChip({
+class _LanguagePill extends StatelessWidget {
+  const _LanguagePill({
     required this.label,
     required this.selected,
     required this.onTap,
@@ -65,19 +64,30 @@ class _LanguageChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FilterChip(
-      label: Text(label),
-      selected: selected,
-      showCheckmark: false,
-      onSelected: (_) => onTap(),
-      selectedColor: AppColors.referencePrimary.withValues(alpha: 0.45),
-      backgroundColor: Colors.white,
-      side: BorderSide(
-        color: selected ? AppColors.referencePrimary : Colors.grey.shade300,
-      ),
-      labelStyle: TextStyle(
-        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-        color: Colors.black87,
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: AppMotion.short,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+        decoration: BoxDecoration(
+          gradient: selected ? AppGradients.hero : null,
+          color: selected ? null : AppColors.surfaceCard,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          border: Border.all(
+            color: selected ? Colors.transparent : AppColors.border,
+            width: 1.5,
+          ),
+          boxShadow: selected ? AppShadows.card : null,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : AppColors.textSecondary,
+            letterSpacing: 0.2,
+          ),
+        ),
       ),
     );
   }
