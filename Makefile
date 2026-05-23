@@ -17,7 +17,7 @@ help:
 	@echo "  make reader-run-macos   - macOS desktop only"
 	@echo "  make reader-run-ios     - ./scripts/run_reader_flutter.sh ios (optional)"
 	@echo "  make reader-pubget      - flutter pub get only"
-	@echo "  make reader-build-apk-release - fast release APK (arm64 only; see script --help)"
+	@echo "  make reader-build-apk-release - release APK/AAB → Render API (see script --help)"
 	@echo "  make reader-test        - flutter test"
 	@echo "  make pre-commit   - run all pre-commit hooks on repo"
 

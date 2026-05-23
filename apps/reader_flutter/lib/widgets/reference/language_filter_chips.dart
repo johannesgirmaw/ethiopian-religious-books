@@ -70,14 +70,15 @@ class _LanguagePill extends StatelessWidget {
         duration: AppMotion.short,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
         decoration: BoxDecoration(
-          gradient: selected ? AppGradients.hero : null,
-          color: selected ? null : AppColors.surfaceCard,
+          color: selected
+              ? AppColors.referencePrimary
+              : AppColors.surfaceCard,
           borderRadius: BorderRadius.circular(AppRadius.pill),
           border: Border.all(
-            color: selected ? Colors.transparent : AppColors.border,
-            width: 1.5,
+            color: selected ? AppColors.referencePrimary : AppColors.line,
+            width: 1,
           ),
-          boxShadow: selected ? AppShadows.card : null,
+          boxShadow: selected ? AppShadows.listRow : null,
         ),
         child: Text(
           label,

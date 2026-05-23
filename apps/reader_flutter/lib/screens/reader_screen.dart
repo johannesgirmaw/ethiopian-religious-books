@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../design/app_tokens.dart';
+import '../design/reader_typography.dart';
 import '../design/reference_assets.dart';
 import '../l10n/app_localizations.dart';
 import '../models/book_models.dart';
@@ -2086,7 +2087,6 @@ class _ReaderBookPage extends StatelessWidget {
             : accent.withValues(alpha: dark ? 0.42 : 0.32);
     final borderW = isActiveMatch ? 2.0 : 1.0;
 
-    const serif = 'serif';
     const contentPadH = 14.0;
 
     return DecoratedBox(
@@ -2147,12 +2147,8 @@ class _ReaderBookPage extends StatelessWidget {
                                       section.chapterTitle,
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontFamily: serif,
-                                        fontSize: 15,
-                                        height: 1.25,
+                                      style: ReaderTypography.chapterTitle(
                                         color: textColor.withValues(alpha: 0.92),
-                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                     if (_readerShowPageSubtitle(section, l10n)) ...[
@@ -2161,12 +2157,8 @@ class _ReaderBookPage extends StatelessWidget {
                                         section.pageTitle,
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontFamily: serif,
-                                          fontSize: 13,
-                                          height: 1.3,
+                                        style: ReaderTypography.chapterMeta(
                                           color: muted,
-                                          fontStyle: FontStyle.italic,
                                         ),
                                       ),
                                     ],
@@ -2201,12 +2193,9 @@ class _ReaderBookPage extends StatelessWidget {
                                     ),
                                     child: Text(
                                       '${section.pageNumber}',
-                                      style: TextStyle(
-                                        fontFamily: serif,
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w600,
+                                      style: ReaderTypography.chapterTitle(
                                         color: textColor.withValues(alpha: 0.94),
-                                        height: 1,
+                                        fontSize: 22,
                                       ),
                                     ),
                                   ),
@@ -2239,19 +2228,15 @@ class _ReaderBookPage extends StatelessWidget {
                             alignment: AlignmentDirectional.topStart,
                             child: StoredRichTextView(
                               raw: section.body,
-                              fallbackStyle: TextStyle(
-                                fontFamily: serif,
-                                color: textColor,
+                              fallbackStyle: ReaderTypography.body(
                                 fontSize: fontSize,
+                                color: textColor,
                                 height: lineHeight,
-                                letterSpacing: 0.2,
                               ),
-                              paragraphStyle: TextStyle(
-                                fontFamily: serif,
-                                color: textColor,
+                              paragraphStyle: ReaderTypography.body(
                                 fontSize: fontSize,
+                                color: textColor,
                                 height: lineHeight,
-                                letterSpacing: 0.2,
                               ),
                             ),
                           ),
@@ -2261,13 +2246,11 @@ class _ReaderBookPage extends StatelessWidget {
                           child: Center(
                             child: Text(
                               '· ${section.pageNumber} ·',
-                              style: TextStyle(
-                                fontFamily: serif,
+                              style: ReaderTypography.body(
                                 fontSize: 13,
                                 color: muted,
-                                letterSpacing: 3,
-                                fontWeight: FontWeight.w500,
-                              ),
+                                height: 1.2,
+                              ).copyWith(letterSpacing: 3),
                             ),
                           ),
                         ),

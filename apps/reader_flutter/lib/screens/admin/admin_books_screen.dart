@@ -7,6 +7,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/admin_book.dart';
 import '../../providers/admin_providers.dart';
 import '../../widgets/app_state_view.dart';
+import '../../widgets/primitives/shell_primitives.dart';
 import 'admin_book_actions.dart';
 
 /// Single admin hub: search, filter, and manage every book from one list.
@@ -230,21 +231,15 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
       (sum, c) => sum + c.pages.length,
     );
 
-    final statusColor =
-        isPublished ? Colors.green.shade100 : Colors.orange.shade100;
     final statusLabel =
         isPublished ? l10n.publishedStatus : l10n.draftStatus;
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        side: const BorderSide(color: AppColors.border),
-      ),
+    return Material(
+      color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(AppRadius.cardV2),
         onTap: _busy ? null : _openEdit,
-        child: Padding(
+        child: AppPanel(
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,15 +274,12 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  Chip(
-                    label: Text(
-                      statusLabel,
-                      style: const TextStyle(fontSize: 11),
-                    ),
-                    backgroundColor: statusColor,
-                    padding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
+                  const SizedBox(width: 8),
+                  AppStatusChip(
+                    label: statusLabel,
+                    kind: isPublished
+                        ? AppStatusKind.active
+                        : AppStatusKind.pending,
                   ),
                   _busy
                       ? const Padding(

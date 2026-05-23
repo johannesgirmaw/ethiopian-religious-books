@@ -9,7 +9,7 @@ import '../providers/catalog_providers.dart';
 import '../widgets/app_state_view.dart';
 import '../widgets/reference/book_expansion_card.dart';
 import '../widgets/reference/language_filter_chips.dart';
-import '../widgets/reference/page_header_box.dart';
+import '../widgets/primitives/shell_primitives.dart';
 import '../widgets/skeleton_loader.dart';
 
 class LibraryScreen extends ConsumerStatefulWidget {
@@ -51,7 +51,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           if (page.items.isEmpty) {
             return Column(
               children: [
-                PageHeaderBox(
+                LibraryShellHeader(
                   title: l10n.drawerBrowse,
                   categoryLabel: l10n.headerCategoriesStat(0),
                   bookLabel: l10n.headerBooksStat(0),
@@ -69,7 +69,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
           return Column(
             children: [
-              PageHeaderBox(
+              LibraryShellHeader(
                 title: l10n.drawerBrowse,
                 categoryLabel:
                     l10n.headerCategoriesStat(languages.length),
@@ -88,14 +88,25 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     setState(() => _selectedLanguage = lang),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: _ViewToggle(
-                    isGrid: _gridView,
-                    onToggle: () =>
-                        setState(() => _gridView = !_gridView),
-                  ),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    AppSegmentedControl<bool>(
+                      options: [
+                        AppSegmentedOption(
+                          value: false,
+                          label: l10n.libraryViewList,
+                        ),
+                        AppSegmentedOption(
+                          value: true,
+                          label: l10n.libraryViewGrid,
+                        ),
+                      ],
+                      value: _gridView,
+                      onChanged: (v) => setState(() => _gridView = v),
+                    ),
+                  ],
                 ),
               ),
               Expanded(
@@ -114,7 +125,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         },
         loading: () => Column(
           children: [
-            PageHeaderBox(
+            LibraryShellHeader(
               title: l10n.drawerBrowse,
               categoryLabel: '…',
               bookLabel: '…',
@@ -124,7 +135,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         ),
         error: (e, _) => Column(
           children: [
-            PageHeaderBox(
+            LibraryShellHeader(
               title: l10n.drawerBrowse,
               categoryLabel: l10n.headerCategoriesStat(0),
               bookLabel: l10n.headerBooksStat(0),
@@ -230,52 +241,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   }
 }
 
-// ─── View toggle button ───────────────────────────────────────────────────────
-
-class _ViewToggle extends StatelessWidget {
-  const _ViewToggle({required this.isGrid, required this.onToggle});
-
-  final bool isGrid;
-  final VoidCallback onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onToggle,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceCard,
-          borderRadius: BorderRadius.circular(AppRadius.xs),
-          border: Border.all(color: AppColors.border),
-          boxShadow: AppShadows.card,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isGrid
-                  ? Icons.view_list_rounded
-                  : Icons.grid_view_rounded,
-              size: 18,
-              color: AppColors.primary,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              isGrid ? 'List' : 'Grid',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 // ─── Grid card ───────────────────────────────────────────────────────────────
 
 class _BookGridCard extends StatelessWidget {
@@ -290,47 +255,20 @@ class _BookGridCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surfaceCard,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: AppColors.borderSubtle),
-          boxShadow: AppShadows.card,
+          borderRadius: BorderRadius.circular(AppRadius.cardV2),
+          border: Border.all(color: AppColors.line),
+          boxShadow: AppShadows.listRow,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderRadius: BorderRadius.circular(AppRadius.cardV2),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Cover placeholder with gradient
               Expanded(
                 flex: 3,
-                child: Container(
-                  decoration: const BoxDecoration(
-                    gradient: AppGradients.hero,
-                  ),
-                  child: Stack(
-                    children: [
-                      // Decorative circle top-right
-                      Positioned(
-                        top: -16,
-                        right: -16,
-                        child: Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color:
-                                Colors.white.withValues(alpha: 0.07),
-                          ),
-                        ),
-                      ),
-                      const Center(
-                        child: Icon(
-                          Icons.menu_book_rounded,
-                          size: 36,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
+                child: const AppBookCover(
+                  expand: true,
+                  icon: Icons.menu_book_rounded,
                 ),
               ),
               // Info area

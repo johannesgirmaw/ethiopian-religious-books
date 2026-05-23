@@ -5,8 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../design/app_tokens.dart';
 import '../design/reference_assets.dart';
 import '../l10n/app_localizations.dart';
-import '../providers/continue_reading_provider.dart';
 import '../providers/session_notifier.dart';
+import 'primitives/shared_widgets.dart';
+import 'primitives/shell_primitives.dart';
 
 class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
@@ -27,100 +28,35 @@ class AppDrawer extends ConsumerWidget {
     final location = GoRouterState.of(context).matchedLocation;
     final session = ref.watch(sessionNotifierProvider).valueOrNull;
     final user = session?.user;
-    final lastOpened = ref.watch(lastOpenedBookProvider).valueOrNull;
     final isSuperuser = user?.isSuperuser == true;
 
     return Drawer(
+      backgroundColor: AppColors.referencePageBg,
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          SizedBox(
-            height: 200,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                const DecoratedBox(
-                  decoration: BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage(ReferenceAssets.drawerHero),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: AppGreetingCard(
+              greetingLine: greetingForL10n(l10n),
+              title: l10n.appTitle,
+              subtitle: user?.email ?? l10n.splashTagline,
+              showMenu: false,
+              trailing: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Image.asset(
+                  ReferenceAssets.appLogo,
+                  width: 48,
+                  height: 48,
+                  fit: BoxFit.cover,
                 ),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: AppColors.referencePrimary.withValues(alpha: 0.4),
-                  ),
-                ),
-                Positioned(
-                  top: 20,
-                  right: 16,
-                  child: Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      // color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: ClipOval(
-                      child: Image.asset(
-                        ReferenceAssets.appLogo,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: 16,
-                  right: 16,
-                  bottom: 20,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        l10n.appTitle,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          shadows: [
-                            Shadow(
-                              offset: Offset(0, 1),
-                              blurRadius: 3,
-                              color: Colors.black87,
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (user?.email != null) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          user!.email,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.white.withValues(alpha: 0.92),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
+          const SizedBox(height: 8),
           _DrawerNavTile(
-            icon: Icons.home_outlined,
-            selectedIcon: Icons.home_rounded,
+            icon: Icons.explore_outlined,
+            selectedIcon: Icons.explore_rounded,
             label: l10n.drawerHome,
             selected: location.startsWith('/home'),
             onTap: () => _navigate(context, '/home'),
@@ -132,18 +68,6 @@ class AppDrawer extends ConsumerWidget {
             selected: location.startsWith('/library'),
             onTap: () => _navigate(context, '/library'),
           ),
-          // if (lastOpened != null && lastOpened.bookId.isNotEmpty)
-          //   _DrawerNavTile(
-          //     icon: Icons.menu_book_outlined,
-          //     selectedIcon: Icons.menu_book_rounded,
-          //     label: l10n.drawerContinueReading,
-          //     subtitle: lastOpened.title,
-          //     selected: false,
-          //     onTap: () {
-          //       Navigator.of(context).pop();
-          //       context.push('/reader/${lastOpened.bookId}');
-          //     },
-          //   ),
           _DrawerNavTile(
             icon: Icons.person_outline_rounded,
             selectedIcon: Icons.person_rounded,
@@ -166,7 +90,7 @@ class AppDrawer extends ConsumerWidget {
             onTap: () => _pushAndClose(context, '/about'),
           ),
           if (isSuperuser) ...[
-            const Divider(),
+            Divider(height: 24, color: AppColors.line, indent: 16, endIndent: 16),
             _DrawerNavTile(
               icon: Icons.admin_panel_settings_outlined,
               selectedIcon: Icons.admin_panel_settings_rounded,
@@ -204,12 +128,13 @@ class _DrawerNavTile extends StatelessWidget {
     return ListTile(
       leading: Icon(
         selected ? selectedIcon : icon,
-        color: selected ? AppColors.referencePrimary : Colors.black26,
+        color: selected ? AppColors.referencePrimary : AppColors.textSecondary,
       ),
       title: Text(
         label,
         style: TextStyle(
           fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+          color: selected ? AppColors.textPrimary : AppColors.textSecondary,
         ),
       ),
       subtitle: subtitle != null && subtitle!.isNotEmpty
@@ -221,6 +146,9 @@ class _DrawerNavTile extends StatelessWidget {
           : null,
       selected: selected,
       onTap: onTap,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
     );
   }
 }

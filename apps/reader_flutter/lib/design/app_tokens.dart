@@ -38,8 +38,16 @@ class AppColors {
   // Semantic
   static const Color errorSurface  = Color(0xFFFEF2F2);
   static const Color errorBorder   = Color(0xFFF87171);
+  static const Color errorText     = Color(0xFFB91C1C);
   static const Color successSurface = Color(0xFFF0FDF4);
   static const Color successBorder  = Color(0xFF6EE7B7);
+  static const Color successText   = Color(0xFF0B7A4A);
+
+  /// Hairline on cards (v2 kit `T.line`).
+  static Color get line => textPrimary.withValues(alpha: 0.08);
+
+  /// iOS-style filled inputs (auth).
+  static const Color surfaceInput = Color(0xFFF2F2F7);
 }
 
 // ─── Gradient Library ────────────────────────────────────────────────────────
@@ -88,6 +96,14 @@ class AppGradients {
     center: Alignment.center,
     radius: 1.4,
     colors: [Color(0xFF3B2460), Color(0xFF1A0E2E), Color(0xFF070412)],
+    stops: [0.0, 0.55, 1.0],
+  );
+
+  /// Inset greeting card — max one per shell screen.
+  static const LinearGradient greetingMesh = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF2D1B69), Color(0xFF5B3B8C), Color(0xFF7C59C0)],
     stops: [0.0, 0.55, 1.0],
   );
 
@@ -164,6 +180,41 @@ class AppShadows {
           offset: const Offset(0, 20),
         ),
       ];
+
+  /// White metric / panel cards (v2 `PanelV2`, `HeroMetric`).
+  static List<BoxShadow> get panel => [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.02),
+          blurRadius: 0,
+          offset: const Offset(0, 1),
+        ),
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.08),
+          blurRadius: 24,
+          spreadRadius: -16,
+          offset: const Offset(0, 8),
+        ),
+      ];
+
+  /// List rows (`ListItem`).
+  static List<BoxShadow> get listRow => [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.06),
+          blurRadius: 8,
+          spreadRadius: -6,
+          offset: const Offset(0, 2),
+        ),
+      ];
+
+  /// Greeting strip elevation.
+  static List<BoxShadow> get greeting => [
+        BoxShadow(
+          color: AppColors.primaryDeep.withValues(alpha: 0.35),
+          blurRadius: 24,
+          spreadRadius: -12,
+          offset: const Offset(0, 10),
+        ),
+      ];
 }
 
 // ─── Spacing ─────────────────────────────────────────────────────────────────
@@ -192,6 +243,10 @@ class AppRadius {
   static const double lg   = 20;
   static const double xl   = 24;
   static const double xxl  = 32;
+  /// Greeting card, large panels.
+  static const double greeting = 22;
+  static const double cardV2 = 18;
+  static const double panel = 20;
   static const double pill = 999;
 }
 

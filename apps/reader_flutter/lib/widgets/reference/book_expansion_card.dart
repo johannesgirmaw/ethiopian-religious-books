@@ -6,6 +6,7 @@ import '../../design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/book_models.dart';
 import '../../providers/catalog_providers.dart';
+import '../primitives/shell_primitives.dart';
 import 'content_list_item.dart';
 
 /// Expandable book card — premium design with colored index badge.
@@ -26,48 +27,29 @@ class BookExpansionCard extends ConsumerStatefulWidget {
 class _BookExpansionCardState extends ConsumerState<BookExpansionCard> {
   bool _expanded = false;
 
-  // Pick a gradient stop based on index for variety
-  LinearGradient _badgeGradient(int index) {
-    const gradients = [
-      LinearGradient(
-        colors: [Color(0xFF5B3B8C), Color(0xFF3B2460)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      LinearGradient(
-        colors: [Color(0xFFC1272D), Color(0xFF8B1A1A)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      LinearGradient(
-        colors: [Color(0xFFE8B84B), Color(0xFFD4A017)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      LinearGradient(
-        colors: [Color(0xFF2D6A4F), Color(0xFF1B4332)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-    ];
-    return gradients[index % gradients.length];
-  }
+  static const _accents = [
+    AppColors.referencePrimary,
+    AppColors.referenceSecondary,
+    AppColors.referenceAccent,
+    Color(0xFF2D6A4F),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final book = widget.book;
     final idx = widget.index ?? 0;
+    final accent = _accents[idx % _accents.length];
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        boxShadow: AppShadows.card,
-        border: Border.all(color: AppColors.borderSubtle),
+        borderRadius: BorderRadius.circular(AppRadius.cardV2),
+        boxShadow: AppShadows.listRow,
+        border: Border.all(color: AppColors.line),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(AppRadius.cardV2),
         child: Theme(
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
@@ -80,25 +62,11 @@ class _BookExpansionCardState extends ConsumerState<BookExpansionCard> {
             collapsedIconColor: AppColors.textTertiary,
             onExpansionChanged: (open) =>
                 setState(() => _expanded = open),
-            leading: Container(
-              width: 44,
-              height: 56,
-              decoration: BoxDecoration(
-                gradient: _badgeGradient(idx),
-                borderRadius: BorderRadius.circular(AppRadius.xs),
-              ),
-              child: Center(
-                child: Text(
-                  '${idx + 1}',
-                  style: TextStyle(
-                    color: idx % 2 == 2
-                        ? AppColors.primaryDeep
-                        : Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 17,
-                  ),
-                ),
-              ),
+            leading: AppBookCover(
+              size: 52,
+              borderRadius: 12,
+              accent: accent,
+              icon: Icons.menu_book_rounded,
             ),
             title: Text(
               book.title,

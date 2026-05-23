@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
+import '../primitives/shell_primitives.dart';
 
 /// Tall portrait book card for the horizontal "Continue Reading" strip.
 class CompactBookStripCard extends StatelessWidget {
@@ -25,30 +26,18 @@ class CompactBookStripCard extends StatelessWidget {
         width: 120,
         decoration: BoxDecoration(
           color: AppColors.surfaceCard,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: AppColors.border),
-          boxShadow: AppShadows.card,
+          borderRadius: BorderRadius.circular(AppRadius.cardV2),
+          border: Border.all(color: AppColors.line),
+          boxShadow: AppShadows.listRow,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderRadius: BorderRadius.circular(AppRadius.cardV2),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Cover area — gradient placeholder
               Expanded(
                 flex: 3,
-                child: Container(
-                  decoration: const BoxDecoration(
-                    gradient: AppGradients.heroVertical,
-                  ),
-                  child: Center(
-                    child: Icon(
-                      icon,
-                      size: 32,
-                      color: Colors.white.withValues(alpha: 0.80),
-                    ),
-                  ),
-                ),
+                child: AppBookCover(expand: true, icon: icon),
               ),
               // Title area
               Expanded(
@@ -117,7 +106,7 @@ class ReferenceBookSearchRow extends StatelessWidget {
               Expanded(
                 child: _ActionButton(
                   label: l10n.actionRead,
-                  gradient: AppGradients.hero,
+                  filled: true,
                   onPressed: () => context.push('/reader/$bookId'),
                 ),
               ),
@@ -140,34 +129,31 @@ class _ActionButton extends StatelessWidget {
   const _ActionButton({
     required this.label,
     required this.onPressed,
-    this.gradient,
+    this.filled = false,
   });
 
   final String label;
   final VoidCallback onPressed;
-  final LinearGradient? gradient;
+  final bool filled;
 
   @override
   Widget build(BuildContext context) {
-    final hasGrad = gradient != null;
     return GestureDetector(
       onTap: onPressed,
       child: Container(
         height: 38,
         decoration: BoxDecoration(
-          gradient: hasGrad ? gradient : null,
-          color: hasGrad ? null : AppColors.surfaceSoft,
+          color: filled ? AppColors.referencePrimary : AppColors.surfaceSoft,
           borderRadius: BorderRadius.circular(AppRadius.xs),
-          border: hasGrad
+          border: filled
               ? null
-              : Border.all(color: AppColors.border, width: 1.5),
-          boxShadow: hasGrad ? AppShadows.card : null,
+              : Border.all(color: AppColors.line, width: 1),
         ),
         child: Center(
           child: Text(
             label,
             style: TextStyle(
-              color: hasGrad ? Colors.white : AppColors.primary,
+              color: filled ? Colors.white : AppColors.primary,
               fontSize: 13,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.2,

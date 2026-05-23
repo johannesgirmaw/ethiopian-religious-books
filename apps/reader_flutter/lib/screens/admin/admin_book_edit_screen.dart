@@ -8,7 +8,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
+import '../../widgets/primitives/shell_primitives.dart';
 import '../../models/admin_book.dart';
 import '../../providers/admin_providers.dart';
 import '../../providers/api_client.dart';
@@ -570,6 +572,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
         }
       },
       child: Scaffold(
+      backgroundColor: AppColors.referencePageBg,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -588,12 +591,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
               child: ListView(
               padding: const EdgeInsets.all(24),
               children: [
-                Text(
-                  l10n.metadataSection,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
+                AppSectionHeader(title: l10n.metadataSection),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _title,
@@ -747,9 +745,11 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                   ..._chaptersDraft.asMap().entries.map((entry) {
                     final cIndex = entry.key;
                     final chapter = entry.value;
-                    return Card(
-                      margin: const EdgeInsets.only(top: 8),
-                      child: ExpansionTile(
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: AppPanel(
+                        padding: EdgeInsets.zero,
+                        child: ExpansionTile(
                         // Avoid a wide Row in `trailing`: ListTile often gives it
                         // zero width → zero-size IconButtons → hit-test / mouse_tracker
                         // errors on desktop/web.
@@ -922,6 +922,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                             );
                           }),
                         ],
+                      ),
                       ),
                     );
                   }),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../design/app_tokens.dart';
-import 'reference/reference_menu_button.dart';
+import 'primitives/menu_button.dart';
 
 /// Tab page scaffold with a standard toolbar and drawer menu.
 class ShellPageScaffold extends StatelessWidget {
@@ -29,26 +29,31 @@ class ShellPageScaffold extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
-            height: ReferenceMenuLayout.toolbarHeight + topInset,
+            decoration: BoxDecoration(
+              color: AppColors.referencePageBg,
+              border: Border(bottom: BorderSide(color: AppColors.line)),
+            ),
             padding: EdgeInsets.only(top: topInset),
-            color: AppColors.referencePageBg,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const ReferenceMenuButton(),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+            child: SizedBox(
+              height: AppMenuLayout.toolbarHeight,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const AppMenuButton(),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                if (actions != null) ...actions!,
-              ],
+                  if (actions != null) ...actions!,
+                ],
+              ),
             ),
           ),
           Expanded(child: body),

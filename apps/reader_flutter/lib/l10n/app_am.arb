@@ -743,5 +743,10 @@
   "pageContentHeading": "የገጽ ይዘት",
   "pageEditorPlaceholder": "ይህን ገጽ ይጻፉ…",
   "pageEditorFormattingToggle": "ቅርጸት",
-  "pageEditorFormattingHide": "መሳሪያ ደብቅ"
+  "pageEditorFormattingHide": "መሳሪያ ደብቅ",
+  "goodMorning": "እንደምን አደሩ",
+  "goodAfternoon": "እንደምን ዋሉ",
+  "goodEvening": "እንደምን አመሹ",
+  "libraryViewList": "ዝርዝር",
+  "libraryViewGrid": "ፍርግርግ"
 }

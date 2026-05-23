@@ -231,10 +231,13 @@ class _SelectionOrb extends StatelessWidget {
                   Colors.white.withValues(alpha: 0.14),
                 ],
               )
-            : const LinearGradient(
+            : LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Colors.white, Color(0xFFF8F5FF)],
+                colors: [
+                  AppColors.surfaceCard,
+                  AppColors.referencePageBg,
+                ],
               ),
         boxShadow: [
           BoxShadow(

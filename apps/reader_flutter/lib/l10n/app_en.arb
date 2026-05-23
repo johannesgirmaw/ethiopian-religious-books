@@ -629,5 +629,10 @@
   "pageContentHeading": "Page content",
   "pageEditorPlaceholder": "Write this page…",
   "pageEditorFormattingToggle": "Formatting",
-  "pageEditorFormattingHide": "Hide tools"
+  "pageEditorFormattingHide": "Hide tools",
+  "goodMorning": "Good morning",
+  "goodAfternoon": "Good afternoon",
+  "goodEvening": "Good evening",
+  "libraryViewList": "List",
+  "libraryViewGrid": "Grid"
 }
