@@ -4,11 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../config/app_config.dart';
-import '../design/app_tokens.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/session_notifier.dart';
 import '../utils/api_error_message.dart';
 import '../utils/dio_connection_message.dart';
+import '../widgets/primitives/auth_screen_layout.dart';
+import '../widgets/primitives/shared_widgets.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -54,7 +55,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         data: {
           'email': _email.text.trim(),
           'password': _password.text,
-          'display_name': _name.text.trim().isEmpty ? null : _name.text.trim(),
+          'display_name':
+              _name.text.trim().isEmpty ? null : _name.text.trim(),
         },
       );
       await ref
@@ -79,128 +81,85 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
+
+    return AuthScreenLayout(
+      headline: l10n.createAccountTitle,
+      subtitle: l10n.registerSubtitle,
+      formChild: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(
-                Icons.auto_stories_rounded,
-                color: Colors.white,
-                size: 28,
-              ),
+            AppTextField(
+              controller: _email,
+              label: l10n.emailFieldLabel,
+              hint: l10n.emailFieldHint,
+              icon: Icons.mail_outline_rounded,
+              keyboardType: TextInputType.emailAddress,
+              autocorrect: false,
+              validator: (v) {
+                final s = (v ?? '').trim();
+                if (s.isEmpty) return l10n.emailRequired;
+                if (!s.contains('@') || !s.contains('.')) {
+                  return l10n.emailInvalid;
+                }
+                return null;
+              },
             ),
-            const SizedBox(height: 20),
-            Text(
-              l10n.createAccountTitle,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              l10n.registerSubtitle,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-            ),
-            const SizedBox(height: 24),
-            Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  TextFormField(
-                    controller: _email,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      labelText: l10n.emailFieldLabel,
-                      hintText: l10n.emailFieldHint,
-                    ),
-                    autocorrect: false,
-                    validator: (value) {
-                      final v = (value ?? '').trim();
-                      if (v.isEmpty) return l10n.emailRequired;
-                      if (!v.contains('@') || !v.contains('.')) {
-                        return l10n.emailInvalid;
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _password,
-                    obscureText: !_showPassword,
-                    decoration: InputDecoration(
-                      labelText: l10n.passwordFieldLabel,
-                      helperText: l10n.passwordMinRegisterHelper,
-                      suffixIcon: IconButton(
-                        onPressed: () {
-                          setState(() => _showPassword = !_showPassword);
-                        },
-                        icon: Icon(
-                          _showPassword
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                        ),
-                      ),
-                    ),
-                    validator: (value) {
-                      final v = value ?? '';
-                      if (v.isEmpty) return l10n.passwordRequired;
-                      if (v.length < 10) {
-                        return l10n.passwordTooShort;
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _name,
-                    decoration: InputDecoration(
-                      labelText: l10n.displayNameOptional,
-                    ),
-                  ),
-                ],
+            const SizedBox(height: 14),
+            AppTextField(
+              controller: _password,
+              label: l10n.passwordFieldLabel,
+              hint: '••••••••••',
+              icon: Icons.lock_outline_rounded,
+              obscureText: !_showPassword,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _showPassword
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  size: 20,
+                ),
+                onPressed: () =>
+                    setState(() => _showPassword = !_showPassword),
               ),
+              validator: (v) {
+                final s = v ?? '';
+                if (s.isEmpty) return l10n.passwordRequired;
+                if (s.length < 10) return l10n.passwordTooShort;
+                return null;
+              },
+            ),
+            const SizedBox(height: 14),
+            AppTextField(
+              controller: _name,
+              label: l10n.displayNameOptional,
+              icon: Icons.person_outline_rounded,
             ),
             if (_error != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                _error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
+              const SizedBox(height: 14),
+              AppErrorBanner(message: _error!),
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             FilledButton(
               onPressed: _busy ? null : _submit,
               child: _busy
                   ? const SizedBox(
                       width: 22,
                       height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
                     )
                   : Text(l10n.createAccountTitle),
             ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => context.go('/login'),
-              child: Text(l10n.alreadyHaveAccount),
-            ),
           ],
         ),
-          ),
-        ),
+      ),
+      footer: TextButton(
+        onPressed: () => context.go('/login'),
+        child: Text(l10n.alreadyHaveAccount),
       ),
     );
   }

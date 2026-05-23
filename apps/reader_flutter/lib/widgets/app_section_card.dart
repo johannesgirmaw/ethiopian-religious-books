@@ -1,9 +1,28 @@
 import 'package:flutter/material.dart';
 
+import '../design/app_decorations.dart';
 import '../design/app_tokens.dart';
+import 'primitives/shell_primitives.dart';
 
 class AppSectionCard extends StatelessWidget {
   const AppSectionCard({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(AppSpace.md),
+  });
+
+  final Widget child;
+  final EdgeInsets padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppPanel(padding: padding, child: child);
+  }
+}
+
+/// @deprecated Use [AppPanel] directly.
+class LegacyAppSectionCard extends StatelessWidget {
+  const LegacyAppSectionCard({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(AppSpace.md),
@@ -16,18 +35,7 @@ class AppSectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: padding,
-      decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.border),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x120F172A),
-            blurRadius: 18,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
+      decoration: AppDecorations.panel(),
       child: child,
     );
   }

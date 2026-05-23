@@ -9,6 +9,6 @@ void main() {
       const ProviderScope(child: EthiopianReaderApp()),
     );
     await tester.pump();
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
   });
 }

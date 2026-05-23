@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../design/app_tokens.dart';
 
-/// Compact row inside an expansion — mirrors mobile `_buildMezmurListItem`.
+/// Chapter row inside an expanded book card.
 class ContentListItem extends StatelessWidget {
   const ContentListItem({
     super.key,
@@ -17,43 +17,66 @@ class ContentListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-        dense: true,
-        visualDensity: const VisualDensity(horizontal: 0, vertical: -2),
-        leading: Container(
-          width: 8,
-          height: 8,
-          decoration: const BoxDecoration(
-            color: AppColors.referencePrimary,
-            shape: BoxShape.circle,
-          ),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            color: Colors.black87,
-          ),
-        ),
-        subtitle: subtitle != null && subtitle!.isNotEmpty
-            ? Text(
-                subtitle!,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              )
-            : null,
-        trailing: Icon(Icons.arrow_forward_ios,
-            size: 16, color: Colors.grey[400]),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         onTap: onTap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceCard,
+            borderRadius: BorderRadius.circular(AppRadius.xs),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            children: [
+              // Accent dot
+              Container(
+                width: 7,
+                height: 7,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                        height: 1.3,
+                      ),
+                    ),
+                    if (subtitle != null && subtitle!.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle!,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textTertiary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 13,
+                color: AppColors.textTertiary,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

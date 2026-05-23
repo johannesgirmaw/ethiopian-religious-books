@@ -1300,4 +1300,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pageEditorFormattingHide => 'Hide tools';
+
+  @override
+  String get goodMorning => 'Good morning';
+
+  @override
+  String get goodAfternoon => 'Good afternoon';
+
+  @override
+  String get goodEvening => 'Good evening';
+
+  @override
+  String get libraryViewList => 'List';
+
+  @override
+  String get libraryViewGrid => 'Grid';
 }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../design/app_tokens.dart';
+import 'primitives/shared_widgets.dart';
+import 'primitives/shell_primitives.dart';
 
-/// Section card for About page — matches reference `AboutAppPage` layout.
+/// Section card for About page.
 class AboutSectionCard extends StatelessWidget {
   const AboutSectionCard({
     super.key,
@@ -17,20 +19,7 @@ class AboutSectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    return AppPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -38,39 +27,31 @@ class AboutSectionCard extends StatelessWidget {
             children: [
               Container(
                 width: 36,
-                height: 32,
+                height: 36,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.referencePrimary.withValues(alpha: 0.8),
-                      AppColors.referencePrimary,
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(10),
+                  color: AppColors.referencePrimary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(11),
                 ),
-                child: Icon(icon, color: Colors.white, size: 20),
+                child: Icon(icon, size: 18, color: AppColors.referencePrimary),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Text(
             content,
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.6,
-              color: Colors.grey[700],
-            ),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                  height: 1.55,
+                ),
           ),
         ],
       ),

@@ -22,6 +22,9 @@ class Session {
 class SessionNotifier extends AsyncNotifier<Session?> {
   TokenStorage get _storage => ref.read(tokenStorageProvider);
 
+  /// Current session for Dio interceptors and other non-widget callers.
+  Session? get currentSession => state.valueOrNull;
+
   @override
   Future<Session?> build() async {
     final access = await _storage.readAccess();

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../design/app_tokens.dart';
 import '../l10n/app_localizations.dart';
 import '../models/book_models.dart';
+import 'primitives/shell_primitives.dart';
 
 enum BookCardLayout { compact, full }
 
@@ -93,19 +94,9 @@ class BookListTile extends StatelessWidget {
       ],
     );
 
-    final card = Card(
-      elevation: 0,
-      color: layout == BookCardLayout.compact
-          ? AppColors.surfaceSoft
-          : AppColors.surfaceCard,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        side: const BorderSide(color: AppColors.border),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(layout == BookCardLayout.compact ? 12 : 14),
-        child: content,
-      ),
+    final card = AppPanel(
+      padding: EdgeInsets.all(layout == BookCardLayout.compact ? 12 : 14),
+      child: content,
     );
 
     if (width != null) {

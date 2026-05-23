@@ -6,12 +6,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../design/app_tokens.dart';
+import '../l10n/app_localizations.dart';
 import '../models/download_job.dart';
 import '../providers/catalog_providers.dart';
 import '../providers/download_jobs_provider.dart';
 import '../storage/download_jobs_storage.dart';
-import '../design/app_tokens.dart';
-import '../l10n/app_localizations.dart';
+import '../widgets/primitives/shared_widgets.dart';
+import '../widgets/primitives/shell_primitives.dart';
+import '../widgets/app_state_view.dart';
 import '../widgets/skeleton_loader.dart';
 import '../widgets/stored_rich_text_view.dart';
 
@@ -26,7 +29,9 @@ class BookDetailScreen extends ConsumerWidget {
   ) async {
     final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(SnackBar(content: Text(l10n.preparingDownload)));
+    messenger.showSnackBar(
+      SnackBar(content: Text(l10n.preparingDownload)),
+    );
     await DownloadJobsStorage.upsertJob(
       DownloadJob(
         bookId: bookId,
@@ -68,7 +73,9 @@ class BookDetailScreen extends ConsumerWidget {
           errorMessage: '$e',
         ),
       );
-      messenger.showSnackBar(SnackBar(content: Text(l10n.downloadFailed('$e'))));
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.downloadFailed('$e'))),
+      );
     }
   }
 
@@ -89,54 +96,31 @@ class BookDetailScreen extends ConsumerWidget {
     }
 
     return Scaffold(
+      backgroundColor: AppColors.referencePageBg,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
         title: Text(l10n.bookDetailsTitle),
+        backgroundColor: AppColors.referencePageBg,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
       ),
       body: asyncBook.when(
-        data: (book) => ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        data: (book) => Column(
           children: [
-            // Hero header
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    AppColors.surfaceCard,
-                    AppColors.surfaceSoft,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
+                  Center(
+                    child: AppBookCover(
+                      size: 120,
+                      borderRadius: 16,
+                      icon: Icons.auto_stories_rounded,
                     ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      book.primaryLanguage ?? l10n.generalCategory,
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  AppStatusChip(
+                    label: book.primaryLanguage ?? l10n.generalCategory,
+                    kind: AppStatusKind.accent,
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -168,162 +152,127 @@ class BookDetailScreen extends ConsumerWidget {
                         Expanded(
                           child: Text(
                             book.authorCompiler!,
-                            style:
-                                Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: AppColors.textSecondary,
-                                    ),
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ],
-                ],
-              ),
-            ),
-            // Summary section
-            if (book.summary != null && book.summary!.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Text(
-                l10n.summarySection,
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceSoft,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: StoredRichTextView(
-                    raw: book.summaryRichRaw ?? book.summary!),
-              ),
-            ],
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () => context.push('/reader/$bookId'),
-                icon: const Icon(Icons.chrome_reader_mode_rounded),
-                label: Text(l10n.readNow),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              l10n.readyToRead,
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: 10),
-            if (currentJob != null)
-              Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: currentJob.state == 'completed'
-                      ? Colors.green.shade50
-                      : currentJob.state == 'failed'
-                          ? Colors.red.shade50
-                          : AppColors.surfaceSoft,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                  border: Border.all(
-                    color: currentJob.state == 'completed'
-                        ? Colors.green.shade200
-                        : currentJob.state == 'failed'
-                            ? Colors.red.shade200
-                            : AppColors.border,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      currentJob.state == 'completed'
-                          ? Icons.check_circle_outline_rounded
-                          : currentJob.state == 'failed'
-                              ? Icons.error_outline_rounded
-                              : Icons.downloading_rounded,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            l10n.downloadState(currentJob.state),
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                          if (currentJob.errorMessage != null)
-                            Text(
-                              currentJob.errorMessage!,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                        ],
+                  if (book.summary != null && book.summary!.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    AppSectionAccent(label: l10n.summarySection),
+                    const SizedBox(height: 10),
+                    AppPanel(
+                      child: StoredRichTextView(
+                        raw: book.summaryRichRaw ?? book.summary!,
                       ),
                     ),
                   ],
-                ),
+                  const SizedBox(height: 24),
+                  AppSectionAccent(label: l10n.readyToRead),
+                  const SizedBox(height: 10),
+                  if (currentJob != null)
+                    _DownloadStatusCard(job: currentJob),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: () => _downloadSample(context, ref),
+                    icon: const Icon(Icons.download_outlined, size: 18),
+                    label: Text(l10n.downloadOffline),
+                  ),
+                ],
               ),
-            OutlinedButton.icon(
-              onPressed: () => context.push('/reader/$bookId'),
-              icon: const Icon(Icons.chrome_reader_mode_outlined),
-              label: Text(l10n.startReading),
             ),
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: () => _downloadSample(context, ref),
-              icon: const Icon(Icons.download_outlined),
-              label: Text(l10n.downloadOffline),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                8,
+                16,
+                16 + MediaQuery.paddingOf(context).bottom,
+              ),
+              child: FilledButton.icon(
+                onPressed: () => context.push('/reader/$bookId'),
+                icon: const Icon(Icons.chrome_reader_mode_rounded, size: 20),
+                label: Text(l10n.readNow),
+              ),
             ),
           ],
         ),
-        loading: () => const SkeletonCardGroup(count: 4),
+        loading: () => const Padding(
+          padding: EdgeInsets.all(16),
+          child: SkeletonCardGroup(count: 4),
+        ),
         error: (e, _) {
-          String title = l10n.unableToLoadBook;
-          String message = l10n.bookLoadErrorMessage;
+          var title = l10n.unableToLoadBook;
+          var message = l10n.bookLoadErrorMessage;
           if (e is DioException && e.response?.statusCode == 404) {
             title = l10n.bookNotInCatalogTitle;
             message = l10n.bookNotInCatalogMessage;
           }
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.menu_book_outlined,
-                    size: 44,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    message,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: () => context.pop(),
-                    child: Text(l10n.goBack),
-                  ),
-                ],
-              ),
-            ),
+          return AppStateView(
+            title: title,
+            message: message,
+            icon: Icons.menu_book_outlined,
+            actionLabel: l10n.goBack,
+            onAction: () => context.pop(),
           );
         },
+      ),
+    );
+  }
+}
+
+class _DownloadStatusCard extends StatelessWidget {
+  const _DownloadStatusCard({required this.job});
+
+  final DownloadJob job;
+
+  @override
+  Widget build(BuildContext context) {
+    final isOk = job.state == 'completed';
+    final isFail = job.state == 'failed';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: isOk
+            ? AppColors.successSurface
+            : isFail
+                ? AppColors.errorSurface
+                : AppColors.surfaceSoft,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(
+          color: isOk
+              ? AppColors.successBorder
+              : isFail
+                  ? AppColors.errorBorder
+                  : AppColors.line,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isOk
+                ? Icons.check_circle_outline_rounded
+                : isFail
+                    ? Icons.error_outline_rounded
+                    : Icons.downloading_rounded,
+            size: 20,
+            color: isOk
+                ? AppColors.successText
+                : isFail
+                    ? AppColors.errorText
+                    : AppColors.textSecondary,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              job.errorMessage ?? job.state,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+        ],
       ),
     );
   }

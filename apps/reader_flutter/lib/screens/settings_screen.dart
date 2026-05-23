@@ -12,6 +12,7 @@ import '../providers/study_providers.dart';
 import '../storage/book_content_cache_storage.dart';
 import '../utils/format_catalog_cache_age.dart';
 import '../widgets/language_preference_card.dart';
+import '../widgets/primitives/shell_primitives.dart';
 import '../widgets/shell_page_scaffold.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -32,7 +33,7 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
         children: [
-          _SettingsSectionTitle(title: l10n.dashboard),
+          AppSectionHeader(title: l10n.dashboard),
           const SizedBox(height: 10),
           downloadJobs.when(
             data: (jobs) {
@@ -44,7 +45,7 @@ class SettingsScreen extends ConsumerWidget {
                 child: Row(
                   children: [
                     Expanded(
-                      child: _DashboardMetricCard(
+                      child: AppStatTile(
                         label: l10n.inProgressDownloads,
                         value: '$pending',
                         icon: Icons.downloading_rounded,
@@ -52,10 +53,11 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _DashboardMetricCard(
+                      child: AppStatTile(
                         label: l10n.failedDownloads,
                         value: '$failed',
                         icon: Icons.error_outline_rounded,
+                        accent: AppColors.referenceSecondary,
                       ),
                     ),
                   ],
@@ -75,7 +77,7 @@ class SettingsScreen extends ConsumerWidget {
               return Row(
                 children: [
                   Expanded(
-                    child: _DashboardMetricCard(
+                    child: AppStatTile(
                       label: l10n.availableBooks,
                       value: '${page.items.length}',
                       icon: Icons.auto_stories_rounded,
@@ -83,7 +85,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _DashboardMetricCard(
+                    child: AppStatTile(
                       label: l10n.languagesMetric,
                       value: '$languages',
                       icon: Icons.language_rounded,
@@ -99,7 +101,7 @@ class SettingsScreen extends ConsumerWidget {
             error: (_, __) => Row(
               children: [
                 Expanded(
-                  child: _DashboardMetricCard(
+                  child: AppStatTile(
                     label: l10n.availableBooks,
                     value: '--',
                     icon: Icons.auto_stories_rounded,
@@ -107,7 +109,7 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _DashboardMetricCard(
+                  child: AppStatTile(
                     label: l10n.languagesMetric,
                     value: '--',
                     icon: Icons.language_rounded,
@@ -117,9 +119,9 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 24),
-          _SettingsSectionTitle(title: l10n.studyAndReminders),
+          AppSectionHeader(title: l10n.studyAndReminders),
           const SizedBox(height: 10),
-          Card(
+          AppPanel(
             child: reminderPref.when(
               data: (pref) => SwitchListTile(
                 value: pref.enabled,
@@ -164,7 +166,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 10),
           plans.when(
-            data: (items) => Card(
+            data: (items) => AppPanel(
               child: ListTile(
                 leading: const Icon(Icons.event_note_rounded),
                 title: Text(l10n.dailyReadingPlans),
@@ -234,10 +236,10 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           const LanguagePreferenceCard(),
           const SizedBox(height: 24),
-          _SettingsSectionTitle(title: l10n.settingsCacheSection),
+          AppSectionHeader(title: l10n.settingsCacheSection),
           const SizedBox(height: 10),
           if (cachedAt != null)
-            Card(
+            AppPanel(
               child: ListTile(
                 dense: true,
                 leading: const Icon(Icons.cloud_done_outlined, size: 22),
@@ -248,7 +250,7 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
           if (cachedAt != null) const SizedBox(height: 10),
-          Card(
+          AppPanel(
             child: ListTile(
               leading: const Icon(Icons.offline_bolt_rounded),
               title: Text(l10n.offlineChapterCache),
@@ -294,22 +296,6 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
-class _SettingsSectionTitle extends StatelessWidget {
-  const _SettingsSectionTitle({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-    );
-  }
-}
-
 DailyReadingPlanItem? _firstPlanItem(List<DailyReadingPlan> plans) {
   for (final plan in plans) {
     if (!plan.isActive || plan.items.isEmpty) continue;
@@ -319,42 +305,3 @@ DailyReadingPlanItem? _firstPlanItem(List<DailyReadingPlan> plans) {
   return null;
 }
 
-class _DashboardMetricCard extends StatelessWidget {
-  const _DashboardMetricCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
-
-  final String label;
-  final String value;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceSoft,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: AppColors.referencePrimary),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(label, style: theme.textTheme.bodySmall),
-        ],
-      ),
-    );
-  }
-}

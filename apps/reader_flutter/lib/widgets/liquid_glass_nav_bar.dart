@@ -64,8 +64,8 @@ class LiquidGlassNavBar extends StatelessWidget {
   final ValueChanged<int> onSelected;
   final List<LiquidNavItem> items;
 
-  static const double barHeight = 72;
-  static const double bottomInset = 96;
+  static const double barHeight = 80;
+  static const double bottomInset = 110;
   static const double _hitSize = 56;
 
   @override
@@ -136,15 +136,35 @@ class LiquidGlassNavBar extends StatelessWidget {
                                       customBorder: const CircleBorder(),
                                       onTap: () => onSelected(index),
                                       child: Center(
-                                        child: Icon(
-                                          selected
-                                              ? item.selectedIcon
-                                              : item.icon,
-                                          size: 26,
-                                          color: _iconColor(
-                                            isDark: isDark,
-                                            selected: selected,
-                                          ),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              selected
+                                                  ? item.selectedIcon
+                                                  : item.icon,
+                                              size: 24,
+                                              color: _iconColor(
+                                                isDark: isDark,
+                                                selected: selected,
+                                              ),
+                                            ),
+                                            if (item.label != null) ...[
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                item.label!,
+                                                style: TextStyle(
+                                                  fontSize: 9,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: _iconColor(
+                                                    isDark: isDark,
+                                                    selected: selected,
+                                                  ),
+                                                  letterSpacing: 0.3,
+                                                ),
+                                              ),
+                                            ],
+                                          ],
                                         ),
                                       ),
                                     ),
@@ -202,14 +222,34 @@ class _SelectionOrb extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.22)
-            : Colors.white.withValues(alpha: 0.92),
+        gradient: isDark
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.28),
+                  Colors.white.withValues(alpha: 0.14),
+                ],
+              )
+            : LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.surfaceCard,
+                  AppColors.referencePageBg,
+                ],
+              ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.12),
-            blurRadius: 12,
+            color: const Color(0xFF5B3B8C)
+                .withValues(alpha: isDark ? 0.20 : 0.18),
+            blurRadius: 16,
             offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.08),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),

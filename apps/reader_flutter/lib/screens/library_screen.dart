@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../design/app_tokens.dart';
 import '../l10n/app_localizations.dart';
@@ -8,7 +9,7 @@ import '../providers/catalog_providers.dart';
 import '../widgets/app_state_view.dart';
 import '../widgets/reference/book_expansion_card.dart';
 import '../widgets/reference/language_filter_chips.dart';
-import '../widgets/reference/page_header_box.dart';
+import '../widgets/primitives/shell_primitives.dart';
 import '../widgets/skeleton_loader.dart';
 
 class LibraryScreen extends ConsumerStatefulWidget {
@@ -21,8 +22,10 @@ class LibraryScreen extends ConsumerStatefulWidget {
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   String _query = '';
   String? _selectedLanguage;
+  bool _gridView = false;
 
-  List<String> _languageLabels(List<BookSummary> books, AppLocalizations l10n) {
+  List<String> _languageLabels(
+      List<BookSummary> books, AppLocalizations l10n) {
     final set = <String>{};
     for (final b in books) {
       final key = (b.primaryLanguage ?? '').trim().isEmpty
@@ -30,8 +33,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           : b.primaryLanguage!.trim();
       set.add(key);
     }
-    final list = set.toList()..sort();
-    return list;
+    return set.toList()..sort();
   }
 
   @override
@@ -49,13 +51,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           if (page.items.isEmpty) {
             return Column(
               children: [
-                PageHeaderBox(
+                LibraryShellHeader(
                   title: l10n.drawerBrowse,
                   categoryLabel: l10n.headerCategoriesStat(0),
                   bookLabel: l10n.headerBooksStat(0),
-                  searchHint: l10n.librarySearchHint,
-                  onSearchChanged: (q) => setState(() => _query = q),
-                  initialQuery: _query,
                 ),
                 Expanded(
                   child: AppStateView(
@@ -70,27 +69,55 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
           return Column(
             children: [
-              PageHeaderBox(
+              LibraryShellHeader(
                 title: l10n.drawerBrowse,
-                categoryLabel: l10n.headerCategoriesStat(languages.length),
-                bookLabel: l10n.headerBooksStat(filteredBooks.length),
+                categoryLabel:
+                    l10n.headerCategoriesStat(languages.length),
+                bookLabel:
+                    l10n.headerBooksStat(filteredBooks.length),
                 searchHint: l10n.librarySearchHint,
-                onSearchChanged: (q) => setState(() => _query = q),
+                onSearchChanged: (q) =>
+                    setState(() => _query = q),
                 initialQuery: _query,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               LanguageFilterChips(
                 languages: languages,
                 selectedLanguage: _selectedLanguage,
-                onSelected: (lang) => setState(() => _selectedLanguage = lang),
+                onSelected: (lang) =>
+                    setState(() => _selectedLanguage = lang),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    AppSegmentedControl<bool>(
+                      options: [
+                        AppSegmentedOption(
+                          value: false,
+                          label: l10n.libraryViewList,
+                        ),
+                        AppSegmentedOption(
+                          value: true,
+                          label: l10n.libraryViewGrid,
+                        ),
+                      ],
+                      value: _gridView,
+                      onChanged: (v) => setState(() => _gridView = v),
+                    ),
+                  ],
+                ),
               ),
               Expanded(
                 child: RefreshIndicator(
+                  color: AppColors.primary,
                   onRefresh: () async {
                     ref.invalidate(catalogProvider);
                     await ref.read(catalogProvider.future);
                   },
-                  child: _buildBookList(context, l10n, filteredBooks),
+                  child: _buildBookList(
+                      context, l10n, filteredBooks),
                 ),
               ),
             ],
@@ -98,22 +125,20 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         },
         loading: () => Column(
           children: [
-            PageHeaderBox(
+            LibraryShellHeader(
               title: l10n.drawerBrowse,
               categoryLabel: '…',
               bookLabel: '…',
-              searchHint: l10n.librarySearchHint,
             ),
             const Expanded(child: SkeletonCardGroup(count: 4)),
           ],
         ),
         error: (e, _) => Column(
           children: [
-            PageHeaderBox(
+            LibraryShellHeader(
               title: l10n.drawerBrowse,
               categoryLabel: l10n.headerCategoriesStat(0),
               bookLabel: l10n.headerBooksStat(0),
-              searchHint: l10n.librarySearchHint,
             ),
             Expanded(
               child: AppStateView(
@@ -152,17 +177,40 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     }
 
     final sorted = [...books]
-      ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+      ..sort(
+          (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
 
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+    final listView = ListView.builder(
+      key: const ValueKey('list'),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
       itemCount: sorted.length,
-      itemBuilder: (context, index) {
-        return BookExpansionCard(book: sorted[index], index: index);
-      },
+      itemBuilder: (context, index) =>
+          BookExpansionCard(book: sorted[index], index: index),
+    );
+
+    final gridView = GridView.builder(
+      key: const ValueKey('grid'),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 0.70,
+      ),
+      itemCount: sorted.length,
+      itemBuilder: (context, index) =>
+          _BookGridCard(book: sorted[index]),
+    );
+
+    return AnimatedSwitcher(
+      duration: AppMotion.short,
+      child: _gridView ? gridView : listView,
     );
   }
 
@@ -172,7 +220,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         : book.primaryLanguage!.trim();
   }
 
-  List<BookSummary> _applyFilters(List<BookSummary> books, AppLocalizations l10n) {
+  List<BookSummary> _applyFilters(
+      List<BookSummary> books, AppLocalizations l10n) {
     final q = _query.trim().toLowerCase();
     return books.where((book) {
       if (_selectedLanguage != null &&
@@ -189,5 +238,79 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       ].join(' ').toLowerCase();
       return haystack.contains(q);
     }).toList();
+  }
+}
+
+// ─── Grid card ───────────────────────────────────────────────────────────────
+
+class _BookGridCard extends StatelessWidget {
+  const _BookGridCard({required this.book});
+
+  final BookSummary book;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push('/book/${book.id}'),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surfaceCard,
+          borderRadius: BorderRadius.circular(AppRadius.cardV2),
+          border: Border.all(color: AppColors.line),
+          boxShadow: AppShadows.listRow,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.cardV2),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: 3,
+                child: const AppBookCover(
+                  expand: true,
+                  icon: Icons.menu_book_rounded,
+                ),
+              ),
+              // Info area
+              Expanded(
+                flex: 2,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        book.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                          height: 1.3,
+                        ),
+                      ),
+                      if (book.authorCompiler?.isNotEmpty == true) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          book.authorCompiler!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

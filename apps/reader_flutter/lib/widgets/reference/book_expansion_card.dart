@@ -6,9 +6,10 @@ import '../../design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/book_models.dart';
 import '../../providers/catalog_providers.dart';
+import '../primitives/shell_primitives.dart';
 import 'content_list_item.dart';
 
-/// Expandable book card; expanding shows chapter list (tap chapter to read).
+/// Expandable book card — premium design with colored index badge.
 class BookExpansionCard extends ConsumerStatefulWidget {
   const BookExpansionCard({
     super.key,
@@ -26,98 +27,78 @@ class BookExpansionCard extends ConsumerStatefulWidget {
 class _BookExpansionCardState extends ConsumerState<BookExpansionCard> {
   bool _expanded = false;
 
+  static const _accents = [
+    AppColors.referencePrimary,
+    AppColors.referenceSecondary,
+    AppColors.referenceAccent,
+    Color(0xFF2D6A4F),
+  ];
+
   @override
   Widget build(BuildContext context) {
     final book = widget.book;
+    final idx = widget.index ?? 0;
+    final accent = _accents[idx % _accents.length];
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: AppColors.surfaceCard,
+        borderRadius: BorderRadius.circular(AppRadius.cardV2),
+        boxShadow: AppShadows.listRow,
+        border: Border.all(color: AppColors.line),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.cardV2),
         child: Theme(
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
             tilePadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             childrenPadding: const EdgeInsets.only(bottom: 8),
-            backgroundColor: Colors.white,
-            collapsedBackgroundColor: Colors.white,
-            iconColor: Colors.grey[600],
-            collapsedIconColor: Colors.grey[600],
-            onExpansionChanged: (open) => setState(() => _expanded = open),
-            title: Row(
-              children: [
-                if (widget.index != null) ...[
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.referencePrimary.withValues(alpha: 0.8),
-                          AppColors.referencePrimary,
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '${widget.index! + 1}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                ],
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        book.title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      if (book.authorCompiler?.isNotEmpty == true) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          book.authorCompiler!,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
+            backgroundColor: AppColors.surfaceCard,
+            collapsedBackgroundColor: AppColors.surfaceCard,
+            iconColor: AppColors.textTertiary,
+            collapsedIconColor: AppColors.textTertiary,
+            onExpansionChanged: (open) =>
+                setState(() => _expanded = open),
+            leading: AppBookCover(
+              size: 52,
+              borderRadius: 12,
+              accent: accent,
+              icon: Icons.menu_book_rounded,
             ),
+            title: Text(
+              book.title,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+                height: 1.3,
+              ),
+            ),
+            subtitle: book.authorCompiler?.isNotEmpty == true
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Text(
+                      book.authorCompiler!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  )
+                : null,
             children: [
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppColors.surfaceSoft,
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: _expanded
                     ? _ChapterList(bookId: book.id)
@@ -153,7 +134,12 @@ class _ChapterList extends ConsumerWidget {
       },
       loading: () => const Padding(
         padding: EdgeInsets.all(16),
-        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        child: Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: AppColors.primary,
+          ),
+        ),
       ),
       error: (_, __) => _ApiChapterListFallback(bookId: bookId),
     );
@@ -172,7 +158,8 @@ class _ContentChapterList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final sorted = [...chapters]..sort((a, b) => a.ordinal.compareTo(b.ordinal));
+    final sorted = [...chapters]
+      ..sort((a, b) => a.ordinal.compareTo(b.ordinal));
 
     return Column(
       children: sorted.map((chapter) {
@@ -189,10 +176,10 @@ class _ContentChapterList extends StatelessWidget {
     );
   }
 
-  void _openChapter(BuildContext context, String bookId, BookContentChapter chapter) {
-    final firstPage = chapter.pages.isNotEmpty
-        ? chapter.pages.first.pageNumber
-        : null;
+  void _openChapter(
+      BuildContext context, String bookId, BookContentChapter chapter) {
+    final firstPage =
+        chapter.pages.isNotEmpty ? chapter.pages.first.pageNumber : null;
     final uri = Uri(
       path: '/reader/$bookId',
       queryParameters: {
@@ -222,7 +209,8 @@ class _ApiChapterListFallback extends ConsumerWidget {
             onTap: () => context.push('/reader/$bookId'),
           );
         }
-        final sorted = [...chapters]..sort((a, b) => a.ordinal.compareTo(b.ordinal));
+        final sorted = [...chapters]
+          ..sort((a, b) => a.ordinal.compareTo(b.ordinal));
         return Column(
           children: sorted.map((ch) {
             final title =
@@ -238,7 +226,12 @@ class _ApiChapterListFallback extends ConsumerWidget {
       },
       loading: () => const Padding(
         padding: EdgeInsets.all(16),
-        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        child: Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: AppColors.primary,
+          ),
+        ),
       ),
       error: (_, __) => _EmptyChaptersMessage(
         title: l10n.readFullBook,
@@ -259,9 +252,6 @@ class _EmptyChaptersMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ContentListItem(
-      title: title,
-      onTap: onTap,
-    );
+    return ContentListItem(title: title, onTap: onTap);
   }
 }

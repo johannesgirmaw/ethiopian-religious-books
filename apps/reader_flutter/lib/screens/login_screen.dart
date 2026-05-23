@@ -9,6 +9,8 @@ import '../l10n/app_localizations.dart';
 import '../providers/session_notifier.dart';
 import '../utils/api_error_message.dart';
 import '../utils/dio_connection_message.dart';
+import '../widgets/primitives/auth_screen_layout.dart';
+import '../widgets/primitives/shared_widgets.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -76,119 +78,79 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
+
+    return AuthScreenLayout(
+      headline: l10n.welcomeBack,
+      subtitle: l10n.signInSubtitle,
+      formChild: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Brand mark
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(
-                Icons.auto_stories_rounded,
-                color: Colors.white,
-                size: 28,
-              ),
+            AppTextField(
+              controller: _email,
+              label: l10n.emailFieldLabel,
+              hint: l10n.emailFieldHint,
+              icon: Icons.mail_outline_rounded,
+              keyboardType: TextInputType.emailAddress,
+              autocorrect: false,
+              validator: (v) {
+                final s = (v ?? '').trim();
+                if (s.isEmpty) return l10n.emailRequired;
+                if (!s.contains('@') || !s.contains('.')) {
+                  return l10n.emailInvalid;
+                }
+                return null;
+              },
             ),
-            const SizedBox(height: 20),
-            Text(
-              l10n.welcomeBack,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              l10n.signInSubtitle,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-            ),
-            const SizedBox(height: 24),
-            Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  TextFormField(
-                    controller: _email,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      labelText: l10n.emailFieldLabel,
-                      hintText: l10n.emailFieldHint,
-                    ),
-                    autocorrect: false,
-                    validator: (value) {
-                      final v = (value ?? '').trim();
-                      if (v.isEmpty) return l10n.emailRequired;
-                      if (!v.contains('@') || !v.contains('.')) {
-                        return l10n.emailInvalid;
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _password,
-                    obscureText: !_showPassword,
-                    decoration: InputDecoration(
-                      labelText: l10n.passwordFieldLabel,
-                      helperText: l10n.passwordMinHelper,
-                      suffixIcon: IconButton(
-                        onPressed: () {
-                          setState(() => _showPassword = !_showPassword);
-                        },
-                        icon: Icon(
-                          _showPassword
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                        ),
-                      ),
-                    ),
-                    validator: (value) {
-                      if ((value ?? '').isEmpty) return l10n.passwordRequired;
-                      return null;
-                    },
-                    onFieldSubmitted: (_) => _busy ? null : _submit(),
-                  ),
-                ],
+            const SizedBox(height: 14),
+            AppTextField(
+              controller: _password,
+              label: l10n.passwordFieldLabel,
+              hint: '••••••••••',
+              icon: Icons.lock_outline_rounded,
+              obscureText: !_showPassword,
+              onSubmitted: (_) => _busy ? null : _submit(),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _showPassword
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  size: 20,
+                  color: AppColors.textTertiary,
+                ),
+                onPressed: () =>
+                    setState(() => _showPassword = !_showPassword),
               ),
+              validator: (v) {
+                if ((v ?? '').isEmpty) return l10n.passwordRequired;
+                return null;
+              },
             ),
             if (_error != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                _error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
+              const SizedBox(height: 14),
+              AppErrorBanner(message: _error!),
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             FilledButton(
               onPressed: _busy ? null : _submit,
               child: _busy
                   ? const SizedBox(
                       width: 22,
                       height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
                     )
                   : Text(l10n.signIn),
             ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => context.go('/register'),
-              child: Text(l10n.createAccount),
-            ),
           ],
         ),
-          ),
-        ),
+      ),
+      footer: TextButton(
+        onPressed: () => context.go('/register'),
+        child: Text(l10n.createAccount),
       ),
     );
   }

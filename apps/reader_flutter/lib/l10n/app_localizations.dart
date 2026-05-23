@@ -2437,6 +2437,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hide tools'**
   String get pageEditorFormattingHide;
+
+  /// No description provided for @goodMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Good morning'**
+  String get goodMorning;
+
+  /// No description provided for @goodAfternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Good afternoon'**
+  String get goodAfternoon;
+
+  /// No description provided for @goodEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Good evening'**
+  String get goodEvening;
+
+  /// No description provided for @libraryViewList.
+  ///
+  /// In en, this message translates to:
+  /// **'List'**
+  String get libraryViewList;
+
+  /// No description provided for @libraryViewGrid.
+  ///
+  /// In en, this message translates to:
+  /// **'Grid'**
+  String get libraryViewGrid;
 }
 
 class _AppLocalizationsDelegate

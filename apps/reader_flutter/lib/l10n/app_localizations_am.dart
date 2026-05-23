@@ -1275,4 +1275,19 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get pageEditorFormattingHide => 'መሳሪያ ደብቅ';
+
+  @override
+  String get goodMorning => 'እንደምን አደሩ';
+
+  @override
+  String get goodAfternoon => 'እንደምን ዋሉ';
+
+  @override
+  String get goodEvening => 'እንደምን አመሹ';
+
+  @override
+  String get libraryViewList => 'ዝርዝር';
+
+  @override
+  String get libraryViewGrid => 'ፍርግርግ';
 }

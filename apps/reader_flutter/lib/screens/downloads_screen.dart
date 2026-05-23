@@ -11,6 +11,7 @@ import '../providers/catalog_providers.dart';
 import '../providers/download_jobs_provider.dart';
 import '../storage/book_content_cache_storage.dart';
 import '../widgets/app_state_view.dart';
+import '../widgets/primitives/shell_primitives.dart';
 import '../widgets/shell_page_scaffold.dart';
 
 Future<void> _syncOfflineBookCache(WidgetRef ref, String bookId) async {
@@ -113,7 +114,7 @@ class DownloadsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 if (activeJobs.isNotEmpty) ...[
-                  _SectionLabel(title: l10n.downloadsActiveSection),
+                  AppSectionHeader(title: l10n.downloadsActiveSection),
                   const SizedBox(height: 8),
                   ...activeJobs.map(
                     (job) => _DownloadJobTile(job: job, isFailed: false),
@@ -121,7 +122,7 @@ class DownloadsScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                 ],
                 if (failedJobs.isNotEmpty) ...[
-                  _SectionLabel(title: l10n.downloadsFailedSection),
+                  AppSectionHeader(title: l10n.downloadsFailedSection),
                   const SizedBox(height: 8),
                   ...failedJobs.map(
                     (job) => _DownloadJobTile(job: job, isFailed: true),
@@ -129,7 +130,7 @@ class DownloadsScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                 ],
                 if (offlineBooks.isNotEmpty) ...[
-                  _SectionLabel(title: l10n.downloadsSavedSection),
+                  AppSectionHeader(title: l10n.downloadsSavedSection),
                   const SizedBox(height: 8),
                   ...offlineBooks.map(
                     (entry) => Padding(
@@ -160,22 +161,6 @@ class DownloadsScreen extends ConsumerWidget {
           onAction: () => ref.invalidate(offlineDownloadsListProvider),
         ),
       ),
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
     );
   }
 }
@@ -297,14 +282,8 @@ class _OfflineBookCardState extends ConsumerState<_OfflineBookCard> {
     final e = widget.entry;
     final theme = Theme.of(context);
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        side: const BorderSide(color: AppColors.border),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
+    return AppPanel(
+      padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -447,7 +426,6 @@ class _OfflineBookCardState extends ConsumerState<_OfflineBookCard> {
             ],
           ],
         ),
-      ),
     );
   }
 }
@@ -474,9 +452,11 @@ class _DownloadJobTile extends ConsumerWidget {
         ? catalogMatches.first.title
         : (cached.isNotEmpty ? cached.first.title : job.bookId);
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: AppPanel(
+        padding: EdgeInsets.zero,
+        child: ListTile(
         leading: Icon(
           isFailed ? Icons.error_outline_rounded : Icons.downloading_rounded,
           color: isFailed ? Theme.of(context).colorScheme.error : null,
@@ -510,6 +490,7 @@ class _DownloadJobTile extends ConsumerWidget {
             context.push('/book/${job.bookId}');
           }
         },
+        ),
       ),
     );
   }

@@ -3,8 +3,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
+import '../primitives/shell_primitives.dart';
 
-/// Small horizontal strip card — mirrors mobile "most read" cards.
+/// Tall portrait book card for the horizontal "Continue Reading" strip.
 class CompactBookStripCard extends StatelessWidget {
   const CompactBookStripCard({
     super.key,
@@ -19,46 +20,44 @@ class CompactBookStripCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 150,
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(icon, size: 16, color: AppColors.referencePrimary),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 120,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceCard,
+          borderRadius: BorderRadius.circular(AppRadius.cardV2),
+          border: Border.all(color: AppColors.line),
+          boxShadow: AppShadows.listRow,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.cardV2),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: 3,
+                child: AppBookCover(expand: true, icon: icon),
+              ),
+              // Title area
+              Expanded(
+                flex: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                      height: 1.3,
                     ),
-                  ],
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-                const Spacer(),
-                Icon(Icons.arrow_forward_ios,
-                    size: 14, color: Colors.grey[600]),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -66,9 +65,13 @@ class CompactBookStripCard extends StatelessWidget {
   }
 }
 
-/// Search hit row with Read + Info — reference list item + dual actions.
+/// Search-result row with Read + Info dual actions.
 class ReferenceBookSearchRow extends StatelessWidget {
-  const ReferenceBookSearchRow({super.key, required this.bookId, required this.title});
+  const ReferenceBookSearchRow({
+    super.key,
+    required this.bookId,
+    required this.title,
+  });
 
   final String bookId;
   final String title;
@@ -79,51 +82,84 @@ class ReferenceBookSearchRow extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        color: AppColors.surfaceCard,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        boxShadow: AppShadows.card,
+        border: Border.all(color: AppColors.borderSubtle),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
             style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+              height: 1.3,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.referencePrimary,
-                    foregroundColor: Colors.black87,
-                  ),
+                child: _ActionButton(
+                  label: l10n.actionRead,
+                  filled: true,
                   onPressed: () => context.push('/reader/$bookId'),
-                  child: Text(l10n.actionRead),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: OutlinedButton(
+                child: _ActionButton(
+                  label: l10n.actionInfo,
                   onPressed: () => context.push('/book/$bookId'),
-                  child: Text(l10n.actionInfo),
                 ),
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.label,
+    required this.onPressed,
+    this.filled = false,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+  final bool filled;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        height: 38,
+        decoration: BoxDecoration(
+          color: filled ? AppColors.referencePrimary : AppColors.surfaceSoft,
+          borderRadius: BorderRadius.circular(AppRadius.xs),
+          border: filled
+              ? null
+              : Border.all(color: AppColors.line, width: 1),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: filled ? Colors.white : AppColors.primary,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ),
       ),
     );
   }
