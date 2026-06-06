@@ -19,7 +19,8 @@ import '../screens/reader_screen.dart';
 import '../screens/register_screen.dart';
 import '../screens/splash_screen.dart';
 
-final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
+final rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
+final shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
 
 /// Smooth fade+slide transition for detail / reader pages.
 CustomTransitionPage<T> _fadeSlide<T>({
@@ -55,7 +56,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
-    navigatorKey: _rootNavigatorKey,
+    navigatorKey: rootNavigatorKey,
     refreshListenable: refresh,
     initialLocation: '/splash',
     redirect: (context, state) {
@@ -87,6 +88,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const RegisterScreen(),
       ),
       ShellRoute(
+        navigatorKey: shellNavigatorKey,
         builder: (context, state, child) => MainShellScreen(child: child),
         routes: [
           GoRoute(
@@ -117,6 +119,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/about',
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => _fadeSlide(
           key: state.pageKey,
           child: const AboutScreen(),
@@ -124,6 +127,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/book/:id',
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) {
           final id = state.pathParameters['id']!;
           return _fadeSlide(
@@ -134,16 +138,20 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/reader/:id',
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) {
           final id = state.pathParameters['id']!;
           final chapter = state.uri.queryParameters['chapter'];
           final page = int.tryParse(state.uri.queryParameters['page'] ?? '');
+          final showChapterPicker =
+              state.uri.queryParameters['pickChapter'] == '1';
           return _fadeSlide(
             key: state.pageKey,
             child: ReaderScreen(
               bookId: id,
               initialChapterKey: chapter,
               initialPageNumber: page,
+              showChapterPicker: showChapterPicker,
             ),
           );
         },

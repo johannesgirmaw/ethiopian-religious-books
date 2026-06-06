@@ -107,7 +107,7 @@ class ReferenceBookSearchRow extends StatelessWidget {
                 child: _ActionButton(
                   label: l10n.actionRead,
                   filled: true,
-                  onPressed: () => context.push('/reader/$bookId'),
+                  onPressed: () => context.push('/book/$bookId'),
                 ),
               ),
               const SizedBox(width: 8),

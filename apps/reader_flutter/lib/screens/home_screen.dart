@@ -280,7 +280,7 @@ class _ContinueSection extends StatelessWidget {
                 final book = featured[(index - 1) % featured.length];
                 return CompactBookStripCard(
                   title: book.title,
-                  onTap: () => context.push('/reader/${book.id}'),
+                  onTap: () => context.push('/book/${book.id}'),
                 );
               },
             ),

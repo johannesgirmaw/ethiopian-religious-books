@@ -10,6 +10,7 @@ import '../models/offline_cached_book.dart';
 import '../providers/catalog_providers.dart';
 import '../providers/download_jobs_provider.dart';
 import '../storage/book_content_cache_storage.dart';
+import '../utils/offline_book_download.dart';
 import '../widgets/app_state_view.dart';
 import '../widgets/primitives/shell_primitives.dart';
 import '../widgets/shell_page_scaffold.dart';
@@ -464,16 +465,30 @@ class _DownloadJobTile extends ConsumerWidget {
         title: Text(displayTitle, maxLines: 2, overflow: TextOverflow.ellipsis),
         subtitle: Text(
           isFailed
-              ? (job.errorMessage ?? l10n.downloadFailedGeneric)
+              ? displayDownloadJobError(job.errorMessage, l10n)
               : l10n.downloadInProgress,
         ),
         trailing: isFailed
             ? TextButton(
-                onPressed: () {
-                  if (cached.isNotEmpty && cached.first.hasReadableContent) {
-                    context.push('/reader/${job.bookId}');
+                onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  messenger.showSnackBar(
+                    SnackBar(content: Text(l10n.preparingDownload)),
+                  );
+                  final error = await runOfflineBookDownload(
+                    ref,
+                    job.bookId,
+                    l10n: l10n,
+                  );
+                  if (!context.mounted) return;
+                  ref.invalidate(downloadJobsProvider);
+                  ref.invalidate(offlineDownloadsListProvider);
+                  if (error == null) {
+                    messenger.showSnackBar(
+                      SnackBar(content: Text(l10n.savedOfflineReading)),
+                    );
                   } else {
-                    context.push('/book/${job.bookId}');
+                    messenger.showSnackBar(SnackBar(content: Text(error)));
                   }
                 },
                 child: Text(l10n.retry),

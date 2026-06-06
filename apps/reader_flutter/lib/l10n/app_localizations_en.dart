@@ -218,6 +218,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get downloadFailedGeneric => 'Download failed';
 
   @override
+  String get downloadErrorStorageUnreachable =>
+      'Could not reach the file server. Make sure Docker is running (MinIO on port 19000) and this device can reach your development machine on the same network.';
+
+  @override
+  String get downloadErrorConnection =>
+      'Could not connect to download the book. Check your connection and try again.';
+
+  @override
+  String get downloadErrorTimeout =>
+      'Download timed out. Try again when you have a stable connection.';
+
+  @override
+  String get downloadErrorGeneric => 'Download failed. Please try again.';
+
+  @override
   String get downloadsSyncCache => 'Sync from server';
 
   @override

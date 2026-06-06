@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../router/app_navigation.dart';
 import '../design/app_tokens.dart';
 import '../design/reader_typography.dart';
 import '../design/reference_assets.dart';
@@ -16,6 +17,7 @@ import '../storage/book_content_cache_storage.dart';
 import '../storage/reader_prefs_storage.dart';
 import '../utils/rich_text_codec.dart' show plainTextFromStoredSummary;
 import '../widgets/reader_book_page_curl_view.dart';
+import '../widgets/highlighted_search_text.dart';
 import '../widgets/stored_rich_text_view.dart';
 
 class ReaderScreen extends ConsumerStatefulWidget {
@@ -24,11 +26,14 @@ class ReaderScreen extends ConsumerStatefulWidget {
     required this.bookId,
     this.initialChapterKey,
     this.initialPageNumber,
+    this.showChapterPicker = false,
   });
 
   final String bookId;
   final String? initialChapterKey;
   final int? initialPageNumber;
+  /// When true, open on the chapter list and do not auto-restore cloud progress.
+  final bool showChapterPicker;
 
   @override
   ConsumerState<ReaderScreen> createState() => _ReaderScreenState();
@@ -52,8 +57,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   final ReaderPageCurlController _pageCurlController = ReaderPageCurlController();
   bool _searchAllChapters = true;
   String _findQuery = '';
-  List<String> _matchedLocations = const [];
-  List<BookSearchHit> _searchHits = const [];
+  List<_FindMatch> _findMatches = const [];
   int _activeMatchPointer = -1;
   String? _selectedChapterKey;
   int? _selectedPageNumber;
@@ -185,6 +189,22 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     }
     setState(() => _showChrome = !_showChrome);
     if (_showChrome) _scheduleAutoHide();
+  }
+
+  void _handleReaderBack() {
+    if (_hasSelectedChapter) {
+      setState(() {
+        _selectedChapterKey = null;
+        _selectedPageNumber = null;
+        _progress = 0;
+        _showChrome = true;
+      });
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(0);
+      }
+      return;
+    }
+    popOverlayRoute(context);
   }
 
   Future<void> _toggleBookmark() async {
@@ -372,10 +392,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     for (final key in stale) {
       _sectionKeys.remove(key);
     }
-  }
-
-  String _locationId(String chapterKey, int pageNumber) {
-    return '$chapterKey::$pageNumber';
   }
 
   int _pageIndexFromProgress(int sectionCount) {
@@ -593,7 +609,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 
   Future<void> _runServerSearch(String query, {required bool allChapters}) async {
-    final hits = await ref.read(
+    await ref.read(
       bookSearchProvider(
         BookSearchFilters(
           bookId: widget.bookId,
@@ -604,13 +620,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       ).future,
     );
     if (!mounted) return;
-    setState(() {
-      _searchHits = hits;
-      _matchedLocations = hits
-          .map((h) => _locationId(h.chapterKey, h.pageNumber))
-          .toList();
-      _activeMatchPointer = hits.isEmpty ? -1 : 0;
-    });
+    final scopeAll = allChapters || !_hasSelectedChapter;
+    final sections = scopeAll ? _allSections : _renderedSections;
+    setState(() => _findQuery = query.trim());
+    _rebuildFindMatches(sections);
     unawaited(
       trackReaderEvent(
         ref,
@@ -880,22 +893,86 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final scopeAll = allChapters ??
         (_searchAllChapters || !_hasSelectedChapter);
     final sections = scopeAll ? _allSections : _renderedSections;
-    final query = value.trim().toLowerCase();
-    final matches = <String>[];
-    for (final section in sections) {
-      final haystack =
-          '${section.title} ${plainTextFromStoredSummary(section.body)}'
-              .toLowerCase();
-      if (query.isNotEmpty && haystack.contains(query)) {
-        matches.add(_locationId(section.chapterKey, section.pageNumber));
-      }
-    }
+    setState(() => _findQuery = value.trim());
+    _rebuildFindMatches(sections);
+  }
+
+  void _rebuildFindMatches(List<_ReaderSection> sections) {
+    final matches = _collectFindMatches(sections, _findQuery);
     setState(() {
-      _findQuery = value.trim();
-      _matchedLocations = matches;
-      _searchHits = const [];
+      _findMatches = matches;
       _activeMatchPointer = matches.isEmpty ? -1 : 0;
     });
+  }
+
+  List<_FindMatch> _collectFindMatches(
+    List<_ReaderSection> sections,
+    String query,
+  ) {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return const [];
+
+    final matches = <_FindMatch>[];
+    for (final section in sections) {
+      _appendFindMatches(
+        matches,
+        section: section,
+        field: _FindMatchField.chapterTitle,
+        text: section.chapterTitle,
+        query: trimmed,
+      );
+      if (_readerShowPageSubtitle(section, l10n)) {
+        _appendFindMatches(
+          matches,
+          section: section,
+          field: _FindMatchField.pageTitle,
+          text: section.pageTitle,
+          query: trimmed,
+        );
+      }
+      _appendFindMatches(
+        matches,
+        section: section,
+        field: _FindMatchField.body,
+        text: plainTextFromStoredSummary(section.body),
+        query: trimmed,
+      );
+    }
+    return matches;
+  }
+
+  void _appendFindMatches(
+    List<_FindMatch> matches, {
+    required _ReaderSection section,
+    required _FindMatchField field,
+    required String text,
+    required String query,
+  }) {
+    final lowerText = text.toLowerCase();
+    final lowerQuery = query.toLowerCase();
+    var start = 0;
+    var occurrence = 0;
+    while (start < lowerText.length) {
+      final index = lowerText.indexOf(lowerQuery, start);
+      if (index < 0) break;
+      matches.add(
+        _FindMatch(
+          chapterKey: section.chapterKey,
+          pageNumber: section.pageNumber,
+          field: field,
+          occurrenceIndex: occurrence,
+        ),
+      );
+      occurrence++;
+      start = index + lowerQuery.length;
+    }
+  }
+
+  _FindMatch? get _activeFindMatch {
+    if (_activeMatchPointer < 0 || _activeMatchPointer >= _findMatches.length) {
+      return null;
+    }
+    return _findMatches[_activeMatchPointer];
   }
 
   void _toggleFindBar() {
@@ -924,7 +1001,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       _goToActiveMatch();
       return;
     }
-    if (_matchedLocations.isNotEmpty) {
+    if (_findMatches.isNotEmpty) {
       _goToActiveMatch();
       return;
     }
@@ -962,12 +1039,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       onPageChanged: (index) => _handleCurlPageChanged(index, sections),
       pageBuilder: (context, index) {
         final section = sections[index];
-        final locationId =
-            _locationId(section.chapterKey, section.pageNumber);
-        final isMatch = _matchedLocations.contains(locationId);
-        final isActiveMatch = isMatch &&
-            _activeMatchPointer >= 0 &&
-            _matchedLocations[_activeMatchPointer] == locationId;
+        final activeFindMatch = _activeFindMatchForSection(section);
         return ColoredBox(
           color: paper,
           child: SingleChildScrollView(
@@ -979,14 +1051,24 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
               textColor: text,
               fontSize: _fontSize,
               lineHeight: _lineHeight,
-              isMatch: isMatch,
-              isActiveMatch: isActiveMatch,
+              findQuery: _findQuery,
+              activeFindMatch: activeFindMatch,
               colorScheme: colorScheme,
             ),
           ),
         );
       },
     );
+  }
+
+  _FindMatch? _activeFindMatchForSection(_ReaderSection section) {
+    final active = _activeFindMatch;
+    if (active == null) return null;
+    if (active.chapterKey != section.chapterKey ||
+        active.pageNumber != section.pageNumber) {
+      return null;
+    }
+    return active;
   }
 
   double _readerFindPanelHeight({required bool hasChapter}) {
@@ -1051,48 +1133,24 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 
   void _cycleMatch(int step) {
-    if (_matchedLocations.isEmpty) return;
+    if (_findMatches.isEmpty) return;
     setState(() {
-      final next = (_activeMatchPointer + step) % _matchedLocations.length;
-      _activeMatchPointer = next < 0 ? _matchedLocations.length - 1 : next;
+      final next = (_activeMatchPointer + step) % _findMatches.length;
+      _activeMatchPointer = next < 0 ? _findMatches.length - 1 : next;
     });
   }
 
   void _goToActiveMatch() {
-    if (_matchedLocations.isEmpty || _activeMatchPointer < 0) return;
-    if (_searchHits.isNotEmpty && _activeMatchPointer < _searchHits.length) {
-      final hit = _searchHits[_activeMatchPointer];
-      setState(() {
-        _selectedChapterKey = hit.chapterKey;
-        _selectedPageNumber = hit.pageNumber;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.matchOnPage(hit.pageNumber, hit.snippet)),
-          ),
-        );
-      }
-      _jumpToChapterAndPage(
-        _renderedSections,
-        chapterKey: hit.chapterKey.isEmpty ? null : hit.chapterKey,
-        pageNumber: hit.pageNumber,
-      );
-      return;
-    }
-    final targetId = _matchedLocations[_activeMatchPointer];
-    _ReaderSection? target;
-    for (final section in _allSections) {
-      if (_locationId(section.chapterKey, section.pageNumber) == targetId) {
-        target = section;
-        break;
-      }
-    }
-    if (target == null) return;
+    final match = _activeFindMatch;
+    if (match == null) return;
+    setState(() {
+      _selectedChapterKey = match.chapterKey;
+      _selectedPageNumber = match.pageNumber;
+    });
     _jumpToChapterAndPage(
       _renderedSections,
-      chapterKey: target.chapterKey,
-      pageNumber: target.pageNumber,
+      chapterKey: match.chapterKey,
+      pageNumber: match.pageNumber,
     );
   }
 
@@ -1199,7 +1257,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         _renderedSections = sections;
         _pruneSectionKeys(sections.length);
         final cloud = asyncCloudProgress.valueOrNull;
-        if (!_remoteProgressApplied &&
+        if (!widget.showChapterPicker &&
+            !_remoteProgressApplied &&
             cloud != null &&
             (cloud.chapterKey.isNotEmpty || cloud.pageNumber != null || cloud.progressPercent > 0)) {
           _remoteProgressApplied = true;
@@ -1225,7 +1284,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         final curlReading = _pageCurlEnabled &&
             _selectedChapterKey != null &&
             sections.isNotEmpty;
-        final showChromeUi = _showChrome || curlReading;
+        final showChromeUi =
+            _showChrome || curlReading || !_hasSelectedChapter;
         final showFindPanel = showChromeUi && _showFindBar;
         final showToolbarPanel =
             showChromeUi && !(keyboardOpen && _showFindBar);
@@ -1249,7 +1309,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
               )
             : 28.0;
 
-        return Scaffold(
+        return PopScope(
+          canPop: !_hasSelectedChapter,
+          onPopInvokedWithResult: (didPop, _) {
+            if (didPop) return;
+            _handleReaderBack();
+          },
+          child: Scaffold(
           backgroundColor: bg,
           resizeToAvoidBottomInset: true,
           body: SafeArea(
@@ -1373,12 +1439,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                         const SizedBox(height: 80),
                       ] else ...[
                       ...sections.map((section) {
-                        final locationId =
-                            _locationId(section.chapterKey, section.pageNumber);
-                        final isMatch = _matchedLocations.contains(locationId);
-                        final isActiveMatch = isMatch &&
-                            _activeMatchPointer >= 0 &&
-                            _matchedLocations[_activeMatchPointer] == locationId;
                         return _ReaderBookPage(
                           key: _sectionKeyFor(section.index),
                           section: section,
@@ -1387,8 +1447,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                           textColor: text,
                           fontSize: _fontSize,
                           lineHeight: _lineHeight,
-                          isMatch: isMatch,
-                          isActiveMatch: isActiveMatch,
+                          findQuery: _findQuery,
+                          activeFindMatch: _activeFindMatchForSection(section),
                           colorScheme: Theme.of(context).colorScheme,
                         );
                       }),
@@ -1415,7 +1475,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                           child: Row(
                             children: [
                               _ReaderChromeIcon(
-                                onPressed: () => context.pop(),
+                                onPressed: _handleReaderBack,
                                 icon: Icons.arrow_back_rounded,
                                 color: text,
                               ),
@@ -1534,10 +1594,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      _matchedLocations.isEmpty
+                                      _findMatches.isEmpty
                                           ? l10n.noMatchesYet
                                           : l10n.matchCount(
-                                              _matchedLocations.length,
+                                              _findMatches.length,
                                             ),
                                       style: TextStyle(
                                         color: text.withValues(alpha: 0.7),
@@ -1548,7 +1608,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                   IconButton(
                                     tooltip: l10n.previousMatch,
                                     visualDensity: VisualDensity.compact,
-                                    onPressed: _matchedLocations.length < 2
+                                    onPressed: _findMatches.length < 2
                                         ? null
                                         : () {
                                             _cycleMatch(-1);
@@ -1563,7 +1623,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                   IconButton(
                                     tooltip: l10n.nextMatch,
                                     visualDensity: VisualDensity.compact,
-                                    onPressed: _matchedLocations.length < 2
+                                    onPressed: _findMatches.length < 2
                                         ? null
                                         : () {
                                             _cycleMatch(1);
@@ -1853,9 +1913,22 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                       ),
                     ),
                   ),
+                if (!showChromeUi && _hasSelectedChapter)
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    child: SafeArea(
+                      child: _ReaderChromeIcon(
+                        onPressed: _handleReaderBack,
+                        icon: Icons.arrow_back_rounded,
+                        color: text.withValues(alpha: 0.75),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
+        ),
         );
       },
       loading: () {
@@ -1882,6 +1955,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         return Scaffold(
           backgroundColor: bg,
           appBar: AppBar(
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_rounded),
+              onPressed: _handleReaderBack,
+            ),
             title: Text(l10n.readerTitle),
             backgroundColor: bg.withValues(alpha: 0.97),
             foregroundColor: dark ? const Color(0xFFE6EDF7) : const Color(0xFF0F172A),
@@ -1930,6 +2007,22 @@ class _ReaderChromeIcon extends StatelessWidget {
       icon: Icon(icon, color: color),
     );
   }
+}
+
+enum _FindMatchField { chapterTitle, pageTitle, body }
+
+class _FindMatch {
+  const _FindMatch({
+    required this.chapterKey,
+    required this.pageNumber,
+    required this.field,
+    required this.occurrenceIndex,
+  });
+
+  final String chapterKey;
+  final int pageNumber;
+  final _FindMatchField field;
+  final int occurrenceIndex;
 }
 
 class _ReaderSection {
@@ -2044,8 +2137,8 @@ class _ReaderBookPage extends StatelessWidget {
     required this.textColor,
     required this.fontSize,
     required this.lineHeight,
-    required this.isMatch,
-    required this.isActiveMatch,
+    required this.findQuery,
+    required this.activeFindMatch,
     required this.colorScheme,
   });
 
@@ -2055,9 +2148,17 @@ class _ReaderBookPage extends StatelessWidget {
   final Color textColor;
   final double fontSize;
   final double lineHeight;
-  final bool isMatch;
-  final bool isActiveMatch;
+  final String findQuery;
+  final _FindMatch? activeFindMatch;
   final ColorScheme colorScheme;
+
+  bool get _hasFindQuery => findQuery.trim().isNotEmpty;
+
+  int? _activeOccurrenceFor(_FindMatchField field) {
+    final active = activeFindMatch;
+    if (active == null || active.field != field) return null;
+    return active.occurrenceIndex;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2066,26 +2167,11 @@ class _ReaderBookPage extends StatelessWidget {
         Object.hash(section.chapterKey, section.pageNumber, section.index);
     final accent = _readerPageAccent(seed, dark, sepia);
     final basePaper = _readerPaperBase(dark, sepia);
-    var paper = _readerPaperForPage(basePaper, accent, seed);
-    if (isActiveMatch) {
-      paper = Color.alphaBlend(
-        colorScheme.primaryContainer.withValues(alpha: dark ? 0.34 : 0.5),
-        paper,
-      );
-    } else if (isMatch) {
-      paper = Color.alphaBlend(
-        colorScheme.surfaceContainerHighest.withValues(alpha: dark ? 0.22 : 0.38),
-        paper,
-      );
-    }
+    final paper = _readerPaperForPage(basePaper, accent, seed);
 
     final muted = textColor.withValues(alpha: dark ? 0.55 : 0.48);
-    final borderColor = isActiveMatch
-        ? colorScheme.primary.withValues(alpha: 0.82)
-        : isMatch
-            ? colorScheme.tertiary.withValues(alpha: 0.55)
-            : accent.withValues(alpha: dark ? 0.42 : 0.32);
-    final borderW = isActiveMatch ? 2.0 : 1.0;
+    final borderColor = accent.withValues(alpha: dark ? 0.42 : 0.32);
+    const borderW = 1.0;
 
     const contentPadH = 14.0;
 
@@ -2143,24 +2229,52 @@ class _ReaderBookPage extends StatelessWidget {
                                       ),
                                     ),
                                     const SizedBox(height: 2),
-                                    Text(
-                                      section.chapterTitle,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: ReaderTypography.chapterTitle(
-                                        color: textColor.withValues(alpha: 0.92),
-                                      ),
-                                    ),
+                                    _hasFindQuery
+                                        ? HighlightedSearchText(
+                                            text: section.chapterTitle,
+                                            query: findQuery,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            activeOccurrenceIndex:
+                                                _activeOccurrenceFor(
+                                              _FindMatchField.chapterTitle,
+                                            ),
+                                            style: ReaderTypography.chapterTitle(
+                                              color: textColor.withValues(alpha: 0.92),
+                                            ),
+                                          )
+                                        : Text(
+                                            section.chapterTitle,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: ReaderTypography.chapterTitle(
+                                              color: textColor.withValues(alpha: 0.92),
+                                            ),
+                                          ),
                                     if (_readerShowPageSubtitle(section, l10n)) ...[
                                       const SizedBox(height: 6),
-                                      Text(
-                                        section.pageTitle,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: ReaderTypography.chapterMeta(
-                                          color: muted,
-                                        ),
-                                      ),
+                                      _hasFindQuery
+                                          ? HighlightedSearchText(
+                                              text: section.pageTitle,
+                                              query: findQuery,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              activeOccurrenceIndex:
+                                                  _activeOccurrenceFor(
+                                                _FindMatchField.pageTitle,
+                                              ),
+                                              style: ReaderTypography.chapterMeta(
+                                                color: muted,
+                                              ),
+                                            )
+                                          : Text(
+                                              section.pageTitle,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: ReaderTypography.chapterMeta(
+                                                color: muted,
+                                              ),
+                                            ),
                                     ],
                                   ],
                                 ),
@@ -2226,19 +2340,32 @@ class _ReaderBookPage extends StatelessWidget {
                           ),
                           child: Align(
                             alignment: AlignmentDirectional.topStart,
-                            child: StoredRichTextView(
-                              raw: section.body,
-                              fallbackStyle: ReaderTypography.body(
-                                fontSize: fontSize,
-                                color: textColor,
-                                height: lineHeight,
-                              ),
-                              paragraphStyle: ReaderTypography.body(
-                                fontSize: fontSize,
-                                color: textColor,
-                                height: lineHeight,
-                              ),
-                            ),
+                            child: _hasFindQuery
+                                ? HighlightedSearchText(
+                                    text: plainTextFromStoredSummary(section.body),
+                                    query: findQuery,
+                                    activeOccurrenceIndex: _activeOccurrenceFor(
+                                      _FindMatchField.body,
+                                    ),
+                                    style: ReaderTypography.body(
+                                      fontSize: fontSize,
+                                      color: textColor,
+                                      height: lineHeight,
+                                    ),
+                                  )
+                                : StoredRichTextView(
+                                    raw: section.body,
+                                    fallbackStyle: ReaderTypography.body(
+                                      fontSize: fontSize,
+                                      color: textColor,
+                                      height: lineHeight,
+                                    ),
+                                    paragraphStyle: ReaderTypography.body(
+                                      fontSize: fontSize,
+                                      color: textColor,
+                                      height: lineHeight,
+                                    ),
+                                  ),
                           ),
                         ),
                         Padding(

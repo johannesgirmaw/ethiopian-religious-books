@@ -1,3 +1,5 @@
+import '../config/dev_object_storage_origin.dart';
+
 class DownloadPayload {
   DownloadPayload({
     required this.bookId,
@@ -30,6 +32,27 @@ class DownloadPayload {
       manifestUrl: rev['manifest_url'] as String,
       packageParts: parts,
       encryption: Map<String, dynamic>.from(rev['encryption'] as Map? ?? {}),
+    ).withReachableDevUrls();
+  }
+
+  DownloadPayload withReachableDevUrls() {
+    return DownloadPayload(
+      bookId: bookId,
+      revisionId: revisionId,
+      revisionNumber: revisionNumber,
+      contentFormat: contentFormat,
+      manifestUrl: rewriteDevObjectStorageUrl(manifestUrl),
+      packageParts: packageParts
+          .map(
+            (part) => PackagePart(
+              partIndex: part.partIndex,
+              url: rewriteDevObjectStorageUrl(part.url),
+              sha256: part.sha256,
+              sizeBytes: part.sizeBytes,
+            ),
+          )
+          .toList(),
+      encryption: encryption,
     );
   }
 }

@@ -216,6 +216,21 @@ class AppLocalizationsAm extends AppLocalizations {
   String get downloadFailedGeneric => 'ማውረድ አልተሳካም';
 
   @override
+  String get downloadErrorStorageUnreachable =>
+      'የፋይል ሰርቨሩን ማግኘት አልተቻለም። Docker (MinIO በፖርት 19000) እየሰራ መሆኑንና ይህ መሳሪያ የልማት ኮምፒዩተርዎን በተመሳሳይ አውታረ መረብ ማግኘት እንደሚችል ያረጋግጡ።';
+
+  @override
+  String get downloadErrorConnection =>
+      'መጽሐፉን ለማውረድ መገናኘት አልተቻለም። ግንኙነትዎን ይፈትሹና እንደገና ይሞክሩ።';
+
+  @override
+  String get downloadErrorTimeout =>
+      'ማውረድ ጊዜው አልፏል። ቋሚ ግንኙነት ሲኖርዎት እንደገና ይሞክሩ።';
+
+  @override
+  String get downloadErrorGeneric => 'ማውረድ አልተሳካም። እባክዎ እንደገና ይሞክሩ።';
+
+  @override
   String get downloadsSyncCache => 'ከሰርቨር አመሳስል';
 
   @override

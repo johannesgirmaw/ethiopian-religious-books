@@ -1,17 +1,15 @@
-import 'dart:io';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:path_provider/path_provider.dart';
 
 import '../design/app_tokens.dart';
+import '../router/app_navigation.dart';
 import '../l10n/app_localizations.dart';
 import '../models/download_job.dart';
 import '../providers/catalog_providers.dart';
 import '../providers/download_jobs_provider.dart';
-import '../storage/download_jobs_storage.dart';
+import '../utils/offline_book_download.dart';
 import '../widgets/primitives/shared_widgets.dart';
 import '../widgets/primitives/shell_primitives.dart';
 import '../widgets/app_state_view.dart';
@@ -32,49 +30,16 @@ class BookDetailScreen extends ConsumerWidget {
     messenger.showSnackBar(
       SnackBar(content: Text(l10n.preparingDownload)),
     );
-    await DownloadJobsStorage.upsertJob(
-      DownloadJob(
-        bookId: bookId,
-        state: 'in_progress',
-        updatedAtEpochMs: DateTime.now().millisecondsSinceEpoch,
-      ),
-    );
-    try {
-      final payload = await ref.read(downloadInfoProvider(bookId).future);
-      final dir = await getApplicationDocumentsDirectory();
-      final bookDir =
-          Directory('${dir.path}/books/$bookId/${payload.revisionId}');
-      await bookDir.create(recursive: true);
-      final manifestPath = '${bookDir.path}/manifest.json';
-      final plain = Dio();
-      await plain.download(payload.manifestUrl, manifestPath);
-      for (final part in payload.packageParts) {
-        final name = 'part_${part.partIndex}.bin';
-        await plain.download(part.url, '${bookDir.path}/$name');
-      }
-      if (!context.mounted) return;
-      await DownloadJobsStorage.upsertJob(
-        DownloadJob(
-          bookId: bookId,
-          state: 'completed',
-          updatedAtEpochMs: DateTime.now().millisecondsSinceEpoch,
-        ),
-      );
+    final error = await runOfflineBookDownload(ref, bookId, l10n: l10n);
+    if (!context.mounted) return;
+    ref.invalidate(downloadJobsProvider);
+    if (error == null) {
       messenger.showSnackBar(
-        SnackBar(content: Text(l10n.savedUnderPath(bookDir.path))),
+        SnackBar(content: Text(l10n.savedOfflineReading)),
       );
-    } catch (e) {
-      if (!context.mounted) return;
-      await DownloadJobsStorage.upsertJob(
-        DownloadJob(
-          bookId: bookId,
-          state: 'failed',
-          updatedAtEpochMs: DateTime.now().millisecondsSinceEpoch,
-          errorMessage: '$e',
-        ),
-      );
+    } else {
       messenger.showSnackBar(
-        SnackBar(content: Text(l10n.downloadFailed('$e'))),
+        SnackBar(content: Text(error)),
       );
     }
   }
@@ -95,9 +60,18 @@ class BookDetailScreen extends ConsumerWidget {
       }
     }
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) popOverlayRoute(context);
+      },
+      child: Scaffold(
       backgroundColor: AppColors.referencePageBg,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => popOverlayRoute(context),
+        ),
         title: Text(l10n.bookDetailsTitle),
         backgroundColor: AppColors.referencePageBg,
         surfaceTintColor: Colors.transparent,
@@ -193,7 +167,8 @@ class BookDetailScreen extends ConsumerWidget {
                 16 + MediaQuery.paddingOf(context).bottom,
               ),
               child: FilledButton.icon(
-                onPressed: () => context.push('/reader/$bookId'),
+                onPressed: () =>
+                    context.push('/reader/$bookId?pickChapter=1'),
                 icon: const Icon(Icons.chrome_reader_mode_rounded, size: 20),
                 label: Text(l10n.readNow),
               ),
@@ -216,10 +191,11 @@ class BookDetailScreen extends ConsumerWidget {
             message: message,
             icon: Icons.menu_book_outlined,
             actionLabel: l10n.goBack,
-            onAction: () => context.pop(),
+            onAction: () => popOverlayRoute(context),
           );
         },
       ),
+    ),
     );
   }
 }
@@ -231,6 +207,7 @@ class _DownloadStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isOk = job.state == 'completed';
     final isFail = job.state == 'failed';
     return Container(
@@ -268,7 +245,9 @@ class _DownloadStatusCard extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              job.errorMessage ?? job.state,
+              job.state == 'failed'
+                  ? displayDownloadJobError(job.errorMessage, l10n)
+                  : (job.errorMessage ?? job.state),
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),

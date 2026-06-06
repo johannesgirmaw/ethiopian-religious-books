@@ -488,6 +488,30 @@ abstract class AppLocalizations {
   /// **'Download failed'**
   String get downloadFailedGeneric;
 
+  /// No description provided for @downloadErrorStorageUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reach the file server. Make sure Docker is running (MinIO on port 19000) and this device can reach your development machine on the same network.'**
+  String get downloadErrorStorageUnreachable;
+
+  /// No description provided for @downloadErrorConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect to download the book. Check your connection and try again.'**
+  String get downloadErrorConnection;
+
+  /// No description provided for @downloadErrorTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Download timed out. Try again when you have a stable connection.'**
+  String get downloadErrorTimeout;
+
+  /// No description provided for @downloadErrorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Download failed. Please try again.'**
+  String get downloadErrorGeneric;
+
   /// No description provided for @downloadsSyncCache.
   ///
   /// In en, this message translates to:

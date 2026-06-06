@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import '../../router/app_navigation.dart';
 import '../../design/app_decorations.dart';
 import '../../design/app_tokens.dart';
 import '../../design/app_typography.dart';
@@ -272,6 +272,10 @@ class AppSubPageScaffold extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.referencePageBg,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => popOverlayRoute(context),
+        ),
         title: Text(title),
         actions: actions,
         backgroundColor: AppColors.referencePageBg,
