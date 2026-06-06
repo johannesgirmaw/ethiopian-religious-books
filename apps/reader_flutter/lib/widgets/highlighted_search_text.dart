@@ -19,6 +19,44 @@ int countQueryOccurrences(String text, String query) {
   return count;
 }
 
+/// Character offset of the [occurrenceIndex]-th case-insensitive match in [text].
+int occurrenceCharacterOffset(String text, String query, int occurrenceIndex) {
+  final trimmed = query.trim();
+  if (trimmed.isEmpty || occurrenceIndex < 0) return 0;
+  final lowerText = text.toLowerCase();
+  final lowerQuery = trimmed.toLowerCase();
+  var start = 0;
+  var occurrence = 0;
+  while (start < lowerText.length) {
+    final index = lowerText.indexOf(lowerQuery, start);
+    if (index < 0) return 0;
+    if (occurrence == occurrenceIndex) return index;
+    occurrence++;
+    start = index + lowerQuery.length;
+  }
+  return 0;
+}
+
+/// Estimates vertical scroll offset to bring an occurrence into view.
+double estimateScrollOffsetForOccurrence({
+  required String text,
+  required String query,
+  required int occurrenceIndex,
+  required TextStyle style,
+  required double maxWidth,
+}) {
+  final offset = occurrenceCharacterOffset(text, query, occurrenceIndex);
+  if (offset <= 0) return 0;
+  final before = text.substring(0, offset);
+  final painter = TextPainter(
+    text: TextSpan(text: before, style: style),
+    textDirection: TextDirection.ltr,
+    maxLines: null,
+  );
+  painter.layout(maxWidth: maxWidth);
+  return painter.height;
+}
+
 /// Builds [TextSpan]s that highlight every case-insensitive occurrence of [query].
 List<TextSpan> buildSearchHighlightSpans({
   required String text,

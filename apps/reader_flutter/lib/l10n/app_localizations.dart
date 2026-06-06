@@ -1715,19 +1715,19 @@ abstract class AppLocalizations {
   /// No description provided for @readerPageCurlOn.
   ///
   /// In en, this message translates to:
-  /// **'Turn page curl on'**
+  /// **'Switch to page view'**
   String get readerPageCurlOn;
 
   /// No description provided for @readerPageCurlOff.
   ///
   /// In en, this message translates to:
-  /// **'Turn page curl off'**
+  /// **'Switch to scroll view'**
   String get readerPageCurlOff;
 
   /// No description provided for @readerPageCurlHint.
   ///
   /// In en, this message translates to:
-  /// **'Drag up-left from the bottom-right corner to curl the page'**
+  /// **'Use the arrows on the sides to change pages.'**
   String get readerPageCurlHint;
 
   /// No description provided for @matchOnPage.

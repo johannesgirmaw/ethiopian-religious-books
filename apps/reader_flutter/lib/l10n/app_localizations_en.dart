@@ -901,14 +901,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readerCollapseTools => 'Hide reading tools';
 
   @override
-  String get readerPageCurlOn => 'Turn page curl on';
+  String get readerPageCurlOn => 'Switch to page view';
 
   @override
-  String get readerPageCurlOff => 'Turn page curl off';
+  String get readerPageCurlOff => 'Switch to scroll view';
 
   @override
   String get readerPageCurlHint =>
-      'Drag up-left from the bottom-right corner to curl the page';
+      'Use the arrows on the sides to change pages.';
 
   @override
   String matchOnPage(int page, String snippet) {

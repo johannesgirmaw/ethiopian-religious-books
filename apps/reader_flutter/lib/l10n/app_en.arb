@@ -423,9 +423,9 @@
   "autoHideControls": "Auto-hide controls",
   "readerExpandTools": "Show reading tools",
   "readerCollapseTools": "Hide reading tools",
-  "readerPageCurlOn": "Turn page curl on",
-  "readerPageCurlOff": "Turn page curl off",
-  "readerPageCurlHint": "Drag up-left from the bottom-right corner to curl the page",
+  "readerPageCurlOn": "Switch to page view",
+  "readerPageCurlOff": "Switch to scroll view",
+  "readerPageCurlHint": "Use the arrows on the sides to change pages.",
   "matchOnPage": "Match on page {page}: {snippet}",
   "@matchOnPage": {
     "placeholders": {

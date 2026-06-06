@@ -101,7 +101,7 @@ class ReaderPrefsStorage {
 
   static Future<bool> readPageCurlMode(String bookId) async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_pageCurlKey(bookId)) ?? false;
+    return prefs.getBool(_pageCurlKey(bookId)) ?? true;
   }
 
   static Future<void> writePageCurlMode(String bookId, bool enabled) async {

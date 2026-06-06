@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 
 import '../utils/rich_text_codec.dart';
+import 'highlighted_search_text.dart';
 
 class StoredRichTextView extends StatelessWidget {
   const StoredRichTextView({
@@ -10,14 +11,34 @@ class StoredRichTextView extends StatelessWidget {
     this.fallbackStyle,
     /// When set, merged into Quill [DefaultStyles] so read-only views match surrounding typography.
     this.paragraphStyle,
+    this.findQuery,
+    this.activeOccurrenceIndex,
+    this.highlightColor,
+    this.activeHighlightColor,
   });
 
   final String raw;
   final TextStyle? fallbackStyle;
   final TextStyle? paragraphStyle;
+  final String? findQuery;
+  final int? activeOccurrenceIndex;
+  final Color? highlightColor;
+  final Color? activeHighlightColor;
 
   @override
   Widget build(BuildContext context) {
+    final trimmedFind = findQuery?.trim() ?? '';
+    if (trimmedFind.isNotEmpty) {
+      return HighlightedSearchText(
+        text: plainTextFromStoredSummary(raw),
+        query: trimmedFind,
+        style: paragraphStyle ?? fallbackStyle ?? DefaultTextStyle.of(context).style,
+        activeOccurrenceIndex: activeOccurrenceIndex,
+        highlightColor: highlightColor,
+        activeHighlightColor: activeHighlightColor,
+      );
+    }
+
     final doc = documentFromStoredSummary(raw);
     if (doc == null) {
       return Text(
@@ -72,6 +93,8 @@ class StoredRichTextView extends StatelessWidget {
         showCursor: false,
         expands: false,
         scrollable: false,
+        enableInteractiveSelection: false,
+        enableAlwaysIndentOnTab: false,
         embedBuilders: const [],
         unknownEmbedBuilder: const _UnknownEmbedBuilder(),
         customStyles: customStyles,

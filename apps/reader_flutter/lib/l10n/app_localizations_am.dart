@@ -885,13 +885,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get readerCollapseTools => 'የንባብ መሳሪያዎችን ደብቅ';
 
   @override
-  String get readerPageCurlOn => 'የገጽ መጠገን ሁኔታን አብራ';
+  String get readerPageCurlOn => 'ወደ ገጽ እይታ ቀይር';
 
   @override
-  String get readerPageCurlOff => 'የገጽ መጠገን ሁኔታን አጥፋ';
+  String get readerPageCurlOff => 'ወደ ሸብልል እይታ ቀይር';
 
   @override
-  String get readerPageCurlHint => 'ገጹን ለመጠገን ከታች ቀኝ ማዕዘን ወደ ላይ-ግራ ይጎትቱ';
+  String get readerPageCurlHint => 'ገጾችን ለመቀየር በጎን የሚገኙትን ቀስት ይጠቀሙ።';
 
   @override
   String matchOnPage(int page, String snippet) {

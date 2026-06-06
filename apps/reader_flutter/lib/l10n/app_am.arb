@@ -489,9 +489,9 @@
   "autoHideControls": "መቆጣጠሪያዎችን በራስ-ደብቅ",
   "readerExpandTools": "የንባብ መሳሪያዎችን አሳይ",
   "readerCollapseTools": "የንባብ መሳሪያዎችን ደብቅ",
-  "readerPageCurlOn": "የገጽ መጠገን ሁኔታን አብራ",
-  "readerPageCurlOff": "የገጽ መጠገን ሁኔታን አጥፋ",
-  "readerPageCurlHint": "ገጹን ለመጠገን ከታች ቀኝ ማዕዘን ወደ ላይ-ግራ ይጎትቱ",
+  "readerPageCurlOn": "ወደ ገጽ እይታ ቀይር",
+  "readerPageCurlOff": "ወደ ሸብልል እይታ ቀይር",
+  "readerPageCurlHint": "ገጾችን ለመቀየር በጎን የሚገኙትን ቀስት ይጠቀሙ።",
   "matchOnPage": "በገጽ {page} ተዛመድ፦ {snippet}",
   "@matchOnPage": {
     "placeholders": {

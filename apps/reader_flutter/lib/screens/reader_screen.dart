@@ -16,8 +16,8 @@ import '../providers/study_providers.dart';
 import '../storage/book_content_cache_storage.dart';
 import '../storage/reader_prefs_storage.dart';
 import '../utils/rich_text_codec.dart' show plainTextFromStoredSummary;
-import '../widgets/reader_book_page_curl_view.dart';
 import '../widgets/highlighted_search_text.dart';
+import '../widgets/reader_book_page_view.dart';
 import '../widgets/stored_rich_text_view.dart';
 
 class ReaderScreen extends ConsumerStatefulWidget {
@@ -43,7 +43,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   AppLocalizations get l10n => AppLocalizations.of(context)!;
 
   final ScrollController _scrollController = ScrollController();
-  bool _showChrome = true;
+  final ScrollController _pageScrollController = ScrollController();
+  bool _showChrome = false;
   bool _autoHideEnabled = true;
   double _progress = 0;
   double _fontSize = 18;
@@ -53,8 +54,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   final FocusNode _findFocusNode = FocusNode();
   bool _showFindBar = false;
   bool _footerExpanded = false;
-  bool _pageCurlEnabled = false;
-  final ReaderPageCurlController _pageCurlController = ReaderPageCurlController();
+  bool _pageCurlEnabled = true;
+  final ReaderPageController _pageController = ReaderPageController();
+  int _currentPageViewIndex = 0;
   bool _searchAllChapters = true;
   String _findQuery = '';
   List<_FindMatch> _findMatches = const [];
@@ -128,7 +130,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       _mode = restoredMode;
       _bookmarks = restoredBookmarks;
       _pageCurlEnabled = restoredPageCurl;
-      if (restoredPageCurl) _showChrome = true;
+      if (restoredPageCurl) _showChrome = false;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
@@ -173,7 +175,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
   void _scheduleAutoHide() {
     if (!_autoHideEnabled) return;
-    if (_pageCurlEnabled) return;
     if (_showFindBar || _findFocusNode.hasFocus) return;
     _idleTimer?.cancel();
     _idleTimer = Timer(const Duration(seconds: 3), () {
@@ -183,10 +184,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 
   void _toggleChrome() {
-    if (_pageCurlEnabled) {
-      setState(() => _showChrome = true);
-      return;
-    }
     setState(() => _showChrome = !_showChrome);
     if (_showChrome) _scheduleAutoHide();
   }
@@ -401,7 +398,18 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         .clamp(0, sectionCount - 1);
   }
 
-  void _handleCurlPageChanged(int index, List<_ReaderSection> sections) {
+  void _syncPageFromProgress(List<_ReaderSection> sections) {
+    if (!_pageCurlEnabled || sections.isEmpty) return;
+    final index = _pageIndexFromProgress(sections.length);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!_pageController.isAttached) return;
+      _pageController.goToPage(index);
+      _handlePageChanged(index, sections);
+    });
+  }
+
+  void _handlePageChanged(int index, List<_ReaderSection> sections) {
     if (index < 0 || index >= sections.length) return;
     final newProgress = sections.length <= 1
         ? 0.0
@@ -423,27 +431,15 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final next = !_pageCurlEnabled;
     setState(() {
       _pageCurlEnabled = next;
-      _showChrome = true;
+      _showChrome = false;
       if (next) _footerExpanded = true;
     });
     await ReaderPrefsStorage.writePageCurlMode(widget.bookId, next);
     if (!mounted) return;
     if (next) {
       _idleTimer?.cancel();
-      setState(() => _showChrome = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.readerPageCurlHint),
-          duration: const Duration(seconds: 3),
-        ),
-      );
       if (_renderedSections.isNotEmpty) {
-        final index = _pageIndexFromProgress(_renderedSections.length);
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          _pageCurlController.goToPage(index);
-          _handleCurlPageChanged(index, _renderedSections);
-        });
+        _syncPageFromProgress(_renderedSections);
       }
     } else if (_renderedSections.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -458,9 +454,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       final safe = index.clamp(0, _renderedSections.length - 1);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        _pageCurlController.goToPage(safe);
+        _pageController.goToPage(safe);
       });
-      _handleCurlPageChanged(safe, _renderedSections);
+      _handlePageChanged(safe, _renderedSections);
       return;
     }
     final sectionKey = _sectionKeys[index];
@@ -1019,7 +1015,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     return count;
   }
 
-  Widget _buildPageCurlReader({
+  Widget _buildPageViewReader({
     required List<_ReaderSection> sections,
     required bool dark,
     required bool sepia,
@@ -1027,22 +1023,38 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     required ColorScheme colorScheme,
   }) {
     final startIndex = _pageIndexFromProgress(sections.length);
+    if (_currentPageViewIndex != startIndex &&
+        !_pageController.isAttached) {
+      _currentPageViewIndex = startIndex;
+    }
     final paper = _readerPaperBase(dark, sepia);
-    return ReaderBookPageCurlView(
+    return ReaderBookPageView(
       key: ValueKey(
-        'curl-${widget.bookId}-${_selectedChapterKey ?? ''}-${sections.length}',
+        'page-${widget.bookId}-${_selectedChapterKey ?? ''}-${sections.length}',
       ),
-      controller: _pageCurlController,
+      controller: _pageController,
       pageCount: sections.length,
       initialPage: startIndex,
       backgroundColor: paper,
-      onPageChanged: (index) => _handleCurlPageChanged(index, sections),
+      onTap: _toggleChrome,
+      showArrows: _showChrome || _findQuery.trim().isNotEmpty,
+      onInteraction: _scheduleAutoHide,
+      onPageChanged: (index) {
+        setState(() => _currentPageViewIndex = index);
+        _handlePageChanged(index, sections);
+        if (_findQuery.trim().isNotEmpty) {
+          _scheduleScrollToActiveMatch();
+        } else if (_pageScrollController.hasClients) {
+          _pageScrollController.jumpTo(0);
+        }
+      },
       pageBuilder: (context, index) {
         final section = sections[index];
         final activeFindMatch = _activeFindMatchForSection(section);
         return ColoredBox(
           color: paper,
           child: SingleChildScrollView(
+            controller: _pageScrollController,
             physics: const ClampingScrollPhysics(),
             child: _ReaderBookPage(
               section: section,
@@ -1146,11 +1158,63 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     setState(() {
       _selectedChapterKey = match.chapterKey;
       _selectedPageNumber = match.pageNumber;
+      _showChrome = true;
     });
     _jumpToChapterAndPage(
       _renderedSections,
       chapterKey: match.chapterKey,
       pageNumber: match.pageNumber,
+    );
+    _scheduleScrollToActiveMatch();
+  }
+
+  void _scheduleScrollToActiveMatch() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _scrollToActiveMatchInPage();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _scrollToActiveMatchInPage();
+      });
+    });
+  }
+
+  void _scrollToActiveMatchInPage() {
+    if (!_pageCurlEnabled || _findQuery.trim().isEmpty) return;
+    final match = _activeFindMatch;
+    if (match == null || match.field != _FindMatchField.body) return;
+    if (!_pageScrollController.hasClients) return;
+
+    _ReaderSection? section;
+    for (final candidate in _renderedSections) {
+      if (candidate.chapterKey == match.chapterKey &&
+          candidate.pageNumber == match.pageNumber) {
+        section = candidate;
+        break;
+      }
+    }
+    if (section == null || section.index != _currentPageViewIndex) return;
+
+    final plain = plainTextFromStoredSummary(section.body);
+    final width = MediaQuery.sizeOf(context).width - 28;
+    final style = ReaderTypography.body(
+      fontSize: _fontSize,
+      color: _mode == 'dark' ? const Color(0xFFE6EDF7) : const Color(0xFF0F172A),
+      height: _lineHeight,
+    );
+    final target = estimateScrollOffsetForOccurrence(
+      text: plain,
+      query: _findQuery,
+      occurrenceIndex: match.occurrenceIndex,
+      style: style,
+      maxWidth: width.clamp(200, double.infinity),
+    );
+    final max = _pageScrollController.position.maxScrollExtent;
+    final offset = (target - 120).clamp(0.0, max);
+    if ((_pageScrollController.offset - offset).abs() < 8) return;
+    _pageScrollController.animateTo(
+      offset,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
     );
   }
 
@@ -1215,6 +1279,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     _idleTimer?.cancel();
     _progressSyncTimer?.cancel();
     _scrollController.dispose();
+    _pageScrollController.dispose();
     _findController.dispose();
     _findFocusNode.dispose();
     super.dispose();
@@ -1281,11 +1346,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
         final findPanelH =
             _readerFindPanelHeight(hasChapter: _hasSelectedChapter);
-        final curlReading = _pageCurlEnabled &&
+        final pageViewReading = _pageCurlEnabled &&
             _selectedChapterKey != null &&
             sections.isNotEmpty;
-        final showChromeUi =
-            _showChrome || curlReading || !_hasSelectedChapter;
+        final showChromeUi = _showChrome || !_hasSelectedChapter;
         final showFindPanel = showChromeUi && _showFindBar;
         final showToolbarPanel =
             showChromeUi && !(keyboardOpen && _showFindBar);
@@ -1331,9 +1395,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                   right: 0,
                   top: contentTop,
                   bottom: contentBottom,
-                  child: curlReading
+                  child: pageViewReading
                       ? ClipRect(
-                          child: _buildPageCurlReader(
+                          child: _buildPageViewReader(
                             sections: sections,
                             dark: dark,
                             sepia: sepia,
@@ -1409,7 +1473,23 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                           setState(() {
                                             _selectedChapterKey = chapter.chapterKey;
                                             _selectedPageNumber = null;
+                                            _progress = 0;
+                                            if (_pageCurlEnabled) {
+                                              _showChrome = false;
+                                            }
                                           });
+                                          if (_pageCurlEnabled) {
+                                            WidgetsBinding.instance
+                                                .addPostFrameCallback((_) {
+                                              if (!mounted) return;
+                                              _syncPageFromProgress(
+                                                _buildSectionsFromTree(
+                                                  contentTree,
+                                                  chapterKey: chapter.chapterKey,
+                                                ),
+                                              );
+                                            });
+                                          }
                                         },
                                       ),
                                     ),
@@ -1763,7 +1843,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                         : l10n.readerPageCurlOn,
                                     onPressed: _togglePageCurlMode,
                                     icon: _pageCurlEnabled
-                                        ? Icons.auto_stories
+                                        ? Icons.view_agenda_outlined
                                         : Icons.menu_book_outlined,
                                     color: _pageCurlEnabled
                                         ? Theme.of(context).colorScheme.primary
@@ -2340,32 +2420,23 @@ class _ReaderBookPage extends StatelessWidget {
                           ),
                           child: Align(
                             alignment: AlignmentDirectional.topStart,
-                            child: _hasFindQuery
-                                ? HighlightedSearchText(
-                                    text: plainTextFromStoredSummary(section.body),
-                                    query: findQuery,
-                                    activeOccurrenceIndex: _activeOccurrenceFor(
-                                      _FindMatchField.body,
-                                    ),
-                                    style: ReaderTypography.body(
-                                      fontSize: fontSize,
-                                      color: textColor,
-                                      height: lineHeight,
-                                    ),
-                                  )
-                                : StoredRichTextView(
-                                    raw: section.body,
-                                    fallbackStyle: ReaderTypography.body(
-                                      fontSize: fontSize,
-                                      color: textColor,
-                                      height: lineHeight,
-                                    ),
-                                    paragraphStyle: ReaderTypography.body(
-                                      fontSize: fontSize,
-                                      color: textColor,
-                                      height: lineHeight,
-                                    ),
-                                  ),
+                            child: StoredRichTextView(
+                              raw: section.body,
+                              findQuery: _hasFindQuery ? findQuery : null,
+                              activeOccurrenceIndex: _activeOccurrenceFor(
+                                _FindMatchField.body,
+                              ),
+                              fallbackStyle: ReaderTypography.body(
+                                fontSize: fontSize,
+                                color: textColor,
+                                height: lineHeight,
+                              ),
+                              paragraphStyle: ReaderTypography.body(
+                                fontSize: fontSize,
+                                color: textColor,
+                                height: lineHeight,
+                              ),
+                            ),
                           ),
                         ),
                         Padding(
