@@ -938,6 +938,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminBookActionsTooltip => 'Book actions';
 
   @override
+  String get adminPublishedBookLockedTitle => 'Published book';
+
+  @override
+  String get adminPublishedBookLockedMessage =>
+      'Unpublish this book before editing its metadata or draft content.';
+
+  @override
+  String get adminNotBookCreatorTitle => 'Editing restricted';
+
+  @override
+  String get adminNotBookCreatorMessage =>
+      'Only the user who created this book can edit it.';
+
+  @override
   String get newBookTooltip => 'New book';
 
   @override

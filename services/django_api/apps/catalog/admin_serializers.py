@@ -3,80 +3,17 @@ import logging
 from rest_framework import serializers
 
 from apps.catalog.models import Book, BookRevision, BookTag, Tag
+from apps.catalog.publishing import normalize_chapters_draft
 from apps.catalog.storage_s3 import presign_get
 
 logger = logging.getLogger(__name__)
 
 
 def _validate_chapters_draft(value):
-    if value in (None, ""):
-        return []
-    if not isinstance(value, list):
-        raise serializers.ValidationError("chapters_draft must be a list.")
-
-    seen_keys: set[str] = set()
-    normalized: list[dict] = []
-    for chapter_idx, chapter in enumerate(value, start=1):
-        if not isinstance(chapter, dict):
-            raise serializers.ValidationError(
-                f"chapters_draft[{chapter_idx}] must be an object."
-            )
-        chapter_key = str(chapter.get("chapter_key") or "").strip()
-        title = str(chapter.get("title") or "").strip()
-        pages = chapter.get("pages") if "pages" in chapter else []
-        if not chapter_key:
-            raise serializers.ValidationError(
-                f"chapters_draft[{chapter_idx}].chapter_key is required."
-            )
-        if chapter_key in seen_keys:
-            raise serializers.ValidationError(
-                f"Duplicate chapter_key: {chapter_key}"
-            )
-        seen_keys.add(chapter_key)
-        if not isinstance(pages, list):
-            raise serializers.ValidationError(
-                f"chapters_draft[{chapter_idx}].pages must be a list."
-            )
-
-        seen_page_numbers: set[int] = set()
-        normalized_pages: list[dict] = []
-        for page_idx, page in enumerate(pages, start=1):
-            if not isinstance(page, dict):
-                raise serializers.ValidationError(
-                    f"chapters_draft[{chapter_idx}].pages[{page_idx}] must be an object."
-                )
-            try:
-                page_number = int(page.get("page_number"))
-            except (TypeError, ValueError):
-                raise serializers.ValidationError(
-                    f"chapters_draft[{chapter_idx}].pages[{page_idx}].page_number must be a positive integer."
-                )
-            if page_number < 1:
-                raise serializers.ValidationError(
-                    f"chapters_draft[{chapter_idx}].pages[{page_idx}].page_number must be >= 1."
-                )
-            if page_number in seen_page_numbers:
-                raise serializers.ValidationError(
-                    f"Duplicate page_number {page_number} in chapter {chapter_key}."
-                )
-            seen_page_numbers.add(page_number)
-            normalized_pages.append(
-                {
-                    "page_number": page_number,
-                    "title": str(page.get("title") or f"Page {page_number}").strip(),
-                    "body": str(page.get("body") or "").strip(),
-                }
-            )
-
-        normalized.append(
-            {
-                "chapter_key": chapter_key,
-                "title": title or chapter_key,
-                "pages": sorted(normalized_pages, key=lambda p: p["page_number"]),
-            }
-        )
-
-    return normalized
+    try:
+        return normalize_chapters_draft(value)
+    except ValueError as exc:
+        raise serializers.ValidationError(str(exc)) from exc
 
 
 class AdminBookCreateSerializer(serializers.ModelSerializer):
@@ -146,11 +83,13 @@ class AdminBookSerializer(serializers.ModelSerializer):
             "cover_get_url",
             "published_revision_id",
             "published_revision_number",
+            "created_by_id",
             "created_at",
             "updated_at",
         )
         read_only_fields = (
             "id",
+            "created_by_id",
             "created_at",
             "updated_at",
             "published_revision_id",
@@ -187,7 +126,6 @@ class AdminBookPatchSerializer(serializers.ModelSerializer):
             "primary_language",
             "script_tags",
             "chapters_draft",
-            "catalog_visibility",
             "cover_object_key",
         )
 

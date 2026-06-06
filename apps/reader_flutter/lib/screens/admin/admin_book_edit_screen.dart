@@ -10,10 +10,12 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
+import '../../widgets/app_state_view.dart';
 import '../../widgets/primitives/shell_primitives.dart';
 import '../../models/admin_book.dart';
 import '../../providers/admin_providers.dart';
 import '../../providers/api_client.dart';
+import '../../providers/session_notifier.dart';
 import '../../utils/api_error_message.dart';
 import '../../utils/rich_text_codec.dart' show documentFromStoredSummary, plainTextFromStoredSummary;
 
@@ -44,6 +46,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   final _tagSlugs = TextEditingController();
   List<AdminDraftChapter> _chaptersDraft = const [];
   String _visibility = 'hidden';
+  String? _createdById;
   bool _busy = false;
   String? _error;
   bool _loaded = false;
@@ -74,8 +77,9 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     _author.text = b.authorCompiler ?? '';
     _language.text = b.primaryLanguage;
     _scriptTags.text = b.scriptTags.join(', ');
-    _chaptersDraft = b.chaptersDraft;
+    _chaptersDraft = _withConsecutivePageNumbers(b.chaptersDraft);
     _visibility = b.catalogVisibility;
+    _createdById = b.createdById;
     _serverCoverGetUrl = b.coverGetUrl;
     _pendingCoverBytes = null;
     _pendingCoverMime = null;
@@ -223,7 +227,6 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   Future<void> _upsertChapter({int? index}) async {
     final editing = index != null ? _chaptersDraft[index] : null;
     final titleController = TextEditingController(text: editing?.title ?? '');
-    final keyController = TextEditingController(text: editing?.chapterKey ?? '');
     final result = await showDialog<AdminDraftChapter>(
       context: context,
       builder: (ctx) {
@@ -232,22 +235,9 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
           title: Text(index == null ? d.addChapterTitle : d.editChapterTitle),
           content: SizedBox(
             width: 420,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: titleController,
-                  decoration: InputDecoration(labelText: d.chapterTitleLabel),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: keyController,
-                  decoration: InputDecoration(
-                    labelText: d.chapterKeyFieldLabel,
-                    hintText: d.chapterKeyHintExample,
-                  ),
-                ),
-              ],
+            child: TextField(
+              controller: titleController,
+              decoration: InputDecoration(labelText: d.chapterTitleLabel),
             ),
           ),
           actions: [
@@ -258,12 +248,9 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
             FilledButton(
               onPressed: () {
                 final title = titleController.text.trim();
-                final chapterKey = keyController.text.trim().isEmpty
-                    ? _slugifyChapter(title.isEmpty ? 'chapter' : title)
-                    : keyController.text.trim();
                 Navigator.of(ctx).pop(
                   AdminDraftChapter(
-                    chapterKey: chapterKey,
+                    chapterKey: editing?.chapterKey ?? '',
                     title: title.isEmpty ? d.untitledChapter : title,
                     pages: editing?.pages ?? const [],
                   ),
@@ -276,114 +263,117 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
       },
     );
     if (result == null) return;
+    if (index == null) {
+      _setChaptersDraft([..._chaptersDraft, result]);
+    } else {
+      final next = [..._chaptersDraft];
+      next[index] = result;
+      _setChaptersDraft(next);
+    }
+  }
+
+  List<AdminDraftChapter> _withConsecutivePageNumbers(
+    List<AdminDraftChapter> chapters,
+  ) {
+    var nextPageNumber = 1;
+    return [
+      for (final chapter in chapters)
+        AdminDraftChapter(
+          chapterKey: chapter.chapterKey,
+          title: chapter.title,
+          pages: [
+            for (final page in chapter.pages)
+              AdminDraftPage(
+                pageNumber: nextPageNumber++,
+                title: page.title,
+                body: page.body,
+              ),
+          ],
+        ),
+    ];
+  }
+
+  void _setChaptersDraft(
+    List<AdminDraftChapter> chapters, {
+    bool markDirty = true,
+  }) {
     setState(() {
-      if (index == null) {
-        _chaptersDraft = [..._chaptersDraft, result];
-      } else {
-        final next = [..._chaptersDraft];
-        next[index] = result;
-        _chaptersDraft = next;
-      }
-      _dirty = true;
+      _chaptersDraft = _withConsecutivePageNumbers(chapters);
+      if (markDirty) _dirty = true;
     });
   }
 
-  String _slugifyChapter(String value) {
-    final lower = value.toLowerCase();
-    final sb = StringBuffer();
-    for (final ch in lower.runes) {
-      final c = String.fromCharCode(ch);
-      final isAlphaNum = RegExp(r'[a-z0-9]').hasMatch(c);
-      if (isAlphaNum) {
-        sb.write(c);
-      } else if (c == ' ' || c == '-' || c == '_') {
-        sb.write('-');
-      }
-    }
-    final collapsed = sb.toString().replaceAll(RegExp(r'-+'), '-');
-    return collapsed.replaceAll(RegExp(r'^-|-$'), '');
+  void _applyChaptersFromResponse(Map<String, dynamic>? data) {
+    if (data == null) return;
+    final raw = data['chapters_draft'];
+    if (raw is! List) return;
+    _chaptersDraft = _withConsecutivePageNumbers(
+      raw
+          .whereType<Map>()
+          .map((e) => AdminDraftChapter.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
+    );
   }
 
   Future<void> _upsertPage(int chapterIndex, {int? pageIndex}) async {
     final chapter = _chaptersDraft[chapterIndex];
     final editing = pageIndex != null ? chapter.pages[pageIndex] : null;
-    final initialPageNumber = editing?.pageNumber ?? (chapter.pages.length + 1);
     final result = await Navigator.of(context, rootNavigator: true)
         .push<AdminDraftPage>(
       MaterialPageRoute(
         fullscreenDialog: true,
         builder: (ctx) => _DraftPageEditorDialog(
           isNewPage: pageIndex == null,
-          initialPageNumber: initialPageNumber,
           initialTitle: editing?.title ?? '',
           initialBody: editing?.body ?? '',
         ),
       ),
     );
     if (result == null) return;
-    setState(() {
-      final chapters = [..._chaptersDraft];
-      final pages = [...chapters[chapterIndex].pages];
-      if (pageIndex == null) {
-        pages.add(result);
-      } else {
-        pages[pageIndex] = result;
-      }
-      chapters[chapterIndex] = AdminDraftChapter(
-        chapterKey: chapters[chapterIndex].chapterKey,
-        title: chapters[chapterIndex].title,
-        pages: pages,
-      );
-      _chaptersDraft = chapters;
-      _dirty = true;
-    });
+    final chapters = [..._chaptersDraft];
+    final pages = [...chapters[chapterIndex].pages];
+    if (pageIndex == null) {
+      pages.add(result);
+    } else {
+      pages[pageIndex] = result;
+    }
+    chapters[chapterIndex] = AdminDraftChapter(
+      chapterKey: chapters[chapterIndex].chapterKey,
+      title: chapters[chapterIndex].title,
+      pages: pages,
+    );
+    _setChaptersDraft(chapters);
   }
 
   void _moveChapter(int index, int step) {
     final target = index + step;
     if (target < 0 || target >= _chaptersDraft.length) return;
-    setState(() {
-      final next = [..._chaptersDraft];
-      final item = next.removeAt(index);
-      next.insert(target, item);
-      _chaptersDraft = next;
-      _dirty = true;
-    });
+    final next = [..._chaptersDraft];
+    final item = next.removeAt(index);
+    next.insert(target, item);
+    _setChaptersDraft(next);
   }
 
   void _movePage(int chapterIndex, int pageIndex, int step) {
     final pages = _chaptersDraft[chapterIndex].pages;
     final target = pageIndex + step;
     if (target < 0 || target >= pages.length) return;
-    setState(() {
-      final chapters = [..._chaptersDraft];
-      final nextPages = [...chapters[chapterIndex].pages];
-      final item = nextPages.removeAt(pageIndex);
-      nextPages.insert(target, item);
-      chapters[chapterIndex] = AdminDraftChapter(
-        chapterKey: chapters[chapterIndex].chapterKey,
-        title: chapters[chapterIndex].title,
-        pages: nextPages,
-      );
-      _chaptersDraft = chapters;
-      _dirty = true;
-    });
+    final chapters = [..._chaptersDraft];
+    final nextPages = [...chapters[chapterIndex].pages];
+    final item = nextPages.removeAt(pageIndex);
+    nextPages.insert(target, item);
+    chapters[chapterIndex] = AdminDraftChapter(
+      chapterKey: chapters[chapterIndex].chapterKey,
+      title: chapters[chapterIndex].title,
+      pages: nextPages,
+    );
+    _setChaptersDraft(chapters);
   }
 
   String? _validateChaptersDraft(AppLocalizations l10n) {
-    final seenKeys = <String>{};
     for (final chapter in _chaptersDraft) {
-      final key = chapter.chapterKey.trim();
-      if (key.isEmpty) return l10n.eachChapterNeedsKey;
-      if (!seenKeys.add(key)) return l10n.duplicateChapterKey(key);
-      final seenPages = <int>{};
-      for (final page in chapter.pages) {
-        if (page.pageNumber < 1) {
-          return l10n.pageNumberMustBePositive(chapter.title);
-        }
-        if (!seenPages.add(page.pageNumber)) {
-          return l10n.duplicatePageNumber(page.pageNumber, chapter.title);
-        }
+      if (chapter.title.trim().isEmpty) {
+        return l10n.titleRequired;
       }
     }
     return null;
@@ -477,7 +467,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
       final dio = ref.read(apiDioProvider);
       final scriptTags = _splitTags(_scriptTags.text);
       final chaptersDraftPayload =
-          _chaptersDraft.map((e) => e.toJson()).toList();
+          _chaptersDraft.map((e) => e.toDraftPayload()).toList();
       if (widget.isNew) {
         final tagSlugs = _splitTags(_tagSlugs.text);
         final res = await dio.post<Map<String, dynamic>>(
@@ -494,13 +484,14 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
             'tag_slugs': tagSlugs,
           },
         );
+        _applyChaptersFromResponse(res.data);
         final newId = res.data?['id'] as String?;
         if (newId != null && kAdminCoverUploadEnabled) {
           await _uploadCoverForBook(dio, newId);
         }
       } else {
         final bookId = widget.bookId!;
-        await dio.patch<Map<String, dynamic>>(
+        final res = await dio.patch<Map<String, dynamic>>(
           'admin/books/$bookId',
           data: {
             'title': _title.text.trim(),
@@ -510,9 +501,9 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                 _language.text.trim().isEmpty ? 'am' : _language.text.trim(),
             'script_tags': scriptTags,
             'chapters_draft': chaptersDraftPayload,
-            'catalog_visibility': _visibility,
           },
         );
+        _applyChaptersFromResponse(res.data);
         if (kAdminCoverUploadEnabled) {
           await _uploadCoverForBook(dio, bookId);
         }
@@ -538,6 +529,12 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final isNew = widget.isNew;
+    final currentUserId =
+        ref.watch(sessionNotifierProvider).valueOrNull?.user?.id;
+    final isCreator = isNew ||
+        (currentUserId != null &&
+            _createdById != null &&
+            _createdById == currentUserId);
     final trimmedTitle = _title.text.trim();
     final appBarTitle = isNew
         ? (trimmedTitle.isEmpty ? l10n.newBookAppBar : trimmedTitle)
@@ -586,7 +583,23 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
       ),
       body: (!isNew && !_loaded)
           ? const Center(child: CircularProgressIndicator())
-          : Form(
+          : (!isNew && _visibility == 'published')
+              ? AppStateView(
+                  title: l10n.adminPublishedBookLockedTitle,
+                  message: l10n.adminPublishedBookLockedMessage,
+                  icon: Icons.lock_outline_rounded,
+                  actionLabel: l10n.goBack,
+                  onAction: () => context.pop(),
+                )
+              : (!isNew && !isCreator)
+                  ? AppStateView(
+                      title: l10n.adminNotBookCreatorTitle,
+                      message: l10n.adminNotBookCreatorMessage,
+                      icon: Icons.lock_outline_rounded,
+                      actionLabel: l10n.goBack,
+                      onAction: () => context.pop(),
+                    )
+                  : Form(
               key: _formKey,
               child: ListView(
               padding: const EdgeInsets.all(24),
@@ -767,10 +780,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              l10n.chapterKeyPageCount(
-                                chapter.chapterKey,
-                                chapter.pages.length,
-                              ),
+                              l10n.pageCount(chapter.pages.length),
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                             const SizedBox(height: 8),
@@ -809,12 +819,9 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                                   IconButton(
                                     tooltip: l10n.deleteChapterTooltip,
                                     onPressed: () {
-                                      setState(() {
-                                        final next = [..._chaptersDraft]
-                                          ..removeAt(cIndex);
-                                        _chaptersDraft = next;
-                                        _dirty = true;
-                                      });
+                                      final next = [..._chaptersDraft]
+                                        ..removeAt(cIndex);
+                                      _setChaptersDraft(next);
                                     },
                                     icon: const Icon(Icons.delete_outline),
                                   ),
@@ -837,7 +844,12 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                             final page = pageEntry.value;
                             return ListTile(
                               title: Text(
-                                l10n.pageListTitle(page.pageNumber, page.title),
+                                l10n.pageListTitle(
+                                  page.pageNumber,
+                                  page.title.trim().isEmpty
+                                      ? l10n.pageTitleFallback(page.pageNumber)
+                                      : page.title,
+                                ),
                               ),
                               isThreeLine: true,
                               subtitle: Column(
@@ -892,24 +904,17 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                                         IconButton(
                                           tooltip: l10n.deletePageTooltip,
                                           onPressed: () {
-                                            setState(() {
-                                              final chapters = [
-                                                ..._chaptersDraft
-                                              ];
-                                              final pages = [
-                                                ...chapters[cIndex].pages
-                                              ]..removeAt(pIndex);
-                                              chapters[cIndex] =
-                                                  AdminDraftChapter(
-                                                chapterKey: chapters[cIndex]
-                                                    .chapterKey,
-                                                title:
-                                                    chapters[cIndex].title,
-                                                pages: pages,
-                                              );
-                                              _chaptersDraft = chapters;
-                                              _dirty = true;
-                                            });
+                                            final chapters = [..._chaptersDraft];
+                                            final pages = [
+                                              ...chapters[cIndex].pages
+                                            ]..removeAt(pIndex);
+                                            chapters[cIndex] = AdminDraftChapter(
+                                              chapterKey:
+                                                  chapters[cIndex].chapterKey,
+                                              title: chapters[cIndex].title,
+                                              pages: pages,
+                                            );
+                                            _setChaptersDraft(chapters);
                                           },
                                           icon:
                                               const Icon(Icons.delete_outline),
@@ -935,36 +940,6 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                       hintText: l10n.tagSlugsHint,
                     ),
                     onChanged: (_) => _markDirty(),
-                  ),
-                ],
-                if (!isNew) ...[
-                  const SizedBox(height: 16),
-                  InputDecorator(
-                    decoration: InputDecoration(
-                      labelText: l10n.catalogVisibilityLabel,
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _visibility,
-                        isExpanded: true,
-                        items: [
-                          DropdownMenuItem(
-                            value: 'hidden',
-                            child: Text(l10n.visibilityHidden),
-                          ),
-                          DropdownMenuItem(
-                            value: 'published',
-                            child: Text(l10n.visibilityPublished),
-                          ),
-                        ],
-                        onChanged: (v) {
-                          if (v != null) {
-                            setState(() => _visibility = v);
-                            _markDirty();
-                          }
-                        },
-                      ),
-                    ),
                   ),
                 ],
                 if (_error != null) ...[
@@ -995,13 +970,11 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
 class _DraftPageEditorDialog extends StatefulWidget {
   const _DraftPageEditorDialog({
     required this.isNewPage,
-    required this.initialPageNumber,
     required this.initialTitle,
     required this.initialBody,
   });
 
   final bool isNewPage;
-  final int initialPageNumber;
   final String initialTitle;
   final String initialBody;
 
@@ -1010,7 +983,6 @@ class _DraftPageEditorDialog extends StatefulWidget {
 }
 
 class _DraftPageEditorDialogState extends State<_DraftPageEditorDialog> {
-  late final TextEditingController _pageNumber;
   late final TextEditingController _title;
   late final QuillController _bodyQuill;
   /// Full Quill toolbar lives in the bottom sheet; collapsed by default for typing space.
@@ -1019,7 +991,6 @@ class _DraftPageEditorDialogState extends State<_DraftPageEditorDialog> {
   @override
   void initState() {
     super.initState();
-    _pageNumber = TextEditingController(text: '${widget.initialPageNumber}');
     _title = TextEditingController(text: widget.initialTitle);
     _bodyQuill = QuillController.basic();
     final richDoc = documentFromStoredSummary(widget.initialBody);
@@ -1041,22 +1012,18 @@ class _DraftPageEditorDialogState extends State<_DraftPageEditorDialog> {
 
   @override
   void dispose() {
-    _pageNumber.dispose();
     _title.dispose();
     _bodyQuill.dispose();
     super.dispose();
   }
 
   void _saveAndPop() {
-    final l10n = AppLocalizations.of(context)!;
-    final pageNumber = int.tryParse(_pageNumber.text.trim()) ?? 1;
-    final n = pageNumber < 1 ? 1 : pageNumber;
     final t = _title.text.trim();
     final body = jsonEncode(_bodyQuill.document.toDelta().toJson());
     Navigator.of(context).pop(
       AdminDraftPage(
-        pageNumber: n,
-        title: t.isEmpty ? l10n.pageTitleFallback(n) : t,
+        pageNumber: 0,
+        title: t,
         body: body,
       ),
     );
@@ -1094,13 +1061,6 @@ class _DraftPageEditorDialogState extends State<_DraftPageEditorDialog> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    TextField(
-                      controller: _pageNumber,
-                      keyboardType: TextInputType.number,
-                      decoration:
-                          InputDecoration(labelText: l10n.pageNumberFieldLabel),
-                    ),
-                    const SizedBox(height: 8),
                     TextField(
                       controller: _title,
                       decoration:

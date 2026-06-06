@@ -33,6 +33,7 @@ class AdminBook {
     this.coverGetUrl,
     this.publishedRevisionId,
     this.publishedRevisionNumber,
+    this.createdById,
     this.createdAt,
     this.updatedAt,
   });
@@ -50,6 +51,7 @@ class AdminBook {
   final String? coverGetUrl;
   final String? publishedRevisionId;
   final int? publishedRevisionNumber;
+  final String? createdById;
   final String? createdAt;
   final String? updatedAt;
 
@@ -82,12 +84,16 @@ class AdminBook {
       publishedRevisionId: j['published_revision_id'] as String?,
       publishedRevisionNumber:
           (j['published_revision_number'] as num?)?.toInt(),
+      createdById: j['created_by_id'] as String?,
       createdAt: j['created_at'] as String?,
       updatedAt: j['updated_at'] as String?,
     );
   }
 
   bool get isPublished => catalogVisibility == 'published';
+
+  bool isCreatedBy(String? userId) =>
+      userId != null && createdById != null && createdById == userId;
 }
 
 class AdminDraftChapter {
@@ -121,6 +127,12 @@ class AdminDraftChapter {
         'title': title,
         'pages': pages.map((e) => e.toJson()).toList(),
       };
+
+  /// Payload for admin save — keys and page numbers are assigned by the API.
+  Map<String, dynamic> toDraftPayload() => {
+        'title': title,
+        'pages': pages.map((e) => e.toDraftPayload()).toList(),
+      };
 }
 
 class AdminDraftPage {
@@ -144,6 +156,12 @@ class AdminDraftPage {
 
   Map<String, dynamic> toJson() => {
         'page_number': pageNumber,
+        'title': title,
+        'body': body,
+      };
+
+  /// Payload for admin save — page numbers are assigned by the API.
+  Map<String, dynamic> toDraftPayload() => {
         'title': title,
         'body': body,
       };

@@ -919,6 +919,20 @@ class AppLocalizationsAm extends AppLocalizations {
   String get adminBookActionsTooltip => 'የመጽሐፍ ተግባራት';
 
   @override
+  String get adminPublishedBookLockedTitle => 'የታተመ መጽሐፍ';
+
+  @override
+  String get adminPublishedBookLockedMessage =>
+      'መረጃውን ወይም ረቂቁን ከማስተካከልዎ በፊት ይህን መጽሐፍ ህትመት አስቆም።';
+
+  @override
+  String get adminNotBookCreatorTitle => 'ማስተካከል የተገደበ';
+
+  @override
+  String get adminNotBookCreatorMessage =>
+      'ይህን መጽሐፍ የፈጠረው ተጠቃሚ ብቻ ማስተካከል ይችላል።';
+
+  @override
   String get newBookTooltip => 'አዲስ መጽሐፍ';
 
   @override

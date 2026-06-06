@@ -6,6 +6,7 @@ import '../../design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/admin_book.dart';
 import '../../providers/admin_providers.dart';
+import '../../providers/session_notifier.dart';
 import '../../widgets/app_state_view.dart';
 import '../../widgets/primitives/shell_primitives.dart';
 import 'admin_book_actions.dart';
@@ -193,8 +194,18 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
     if (mounted) setState(() => _busy = false);
   }
 
+  bool _canEditBook(AdminBook book, String? currentUserId) =>
+      !book.isPublished && book.isCreatedBy(currentUserId);
+
   void _openEdit() {
+    final currentUserId =
+        ref.read(sessionNotifierProvider).valueOrNull?.user?.id;
+    if (!_canEditBook(widget.book, currentUserId)) return;
     context.push('/admin/books/${widget.book.id}/edit', extra: widget.book);
+  }
+
+  void _openDetail() {
+    context.push('/book/${widget.book.id}');
   }
 
   Future<void> _onMenuAction(_AdminBookMenuAction action) async {
@@ -225,6 +236,11 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
     final book = widget.book;
     final theme = Theme.of(context);
     final isPublished = book.isPublished;
+    final currentUserId =
+        ref.watch(sessionNotifierProvider).valueOrNull?.user?.id;
+    final isCreator = book.isCreatedBy(currentUserId);
+    final canEdit = !isPublished && isCreator;
+    final canUnpublish = isPublished && isCreator;
     final chapterCount = book.chaptersDraft.length;
     final pageCount = book.chaptersDraft.fold<int>(
       0,
@@ -238,7 +254,13 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(AppRadius.cardV2),
-        onTap: _busy ? null : _openEdit,
+        onTap: _busy
+            ? null
+            : canEdit
+                ? _openEdit
+                : isPublished
+                    ? _openDetail
+                    : null,
         child: AppPanel(
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
           child: Column(
@@ -296,28 +318,30 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
                           padding: EdgeInsets.zero,
                           onSelected: _onMenuAction,
                           itemBuilder: (context) => [
-                            _menuItem(
-                              value: _AdminBookMenuAction.edit,
-                              icon: Icons.edit_outlined,
-                              label: l10n.adminEditAction,
-                            ),
-                            _menuItem(
-                              value: _AdminBookMenuAction.publish,
-                              icon: Icons.publish_outlined,
-                              label: l10n.publish,
-                            ),
-                            if (isPublished) ...[
+                            if (canEdit)
+                              _menuItem(
+                                value: _AdminBookMenuAction.edit,
+                                icon: Icons.edit_outlined,
+                                label: l10n.adminEditAction,
+                              ),
+                            if (!isPublished)
+                              _menuItem(
+                                value: _AdminBookMenuAction.publish,
+                                icon: Icons.publish_outlined,
+                                label: l10n.publish,
+                              ),
+                            if (canUnpublish)
                               _menuItem(
                                 value: _AdminBookMenuAction.unpublish,
                                 icon: Icons.visibility_off_outlined,
                                 label: l10n.unpublish,
                               ),
+                            if (isPublished)
                               _menuItem(
                                 value: _AdminBookMenuAction.openReader,
                                 icon: Icons.menu_book_outlined,
                                 label: l10n.openInReader,
                               ),
-                            ],
                           ],
                         ),
                 ],

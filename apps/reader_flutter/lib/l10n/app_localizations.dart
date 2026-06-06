@@ -1778,6 +1778,30 @@ abstract class AppLocalizations {
   /// **'Book actions'**
   String get adminBookActionsTooltip;
 
+  /// No description provided for @adminPublishedBookLockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Published book'**
+  String get adminPublishedBookLockedTitle;
+
+  /// No description provided for @adminPublishedBookLockedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpublish this book before editing its metadata or draft content.'**
+  String get adminPublishedBookLockedMessage;
+
+  /// No description provided for @adminNotBookCreatorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Editing restricted'**
+  String get adminNotBookCreatorTitle;
+
+  /// No description provided for @adminNotBookCreatorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the user who created this book can edit it.'**
+  String get adminNotBookCreatorMessage;
+
   /// No description provided for @newBookTooltip.
   ///
   /// In en, this message translates to:

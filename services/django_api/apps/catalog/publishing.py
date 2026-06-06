@@ -61,6 +61,7 @@ def draft_manifest_and_html(book: Book) -> tuple[bytes, bytes]:
     raw = book.chapters_draft if isinstance(book.chapters_draft, list) else []
     chunks: list[dict[str, str]] = []
     html_parts: list[str] = [f"<html><body><h1>{book.title}</h1>"]
+    next_page_number = 1
 
     for chapter_index, chapter in enumerate(raw, start=1):
         if not isinstance(chapter, dict):
@@ -76,7 +77,12 @@ def draft_manifest_and_html(book: Book) -> tuple[bytes, bytes]:
             for page_index, page in enumerate(pages, start=1):
                 if not isinstance(page, dict):
                     continue
-                page_number = int(page.get("page_number") or page_index)
+                raw_page_number = page.get("page_number")
+                if raw_page_number is None:
+                    page_number = next_page_number
+                else:
+                    page_number = int(raw_page_number)
+                next_page_number = max(next_page_number, page_number + 1)
                 page_title = str(page.get("title") or f"Page {page_number}").strip()
                 body = str(page.get("body") or "").strip()
                 body_plain = plain_text_from_stored_summary(body) if body else ""
@@ -107,6 +113,66 @@ def draft_manifest_and_html(book: Book) -> tuple[bytes, bytes]:
     return manifest_body, html_body
 
 
+def normalize_chapters_draft(value: Any) -> list[dict[str, Any]]:
+    """
+    Normalize admin ``chapters_draft`` payloads.
+
+    - Assigns stable ``chapter_key`` values from each chapter title.
+    - Assigns consecutive ``page_number`` values across the whole book (not per chapter).
+    - Ignores client-supplied ``chapter_key`` and ``page_number``.
+    """
+    if value in (None, ""):
+        return []
+    if not isinstance(value, list):
+        raise ValueError("chapters_draft must be a list.")
+
+    used_keys: set[str] = set()
+    normalized: list[dict[str, Any]] = []
+    next_page_number = 1
+
+    for chapter_idx, chapter in enumerate(value, start=1):
+        if not isinstance(chapter, dict):
+            raise ValueError(f"chapters_draft[{chapter_idx}] must be an object.")
+
+        title = str(chapter.get("title") or "").strip()
+        if not title:
+            raise ValueError(f"chapters_draft[{chapter_idx}].title is required.")
+
+        chapter_key = _unique_chapter_key(title, chapter_idx, used_keys)
+        pages = chapter.get("pages") if "pages" in chapter else []
+        if pages in (None, ""):
+            pages = []
+        if not isinstance(pages, list):
+            raise ValueError(f"chapters_draft[{chapter_idx}].pages must be a list.")
+
+        normalized_pages: list[dict[str, Any]] = []
+        for page_idx, page in enumerate(pages, start=1):
+            if not isinstance(page, dict):
+                raise ValueError(
+                    f"chapters_draft[{chapter_idx}].pages[{page_idx}] must be an object."
+                )
+            page_title = str(page.get("title") or f"Page {next_page_number}").strip()
+            body = str(page.get("body") or "").strip()
+            normalized_pages.append(
+                {
+                    "page_number": next_page_number,
+                    "title": page_title,
+                    "body": body,
+                }
+            )
+            next_page_number += 1
+
+        normalized.append(
+            {
+                "chapter_key": chapter_key,
+                "title": title,
+                "pages": normalized_pages,
+            }
+        )
+
+    return normalized
+
+
 def validate_draft_warnings(chapters_draft: list[Any]) -> dict[str, Any]:
     warnings: list[str] = []
     chapter_count = 0
@@ -122,9 +188,7 @@ def validate_draft_warnings(chapters_draft: list[Any]) -> dict[str, Any]:
         chapter_key = str(chapter.get("chapter_key") or "").strip()
         chapter_title = str(chapter.get("title") or "").strip()
         pages = chapter.get("pages")
-        if not chapter_key:
-            warnings.append(f"Chapter #{chapter_index} is missing chapter_key.")
-        elif chapter_key in seen_chapter_keys:
+        if chapter_key in seen_chapter_keys:
             warnings.append(f"Duplicate chapter_key: {chapter_key}.")
         else:
             seen_chapter_keys.add(chapter_key)
@@ -133,7 +197,14 @@ def validate_draft_warnings(chapters_draft: list[Any]) -> dict[str, Any]:
         if not isinstance(pages, list) or not pages:
             warnings.append(f"Chapter '{chapter_key or chapter_index}' has no pages.")
             continue
-        seen_page_numbers: set[int] = set()
+    seen_page_numbers: set[int] = set()
+    for chapter_index, chapter in enumerate(chapters_draft, start=1):
+        if not isinstance(chapter, dict):
+            continue
+        chapter_key = str(chapter.get("chapter_key") or "").strip()
+        pages = chapter.get("pages")
+        if not isinstance(pages, list):
+            continue
         for page_idx, page in enumerate(pages, start=1):
             if not isinstance(page, dict):
                 warnings.append(f"Chapter '{chapter_key or chapter_index}' page #{page_idx} is malformed.")
@@ -146,7 +217,7 @@ def validate_draft_warnings(chapters_draft: list[Any]) -> dict[str, Any]:
                 continue
             if page_number in seen_page_numbers:
                 warnings.append(
-                    f"Chapter '{chapter_key or chapter_index}' has duplicate page_number {page_number}."
+                    f"Duplicate page_number {page_number} in book (chapter '{chapter_key or chapter_index}')."
                 )
             seen_page_numbers.add(page_number)
             body = str(page.get("body") or "").strip()

@@ -3,7 +3,11 @@ from django.test import RequestFactory, TestCase, override_settings
 from rest_framework.test import APIClient
 
 from apps.catalog.models import Book, BookChapter, BookPage, BookRevision
-from apps.catalog.publishing import revision_chapters_draft_from_db, sync_book_chapters_draft_from_revision
+from apps.catalog.publishing import (
+    normalize_chapters_draft,
+    revision_chapters_draft_from_db,
+    sync_book_chapters_draft_from_revision,
+)
 from apps.catalog.search_index import rebuild_revision_index
 from apps.catalog.search_normalization import normalize_search_text
 from apps.catalog.storage_s3 import dev_presign_endpoint_from_request
@@ -165,3 +169,53 @@ class BookContentLazyIndexTests(TestCase):
             BookPage.objects.get(revision=rev).text_plain,
             "synced body",
         )
+
+
+class NormalizeChaptersDraftTests(TestCase):
+    def test_assigns_chapter_keys_and_global_page_numbers(self):
+        normalized = normalize_chapters_draft(
+            [
+                {
+                    "title": "Introduction",
+                    "pages": [
+                        {"title": "Opening", "body": "A"},
+                        {"title": "Context", "body": "B"},
+                    ],
+                },
+                {
+                    "title": "Chapter Two",
+                    "pages": [{"title": "Start", "body": "C"}],
+                },
+            ]
+        )
+        self.assertEqual(normalized[0]["chapter_key"], "introduction")
+        self.assertEqual(normalized[1]["chapter_key"], "chapter-two")
+        self.assertEqual(
+            [page["page_number"] for page in normalized[0]["pages"]],
+            [1, 2],
+        )
+        self.assertEqual(normalized[1]["pages"][0]["page_number"], 3)
+
+    def test_ignores_client_supplied_keys_and_numbers(self):
+        normalized = normalize_chapters_draft(
+            [
+                {
+                    "chapter_key": "custom-key",
+                    "title": "First",
+                    "pages": [
+                        {"page_number": 99, "title": "One", "body": "x"},
+                    ],
+                },
+                {
+                    "chapter_key": "other",
+                    "title": "Second",
+                    "pages": [
+                        {"page_number": 1, "title": "Two", "body": "y"},
+                    ],
+                },
+            ]
+        )
+        self.assertEqual(normalized[0]["chapter_key"], "first")
+        self.assertEqual(normalized[1]["chapter_key"], "second")
+        self.assertEqual(normalized[0]["pages"][0]["page_number"], 1)
+        self.assertEqual(normalized[1]["pages"][0]["page_number"], 2)
