@@ -45,6 +45,7 @@
   },
   "navHome": "Home",
   "navLibrary": "Library",
+  "navSettings": "Settings",
   "navBrowse": "Browse",
   "navAccount": "Profile",
   "navProfile": "Profile",
@@ -171,6 +172,21 @@
       "count": {"type": "int"}
     }
   },
+  "catalogChapterCount": "{count} chapters",
+  "@catalogChapterCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "readingProgressPercent": "{percent}%",
+  "@readingProgressPercent": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "catalogLanguageAmharic": "Amharic",
+  "catalogLanguageGeez": "Geez",
+  "catalogLanguageEnglish": "English",
   "clearFilter": "Clear filter",
   "languageChip": "Language: {lang}",
   "@languageChip": {
@@ -249,6 +265,7 @@
   "accountInfo": "Account Info",
   "profileAccountDetails": "Account details",
   "profileUserIdLabel": "User ID",
+  "profileUserIdCopied": "User ID copied",
   "profileRoleLabel": "Role",
   "profilePreferredLanguageLabel": "Preferred language",
   "profileSuperuserLabel": "Administrator access",
@@ -286,6 +303,11 @@
   "saveLanguage": "Save language",
   "languageSaved": "Language saved",
   "bookDetailsTitle": "Book Details",
+  "bookStatChapters": "Chapters",
+  "bookStatPages": "Pages",
+  "bookStatReaders": "Readers",
+  "shareBookTooltip": "Share book",
+  "bookSharedToClipboard": "Book link copied",
   "preparingDownload": "Preparing download…",
   "savedUnderPath": "Saved under {path}",
   "@savedUnderPath": {

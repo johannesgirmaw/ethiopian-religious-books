@@ -79,6 +79,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get navLibrary => 'ቤተ-መጽሐፍት';
 
   @override
+  String get navSettings => 'ቅንብሮች';
+
+  @override
   String get navBrowse => 'መጽሐፍት';
 
   @override
@@ -386,6 +389,25 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String catalogChapterCount(int count) {
+    return '$count ምዕራፎች';
+  }
+
+  @override
+  String readingProgressPercent(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get catalogLanguageAmharic => 'አማርኛ';
+
+  @override
+  String get catalogLanguageGeez => 'ግዕዝ';
+
+  @override
+  String get catalogLanguageEnglish => 'English';
+
+  @override
   String get clearFilter => 'ማጣሪያ አጽዳ';
 
   @override
@@ -523,6 +545,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileUserIdLabel => 'የተጠቃሚ መለያ';
 
   @override
+  String get profileUserIdCopied => 'የተጠቃሚ መለያ ተቀድቷል';
+
+  @override
   String get profileRoleLabel => 'ሚና';
 
   @override
@@ -633,6 +658,21 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get bookDetailsTitle => 'የመጽሐፍ ዝርዝሮች';
+
+  @override
+  String get bookStatChapters => 'ምዕራፎች';
+
+  @override
+  String get bookStatPages => 'ገጾች';
+
+  @override
+  String get bookStatReaders => 'አንባቦች';
+
+  @override
+  String get shareBookTooltip => 'መጽሐፍን አጋራ';
+
+  @override
+  String get bookSharedToClipboard => 'የመጽሐፍ ርዕስ ተቀድቷል';
 
   @override
   String get preparingDownload => 'ማውረድ በመዘጋጀት ላይ…';

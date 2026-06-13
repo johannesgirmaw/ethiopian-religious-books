@@ -12,7 +12,6 @@ import '../screens/admin/admin_books_screen.dart';
 import '../screens/book_detail_screen.dart';
 import '../screens/downloads_screen.dart';
 import '../screens/home_screen.dart';
-import '../screens/library_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/main_shell_screen.dart';
 import '../screens/reader_screen.dart';
@@ -70,7 +69,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
       if (loc.startsWith('/admin')) {
         if (session == null) return '/login';
-        if (!isAdmin) return '/library';
+        if (!isAdmin) return '/home';
       }
       return null;
     },
@@ -94,10 +93,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/home',
             builder: (context, state) => const HomeScreen(),
-          ),
-          GoRoute(
-            path: '/library',
-            builder: (context, state) => const LibraryScreen(),
           ),
           GoRoute(
             path: '/downloads',

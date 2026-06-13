@@ -57,7 +57,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   bool _pageCurlEnabled = true;
   final ReaderPageController _pageController = ReaderPageController();
   int _currentPageViewIndex = 0;
-  bool _searchAllChapters = true;
+  bool _searchAllChapters = false;
   String _findQuery = '';
   List<_FindMatch> _findMatches = const [];
   int _activeMatchPointer = -1;
@@ -457,6 +457,14 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         _pageController.goToPage(safe);
       });
       _handlePageChanged(safe, _renderedSections);
+      if (_findQuery.trim().isNotEmpty) {
+        _focusFindOnPage(safe);
+      } else {
+        setState(() => _currentPageViewIndex = safe);
+        if (_pageScrollController.hasClients) {
+          _pageScrollController.jumpTo(0);
+        }
+      }
       return;
     }
     final sectionKey = _sectionKeys[index];
@@ -886,18 +894,31 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       _selectedChapterKey != null && _selectedChapterKey!.isNotEmpty;
 
   void _updateFindMatches(String value, {bool? allChapters}) {
-    final scopeAll = allChapters ??
-        (_searchAllChapters || !_hasSelectedChapter);
-    final sections = scopeAll ? _allSections : _renderedSections;
+    if (allChapters != null) {
+      setState(() => _searchAllChapters = allChapters);
+    }
+    final sections = _findScopeSections;
     setState(() => _findQuery = value.trim());
     _rebuildFindMatches(sections);
+    if (_pageCurlEnabled &&
+        _hasSelectedChapter &&
+        _findQuery.trim().isNotEmpty) {
+      _focusFindOnPage(_currentPageViewIndex);
+    }
   }
 
   void _rebuildFindMatches(List<_ReaderSection> sections) {
     final matches = _collectFindMatches(sections, _findQuery);
     setState(() {
       _findMatches = matches;
-      _activeMatchPointer = matches.isEmpty ? -1 : 0;
+      if (_pageCurlEnabled && _hasSelectedChapter) {
+        final section = _pageSectionAt(_currentPageViewIndex);
+        _activeMatchPointer = section == null
+            ? -1
+            : _preferredMatchPointerForSection(section);
+      } else {
+        _activeMatchPointer = matches.isEmpty ? -1 : 0;
+      }
     });
   }
 
@@ -971,6 +992,103 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     return _findMatches[_activeMatchPointer];
   }
 
+  List<_ReaderSection> get _findScopeSections =>
+      (_searchAllChapters || !_hasSelectedChapter)
+          ? _allSections
+          : _renderedSections;
+
+  _ReaderSection? _pageSectionAt(int index) {
+    if (index < 0 || index >= _renderedSections.length) return null;
+    return _renderedSections[index];
+  }
+
+  List<int> _matchIndicesForSection(_ReaderSection section) {
+    final indices = <int>[];
+    for (var i = 0; i < _findMatches.length; i++) {
+      final match = _findMatches[i];
+      if (match.chapterKey == section.chapterKey &&
+          match.pageNumber == section.pageNumber) {
+        indices.add(i);
+      }
+    }
+    return indices;
+  }
+
+  List<int> _matchIndicesForCurrentPage() {
+    final section = _pageSectionAt(_currentPageViewIndex);
+    if (section == null) return const [];
+    return _matchIndicesForSection(section);
+  }
+
+  int _preferredMatchPointerForSection(_ReaderSection section) {
+    final indices = _matchIndicesForSection(section);
+    if (indices.isEmpty) return -1;
+    for (final index in indices) {
+      if (_findMatches[index].field == _FindMatchField.body) {
+        return index;
+      }
+    }
+    return indices.first;
+  }
+
+  void _focusFindOnPage(int pageIndex) {
+    final section = _pageSectionAt(pageIndex);
+    if (section == null) return;
+    setState(() {
+      _currentPageViewIndex = pageIndex;
+      _activeMatchPointer = _preferredMatchPointerForSection(section);
+    });
+    if (_pageScrollController.hasClients) {
+      _pageScrollController.jumpTo(0);
+    }
+    _scheduleScrollToActiveMatch();
+  }
+
+  void _cycleFindMatch(int step) {
+    if (_findMatches.isEmpty) return;
+    if (_pageCurlEnabled && _hasSelectedChapter) {
+      final indices = _matchIndicesForCurrentPage();
+      if (indices.isEmpty) return;
+      var pos = indices.indexOf(_activeMatchPointer);
+      if (pos < 0) {
+        pos = step >= 0 ? 0 : indices.length - 1;
+      } else {
+        pos = (pos + step) % indices.length;
+        if (pos < 0) pos += indices.length;
+      }
+      setState(() => _activeMatchPointer = indices[pos]);
+      _scheduleScrollToActiveMatch();
+      return;
+    }
+    setState(() {
+      final next = (_activeMatchPointer + step) % _findMatches.length;
+      _activeMatchPointer = next < 0 ? _findMatches.length - 1 : next;
+    });
+    _goToActiveMatch();
+  }
+
+  int _displayedFindMatchCount() {
+    if (_pageCurlEnabled && _hasSelectedChapter) {
+      return _matchIndicesForCurrentPage().length;
+    }
+    return _findMatches.length;
+  }
+
+  String _findStatusLabel() {
+    if (_findMatches.isEmpty) return l10n.noMatchesYet;
+    if (_pageCurlEnabled && _hasSelectedChapter) {
+      final onPage = _matchIndicesForCurrentPage().length;
+      if (onPage == 0) {
+        return l10n.matchCount(_findMatches.length);
+      }
+      if (onPage == _findMatches.length) {
+        return l10n.matchCount(onPage);
+      }
+      return '$onPage on page · ${_findMatches.length} in chapter';
+    }
+    return l10n.matchCount(_findMatches.length);
+  }
+
   void _toggleFindBar() {
     setState(() {
       _showFindBar = !_showFindBar;
@@ -1040,12 +1158,14 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       showArrows: _showChrome || _findQuery.trim().isNotEmpty,
       onInteraction: _scheduleAutoHide,
       onPageChanged: (index) {
-        setState(() => _currentPageViewIndex = index);
         _handlePageChanged(index, sections);
         if (_findQuery.trim().isNotEmpty) {
-          _scheduleScrollToActiveMatch();
-        } else if (_pageScrollController.hasClients) {
-          _pageScrollController.jumpTo(0);
+          _focusFindOnPage(index);
+        } else {
+          setState(() => _currentPageViewIndex = index);
+          if (_pageScrollController.hasClients) {
+            _pageScrollController.jumpTo(0);
+          }
         }
       },
       pageBuilder: (context, index) {
@@ -1144,14 +1264,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     );
   }
 
-  void _cycleMatch(int step) {
-    if (_findMatches.isEmpty) return;
-    setState(() {
-      final next = (_activeMatchPointer + step) % _findMatches.length;
-      _activeMatchPointer = next < 0 ? _findMatches.length - 1 : next;
-    });
-  }
-
   void _goToActiveMatch() {
     final match = _activeFindMatch;
     if (match == null) return;
@@ -1165,7 +1277,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       chapterKey: match.chapterKey,
       pageNumber: match.pageNumber,
     );
-    _scheduleScrollToActiveMatch();
+    if (!(_pageCurlEnabled && _hasSelectedChapter)) {
+      _scheduleScrollToActiveMatch();
+    }
   }
 
   void _scheduleScrollToActiveMatch() {
@@ -1180,19 +1294,32 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
   void _scrollToActiveMatchInPage() {
     if (!_pageCurlEnabled || _findQuery.trim().isEmpty) return;
-    final match = _activeFindMatch;
-    if (match == null || match.field != _FindMatchField.body) return;
     if (!_pageScrollController.hasClients) return;
 
-    _ReaderSection? section;
-    for (final candidate in _renderedSections) {
-      if (candidate.chapterKey == match.chapterKey &&
-          candidate.pageNumber == match.pageNumber) {
-        section = candidate;
-        break;
-      }
+    final section = _pageSectionAt(_currentPageViewIndex);
+    if (section == null) return;
+
+    final pageIndices = _matchIndicesForSection(section);
+    if (pageIndices.isEmpty) {
+      _pageScrollController.jumpTo(0);
+      return;
     }
-    if (section == null || section.index != _currentPageViewIndex) return;
+
+    var match = _activeFindMatch;
+    if (match == null ||
+        match.chapterKey != section.chapterKey ||
+        match.pageNumber != section.pageNumber) {
+      final pointer = _preferredMatchPointerForSection(section);
+      if (pointer < 0) {
+        _pageScrollController.jumpTo(0);
+        return;
+      }
+      match = _findMatches[pointer];
+    }
+    if (match.field != _FindMatchField.body) {
+      _pageScrollController.jumpTo(0);
+      return;
+    }
 
     final plain = plainTextFromStoredSummary(section.body);
     final width = MediaQuery.sizeOf(context).width - 28;
@@ -1436,66 +1563,143 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                               _readerPageAccent(chapter.chapterKey.hashCode, dark, sepia),
                               chapter.chapterKey.hashCode,
                             );
-                            return Card(
-                              color: cardPaper,
-                              elevation: 0,
-                              clipBehavior: Clip.antiAlias,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(AppRadius.sm),
-                                side: BorderSide(
-                                  color: text.withValues(alpha: dark ? 0.2 : 0.1),
-                                ),
-                              ),
-                              child: IntrinsicHeight(
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                    Container(
-                                      width: 4,
-                                      decoration: BoxDecoration(
-                                        color: _readerPageAccent(chapter.chapterKey.hashCode, dark, sepia),
-                                        borderRadius: const BorderRadius.only(
-                                          topLeft: Radius.circular(AppRadius.sm),
-                                          bottomLeft: Radius.circular(AppRadius.sm),
-                                        ),
-                                      ),
+                            final accent = _readerPageAccent(
+                              chapter.chapterKey.hashCode,
+                              dark,
+                              sepia,
+                            );
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Card(
+                                color: cardPaper,
+                                elevation: 0,
+                                clipBehavior: Clip.antiAlias,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.sm),
+                                  side: BorderSide(
+                                    color: text.withValues(
+                                      alpha: dark ? 0.2 : 0.1,
                                     ),
-                                    Expanded(
-                                      child: ListTile(
-                                        leading: Icon(Icons.menu_book_rounded, color: text.withValues(alpha: 0.7)),
-                                        title: Text(chapter.title, style: TextStyle(color: text)),
-                                        subtitle: Text(
-                                          l10n.pageCount(chapter.pages.length),
-                                          style: TextStyle(color: text.withValues(alpha: 0.65)),
-                                        ),
-                                        trailing: Icon(Icons.chevron_right_rounded, color: text.withValues(alpha: 0.5)),
-                                        onTap: () {
-                                          setState(() {
-                                            _selectedChapterKey = chapter.chapterKey;
-                                            _selectedPageNumber = null;
-                                            _progress = 0;
-                                            if (_pageCurlEnabled) {
-                                              _showChrome = false;
-                                            }
-                                          });
-                                          if (_pageCurlEnabled) {
-                                            WidgetsBinding.instance
-                                                .addPostFrameCallback((_) {
-                                              if (!mounted) return;
-                                              _syncPageFromProgress(
-                                                _buildSectionsFromTree(
-                                                  contentTree,
-                                                  chapterKey: chapter.chapterKey,
+                                  ),
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedChapterKey = chapter.chapterKey;
+                                        _selectedPageNumber = null;
+                                        _progress = 0;
+                                        if (_pageCurlEnabled) {
+                                          _showChrome = false;
+                                        }
+                                      });
+                                      if (_pageCurlEnabled) {
+                                        WidgetsBinding.instance
+                                            .addPostFrameCallback((_) {
+                                          if (!mounted) return;
+                                          _syncPageFromProgress(
+                                            _buildSectionsFromTree(
+                                              contentTree,
+                                              chapterKey: chapter.chapterKey,
+                                            ),
+                                          );
+                                        });
+                                      }
+                                    },
+                                    child: IntrinsicHeight(
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          Container(
+                                            width: 4,
+                                            color: accent,
+                                          ),
+                                          Expanded(
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.fromLTRB(
+                                                12,
+                                                12,
+                                                8,
+                                                12,
+                                              ),
+                                              child: Row(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                    top: 2,
+                                                  ),
+                                                  child: Icon(
+                                                    Icons.menu_book_rounded,
+                                                    color: text.withValues(
+                                                      alpha: 0.7,
+                                                    ),
+                                                  ),
                                                 ),
-                                              );
-                                            });
-                                          }
-                                        },
-                                      ),
+                                                const SizedBox(width: 12),
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        chapter.title,
+                                                        style: TextStyle(
+                                                          color: text,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          fontSize: 15,
+                                                          height: 1.35,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 4),
+                                                      Text(
+                                                        l10n.pageCount(
+                                                          chapter.pages.length,
+                                                        ),
+                                                        style: TextStyle(
+                                                          color: text
+                                                              .withValues(
+                                                            alpha: 0.65,
+                                                          ),
+                                                          fontSize: 13,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                    top: 2,
+                                                  ),
+                                                  child: Icon(
+                                                    Icons
+                                                        .chevron_right_rounded,
+                                                    color: text.withValues(
+                                                      alpha: 0.5,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
                               ),
+                            ),
                             );
                           },
                         ),
@@ -1652,7 +1856,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                   dense: true,
                                   value: _searchAllChapters,
                                   onChanged: (value) {
-                                    setState(() => _searchAllChapters = value);
                                     _updateFindMatches(
                                       _findController.text,
                                       allChapters: value,
@@ -1674,11 +1877,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      _findMatches.isEmpty
+                                      _findQuery.trim().isEmpty
                                           ? l10n.noMatchesYet
-                                          : l10n.matchCount(
-                                              _findMatches.length,
-                                            ),
+                                          : _findStatusLabel(),
                                       style: TextStyle(
                                         color: text.withValues(alpha: 0.7),
                                         fontSize: 12,
@@ -1688,12 +1889,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                   IconButton(
                                     tooltip: l10n.previousMatch,
                                     visualDensity: VisualDensity.compact,
-                                    onPressed: _findMatches.length < 2
+                                    onPressed: _displayedFindMatchCount() < 2
                                         ? null
-                                        : () {
-                                            _cycleMatch(-1);
-                                            _goToActiveMatch();
-                                          },
+                                        : () => _cycleFindMatch(-1),
                                     icon: Icon(
                                       Icons.keyboard_arrow_up_rounded,
                                       color: text,
@@ -1703,12 +1901,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                   IconButton(
                                     tooltip: l10n.nextMatch,
                                     visualDensity: VisualDensity.compact,
-                                    onPressed: _findMatches.length < 2
+                                    onPressed: _displayedFindMatchCount() < 2
                                         ? null
-                                        : () {
-                                            _cycleMatch(1);
-                                            _goToActiveMatch();
-                                          },
+                                        : () => _cycleFindMatch(1),
                                     icon: Icon(
                                       Icons.keyboard_arrow_down_rounded,
                                       color: text,

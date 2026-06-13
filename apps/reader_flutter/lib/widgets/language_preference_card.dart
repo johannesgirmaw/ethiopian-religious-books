@@ -13,54 +13,76 @@ class LanguagePreferenceCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
     final current = ref.watch(appLocaleProvider).languageCode;
 
     return AppPanel(
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.language_rounded,
-            size: 22,
-            color: AppColors.referencePrimary,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              l10n.languagePreferenceTitle,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          SegmentedButton<String>(
-            style: SegmentedButton.styleFrom(
-              visualDensity: VisualDensity.compact,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            segments: [
-              ButtonSegment(
-                value: 'en',
-                label: Text(
-                  l10n.languageEnglish,
-                  style: const TextStyle(fontSize: 13),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.referencePrimary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.language_rounded,
+                  size: 22,
+                  color: AppColors.referencePrimary,
                 ),
               ),
-              ButtonSegment(
-                value: 'am',
-                label: Text(
-                  l10n.languageAmharic,
-                  style: const TextStyle(fontSize: 13),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.languagePreferenceTitle,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.languagePreferenceSubtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
-            selected: {current},
-            onSelectionChanged: (selection) async {
-              final code = selection.first;
-              final locale =
-                  code == 'am' ? const Locale('am') : const Locale('en');
-              await ref.setAppLocale(locale);
-            },
+          ),
+          const SizedBox(height: 14),
+          Align(
+            alignment: Alignment.centerRight,
+            child: AppSegmentedControl<String>(
+              options: [
+                AppSegmentedOption(
+                  value: 'en',
+                  label: l10n.languageEnglish,
+                ),
+                AppSegmentedOption(
+                  value: 'am',
+                  label: l10n.languageAmharic,
+                ),
+              ],
+              value: current,
+              onChanged: (code) async {
+                final locale =
+                    code == 'am' ? const Locale('am') : const Locale('en');
+                await ref.setAppLocale(locale);
+              },
+            ),
           ),
         ],
       ),

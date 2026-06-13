@@ -7,7 +7,43 @@ import '../models/download_payload.dart';
 import '../models/offline_cached_book.dart';
 import '../storage/book_content_cache_storage.dart';
 import '../storage/catalog_cache_storage.dart';
+import '../storage/reader_prefs_storage.dart';
 import 'api_client.dart';
+
+class CatalogBookMeta {
+  const CatalogBookMeta({
+    this.chapterCount,
+    this.progress = 0,
+    this.offlineCached = false,
+  });
+
+  final int? chapterCount;
+  final double progress;
+  final bool offlineCached;
+}
+
+final catalogBookMetaProvider =
+    FutureProvider.autoDispose.family<CatalogBookMeta, String>((ref, bookId) async {
+  int? chapterCount;
+  final cached = await BookContentCacheStorage.readBookContent(bookId);
+  if (cached != null && cached.chapters.isNotEmpty) {
+    chapterCount = cached.chapters.length;
+  } else {
+    try {
+      final chapters = await ref.watch(bookChaptersProvider(bookId).future);
+      if (chapters.isNotEmpty) chapterCount = chapters.length;
+    } catch (_) {}
+  }
+
+  final progress = await ReaderPrefsStorage.readProgress(bookId);
+  final offline = await ref.watch(offlineBookCachedProvider(bookId).future);
+
+  return CatalogBookMeta(
+    chapterCount: chapterCount,
+    progress: progress,
+    offlineCached: offline,
+  );
+});
 
 final catalogProvider = FutureProvider.autoDispose<CatalogPage>((ref) async {
   final dio = ref.watch(apiDioProvider);

@@ -26,7 +26,7 @@ class AppConfig {
   AppConfig._();
 
   static const String _productionApiBaseUrl =
-      'https://religious-books-api.onrender.com/v1/';
+      'https://religious-books-api-wz6y.onrender.com/v1/';
 
   /// Dart's [Uri.resolve] drops `/v1` if the base has no trailing `/`.
   static String _withTrailingSlash(String base) {

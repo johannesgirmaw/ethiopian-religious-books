@@ -46,7 +46,6 @@ class AuthScreenLayout extends StatelessWidget {
                     greetingLine: greetingForL10n(l10n),
                     title: headline,
                     subtitle: subtitle,
-                    showMenu: false,
                   ),
                   const SizedBox(height: 20),
                   const Center(child: AppLogoTile(size: 72)),

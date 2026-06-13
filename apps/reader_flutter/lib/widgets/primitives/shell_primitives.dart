@@ -3,10 +3,8 @@ import 'package:flutter/material.dart';
 import '../../design/app_decorations.dart';
 import '../../design/app_tokens.dart';
 import '../../design/app_typography.dart';
-import 'menu_button.dart';
 import 'shared_widgets.dart' show greetingForL10n;
 
-export 'menu_button.dart';
 export 'shared_widgets.dart';
 
 // ─── Greeting strip (v2 GreetingStrip) ───────────────────────────────────────
@@ -18,14 +16,12 @@ class AppGreetingCard extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.trailing,
-    this.showMenu = true,
   });
 
   final String greetingLine;
   final String title;
   final String? subtitle;
   final Widget? trailing;
-  final bool showMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -60,10 +56,6 @@ class AppGreetingCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (showMenu) ...[
-                    const AppMenuButton.onDark(),
-                    const SizedBox(height: 14),
-                  ],
                   Text(
                     greetingLine,
                     style: const TextStyle(
@@ -650,8 +642,6 @@ class _LibraryShellHeaderState extends State<LibraryShellHeader> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const AppMenuButton(),
-                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

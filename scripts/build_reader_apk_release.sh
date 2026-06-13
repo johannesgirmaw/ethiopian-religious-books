@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Release Android build for apps/reader_flutter (APK or App Bundle).
 #
-# Production API (Render): https://religious-books-api.onrender.com/v1/
+# Production API (Render): https://religious-books-api-wz6y.onrender.com/v1/
 #   - Same default as AppConfig in lib/config/app_config.dart
-#   - Health: https://religious-books-api.onrender.com/healthz/
-#   - Swagger: https://religious-books-api.onrender.com/api/docs/
+#   - Health: https://religious-books-api-wz6y.onrender.com/healthz/
+#   - Swagger: https://religious-books-api-wz6y.onrender.com/api/docs/
 #
 # Release builds point at that URL unless you override API_BASE_URL.
 #
@@ -19,7 +19,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP="${ROOT}/apps/reader_flutter"
 
 # Keep in sync with apps/reader_flutter/lib/config/app_config.dart
-PRODUCTION_API_BASE_URL="${PRODUCTION_API_BASE_URL:-https://religious-books-api.onrender.com/v1/}"
+PRODUCTION_API_BASE_URL="${PRODUCTION_API_BASE_URL:-https://religious-books-api-wz6y.onrender.com/v1/}"
 API_BASE_URL="${API_BASE_URL:-${PRODUCTION_API_BASE_URL}}"
 
 ABI="${READER_APK_ABI:-arm64}"

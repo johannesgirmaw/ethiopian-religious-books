@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../design/app_decorations.dart';
 import '../design/app_tokens.dart';
 import '../l10n/app_localizations.dart';
 import '../models/user_profile.dart';
 import '../providers/api_client.dart';
 import '../providers/session_notifier.dart';
-import '../widgets/primitives/shared_widgets.dart';
 import '../widgets/primitives/shell_primitives.dart';
 import '../widgets/shell_page_scaffold.dart';
 
@@ -26,91 +27,113 @@ class ProfileScreen extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
           _ProfileHero(user: user, l10n: l10n),
-          const SizedBox(height: 20),
-          AppSectionHeader(title: l10n.profileAccountDetails),
-          const SizedBox(height: 8),
-          if (user != null)
-            AppPanel(
-              child: Column(
-                children: [
-                  AppDetailRow(
-                    icon: Icons.badge_outlined,
-                    label: l10n.profileUserIdLabel,
-                    value: user.id,
-                  ),
-                  Divider(height: 1, color: AppColors.line),
-                  AppDetailRow(
-                    icon: Icons.mail_outline_rounded,
-                    label: l10n.emailLabel,
-                    value: user.email,
-                  ),
-                  Divider(height: 1, color: AppColors.line),
-                  AppDetailRow(
-                    icon: Icons.person_outline_rounded,
-                    label: l10n.displayNameLabel,
-                    value: user.displayName?.trim().isNotEmpty == true
-                        ? user.displayName!.trim()
-                        : l10n.profileValueNotSet,
-                    muted: user.displayName?.trim().isEmpty != false,
-                  ),
-                  Divider(height: 1, color: AppColors.line),
-                  AppDetailRow(
-                    icon: Icons.shield_outlined,
-                    label: l10n.profileRoleLabel,
-                    value: user.isSuperuser ? l10n.adminRoleBadge : user.role,
-                  ),
-                ],
-              ),
-            )
-          else
-            AppPanel(
-              child: Text(
-                l10n.noProfileCached,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-              ),
+          const SizedBox(height: 22),
+          AppSectionAccent(label: l10n.profileAccountDetails.toUpperCase()),
+          const SizedBox(height: 12),
+          if (user != null) ...[
+            _ProfileFieldCard(
+              icon: Icons.mail_outline_rounded,
+              label: l10n.emailLabel,
+              value: user.email,
             ),
-          const SizedBox(height: 24),
-          if (user != null)
-            FilledButton.icon(
-              onPressed: () => context.push('/settings'),
-              icon: const Icon(Icons.settings_outlined),
-              label: Text(l10n.profileOpenSettings),
+            const SizedBox(height: 8),
+            _ProfileFieldCard(
+              icon: Icons.person_outline_rounded,
+              label: l10n.displayNameLabel,
+              value: user.displayName?.trim().isNotEmpty == true
+                  ? user.displayName!.trim()
+                  : l10n.profileValueNotSet,
+              muted: user.displayName?.trim().isEmpty != false,
             ),
-          if (user != null) const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: user == null
-                ? null
-                : () async {
-                    final s = ref.read(sessionNotifierProvider).valueOrNull;
-                    if (s == null) return;
-                    try {
-                      final dio = ref.read(apiDioProvider);
-                      await dio.post<void>(
-                        'auth/logout',
-                        data: {'refresh_token': s.refreshToken},
-                      );
-                    } catch (_) {}
-                    await ref
-                        .read(sessionNotifierProvider.notifier)
-                        .clear();
-                    if (context.mounted) context.go('/login');
-                  },
-            icon: const Icon(Icons.logout_rounded),
-            label: Text(l10n.signOut),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.error,
-              side: BorderSide(
-                color: Theme.of(context).colorScheme.error.withValues(
-                      alpha: 0.5,
-                    ),
+            const SizedBox(height: 8),
+            _ProfileFieldCard(
+              icon: Icons.shield_outlined,
+              label: l10n.profileRoleLabel,
+              value: user.isSuperuser ? l10n.adminRoleBadge : user.role,
+              accent: user.isSuperuser
+                  ? AppColors.referencePrimary
+                  : AppColors.referencePrimary,
+            ),
+            if (user.preferredUiLanguage?.trim().isNotEmpty == true) ...[
+              const SizedBox(height: 8),
+              _ProfileFieldCard(
+                icon: Icons.language_rounded,
+                label: l10n.profilePreferredLanguageLabel,
+                value: user.preferredUiLanguage!.trim(),
               ),
+            ],
+            const SizedBox(height: 8),
+            _ProfileFieldCard(
+              icon: Icons.badge_outlined,
+              label: l10n.profileUserIdLabel,
+              value: user.id,
+              monospace: true,
+              onCopy: () {
+                Clipboard.setData(ClipboardData(text: user.id));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(l10n.profileUserIdCopied)),
+                );
+              },
             ),
+          ] else
+            _SignedOutCard(l10n: l10n),
+          const SizedBox(height: 28),
+          AppSectionAccent(label: l10n.aboutTitle.toUpperCase()),
+          const SizedBox(height: 12),
+          _ProfileLinkRow(
+            icon: Icons.info_outline_rounded,
+            title: l10n.drawerAbout,
+            subtitle: l10n.aboutAppSectionTitle,
+            onTap: () => context.push('/about'),
           ),
+          if (user?.isSuperuser == true) ...[
+            const SizedBox(height: 8),
+            _ProfileLinkRow(
+              icon: Icons.admin_panel_settings_outlined,
+              title: l10n.adminPanel,
+              subtitle: l10n.adminPanelSubtitle,
+              onTap: () => context.push('/admin'),
+            ),
+          ],
+          if (user != null) ...[
+            const SizedBox(height: 28),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _signOut(context, ref),
+                icon: const Icon(Icons.logout_rounded, size: 20),
+                label: Text(l10n.signOut),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.errorText,
+                  backgroundColor: AppColors.surfaceCard,
+                  side: BorderSide(
+                    color: AppColors.errorBorder.withValues(alpha: 0.7),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.cardV2),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
+    final s = ref.read(sessionNotifierProvider).valueOrNull;
+    if (s == null) return;
+    try {
+      final dio = ref.read(apiDioProvider);
+      await dio.post<void>(
+        'auth/logout',
+        data: {'refresh_token': s.refreshToken},
+      );
+    } catch (_) {}
+    await ref.read(sessionNotifierProvider.notifier).clear();
+    if (context.mounted) context.go('/login');
   }
 }
 
@@ -120,24 +143,288 @@ class _ProfileHero extends StatelessWidget {
   final UserProfile? user;
   final AppLocalizations l10n;
 
+  String _initials(UserProfile? user) {
+    final name = user?.displayName?.trim();
+    if (name != null && name.isNotEmpty) {
+      final parts = name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
+      final list = parts.toList();
+      if (list.length >= 2) {
+        return '${list.first[0]}${list[1][0]}'.toUpperCase();
+      }
+      return list.first[0].toUpperCase();
+    }
+    final email = user?.email.trim();
+    if (email != null && email.isNotEmpty) {
+      return email[0].toUpperCase();
+    }
+    return '?';
+  }
+
   @override
   Widget build(BuildContext context) {
     final displayName = user?.displayName?.trim().isNotEmpty == true
         ? user!.displayName!.trim()
         : l10n.readerAccount;
     final email = user?.email ?? l10n.noEmail;
+    final isAdmin = user?.isSuperuser == true;
+
     return AppGreetingCard(
       greetingLine: greetingForL10n(l10n),
       title: displayName,
       subtitle: email,
-      showMenu: false,
-      trailing: user != null
-          ? AppStatusChip(
-              label: user!.isSuperuser ? l10n.adminRoleBadge : user!.role,
-              kind: AppStatusKind.neutral,
-            )
-          : null,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (user != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: AppStatusChip(
+                label: isAdmin ? l10n.adminRoleBadge : user!.role,
+                kind: isAdmin ? AppStatusKind.accent : AppStatusKind.active,
+              ),
+            ),
+          CircleAvatar(
+            radius: 26,
+            backgroundColor: Colors.white.withValues(alpha: 0.18),
+            child: Text(
+              _initials(user),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
+}
 
+class _ProfileFieldCard extends StatelessWidget {
+  const _ProfileFieldCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.accent = AppColors.referencePrimary,
+    this.muted = false,
+    this.monospace = false,
+    this.onCopy,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color accent;
+  final bool muted;
+  final bool monospace;
+  final VoidCallback? onCopy;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onCopy,
+        borderRadius: BorderRadius.circular(AppRadius.cardV2),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: AppDecorations.listRow(),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, size: 20, color: accent),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textTertiary,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: monospace ? 12 : 14,
+                        fontWeight: FontWeight.w600,
+                        color: muted
+                            ? AppColors.textSecondary
+                            : AppColors.textPrimary,
+                        height: 1.35,
+                        fontFamily: monospace ? 'monospace' : null,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (onCopy != null)
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(
+                    Icons.copy_rounded,
+                    size: 18,
+                    color: AppColors.textTertiary,
+                  ),
+                  onPressed: onCopy,
+                  tooltip: MaterialLocalizations.of(context).copyButtonLabel,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileLinkRow extends StatelessWidget {
+  const _ProfileLinkRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.cardV2),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: AppDecorations.listRow(),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.referencePrimary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, size: 22, color: AppColors.referencePrimary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textTertiary,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SignedOutCard extends StatelessWidget {
+  const _SignedOutCard({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppPanel(
+      child: Column(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: AppColors.referencePrimary.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.person_outline_rounded,
+              size: 28,
+              color: AppColors.referencePrimary,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            l10n.noProfileCached,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            l10n.signInSubtitle,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () => context.go('/login'),
+              icon: const Icon(Icons.login_rounded, size: 20),
+              label: Text(l10n.signIn),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.referencePrimary,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.cardV2),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

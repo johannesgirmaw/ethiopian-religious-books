@@ -79,6 +79,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navLibrary => 'Library';
 
   @override
+  String get navSettings => 'Settings';
+
+  @override
   String get navBrowse => 'Browse';
 
   @override
@@ -391,6 +394,25 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String catalogChapterCount(int count) {
+    return '$count chapters';
+  }
+
+  @override
+  String readingProgressPercent(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get catalogLanguageAmharic => 'Amharic';
+
+  @override
+  String get catalogLanguageGeez => 'Geez';
+
+  @override
+  String get catalogLanguageEnglish => 'English';
+
+  @override
   String get clearFilter => 'Clear filter';
 
   @override
@@ -532,6 +554,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileUserIdLabel => 'User ID';
 
   @override
+  String get profileUserIdCopied => 'User ID copied';
+
+  @override
   String get profileRoleLabel => 'Role';
 
   @override
@@ -644,6 +669,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bookDetailsTitle => 'Book Details';
+
+  @override
+  String get bookStatChapters => 'Chapters';
+
+  @override
+  String get bookStatPages => 'Pages';
+
+  @override
+  String get bookStatReaders => 'Readers';
+
+  @override
+  String get shareBookTooltip => 'Share book';
+
+  @override
+  String get bookSharedToClipboard => 'Book link copied';
 
   @override
   String get preparingDownload => 'Preparing download…';

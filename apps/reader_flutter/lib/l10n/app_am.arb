@@ -55,6 +55,7 @@
   },
   "navHome": "መነሻ",
   "navLibrary": "ቤተ-መጽሐፍት",
+  "navSettings": "ቅንብሮች",
   "navBrowse": "መጽሐፍት",
   "navAccount": "መገለጫ",
   "navProfile": "መገለጫ",
@@ -191,6 +192,25 @@
       }
     }
   },
+  "catalogChapterCount": "{count} ምዕራፎች",
+  "@catalogChapterCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "readingProgressPercent": "{percent}%",
+  "@readingProgressPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "catalogLanguageAmharic": "አማርኛ",
+  "catalogLanguageGeez": "ግዕዝ",
+  "catalogLanguageEnglish": "English",
   "clearFilter": "ማጣሪያ አጽዳ",
   "languageChip": "ቋንቋ፦ {lang}",
   "@languageChip": {
@@ -287,6 +307,7 @@
   "accountInfo": "የመለያ መረጃ",
   "profileAccountDetails": "የመለያ ዝርዝሮች",
   "profileUserIdLabel": "የተጠቃሚ መለያ",
+  "profileUserIdCopied": "የተጠቃሚ መለያ ተቀድቷል",
   "profileRoleLabel": "ሚና",
   "profilePreferredLanguageLabel": "የተመረጠ ቋንቋ",
   "profileSuperuserLabel": "የአስተዳዳሪ መዳረሻ",
@@ -324,6 +345,11 @@
   "saveLanguage": "ቋንቋ አስቀምጥ",
   "languageSaved": "ቋንቋ ተቀምጧል",
   "bookDetailsTitle": "የመጽሐፍ ዝርዝሮች",
+  "bookStatChapters": "ምዕራፎች",
+  "bookStatPages": "ገጾች",
+  "bookStatReaders": "አንባቦች",
+  "shareBookTooltip": "መጽሐፍን አጋራ",
+  "bookSharedToClipboard": "የመጽሐፍ ርዕስ ተቀድቷል",
   "preparingDownload": "ማውረድ በመዘጋጀት ላይ…",
   "savedUnderPath": "በ{path} ተቀምጧል",
   "@savedUnderPath": {

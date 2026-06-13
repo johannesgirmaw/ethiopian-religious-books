@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../design/app_tokens.dart';
-import 'primitives/menu_button.dart';
 
-/// Tab page scaffold with a standard toolbar and drawer menu.
+/// Tab page scaffold with a standard toolbar.
 class ShellPageScaffold extends StatelessWidget {
   const ShellPageScaffold({
     super.key,
@@ -35,11 +34,11 @@ class ShellPageScaffold extends StatelessWidget {
             ),
             padding: EdgeInsets.only(top: topInset),
             child: SizedBox(
-              height: AppMenuLayout.toolbarHeight,
+              height: kToolbarHeight,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const AppMenuButton(),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Text(
                       title,

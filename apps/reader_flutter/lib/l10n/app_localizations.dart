@@ -218,6 +218,12 @@ abstract class AppLocalizations {
   /// **'Library'**
   String get navLibrary;
 
+  /// No description provided for @navSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get navSettings;
+
   /// No description provided for @navBrowse.
   ///
   /// In en, this message translates to:
@@ -794,6 +800,36 @@ abstract class AppLocalizations {
   /// **'{count} book(s) available'**
   String booksAvailable(int count);
 
+  /// No description provided for @catalogChapterCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} chapters'**
+  String catalogChapterCount(int count);
+
+  /// No description provided for @readingProgressPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}%'**
+  String readingProgressPercent(int percent);
+
+  /// No description provided for @catalogLanguageAmharic.
+  ///
+  /// In en, this message translates to:
+  /// **'Amharic'**
+  String get catalogLanguageAmharic;
+
+  /// No description provided for @catalogLanguageGeez.
+  ///
+  /// In en, this message translates to:
+  /// **'Geez'**
+  String get catalogLanguageGeez;
+
+  /// No description provided for @catalogLanguageEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get catalogLanguageEnglish;
+
   /// No description provided for @clearFilter.
   ///
   /// In en, this message translates to:
@@ -1040,6 +1076,12 @@ abstract class AppLocalizations {
   /// **'User ID'**
   String get profileUserIdLabel;
 
+  /// No description provided for @profileUserIdCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'User ID copied'**
+  String get profileUserIdCopied;
+
   /// No description provided for @profileRoleLabel.
   ///
   /// In en, this message translates to:
@@ -1261,6 +1303,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Book Details'**
   String get bookDetailsTitle;
+
+  /// No description provided for @bookStatChapters.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapters'**
+  String get bookStatChapters;
+
+  /// No description provided for @bookStatPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages'**
+  String get bookStatPages;
+
+  /// No description provided for @bookStatReaders.
+  ///
+  /// In en, this message translates to:
+  /// **'Readers'**
+  String get bookStatReaders;
+
+  /// No description provided for @shareBookTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Share book'**
+  String get shareBookTooltip;
+
+  /// No description provided for @bookSharedToClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Book link copied'**
+  String get bookSharedToClipboard;
 
   /// No description provided for @preparingDownload.
   ///

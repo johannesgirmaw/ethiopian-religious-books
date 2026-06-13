@@ -92,7 +92,7 @@ class DownloadsScreen extends ConsumerWidget {
               message: l10n.downloadsEmptyMessage,
               icon: Icons.download_outlined,
               actionLabel: l10n.openLibrary,
-              onAction: () => context.go('/library'),
+              onAction: () => context.go('/home'),
             );
           }
 

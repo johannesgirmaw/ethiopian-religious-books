@@ -5,7 +5,6 @@ import '../../design/app_tokens.dart';
 import '../../design/app_typography.dart';
 import '../../design/reference_assets.dart';
 import '../../l10n/app_localizations.dart';
-import 'menu_button.dart';
 
 String greetingForL10n(AppLocalizations l10n) {
   final hour = DateTime.now().hour;
