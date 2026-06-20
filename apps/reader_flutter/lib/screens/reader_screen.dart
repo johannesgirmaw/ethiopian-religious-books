@@ -16,6 +16,9 @@ import '../providers/study_providers.dart';
 import '../storage/book_content_cache_storage.dart';
 import '../storage/reader_prefs_storage.dart';
 import '../utils/rich_text_codec.dart' show plainTextFromStoredSummary;
+import '../web/layout/app_layout_scope.dart';
+import '../web/widgets/reader/web_reader_chapter_grid.dart';
+import '../web/widgets/reader/web_reader_layout.dart';
 import '../widgets/highlighted_search_text.dart';
 import '../widgets/reader_book_page_view.dart';
 import '../widgets/stored_rich_text_view.dart';
@@ -498,6 +501,36 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         curve: Curves.easeOut,
       );
     }
+  }
+
+  void _selectChapter(BookContentChapter chapter, BookContentTree contentTree) {
+    setState(() {
+      _selectedChapterKey = chapter.chapterKey;
+      _selectedPageNumber = null;
+      _progress = 0;
+      if (_pageCurlEnabled) {
+        _showChrome = false;
+      }
+    });
+    if (_pageCurlEnabled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _syncPageFromProgress(
+          _buildSectionsFromTree(
+            contentTree,
+            chapterKey: chapter.chapterKey,
+          ),
+        );
+      });
+    }
+    unawaited(
+      trackReaderEvent(
+        ref,
+        bookId: widget.bookId,
+        eventName: 'chapter_open',
+        chapterKey: chapter.chapterKey,
+      ),
+    );
   }
 
   Future<void> _pickChapter(List<BookContentChapter> chapters) async {
@@ -1123,6 +1156,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 
   double _readerTopChromeInset(bool showChrome) {
+    if (useWebShell(context)) return webReaderTopInset(context, showChrome);
     if (!showChrome) return 20;
     return 64;
   }
@@ -1541,13 +1575,30 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                   child: ListView(
                     controller: _scrollController,
                     padding: EdgeInsets.fromLTRB(
-                      _selectedChapterKey != null ? 0 : 16,
+                      _selectedChapterKey != null
+                          ? 0
+                          : webReaderHorizontalPadding(context),
                       0,
-                      _selectedChapterKey != null ? 0 : 16,
+                      _selectedChapterKey != null
+                          ? 0
+                          : webReaderHorizontalPadding(context),
                       0,
                     ),
                     children: [
                       if (hasTree && _selectedChapterKey == null) ...[
+                        if (useWebShell(context)) ...[
+                          WebReaderChapterGrid(
+                            chapters: contentTree.chapters,
+                            pageCountLabel: (chapter) =>
+                                l10n.pageCount(chapter.pages.length),
+                            onChapterTap: (key) {
+                              final chapter = contentTree.chapters.firstWhere(
+                                (c) => c.chapterKey == key,
+                              );
+                              _selectChapter(chapter, contentTree);
+                            },
+                          ),
+                        ] else ...[
                         Text(
                           l10n.chaptersHeading,
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -1586,28 +1637,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                 child: Material(
                                   color: Colors.transparent,
                                   child: InkWell(
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedChapterKey = chapter.chapterKey;
-                                        _selectedPageNumber = null;
-                                        _progress = 0;
-                                        if (_pageCurlEnabled) {
-                                          _showChrome = false;
-                                        }
-                                      });
-                                      if (_pageCurlEnabled) {
-                                        WidgetsBinding.instance
-                                            .addPostFrameCallback((_) {
-                                          if (!mounted) return;
-                                          _syncPageFromProgress(
-                                            _buildSectionsFromTree(
-                                              contentTree,
-                                              chapterKey: chapter.chapterKey,
-                                            ),
-                                          );
-                                        });
-                                      }
-                                    },
+                                    onTap: () => _selectChapter(chapter, contentTree),
                                     child: IntrinsicHeight(
                                       child: Row(
                                         crossAxisAlignment:
@@ -1703,6 +1733,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                             );
                           },
                         ),
+                        ],
                         const SizedBox(height: 80),
                       ] else if (asyncContentTree.isLoading) ...[
                         const Padding(
@@ -1722,20 +1753,26 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                         ),
                         const SizedBox(height: 80),
                       ] else ...[
-                      ...sections.map((section) {
-                        return _ReaderBookPage(
-                          key: _sectionKeyFor(section.index),
-                          section: section,
-                          dark: dark,
-                          sepia: sepia,
-                          textColor: text,
-                          fontSize: _fontSize,
-                          lineHeight: _lineHeight,
-                          findQuery: _findQuery,
-                          activeFindMatch: _activeFindMatchForSection(section),
-                          colorScheme: Theme.of(context).colorScheme,
-                        );
-                      }),
+                      webConstrainReaderContent(
+                        context,
+                        Column(
+                          children: sections.map((section) {
+                            return _ReaderBookPage(
+                              key: _sectionKeyFor(section.index),
+                              section: section,
+                              dark: dark,
+                              sepia: sepia,
+                              textColor: text,
+                              fontSize: _fontSize,
+                              lineHeight: _lineHeight,
+                              findQuery: _findQuery,
+                              activeFindMatch:
+                                  _activeFindMatchForSection(section),
+                              colorScheme: Theme.of(context).colorScheme,
+                            );
+                          }).toList(),
+                        ),
+                      ),
                       ],
                     ],
                   ),

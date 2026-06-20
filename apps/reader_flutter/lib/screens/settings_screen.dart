@@ -13,6 +13,12 @@ import '../widgets/language_preference_card.dart';
 import '../widgets/primitives/shell_primitives.dart';
 import '../widgets/shell_page_scaffold.dart';
 import '../widgets/skeleton_loader.dart';
+import '../common/platform/platform_shell.dart';
+import '../desktop/screens/settings_screen_body.dart';
+import '../desktop/widgets/shell/desktop_page_scaffold.dart';
+import '../web/layout/app_layout_scope.dart';
+import '../web/screens/settings_screen_body.dart';
+import '../web/widgets/shell/web_page_scaffold.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -24,6 +30,14 @@ class SettingsScreen extends ConsumerWidget {
     final cachedAt = ref.watch(catalogCachedAtProvider).valueOrNull;
     final downloadJobs = ref.watch(downloadJobsProvider);
     final offlineCount = ref.watch(offlineBookCountProvider);
+
+    if (useWebShell(context)) {
+      return const WebPageScaffold(body: SettingsScreenBody());
+    }
+
+    if (useDesktopShell(context)) {
+      return const DesktopPageScaffold(body: DesktopSettingsScreenBody());
+    }
 
     return ShellPageScaffold(
       title: l10n.settingsTitle,

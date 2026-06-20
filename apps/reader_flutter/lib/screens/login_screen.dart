@@ -9,7 +9,7 @@ import '../l10n/app_localizations.dart';
 import '../providers/session_notifier.dart';
 import '../utils/api_error_message.dart';
 import '../utils/dio_connection_message.dart';
-import '../widgets/primitives/auth_screen_layout.dart';
+import '../web/widgets/shell/adaptive_auth_layout.dart';
 import '../widgets/primitives/shared_widgets.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -79,7 +79,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return AuthScreenLayout(
+    return AdaptiveAuthLayout(
       headline: l10n.welcomeBack,
       subtitle: l10n.signInSubtitle,
       formChild: Form(

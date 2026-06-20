@@ -18,12 +18,14 @@ class LanguageFilterChips extends StatelessWidget {
     required this.selectedKey,
     required this.onSelected,
     this.allLabel,
+    this.padding,
   });
 
   final List<LanguageFilterOption> options;
   final String? selectedKey;
   final ValueChanged<String?> onSelected;
   final String? allLabel;
+  final EdgeInsetsGeometry? padding;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +36,7 @@ class LanguageFilterChips extends StatelessWidget {
       height: 44,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: AppLayout.pageHorizontalOnly,
+        padding: padding ?? AppLayout.pageHorizontalOnly,
         children: [
           _LanguagePill(
             label: all,

@@ -13,6 +13,12 @@ import '../storage/book_content_cache_storage.dart';
 import '../utils/offline_book_download.dart';
 import '../widgets/app_state_view.dart';
 import '../widgets/primitives/shell_primitives.dart';
+import '../common/platform/platform_shell.dart';
+import '../desktop/screens/downloads_screen_body.dart';
+import '../desktop/widgets/shell/desktop_page_scaffold.dart';
+import '../web/layout/app_layout_scope.dart';
+import '../web/screens/downloads_screen_body.dart';
+import '../web/widgets/shell/web_page_scaffold.dart';
 import '../widgets/shell_page_scaffold.dart';
 
 Future<void> _syncOfflineBookCache(WidgetRef ref, String bookId) async {
@@ -35,6 +41,14 @@ class DownloadsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (useWebShell(context)) {
+      return WebPageScaffold(body: const DownloadsScreenBody());
+    }
+
+    if (useDesktopShell(context)) {
+      return const DesktopPageScaffold(body: DesktopDownloadsScreenBody());
+    }
+
     final l10n = AppLocalizations.of(context)!;
     final offlineAsync = ref.watch(offlineDownloadsListProvider);
     final jobsAsync = ref.watch(downloadJobsProvider);

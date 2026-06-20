@@ -1,0 +1,56 @@
+---
+description: Desktop UI (macOS, Linux, Windows) — lib/desktop/ only
+globs: apps/reader_flutter/lib/desktop/**/*.dart,apps/reader_flutter/macos/**/*,apps/reader_flutter/linux/**/*,apps/reader_flutter/windows/**/*
+alwaysApply: false
+---
+
+# Desktop UI (macOS, Linux, Windows)
+
+**Folder:** `lib/desktop/` only. One UI codebase, three native runners: `macos/`, `linux/`, `windows/`.
+
+## Structure
+
+```
+lib/desktop/
+  design/desktop_tokens.dart    # min window size, pane widths, title-bar spacing
+  layout/desktop_layout_scope.dart
+  screens/*_body.dart
+  widgets/
+    shell/                      # DesktopShellScaffold, menu bar, side rail / split view
+    catalog/
+    reader/
+    common/
+```
+
+## Conventions
+
+- Activated via `useDesktopShell(context)` — native desktop only, **never** `kIsWeb`.
+- **Desktop ≠ Web:** no `WebSidebar`, no browser-style layout.
+- **Desktop ≠ Mobile:** no bottom tab bar, no phone FAB on large windows.
+- Use keyboard shortcuts, resizable panes, context menus, mouse hover.
+- Share brand tokens from `lib/design/`; layout numbers live in `DesktopTokens`.
+
+## Shell guard
+
+```dart
+bool useDesktopShell(BuildContext context) {
+  if (kIsWeb) return false;
+  switch (defaultTargetPlatform) {
+    case TargetPlatform.macOS:
+    case TargetPlatform.linux:
+    case TargetPlatform.windows:
+      return true;
+    default:
+      return false;
+  }
+}
+```
+
+Route order in `lib/screens/`: **web → desktop → mobile**.
+
+## Runner config vs UI
+
+- Window icons, entitlements, CMake/msix → `macos/`, `linux/`, `windows/`.
+- All widget/layout code → `lib/desktop/`.
+
+Verify: `make reader-run-macos`, `reader-run-linux`, `reader-run-windows`.

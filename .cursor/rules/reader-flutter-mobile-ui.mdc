@@ -1,0 +1,50 @@
+---
+description: Mobile UI (iOS + Android) — lib/mobile/ and legacy lib/widgets/
+globs: apps/reader_flutter/lib/mobile/**/*.dart,apps/reader_flutter/lib/widgets/**/*.dart,apps/reader_flutter/lib/screens/**/*.dart,apps/reader_flutter/ios/**/*,apps/reader_flutter/android/**/*
+alwaysApply: false
+---
+
+# Mobile UI (iOS & Android)
+
+**Canonical folder:** `lib/mobile/`. Targets: `ios/`, `android/` runners only.
+
+## Structure
+
+```
+lib/mobile/
+  design/       # mobile-only layout tokens (optional; extend lib/design/app_tokens.dart)
+  layout/       # safe areas, tab insets, phone/tablet breakpoints
+  screens/      # full mobile screens and *Body widgets
+  widgets/
+    shell/      # MainShellScaffold, LiquidGlassNavBar, auth layout
+    catalog/    # browse panels, book tiles, strips
+    reader/     # mobile reader chrome
+```
+
+## Conventions
+
+- Touch-first: `Scaffold`, `SafeArea`, `RefreshIndicator`, bottom nav — no sidebar.
+- Shell: `LiquidGlassNavBar` tabs (Home, Settings, Profile).
+- Auth: `AuthScreenLayout` in `mobile/widgets/shell/` (not `WebAuthLayout`).
+- Primitives: `AppPanel`, `AppListRow`, `AppGreetingCard` — one greeting card per shell screen max.
+- Catalog: expansion cards, vertical lists — not web grids/hover cards.
+- All strings via `AppLocalizations`.
+
+## Do / don't
+
+```dart
+// ✅ Mobile widget in lib/mobile/
+import '../../providers/catalog_providers.dart';  // common
+import '../../design/app_tokens.dart';           // common
+
+// ❌ Never import web or desktop UI
+import '../../web/widgets/shell/web_sidebar.dart';
+import '../../desktop/widgets/shell/desktop_sidebar.dart';
+```
+
+- Touch targets ≥ 48dp; `BouncingScrollPhysics` on lists.
+- Platform APIs (secure storage, `FLAG_SECURE`) stay in common `storage/` / utils — not duplicated in widgets.
+
+## Legacy paths
+
+`lib/widgets/` and mobile branches in `lib/screens/` are **legacy**. When editing, prefer adding/moving code to `lib/mobile/`. Route adapters stay in `lib/screens/`.

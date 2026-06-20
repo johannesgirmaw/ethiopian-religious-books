@@ -8,7 +8,7 @@ import '../l10n/app_localizations.dart';
 import '../providers/session_notifier.dart';
 import '../utils/api_error_message.dart';
 import '../utils/dio_connection_message.dart';
-import '../widgets/primitives/auth_screen_layout.dart';
+import '../web/widgets/shell/adaptive_auth_layout.dart';
 import '../widgets/primitives/shared_widgets.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -82,7 +82,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return AuthScreenLayout(
+    return AdaptiveAuthLayout(
       headline: l10n.createAccountTitle,
       subtitle: l10n.registerSubtitle,
       formChild: Form(

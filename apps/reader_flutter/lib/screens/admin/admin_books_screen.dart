@@ -7,6 +7,12 @@ import '../../l10n/app_localizations.dart';
 import '../../models/admin_book.dart';
 import '../../providers/admin_providers.dart';
 import '../../providers/session_notifier.dart';
+import '../../common/platform/platform_shell.dart';
+import '../../desktop/screens/admin_books_screen_body.dart';
+import '../../desktop/widgets/shell/desktop_page_scaffold.dart';
+import '../../web/layout/app_layout_scope.dart';
+import '../../web/screens/admin_books_screen_body.dart';
+import '../../web/widgets/shell/web_page_scaffold.dart';
 import '../../widgets/app_state_view.dart';
 import '../../widgets/primitives/shell_primitives.dart';
 import 'admin_book_actions.dart';
@@ -33,6 +39,15 @@ class _AdminBooksScreenState extends ConsumerState<AdminBooksScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+
+    if (useWebShell(context)) {
+      return const WebPageScaffold(body: AdminBooksScreenBody());
+    }
+
+    if (useDesktopShell(context)) {
+      return const DesktopPageScaffold(body: DesktopAdminBooksScreenBody());
+    }
+
     final async = ref.watch(adminBooksProvider);
 
     return Scaffold(

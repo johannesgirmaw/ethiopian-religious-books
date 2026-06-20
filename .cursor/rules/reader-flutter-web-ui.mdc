@@ -1,0 +1,44 @@
+---
+description: Web UI — lib/web/ only (Flutter Web)
+globs: apps/reader_flutter/lib/web/**/*.dart,apps/reader_flutter/web/**/*
+alwaysApply: false
+---
+
+# Web UI
+
+**Folder:** `lib/web/` only. Runner: `web/`. Activated when `useWebShell(context)` (`kIsWeb` + viewport ≥ `WebTokens.compactBreakpoint`).
+
+## Structure
+
+```
+lib/web/
+  design/web_tokens.dart      # extends shared AppColors / AppLayout
+  layout/app_layout_scope.dart
+  screens/*_body.dart         # page content (no mobile scaffold)
+  widgets/
+    shell/                    # WebShellScaffold, WebSidebar, WebOverlayScaffold
+    catalog/                  # grids, WebBookCard, hover
+    reader/                   # column layout, chapter grid
+    common/                   # WebPageHeader, WebSection
+```
+
+## Conventions
+
+- Screen bodies (`HomeScreenBody`, …) — parent route adapter in `lib/screens/` picks web vs mobile vs desktop.
+- Responsive tiers: `AppLayoutTier` via `AppLayoutScope`.
+- Narrow web (< 720px) uses **mobile** UI — do not assume sidebar is always visible.
+- Hover, multi-column grids, breadcrumb bar — web-only patterns.
+- Import logic from common; never duplicate providers or API calls.
+
+## Do / don't
+
+```dart
+// ✅ Web-only layout
+return WebPageScaffold(body: HomeScreenBody());
+
+// ❌ Do not import mobile or desktop widgets
+import '../../mobile/widgets/shell/liquid_glass_nav_bar.dart';
+import '../../desktop/widgets/shell/desktop_shell.dart';
+```
+
+Build: `make reader-run-web` / `make reader-build-web`.

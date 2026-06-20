@@ -11,6 +11,12 @@ import '../providers/api_client.dart';
 import '../providers/session_notifier.dart';
 import '../widgets/primitives/shell_primitives.dart';
 import '../widgets/shell_page_scaffold.dart';
+import '../common/platform/platform_shell.dart';
+import '../desktop/screens/profile_screen_body.dart';
+import '../desktop/widgets/shell/desktop_page_scaffold.dart';
+import '../web/layout/app_layout_scope.dart';
+import '../web/screens/profile_screen_body.dart';
+import '../web/widgets/shell/web_page_scaffold.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -20,6 +26,14 @@ class ProfileScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final session = ref.watch(sessionNotifierProvider).valueOrNull;
     final user = session?.user;
+
+    if (useWebShell(context)) {
+      return const WebPageScaffold(body: ProfileScreenBody());
+    }
+
+    if (useDesktopShell(context)) {
+      return const DesktopPageScaffold(body: DesktopProfileScreenBody());
+    }
 
     return ShellPageScaffold(
       title: l10n.profileTitle,

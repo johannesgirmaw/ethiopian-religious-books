@@ -1,0 +1,75 @@
+---
+description: Ethiopian Reader — folder layout, common vs mobile/web/desktop, feature parity
+alwaysApply: true
+---
+
+# Reader Flutter — Multi-Platform Layout
+
+App: `apps/reader_flutter/`. Targets: **iOS**, **Android** (mobile) · **Web** · **macOS**, **Linux**, **Windows** (desktop).
+
+## Directory structure
+
+```
+lib/
+├── config/          ┐
+├── design/          │
+├── l10n/            │  COMMON — shared by every platform
+├── models/          │  (logic, tokens, routing, strings)
+├── providers/       │
+├── router/          │
+├── storage/         │
+├── utils/           │
+├── common/platform/ ┘  shell guards (useMobileShell, useWebShell, useDesktopShell)
+├── screens/            route adapters — branch only, no platform layout
+│
+├── mobile/             iOS + Android UI ONLY
+│   ├── design/
+│   ├── layout/
+│   ├── screens/
+│   └── widgets/
+│       ├── shell/
+│       ├── catalog/
+│       └── reader/
+│
+├── web/                Flutter Web UI ONLY
+│   ├── design/
+│   ├── layout/
+│   ├── screens/
+│   └── widgets/
+│
+└── desktop/            macOS + Linux + Windows UI ONLY (one codebase, three runners)
+    ├── design/
+    ├── layout/
+    ├── screens/
+    └── widgets/
+```
+
+**Migration note:** legacy mobile widgets still live in `lib/widgets/` and mobile branches in `lib/screens/`. New mobile UI goes in `lib/mobile/`. Move files when touching a screen.
+
+## Platform → folder
+
+| Platforms | UI folder | Runners |
+| --- | --- | --- |
+| iOS, Android | `lib/mobile/` | `ios/`, `android/` |
+| Web | `lib/web/` | `web/` |
+| macOS, Linux, Windows | `lib/desktop/` | `macos/`, `linux/`, `windows/` |
+
+## Cross-platform rules
+
+1. **Common once** — providers, models, storage, API, l10n, shared design tokens.
+2. **UI three times** — implement in `mobile/`, `web/`, and `desktop/` separately.
+3. **No cross-imports** between `mobile/`, `web/`, and `desktop/`. Route adapters in `lib/screens/` may import all three.
+4. **Share tokens & patterns**, not widget trees or scaffolds.
+5. Feature parity across all six targets unless explicitly scoped (e.g. Android `FLAG_SECURE`).
+
+## Feature checklist
+
+1. Logic → common (`providers/`, `storage/`, etc.)
+2. Mobile UI → `lib/mobile/screens/` + `lib/mobile/widgets/`
+3. Web UI → `lib/web/screens/` + `lib/web/widgets/`
+4. Desktop UI → `lib/desktop/screens/` + `lib/desktop/widgets/`
+5. Route adapter → `lib/screens/<name>_screen.dart`
+6. Strings → `lib/l10n/app_en.arb`, `app_am.arb`
+7. Verify → `make reader-run-{android,ios,web,macos,linux,windows}`
+
+See `DESIGN_SYSTEM.md` for shared token details.

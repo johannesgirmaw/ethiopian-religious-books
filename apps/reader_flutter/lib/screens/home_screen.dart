@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../common/platform/platform_shell.dart';
 import '../design/app_tokens.dart';
+import '../desktop/screens/home_screen_body.dart';
+import '../desktop/widgets/shell/desktop_page_scaffold.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/catalog_providers.dart';
 import '../providers/continue_reading_provider.dart';
 import '../providers/session_notifier.dart';
+import '../web/layout/app_layout_scope.dart';
+import '../web/screens/home_screen_body.dart';
+import '../web/widgets/shell/web_page_scaffold.dart';
 import '../widgets/app_state_view.dart';
 import '../widgets/primitives/shell_primitives.dart';
 import '../widgets/reference/catalog_browse_panel.dart';
@@ -48,6 +54,14 @@ class HomeScreen extends ConsumerWidget {
             ? lastOpened.bookId
             : null;
     final banner = _homeBanner(l10n, session);
+
+    if (useWebShell(context)) {
+      return const WebPageScaffold(body: HomeScreenBody());
+    }
+
+    if (useDesktopShell(context)) {
+      return const DesktopPageScaffold(body: DesktopHomeScreenBody());
+    }
 
     return Scaffold(
       backgroundColor: AppColors.referencePageBg,

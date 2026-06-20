@@ -110,6 +110,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             path: '/account',
             redirect: (context, state) => '/profile',
           ),
+          GoRoute(
+            path: '/admin/books',
+            pageBuilder: (context, state) => NoTransitionPage<void>(
+              key: state.pageKey,
+              child: const AdminBooksScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/admin',
+            redirect: (context, state) => '/admin/books',
+          ),
         ],
       ),
       GoRoute(
@@ -170,14 +181,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final id = state.pathParameters['id']!;
           return '/admin/books/$id/edit';
         },
-      ),
-      GoRoute(
-        path: '/admin/books',
-        builder: (context, state) => const AdminBooksScreen(),
-      ),
-      GoRoute(
-        path: '/admin',
-        builder: (context, state) => const AdminBooksScreen(),
       ),
     ],
   );

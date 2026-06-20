@@ -1,4 +1,10 @@
-.PHONY: help infra-up infra-down infra-logs dev run-dev seed openapi-export print-api-url reader-setup reader-run reader-run-android reader-run-macos reader-run-ios reader-build-apk-release reader-pubget reader-test pre-commit
+.PHONY: help infra-up infra-down infra-logs dev run-dev seed openapi-export print-api-url \
+	reader-setup reader-run reader-run-android reader-run-macos reader-run-ios \
+	reader-run-android-emulator reader-run-ios-simulator \
+	reader-run-web reader-run-linux reader-run-windows \
+	reader-build reader-build-apk-release reader-build-android reader-build-ios \
+	reader-build-macos reader-build-web reader-build-linux reader-build-windows \
+	reader-pubget reader-test pre-commit
 
 help:
 	@echo "Targets:"
@@ -16,8 +22,20 @@ help:
 	@echo "  make reader-run-android - Android only"
 	@echo "  make reader-run-macos   - macOS desktop only"
 	@echo "  make reader-run-ios     - ./scripts/run_reader_flutter.sh ios (optional)"
+	@echo "  make reader-run-android-emulator - boot AVD + run (Android emulator)"
+	@echo "  make reader-run-ios-simulator    - boot Simulator + run (iOS)"
+	@echo "  make reader-run-web     - Chrome (web)"
+	@echo "  make reader-run-linux   - Linux desktop"
+	@echo "  make reader-run-windows - Windows desktop"
 	@echo "  make reader-pubget      - flutter pub get only"
-	@echo "  make reader-build-apk-release - release APK/AAB → Render API (see script --help)"
+	@echo "  make reader-build       - ./scripts/build_reader_flutter.sh <platform>"
+	@echo "  make reader-build-apk-release - release APK/AAB (Android shortcut)"
+	@echo "  make reader-build-android   - same as reader-build-apk-release"
+	@echo "  make reader-build-ios       - iOS release (macOS + Xcode)"
+	@echo "  make reader-build-macos     - macOS .app release"
+	@echo "  make reader-build-web       - static web build"
+	@echo "  make reader-build-linux     - Linux desktop release"
+	@echo "  make reader-build-windows   - Windows desktop release"
 	@echo "  make reader-test        - flutter test"
 	@echo "  make pre-commit   - run all pre-commit hooks on repo"
 
@@ -74,9 +92,53 @@ reader-run-ios:
 	@chmod +x scripts/run_reader_flutter.sh 2>/dev/null || true
 	@./scripts/run_reader_flutter.sh ios
 
-reader-build-apk-release:
+reader-run-android-emulator:
+	@chmod +x scripts/run_reader_android_emulator.sh 2>/dev/null || true
+	@./scripts/run_reader_android_emulator.sh
+
+reader-run-ios-simulator:
+	@chmod +x scripts/run_reader_ios_simulator.sh 2>/dev/null || true
+	@./scripts/run_reader_ios_simulator.sh
+
+reader-run-web:
+	@chmod +x scripts/run_reader_web.sh 2>/dev/null || true
+	@./scripts/run_reader_web.sh
+
+reader-run-linux:
+	@chmod +x scripts/run_reader_linux.sh 2>/dev/null || true
+	@./scripts/run_reader_linux.sh
+
+reader-run-windows:
+	@chmod +x scripts/run_reader_windows.sh 2>/dev/null || true
+	@./scripts/run_reader_windows.sh
+
+reader-build:
+	@chmod +x scripts/build_reader_flutter.sh 2>/dev/null || true
+	@./scripts/build_reader_flutter.sh $(PLATFORM)
+
+reader-build-apk-release reader-build-android:
 	@chmod +x scripts/build_reader_apk_release.sh 2>/dev/null || true
 	@./scripts/build_reader_apk_release.sh
+
+reader-build-ios:
+	@chmod +x scripts/build_reader_ios.sh 2>/dev/null || true
+	@./scripts/build_reader_ios.sh
+
+reader-build-macos:
+	@chmod +x scripts/build_reader_macos.sh 2>/dev/null || true
+	@./scripts/build_reader_macos.sh
+
+reader-build-web:
+	@chmod +x scripts/build_reader_web.sh 2>/dev/null || true
+	@./scripts/build_reader_web.sh
+
+reader-build-linux:
+	@chmod +x scripts/build_reader_linux.sh 2>/dev/null || true
+	@./scripts/build_reader_linux.sh
+
+reader-build-windows:
+	@chmod +x scripts/build_reader_windows.sh 2>/dev/null || true
+	@./scripts/build_reader_windows.sh
 
 reader-pubget:
 	cd apps/reader_flutter && flutter pub get

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../common/platform/platform_shell.dart';
+import '../desktop/widgets/shell/desktop_shell_scaffold.dart';
 import '../l10n/app_localizations.dart';
+import '../web/layout/app_layout_scope.dart';
+import '../web/widgets/shell/web_shell_scaffold.dart';
 import '../widgets/liquid_glass_nav_bar.dart';
 
 class MainShellScreen extends StatelessWidget {
@@ -16,6 +20,20 @@ class MainShellScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final location = GoRouterState.of(context).matchedLocation;
     final index = _indexFor(location);
+
+    if (useWebShell(context)) {
+      return WebShellScaffold(
+        appTitle: l10n.appTitle,
+        child: child,
+      );
+    }
+
+    if (useDesktopShell(context)) {
+      return DesktopShellScaffold(
+        appTitle: l10n.appTitle,
+        child: child,
+      );
+    }
 
     return Scaffold(
       extendBody: true,

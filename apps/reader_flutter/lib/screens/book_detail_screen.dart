@@ -14,6 +14,14 @@ import '../providers/download_jobs_provider.dart';
 import '../router/app_navigation.dart';
 import '../utils/catalog_language_label.dart';
 import '../utils/offline_book_download.dart';
+import '../common/platform/platform_shell.dart';
+import '../desktop/screens/book_detail_body.dart';
+import '../desktop/widgets/shell/desktop_overlay_scaffold.dart';
+import '../desktop/widgets/shell/desktop_sidebar.dart';
+import '../web/layout/app_layout_scope.dart';
+import '../web/screens/book_detail_body.dart';
+import '../web/widgets/shell/web_overlay_scaffold.dart';
+import '../web/widgets/shell/web_sidebar.dart';
 import '../widgets/app_state_view.dart';
 import '../widgets/primitives/shell_primitives.dart';
 import '../widgets/reference/book_detail_cover.dart';
@@ -80,7 +88,56 @@ class BookDetailScreen extends ConsumerWidget {
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) popOverlayRoute(context);
       },
-      child: Scaffold(
+      child: AppLayoutScopeBuilder(
+        child: Builder(
+          builder: (context) {
+            if (useWebShell(context)) {
+              return WebOverlayScaffold(
+                title: l10n.bookDetailsTitle,
+                currentLocation: GoRouterState.of(context).matchedLocation,
+                sidebarItems: defaultWebSidebarItems(l10n),
+                appTitle: l10n.appTitle,
+                actions: [
+                  asyncBook.maybeWhen(
+                    data: (book) => IconButton(
+                      tooltip: l10n.shareBookTooltip,
+                      icon: const Icon(Icons.share_outlined),
+                      onPressed: () => _shareBook(context, book),
+                    ),
+                    orElse: () => const SizedBox.shrink(),
+                  ),
+                ],
+                body: BookDetailBody(
+                  bookId: bookId,
+                  onShare: (book) => _shareBook(context, book),
+                ),
+              );
+            }
+
+            if (useDesktopShell(context)) {
+              return DesktopOverlayScaffold(
+                title: l10n.bookDetailsTitle,
+                currentLocation: GoRouterState.of(context).matchedLocation,
+                sidebarItems: defaultDesktopSidebarItems(l10n),
+                appTitle: l10n.appTitle,
+                actions: [
+                  asyncBook.maybeWhen(
+                    data: (book) => IconButton(
+                      tooltip: l10n.shareBookTooltip,
+                      icon: const Icon(Icons.share_outlined),
+                      onPressed: () => _shareBook(context, book),
+                    ),
+                    orElse: () => const SizedBox.shrink(),
+                  ),
+                ],
+                body: DesktopBookDetailBody(
+                  bookId: bookId,
+                  onShare: (book) => _shareBook(context, book),
+                ),
+              );
+            }
+
+            return Scaffold(
         backgroundColor: AppColors.referencePageBg,
         appBar: AppBar(
           leading: IconButton(
@@ -309,6 +366,9 @@ class BookDetailScreen extends ConsumerWidget {
               actionLabel: l10n.goBack,
               onAction: () => popOverlayRoute(context),
             );
+          },
+        ),
+      );
           },
         ),
       ),

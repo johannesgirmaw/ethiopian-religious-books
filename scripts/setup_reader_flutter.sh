@@ -26,9 +26,38 @@ fi
 
 cd "${APP}"
 
+is_linux_host() {
+  [[ "$(uname -s)" == "Linux" ]]
+}
+
+is_windows_host() {
+  case "$(uname -s)" in
+    MINGW* | MSYS* | CYGWIN*) return 0 ;;
+  esac
+  [[ "${OS:-}" == "Windows_NT" ]]
+}
+
 if [[ "$(uname -s)" == "Darwin" ]] && [[ -d macos/Runner ]]; then
   echo "==> flutter config --enable-macos-desktop"
   flutter config --enable-macos-desktop
+fi
+
+echo "==> flutter config --enable-web"
+flutter config --enable-web
+
+if is_linux_host; then
+  echo "==> flutter config --enable-linux-desktop"
+  flutter config --enable-linux-desktop
+else
+  echo "==> flutter config --enable-linux-desktop (tooling only; build Linux on a Linux host)"
+  flutter config --enable-linux-desktop >/dev/null 2>&1 || true
+fi
+
+if is_windows_host; then
+  echo "==> flutter config --enable-windows-desktop"
+  flutter config --enable-windows-desktop
+else
+  echo "==> Skipping windows-desktop enable (not on Windows). Build Windows on a Windows machine."
 fi
 
 echo "==> flutter pub get"
@@ -63,8 +92,14 @@ echo "  cd ${ROOT}/infra && docker compose up -d --build && docker compose exec 
 echo ""
 echo "Run the app:"
 echo "  ${ROOT}/scripts/run_reader_flutter.sh           # Android if available, else macOS desktop"
-echo "  ${ROOT}/scripts/run_reader_flutter.sh android   # Android only"
-echo "  ${ROOT}/scripts/run_reader_flutter.sh macos     # macOS desktop only"
+echo "  ${ROOT}/scripts/run_reader_flutter.sh android   # Android emulator/device"
+echo "  ${ROOT}/scripts/run_reader_flutter.sh macos     # macOS desktop"
+echo "  ${ROOT}/scripts/run_reader_flutter.sh web       # Chrome"
+echo "  ${ROOT}/scripts/run_reader_flutter.sh linux     # Linux desktop"
+echo ""
+echo "Release builds:"
+echo "  ${ROOT}/scripts/build_reader_flutter.sh <platform>   # android|ios|macos|web|linux|windows"
+echo "  ${ROOT}/scripts/build_reader_apk_release.sh           # Android APK/AAB shortcut"
 echo ""
 echo "Optional iOS (after INSTALL_READER_IOS=1 setup):"
 echo "  ${ROOT}/scripts/run_reader_flutter.sh ios"

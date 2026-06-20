@@ -1,0 +1,47 @@
+---
+description: Shared common layer — logic, tokens, routing (all platforms)
+globs: apps/reader_flutter/lib/config/**/*.dart,apps/reader_flutter/lib/design/**/*.dart,apps/reader_flutter/lib/l10n/**/*,apps/reader_flutter/lib/models/**/*.dart,apps/reader_flutter/lib/providers/**/*.dart,apps/reader_flutter/lib/router/**/*.dart,apps/reader_flutter/lib/storage/**/*.dart,apps/reader_flutter/lib/utils/**/*.dart,apps/reader_flutter/lib/common/**/*.dart
+alwaysApply: false
+---
+
+# Common Layer (all platforms)
+
+Shared code lives at **`lib/` root** (conceptually the “common” layer). **Never** put platform-specific widgets or layouts here.
+
+## Folders
+
+| Path | Purpose |
+| --- | --- |
+| `lib/config/` | API base URL, env, host resolution |
+| `lib/design/` | Brand tokens, theme, shared typography (`app_tokens.dart`) |
+| `lib/l10n/` | ARB files + generated localizations |
+| `lib/models/` | DTOs / domain models |
+| `lib/providers/` | Riverpod — API, session, catalog, downloads |
+| `lib/router/` | `go_router` routes and navigation helpers |
+| `lib/storage/` | Secure storage, caches, prefs |
+| `lib/utils/` | Pure helpers (no `BuildContext`, no platform UI) |
+| `lib/common/platform/` | Shell guards: `useMobileShell`, `useWebShell`, `useDesktopShell` |
+| `lib/screens/` | **Route adapters only** — wire providers, branch to platform UI |
+
+## Rules
+
+- One implementation per feature for data, auth, sync, and business rules.
+- Import **down** into platform folders; platform folders must **not** export upward into common.
+- Common may import Flutter core only — not `lib/mobile/`, `lib/web/`, or `lib/desktop/`.
+- All user-visible strings in `lib/l10n/` — no hardcoded copy in common or platform code.
+- Shared brand: `AppColors`, `AppSpace`, `AppRadius`, `AppTheme`. Platform folders may add **extensions** (`WebTokens`, `MobileTokens`, `DesktopTokens`) that reference shared tokens.
+
+## Route adapter pattern (`lib/screens/`)
+
+Screen files orchestrate; they do **not** own platform layout trees:
+
+```dart
+// lib/screens/home_screen.dart
+if (useWebShell(context)) {
+  return const WebPageScaffold(body: HomeScreenBody());
+}
+if (useDesktopShell(context)) {
+  return const DesktopPageScaffold(body: HomeScreenBody());
+}
+return const MobileHomeScreen(); // lib/mobile/screens/
+```
