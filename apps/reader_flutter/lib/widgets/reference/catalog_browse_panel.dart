@@ -86,14 +86,19 @@ class _CatalogBrowsePanelState extends ConsumerState<CatalogBrowsePanel> {
           initialQuery: _query,
           onSearchChanged: (q) => setState(() => _query = q),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         LanguageFilterChips(
           options: languageOptions,
           selectedKey: _selectedLanguage,
           onSelected: (lang) => setState(() => _selectedLanguage = lang),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+          padding: const EdgeInsets.fromLTRB(
+            AppLayout.pageHorizontal,
+            14,
+            AppLayout.pageHorizontal,
+            0,
+          ),
           child: Row(
             children: [
               Expanded(
@@ -156,7 +161,12 @@ class _CatalogBrowsePanelState extends ConsumerState<CatalogBrowsePanel> {
 
     final listView = ListView.builder(
       key: const ValueKey('list'),
-      padding: EdgeInsets.fromLTRB(16, 8, 16, widget.bottomPadding),
+      padding: EdgeInsets.fromLTRB(
+        AppLayout.pageHorizontal,
+        12,
+        AppLayout.pageHorizontal,
+        widget.bottomPadding,
+      ),
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
@@ -169,15 +179,20 @@ class _CatalogBrowsePanelState extends ConsumerState<CatalogBrowsePanel> {
 
     final gridView = GridView.builder(
       key: const ValueKey('grid'),
-      padding: EdgeInsets.fromLTRB(16, 8, 16, widget.bottomPadding),
+      padding: EdgeInsets.fromLTRB(
+        AppLayout.pageHorizontal,
+        12,
+        AppLayout.pageHorizontal,
+        widget.bottomPadding,
+      ),
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 8,
-        childAspectRatio: 0.76,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 18,
+        childAspectRatio: 0.84,
       ),
       itemCount: sorted.length,
       itemBuilder: (context, index) => CatalogBookGridTile(

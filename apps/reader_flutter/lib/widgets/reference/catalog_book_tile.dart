@@ -46,7 +46,7 @@ class CatalogBookGridTile extends ConsumerWidget {
                 children: [
                   const CatalogCrossWatermark(),
                   Padding(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -103,18 +103,18 @@ class CatalogBookGridTile extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 10),
           Text(
             primaryOnCard,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 1),
+          const SizedBox(height: 3),
           if (meta?.chapterCount != null)
             Text(
               l10n.catalogChapterCount(meta!.chapterCount!),
@@ -156,8 +156,8 @@ class CatalogBookListTile extends ConsumerWidget {
     return GestureDetector(
       onTap: () => context.push('/book/${book.id}'),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: AppDecorations.listRow(),
         child: Row(
           children: [

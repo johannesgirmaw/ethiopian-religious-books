@@ -26,7 +26,12 @@ class AppGreetingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+      padding: const EdgeInsets.fromLTRB(
+        AppLayout.pageHorizontal,
+        14,
+        AppLayout.pageHorizontal,
+        10,
+      ),
       child: Container(
         width: double.infinity,
         decoration: AppDecorations.greetingCard(),
@@ -52,32 +57,32 @@ class AppGreetingCard extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     greetingLine,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.88),
                       fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                      letterSpacing: 0.3,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.4,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 6),
                   Text(
                     title,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 26,
+                      fontSize: 23,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3,
-                      height: 1.1,
+                      letterSpacing: -0.2,
+                      height: 1.15,
                     ),
                   ),
                   if (subtitle != null && subtitle!.isNotEmpty) ...[
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Text(
                       subtitle!,
                       maxLines: 2,

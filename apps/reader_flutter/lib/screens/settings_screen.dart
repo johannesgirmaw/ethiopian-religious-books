@@ -28,16 +28,16 @@ class SettingsScreen extends ConsumerWidget {
     return ShellPageScaffold(
       title: l10n.settingsTitle,
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        padding: AppLayout.page,
         children: [
           AppGreetingCard(
             greetingLine: greetingForL10n(l10n),
             title: l10n.settingsTitle,
             subtitle: l10n.homeQuickSettingsSubtitle,
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: AppLayout.sectionGap),
           AppSectionAccent(label: l10n.dashboard.toUpperCase()),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppLayout.blockGap),
           downloadJobs.when(
             data: (jobs) {
               final pending =
@@ -50,7 +50,7 @@ class SettingsScreen extends ConsumerWidget {
                     value: '$pending',
                     label: l10n.inProgressDownloads,
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   _SettingsMetricCard(
                     icon: Icons.error_outline_rounded,
                     value: '$failed',
@@ -71,7 +71,7 @@ class SettingsScreen extends ConsumerWidget {
                   value: '—',
                   label: l10n.inProgressDownloads,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 _SettingsMetricCard(
                   icon: Icons.error_outline_rounded,
                   value: '—',
@@ -81,7 +81,7 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppLayout.itemGap),
           _SettingsActionRow(
             icon: Icons.download_outlined,
             title: l10n.homeQuickDownloads,
@@ -107,7 +107,7 @@ class SettingsScreen extends ConsumerWidget {
                     value: '${page.items.length}',
                     label: l10n.availableBooks,
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   _SettingsMetricCard(
                     icon: Icons.language_rounded,
                     value: '$languages',
@@ -136,16 +136,16 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppLayout.sectionGap),
           AppSectionAccent(label: l10n.languagePreferenceTitle.toUpperCase()),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppLayout.itemGap),
           const LanguagePreferenceCard(),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppLayout.sectionGap),
           AppSectionAccent(label: l10n.settingsCacheSection.toUpperCase()),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppLayout.itemGap),
           if (cachedAt != null)
             Container(
-              margin: const EdgeInsets.only(bottom: 10),
+              margin: const EdgeInsets.only(bottom: AppLayout.itemGap),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: AppColors.successSurface,
@@ -253,7 +253,7 @@ class _SettingsMetricCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         decoration: AppDecorations.listRow(),
         child: Column(
           children: [

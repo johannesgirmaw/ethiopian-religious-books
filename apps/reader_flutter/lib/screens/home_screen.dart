@@ -90,7 +90,7 @@ class HomeScreen extends ConsumerWidget {
                   child: CatalogBrowsePanel(
                     books: page.items,
                     onRefresh: () => _refresh(ref),
-                    bottomPadding: resumeBookId != null ? 88 : 16,
+                    bottomPadding: resumeBookId != null ? 104 : AppLayout.pageBottom,
                   ),
                 ),
               ],
@@ -106,7 +106,12 @@ class HomeScreen extends ConsumerWidget {
               children: [
                 banner,
                 const Padding(
-                  padding: EdgeInsets.all(16),
+                  padding: EdgeInsets.fromLTRB(
+                    AppLayout.pageHorizontal,
+                    AppLayout.blockGap,
+                    AppLayout.pageHorizontal,
+                    AppLayout.blockGap,
+                  ),
                   child: SkeletonCardGroup(count: 4),
                 ),
               ],

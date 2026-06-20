@@ -232,6 +232,37 @@ class AppSpace {
   static const double xxxl = 48;
 }
 
+// ─── Page layout ─────────────────────────────────────────────────────────────
+
+class AppLayout {
+  AppLayout._();
+
+  /// Horizontal gutter for tab shell pages — wider than default Material padding.
+  static const double pageHorizontal = 22;
+
+  static const double pageTop = 12;
+  static const double pageBottom = 40;
+
+  /// Space between major sections (e.g. greeting → dashboard).
+  static const double sectionGap = 28;
+
+  /// Space between related blocks within a section.
+  static const double blockGap = 16;
+
+  /// Space between list rows or grid metadata.
+  static const double itemGap = 12;
+
+  static const EdgeInsets page = EdgeInsets.fromLTRB(
+    pageHorizontal,
+    pageTop,
+    pageHorizontal,
+    pageBottom,
+  );
+
+  static const EdgeInsets pageHorizontalOnly =
+      EdgeInsets.symmetric(horizontal: pageHorizontal);
+}
+
 // ─── Radius ──────────────────────────────────────────────────────────────────
 
 class AppRadius {

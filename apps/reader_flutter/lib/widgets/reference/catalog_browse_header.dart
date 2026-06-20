@@ -48,13 +48,18 @@ class _CatalogBrowseHeaderState extends State<CatalogBrowseHeader> {
     final l10n = AppLocalizations.of(context)!;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.fromLTRB(
+        AppLayout.pageHorizontal,
+        4,
+        AppLayout.pageHorizontal,
+        0,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Wrap(
-            spacing: 8,
-            runSpacing: 6,
+            spacing: 10,
+            runSpacing: 8,
             children: [
               _MetaChip(
                 icon: Icons.category_outlined,
@@ -66,7 +71,7 @@ class _CatalogBrowseHeaderState extends State<CatalogBrowseHeader> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           ValueListenableBuilder<TextEditingValue>(
             valueListenable: _searchCtrl,
             builder: (context, value, _) {

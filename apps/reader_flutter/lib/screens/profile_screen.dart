@@ -24,19 +24,19 @@ class ProfileScreen extends ConsumerWidget {
     return ShellPageScaffold(
       title: l10n.profileTitle,
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        padding: AppLayout.page,
         children: [
           _ProfileHero(user: user, l10n: l10n),
-          const SizedBox(height: 22),
+          const SizedBox(height: AppLayout.sectionGap),
           AppSectionAccent(label: l10n.profileAccountDetails.toUpperCase()),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppLayout.blockGap),
           if (user != null) ...[
             _ProfileFieldCard(
               icon: Icons.mail_outline_rounded,
               label: l10n.emailLabel,
               value: user.email,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppLayout.itemGap),
             _ProfileFieldCard(
               icon: Icons.person_outline_rounded,
               label: l10n.displayNameLabel,
@@ -45,7 +45,7 @@ class ProfileScreen extends ConsumerWidget {
                   : l10n.profileValueNotSet,
               muted: user.displayName?.trim().isEmpty != false,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppLayout.itemGap),
             _ProfileFieldCard(
               icon: Icons.shield_outlined,
               label: l10n.profileRoleLabel,
@@ -55,14 +55,14 @@ class ProfileScreen extends ConsumerWidget {
                   : AppColors.referencePrimary,
             ),
             if (user.preferredUiLanguage?.trim().isNotEmpty == true) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: AppLayout.itemGap),
               _ProfileFieldCard(
                 icon: Icons.language_rounded,
                 label: l10n.profilePreferredLanguageLabel,
                 value: user.preferredUiLanguage!.trim(),
               ),
             ],
-            const SizedBox(height: 8),
+            const SizedBox(height: AppLayout.itemGap),
             _ProfileFieldCard(
               icon: Icons.badge_outlined,
               label: l10n.profileUserIdLabel,
@@ -77,9 +77,9 @@ class ProfileScreen extends ConsumerWidget {
             ),
           ] else
             _SignedOutCard(l10n: l10n),
-          const SizedBox(height: 28),
+          const SizedBox(height: AppLayout.sectionGap),
           AppSectionAccent(label: l10n.aboutTitle.toUpperCase()),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppLayout.blockGap),
           _ProfileLinkRow(
             icon: Icons.info_outline_rounded,
             title: l10n.drawerAbout,
@@ -87,7 +87,7 @@ class ProfileScreen extends ConsumerWidget {
             onTap: () => context.push('/about'),
           ),
           if (user?.isSuperuser == true) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: AppLayout.itemGap),
             _ProfileLinkRow(
               icon: Icons.admin_panel_settings_outlined,
               title: l10n.adminPanel,
@@ -96,7 +96,7 @@ class ProfileScreen extends ConsumerWidget {
             ),
           ],
           if (user != null) ...[
-            const SizedBox(height: 28),
+            const SizedBox(height: AppLayout.sectionGap),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(

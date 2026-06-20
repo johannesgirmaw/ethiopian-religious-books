@@ -38,12 +38,14 @@ class ShellPageScaffold extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppLayout.pageHorizontal),
                   Expanded(
                     child: Text(
                       title,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
+                        fontSize: 19,
+                        letterSpacing: -0.2,
                         color: AppColors.textPrimary,
                       ),
                       maxLines: 1,

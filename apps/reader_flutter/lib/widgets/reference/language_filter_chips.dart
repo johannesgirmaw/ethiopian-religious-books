@@ -31,20 +31,20 @@ class LanguageFilterChips extends StatelessWidget {
     final all = allLabel ?? l10n.filterAll;
 
     return SizedBox(
-      height: 40,
+      height: 44,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: AppLayout.pageHorizontalOnly,
         children: [
           _LanguagePill(
             label: all,
             selected: selectedKey == null,
             onTap: () => onSelected(null),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           ...options.map(
             (option) => Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.only(right: 10),
               child: _LanguagePill(
                 label: option.label,
                 selected: selectedKey == option.key,
@@ -75,7 +75,7 @@ class _LanguagePill extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: AppMotion.short,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
         decoration: BoxDecoration(
           color: selected ? AppColors.referencePrimary : AppColors.surfaceCard,
           borderRadius: BorderRadius.circular(AppRadius.pill),
