@@ -2587,6 +2587,282 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Grid'**
   String get libraryViewGrid;
+
+  /// No description provided for @homePopularBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Popular'**
+  String get homePopularBadge;
+
+  /// No description provided for @homeReadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Read more'**
+  String get homeReadMore;
+
+  /// No description provided for @homeAllGenre.
+  ///
+  /// In en, this message translates to:
+  /// **'All Genre'**
+  String get homeAllGenre;
+
+  /// No description provided for @homeSectionExplore.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore books'**
+  String get homeSectionExplore;
+
+  /// No description provided for @homeSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search books…'**
+  String get homeSearchHint;
+
+  /// No description provided for @catalogAllResults.
+  ///
+  /// In en, this message translates to:
+  /// **'All Results'**
+  String get catalogAllResults;
+
+  /// No description provided for @bookCategoryPsalms.
+  ///
+  /// In en, this message translates to:
+  /// **'Psalms & Mezmur'**
+  String get bookCategoryPsalms;
+
+  /// No description provided for @bookCategoryMarian.
+  ///
+  /// In en, this message translates to:
+  /// **'Marian'**
+  String get bookCategoryMarian;
+
+  /// No description provided for @bookCategoryLiturgy.
+  ///
+  /// In en, this message translates to:
+  /// **'Liturgy'**
+  String get bookCategoryLiturgy;
+
+  /// No description provided for @bookCategorySynaxarium.
+  ///
+  /// In en, this message translates to:
+  /// **'Synaxarium'**
+  String get bookCategorySynaxarium;
+
+  /// No description provided for @bookCategorySaints.
+  ///
+  /// In en, this message translates to:
+  /// **'Saints & Gedl'**
+  String get bookCategorySaints;
+
+  /// No description provided for @bookCategoryOther.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get bookCategoryOther;
+
+  /// No description provided for @favouritesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Favourites'**
+  String get favouritesTitle;
+
+  /// No description provided for @favouritesEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No favourites yet'**
+  String get favouritesEmptyTitle;
+
+  /// No description provided for @favouritesEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the heart on any book to save it here.'**
+  String get favouritesEmptyMessage;
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationsTitle;
+
+  /// No description provided for @notificationsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all caught up'**
+  String get notificationsEmptyTitle;
+
+  /// No description provided for @notificationsEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications about new books and reminders show up here.'**
+  String get notificationsEmptyMessage;
+
+  /// No description provided for @notificationsMarkAllRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark all read'**
+  String get notificationsMarkAllRead;
+
+  /// No description provided for @reviewsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviews'**
+  String get reviewsSection;
+
+  /// No description provided for @reviewsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No reviews yet — be the first to review this book.'**
+  String get reviewsEmpty;
+
+  /// No description provided for @writeReviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a review'**
+  String get writeReviewTitle;
+
+  /// No description provided for @yourRatingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your rating'**
+  String get yourRatingLabel;
+
+  /// No description provided for @reviewBodyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your thoughts (optional)'**
+  String get reviewBodyHint;
+
+  /// No description provided for @submitReviewAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit review'**
+  String get submitReviewAction;
+
+  /// No description provided for @ratingsCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} ratings'**
+  String ratingsCountLabel(int count);
+
+  /// No description provided for @homeRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get homeRecommended;
+
+  /// No description provided for @sortLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort'**
+  String get sortLabel;
+
+  /// No description provided for @sortNewest.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest'**
+  String get sortNewest;
+
+  /// No description provided for @sortOldest.
+  ///
+  /// In en, this message translates to:
+  /// **'Oldest'**
+  String get sortOldest;
+
+  /// No description provided for @sortPopular.
+  ///
+  /// In en, this message translates to:
+  /// **'Popular'**
+  String get sortPopular;
+
+  /// No description provided for @sortTopRated.
+  ///
+  /// In en, this message translates to:
+  /// **'Top rated'**
+  String get sortTopRated;
+
+  /// No description provided for @sortTitleAz.
+  ///
+  /// In en, this message translates to:
+  /// **'Title (A–Z)'**
+  String get sortTitleAz;
+
+  /// No description provided for @premiumLockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium book'**
+  String get premiumLockedTitle;
+
+  /// No description provided for @premiumLockedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This title is part of premium. Premium access isn\'t available yet — check back soon.'**
+  String get premiumLockedMessage;
+
+  /// No description provided for @premiumGotIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get premiumGotIt;
+
+  /// No description provided for @adminSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get adminSummaryLabel;
+
+  /// No description provided for @adminGenreLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Genre / category'**
+  String get adminGenreLabel;
+
+  /// No description provided for @adminGenreNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get adminGenreNone;
+
+  /// No description provided for @adminPublishedYearLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Publication year'**
+  String get adminPublishedYearLabel;
+
+  /// No description provided for @adminIsPremiumLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium book'**
+  String get adminIsPremiumLabel;
+
+  /// No description provided for @adminIsPremiumSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Requires premium access to read'**
+  String get adminIsPremiumSubtitle;
+
+  /// No description provided for @tagsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get tagsLabel;
+
+  /// No description provided for @adminChipAddHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add and press Enter'**
+  String get adminChipAddHint;
+
+  /// No description provided for @adminIsFeaturedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Featured (Popular)'**
+  String get adminIsFeaturedLabel;
+
+  /// No description provided for @adminIsFeaturedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show in the Popular banner on the home screen'**
+  String get adminIsFeaturedSubtitle;
 }
 
 class _AppLocalizationsDelegate

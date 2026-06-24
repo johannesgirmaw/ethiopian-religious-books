@@ -41,6 +41,15 @@ class BookSummary {
     this.primaryLanguage,
     this.catalogVisibility,
     this.publishedRevision,
+    this.coverUrl,
+    this.genre,
+    this.publishedYear,
+    this.ratingAverage = 0,
+    this.ratingCount = 0,
+    this.readersCount = 0,
+    this.isPremium = false,
+    this.isFeatured = false,
+    this.createdAt,
   });
 
   final String id;
@@ -52,6 +61,21 @@ class BookSummary {
   final String? primaryLanguage;
   final String? catalogVisibility;
   final PublishedRevision? publishedRevision;
+
+  /// Presigned cover image URL (null when no cover or storage unconfigured).
+  final String? coverUrl;
+
+  /// Server-assigned genre slug (mirrors [BookCategory] keys).
+  final String? genre;
+  final int? publishedYear;
+  final double ratingAverage;
+  final int ratingCount;
+  final int readersCount;
+  final bool isPremium;
+  final bool isFeatured;
+  final DateTime? createdAt;
+
+  bool get hasRating => ratingCount > 0;
 
   factory BookSummary.fromJson(Map<String, dynamic> j) {
     final rawSummary = j['summary'] as String?;
@@ -69,6 +93,17 @@ class BookSummary {
               j['published_revision'] as Map<String, dynamic>,
             )
           : null,
+      coverUrl: (j['cover_url'] as String?)?.trim().isEmpty == true
+          ? null
+          : j['cover_url'] as String?,
+      genre: j['genre'] as String?,
+      publishedYear: (j['published_year'] as num?)?.toInt(),
+      ratingAverage: (j['rating_average'] as num?)?.toDouble() ?? 0,
+      ratingCount: (j['rating_count'] as num?)?.toInt() ?? 0,
+      readersCount: (j['readers_count'] as num?)?.toInt() ?? 0,
+      isPremium: j['is_premium'] as bool? ?? false,
+      isFeatured: j['is_featured'] as bool? ?? false,
+      createdAt: DateTime.tryParse(j['created_at'] as String? ?? ''),
     );
   }
 }

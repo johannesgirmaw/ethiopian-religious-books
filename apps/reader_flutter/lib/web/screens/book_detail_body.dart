@@ -14,6 +14,8 @@ import '../../router/app_navigation.dart';
 import '../../utils/catalog_language_label.dart';
 import '../../utils/offline_book_download.dart';
 import '../../widgets/app_state_view.dart';
+import '../../widgets/book_reviews_section.dart';
+import '../../widgets/premium_gate.dart';
 import '../../widgets/primitives/shell_primitives.dart';
 import '../../widgets/reference/book_detail_cover.dart';
 import '../../widgets/skeleton_loader.dart';
@@ -111,8 +113,12 @@ class BookDetailBody extends ConsumerWidget {
                     l10n: l10n,
                     onShare: () => onShare(book),
                     onDownload: () => _downloadSample(context, ref),
-                    onRead: () =>
-                        context.push('/reader/$bookId?pickChapter=1'),
+                    onRead: () async {
+                      if (await ensureBookUnlocked(context, book) &&
+                          context.mounted) {
+                        context.push('/reader/$bookId?pickChapter=1');
+                      }
+                    },
                   ),
                 ),
               ],
@@ -160,6 +166,8 @@ class BookDetailBody extends ConsumerWidget {
               const SizedBox(height: 16),
               _DownloadStatusCard(job: currentJob),
             ],
+            const SizedBox(height: 28),
+            BookReviewsSection(bookId: bookId),
           ],
         );
       },

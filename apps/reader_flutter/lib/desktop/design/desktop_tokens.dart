@@ -22,12 +22,12 @@ class DesktopTokens {
 
   static const Color canvasBg = AppColors.referencePageBg;
   static const Color surfaceBg = Color(0xFFFFFFFF);
-  static const Color sidebarBg = Color(0xFFF6F4F0);
-  static const Color borderColor = Color(0xFFE0DAD0);
-  static const Color sidebarSelectedBg = Color(0xFFEDE8F8);
-  static const Color hoverBg = Color(0xFFF0EBE3);
-  static const Color mutedLabel = Color(0xFF7A7268);
-  static const Color accentGold = Color(0xFFC9A227);
+  static const Color sidebarBg = Color(0xFFFFFFFF);
+  static const Color borderColor = Color(0xFFE3E8EC);
+  static const Color sidebarSelectedBg = Color(0xFFEAF1F6);
+  static const Color hoverBg = Color(0xFFEAF1F6);
+  static const Color mutedLabel = Color(0xFF8A9199);
+  static const Color accentGold = Color(0xFFF5A623);
 
   static DesktopLayoutTier tierForWidth(double width) {
     if (width >= expandedBreakpoint) return DesktopLayoutTier.expanded;

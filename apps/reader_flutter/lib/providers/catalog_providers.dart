@@ -45,6 +45,61 @@ final catalogBookMetaProvider =
   );
 });
 
+/// A dynamic book category from the `/genres` lookup table.
+class GenreOption {
+  const GenreOption({
+    required this.slug,
+    required this.label,
+    this.labelAm,
+    this.icon,
+  });
+
+  final String slug;
+  final String label;
+  final String? labelAm;
+  final String? icon;
+
+  factory GenreOption.fromJson(Map<String, dynamic> j) => GenreOption(
+        slug: j['slug'] as String? ?? '',
+        label: j['label'] as String? ?? '',
+        labelAm: j['label_am'] as String?,
+        icon: j['icon'] as String?,
+      );
+}
+
+/// Available book genres/categories (managed server-side).
+final genresProvider = FutureProvider.autoDispose<List<GenreOption>>((ref) async {
+  final dio = ref.watch(apiDioProvider);
+  final res = await dio.get<Map<String, dynamic>>('genres');
+  final items = res.data?['items'] as List<dynamic>? ?? const [];
+  return items
+      .map((e) => GenreOption.fromJson(e as Map<String, dynamic>))
+      .toList();
+});
+
+/// A reusable tag from the `/tags` lookup.
+class TagOption {
+  const TagOption({required this.slug, required this.label});
+
+  final String slug;
+  final String label;
+
+  factory TagOption.fromJson(Map<String, dynamic> j) => TagOption(
+        slug: j['slug'] as String? ?? '',
+        label: j['label'] as String? ?? '',
+      );
+}
+
+/// Existing tags, for the admin tag picker.
+final tagsProvider = FutureProvider.autoDispose<List<TagOption>>((ref) async {
+  final dio = ref.watch(apiDioProvider);
+  final res = await dio.get<Map<String, dynamic>>('tags');
+  final items = res.data?['items'] as List<dynamic>? ?? const [];
+  return items
+      .map((e) => TagOption.fromJson(e as Map<String, dynamic>))
+      .toList();
+});
+
 final catalogProvider = FutureProvider.autoDispose<CatalogPage>((ref) async {
   final dio = ref.watch(apiDioProvider);
   final cached = await CatalogCacheStorage.readCatalog();
@@ -55,6 +110,7 @@ final catalogProvider = FutureProvider.autoDispose<CatalogPage>((ref) async {
       options: Options(
         headers: {
           if (etag != null && etag.isNotEmpty) 'If-None-Match': etag,
+          ...devObjectStorageOriginHeaders(),
         },
         validateStatus: (status) => status != null && status < 500,
       ),
@@ -74,7 +130,10 @@ final catalogProvider = FutureProvider.autoDispose<CatalogPage>((ref) async {
     rethrow;
   }
   if (cached != null) return cached;
-  final fallback = await dio.get<Map<String, dynamic>>('books');
+  final fallback = await dio.get<Map<String, dynamic>>(
+    'books',
+    options: Options(headers: devObjectStorageOriginHeaders()),
+  );
   await CatalogCacheStorage.writeCatalog(
     raw: fallback.data!,
     etag: fallback.headers.value('etag'),
@@ -244,7 +303,10 @@ Future<BookSummary> resolveBookSummary(
   }
 
   final dio = ref.read(apiDioProvider);
-  final res = await dio.get<Map<String, dynamic>>('books/$bookId');
+  final res = await dio.get<Map<String, dynamic>>(
+    'books/$bookId',
+    options: Options(headers: devObjectStorageOriginHeaders()),
+  );
   final book = BookSummary.fromJson(res.data!);
   await BookContentCacheStorage.writeBookMeta(
     bookId,

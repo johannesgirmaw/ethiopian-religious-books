@@ -5,43 +5,43 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // Brand — Ethiopian sacred palette
-  static const Color referencePrimary     = Color(0xFF5B3B8C); // ecclesiastical violet
-  static const Color referenceAccent      = Color(0xFFE8B84B); // enriched gold
-  static const Color referenceSurfaceAccent = Color(0xFFFDF3D0);
-  static const Color referenceSecondary   = Color(0xFFC1272D); // Axumite crimson
-  static const Color referencePageBg      = Color(0xFFFAF7F2); // warm parchment
+  // Brand — OUTPOST cyan palette
+  static const Color referencePrimary     = Color(0xFF29B6E0); // vivid sky cyan
+  static const Color referenceAccent      = Color(0xFFF5A623); // notification orange
+  static const Color referenceSurfaceAccent = Color(0xFFEAF1F6); // selected-row tint
+  static const Color referenceSecondary   = Color(0xFF1E9BC2); // deep cyan
+  static const Color referencePageBg      = Color(0xFFF4F8FB); // cool app background
 
   // Semantic aliases
   static const Color primary      = referencePrimary;
-  static const Color primaryDeep  = Color(0xFF2D1B69); // very deep violet
-  static const Color primaryMid   = Color(0xFF7C59C0); // mid violet
+  static const Color primaryDeep  = Color(0xFF14708F); // deep teal-blue
+  static const Color primaryMid   = Color(0xFF5CCDEC); // light cyan
   static const Color accent       = referenceAccent;
-  static const Color crimson      = referenceSecondary;
+  static const Color crimson      = Color(0xFFE53935); // logout / danger red
 
   // Surfaces
-  static const Color background    = Color(0xFFFFFDF9); // warm off-white
-  static const Color surfaceSoft   = referencePageBg;
+  static const Color background    = Color(0xFFF4F8FB); // cool off-white
+  static const Color surfaceSoft   = referenceSurfaceAccent;
   static const Color surfaceCard   = Colors.white;
-  static const Color surfaceStrong = Color(0xFFF0EBE3);
+  static const Color surfaceStrong = Color(0xFFE3E8EC);
 
   // Borders
-  static const Color border       = Color(0xFFE5DDD0);
-  static const Color borderSubtle = Color(0xFFF0EBE3);
+  static const Color border       = Color(0xFFE3E8EC);
+  static const Color borderSubtle = Color(0xFFEEF2F5);
 
   // Text
-  static const Color textPrimary   = Color(0xFF1A1008);
-  static const Color textSecondary = Color(0xFF5C4E3A);
-  static const Color textTertiary  = Color(0xFF9C8E7C);
+  static const Color textPrimary   = Color(0xFF2B2F33);
+  static const Color textSecondary = Color(0xFF5A6169);
+  static const Color textTertiary  = Color(0xFF8A9199);
   static const Color textInverse   = Colors.white;
 
   // Semantic
   static const Color errorSurface  = Color(0xFFFEF2F2);
   static const Color errorBorder   = Color(0xFFF87171);
-  static const Color errorText     = Color(0xFFB91C1C);
+  static const Color errorText     = Color(0xFFE53935);
   static const Color successSurface = Color(0xFFF0FDF4);
   static const Color successBorder  = Color(0xFF6EE7B7);
-  static const Color successText   = Color(0xFF0B7A4A);
+  static const Color successText   = Color(0xFF27C24C);
 
   /// Hairline on cards (v2 kit `T.line`).
   static Color get line => textPrimary.withValues(alpha: 0.08);
@@ -55,11 +55,11 @@ class AppColors {
 class AppGradients {
   AppGradients._();
 
-  // Primary hero: deep violet → violet → warm burgundy
+  // Primary hero: deep teal → cyan → light cyan
   static const LinearGradient hero = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF2D1B69), Color(0xFF5B3B8C), Color(0xFF7B3A52)],
+    colors: [Color(0xFF14708F), Color(0xFF29B6E0), Color(0xFF5CCDEC)],
     stops: [0.0, 0.58, 1.0],
   );
 
@@ -67,35 +67,35 @@ class AppGradients {
   static const LinearGradient heroVertical = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFF2D1B69), Color(0xFF5B3B8C)],
+    colors: [Color(0xFF14708F), Color(0xFF29B6E0)],
   );
 
   // Subtle card gradient
   static const LinearGradient card = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Colors.white, Color(0xFFFAF7F2)],
+    colors: [Colors.white, Color(0xFFF4F8FB)],
   );
 
-  // Gold accent
+  // Amber accent
   static const LinearGradient gold = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFE8B84B), Color(0xFFD4A017)],
+    colors: [Color(0xFFF5A623), Color(0xFFE08E00)],
   );
 
-  // Crimson accent
+  // Danger accent
   static const LinearGradient crimson = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFC1272D), Color(0xFF8B1A1A)],
+    colors: [Color(0xFFE53935), Color(0xFFB71C1C)],
   );
 
-  // Splash radial — concentric rings on near-black
+  // Splash radial — concentric rings on deep teal
   static const RadialGradient splashRadial = RadialGradient(
     center: Alignment.center,
     radius: 1.4,
-    colors: [Color(0xFF3B2460), Color(0xFF1A0E2E), Color(0xFF070412)],
+    colors: [Color(0xFF14708F), Color(0xFF0A3A4A), Color(0xFF041820)],
     stops: [0.0, 0.55, 1.0],
   );
 
@@ -103,7 +103,7 @@ class AppGradients {
   static const LinearGradient greetingMesh = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF2D1B69), Color(0xFF5B3B8C), Color(0xFF7C59C0)],
+    colors: [Color(0xFF14708F), Color(0xFF29B6E0), Color(0xFF5CCDEC)],
     stops: [0.0, 0.55, 1.0],
   );
 
@@ -125,7 +125,7 @@ class AppShadows {
 
   static List<BoxShadow> get card => [
         BoxShadow(
-          color: const Color(0xFF5B3B8C).withValues(alpha: 0.08),
+          color: const Color(0xFF29B6E0).withValues(alpha: 0.08),
           blurRadius: 20,
           spreadRadius: 0,
           offset: const Offset(0, 4),
@@ -139,7 +139,7 @@ class AppShadows {
 
   static List<BoxShadow> get elevated => [
         BoxShadow(
-          color: const Color(0xFF5B3B8C).withValues(alpha: 0.14),
+          color: const Color(0xFF29B6E0).withValues(alpha: 0.14),
           blurRadius: 32,
           spreadRadius: 0,
           offset: const Offset(0, 8),
@@ -153,13 +153,13 @@ class AppShadows {
 
   static List<BoxShadow> get goldGlow => [
         BoxShadow(
-          color: const Color(0xFFE8B84B).withValues(alpha: 0.55),
+          color: const Color(0xFFF5A623).withValues(alpha: 0.55),
           blurRadius: 28,
           spreadRadius: 0,
           offset: const Offset(0, 4),
         ),
         BoxShadow(
-          color: const Color(0xFFE8B84B).withValues(alpha: 0.20),
+          color: const Color(0xFFF5A623).withValues(alpha: 0.20),
           blurRadius: 60,
           spreadRadius: 8,
         ),
@@ -167,7 +167,7 @@ class AppShadows {
 
   static List<BoxShadow> get floatingBtn => [
         BoxShadow(
-          color: const Color(0xFF5B3B8C).withValues(alpha: 0.45),
+          color: const Color(0xFF29B6E0).withValues(alpha: 0.45),
           blurRadius: 20,
           offset: const Offset(0, 8),
         ),

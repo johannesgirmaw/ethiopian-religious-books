@@ -17,6 +17,7 @@ from apps.catalog.models import (
     BookPage,
     BookRevision,
     BookTag,
+    Genre,
     Tag,
 )
 from apps.catalog.publishing import publish_book, unpublish_book, validate_draft_warnings
@@ -237,6 +238,15 @@ class BookRevisionAdmin(ModelAdmin):
         ),
         ("System", {"fields": ("id", "created_at"), "classes": ("collapse",)}),
     )
+
+
+@admin.register(Genre)
+class GenreAdmin(ModelAdmin):
+    list_display = ("label", "slug", "ordinal", "is_active")
+    list_editable = ("ordinal", "is_active")
+    search_fields = ("label", "slug")
+    ordering = ("ordinal", "label")
+    prepopulated_fields = {"slug": ("label",)}
 
 
 @admin.register(Tag)

@@ -1359,4 +1359,146 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get libraryViewGrid => 'ፍርግርግ';
+
+  @override
+  String get homePopularBadge => 'ተወዳጅ';
+
+  @override
+  String get homeReadMore => 'ተጨማሪ አንብብ';
+
+  @override
+  String get homeAllGenre => 'ሁሉም ዘርፍ';
+
+  @override
+  String get homeSectionExplore => 'መጻሕፍትን ያስሱ';
+
+  @override
+  String get homeSearchHint => 'መጻሕፍት ይፈልጉ…';
+
+  @override
+  String get catalogAllResults => 'ሁሉም ውጤቶች';
+
+  @override
+  String get bookCategoryPsalms => 'መዝሙር እና ዳዊት';
+
+  @override
+  String get bookCategoryMarian => 'ማርያማዊ';
+
+  @override
+  String get bookCategoryLiturgy => 'ቅዳሴ';
+
+  @override
+  String get bookCategorySynaxarium => 'ስንክሳር';
+
+  @override
+  String get bookCategorySaints => 'ገድላት';
+
+  @override
+  String get bookCategoryOther => 'አጠቃላይ';
+
+  @override
+  String get favouritesTitle => 'ተወዳጆች';
+
+  @override
+  String get favouritesEmptyTitle => 'እስካሁን ተወዳጆች የሉም';
+
+  @override
+  String get favouritesEmptyMessage => 'መጽሐፍን ለማስቀመጥ የልብ ምልክቱን ይንኩ።';
+
+  @override
+  String get notificationsTitle => 'ማሳወቂያዎች';
+
+  @override
+  String get notificationsEmptyTitle => 'ሁሉንም አይተዋል';
+
+  @override
+  String get notificationsEmptyMessage =>
+      'ስለ አዲስ መጻሕፍትና አስታዋሾች ማሳወቂያዎች እዚህ ይታያሉ።';
+
+  @override
+  String get notificationsMarkAllRead => 'ሁሉንም እንዳነበበ ምልክት አድርግ';
+
+  @override
+  String get reviewsSection => 'ግምገማዎች';
+
+  @override
+  String get reviewsEmpty => 'እስካሁን ግምገማ የለም — የመጀመሪያው ይሁኑ።';
+
+  @override
+  String get writeReviewTitle => 'ግምገማ ይጻፉ';
+
+  @override
+  String get yourRatingLabel => 'የእርስዎ ደረጃ';
+
+  @override
+  String get reviewBodyHint => 'ሐሳብዎን ያካፍሉ (አማራጭ)';
+
+  @override
+  String get submitReviewAction => 'ግምገማ አስገባ';
+
+  @override
+  String ratingsCountLabel(int count) {
+    return '$count ደረጃዎች';
+  }
+
+  @override
+  String get homeRecommended => 'የሚመከሩ';
+
+  @override
+  String get sortLabel => 'ደርድር';
+
+  @override
+  String get sortNewest => 'አዲስ';
+
+  @override
+  String get sortOldest => 'የቆየ';
+
+  @override
+  String get sortPopular => 'ተወዳጅ';
+
+  @override
+  String get sortTopRated => 'ከፍተኛ ደረጃ';
+
+  @override
+  String get sortTitleAz => 'ርዕስ (ሀ–ፐ)';
+
+  @override
+  String get premiumLockedTitle => 'ፕሪሚየም መጽሐፍ';
+
+  @override
+  String get premiumLockedMessage =>
+      'ይህ መጽሐፍ የፕሪሚየም አካል ነው። የፕሪሚየም መዳረሻ ገና አልተዘጋጀም — በቅርቡ ይመለሱ።';
+
+  @override
+  String get premiumGotIt => 'ገባኝ';
+
+  @override
+  String get adminSummaryLabel => 'ማጠቃለያ';
+
+  @override
+  String get adminGenreLabel => 'ዘርፍ / ምድብ';
+
+  @override
+  String get adminGenreNone => 'የለም';
+
+  @override
+  String get adminPublishedYearLabel => 'የታተመበት ዓመት';
+
+  @override
+  String get adminIsPremiumLabel => 'ፕሪሚየም መጽሐፍ';
+
+  @override
+  String get adminIsPremiumSubtitle => 'ለማንበብ የፕሪሚየም መዳረሻ ይፈልጋል';
+
+  @override
+  String get tagsLabel => 'መለያዎች';
+
+  @override
+  String get adminChipAddHint => 'ጨምረው Enter ይጫኑ';
+
+  @override
+  String get adminIsFeaturedLabel => 'ተለይቶ የቀረበ (ተወዳጅ)';
+
+  @override
+  String get adminIsFeaturedSubtitle => 'በመነሻ ገጹ የተወዳጆች ባነር ላይ አሳይ';
 }

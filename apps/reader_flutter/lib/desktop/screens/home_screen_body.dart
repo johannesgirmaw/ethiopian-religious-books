@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/catalog_providers.dart';
 import '../../providers/continue_reading_provider.dart';
+import '../../providers/engagement_providers.dart';
 import '../../providers/session_notifier.dart';
 import '../../widgets/app_state_view.dart';
 import '../../widgets/primitives/shared_widgets.dart';
@@ -12,6 +13,7 @@ import '../design/desktop_tokens.dart';
 import '../layout/desktop_layout_scope.dart';
 import '../widgets/catalog/catalog_browse_panel.dart';
 import '../widgets/catalog/desktop_continue_reading_strip.dart';
+import '../widgets/catalog/desktop_featured_carousel.dart';
 import '../widgets/common/desktop_page_header.dart';
 
 class DesktopHomeScreenBody extends ConsumerStatefulWidget {
@@ -106,6 +108,13 @@ class _DesktopHomeScreenBodyState extends ConsumerState<DesktopHomeScreenBody> {
                   ),
                 ],
               ),
+              if (_searchQuery.trim().isEmpty) ...[
+                const SizedBox(height: 16),
+                DesktopFeaturedCarousel(
+                  books: ref.watch(featuredBooksProvider).valueOrNull ??
+                      [page.items.first],
+                ),
+              ],
               if (resumeBookId != null) ...[
                 const SizedBox(height: 12),
                 DesktopContinueReadingStrip(bookId: resumeBookId),

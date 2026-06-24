@@ -6,6 +6,7 @@ import '../design/web_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/catalog_providers.dart';
 import '../../providers/continue_reading_provider.dart';
+import '../../providers/engagement_providers.dart';
 import '../../providers/session_notifier.dart';
 import '../../widgets/app_state_view.dart';
 import '../../widgets/primitives/shared_widgets.dart';
@@ -13,6 +14,7 @@ import '../../widgets/skeleton_loader.dart';
 import '../layout/app_layout_scope.dart';
 import '../widgets/catalog/catalog_browse_panel.dart';
 import '../widgets/catalog/web_continue_reading_strip.dart';
+import '../widgets/catalog/web_featured_carousel.dart';
 import '../widgets/common/web_page_header.dart';
 
 class HomeScreenBody extends ConsumerStatefulWidget {
@@ -118,6 +120,13 @@ class _HomeScreenBodyState extends ConsumerState<HomeScreenBody> {
                     '${greetingForL10n(l10n)}, ${_welcomeName(l10n, session)} · ${l10n.booksAvailable(page.items.length)}',
                 bottom: searchField(),
               ),
+              if (_searchQuery.trim().isEmpty) ...[
+                const SizedBox(height: 24),
+                WebFeaturedCarousel(
+                  books: ref.watch(featuredBooksProvider).valueOrNull ??
+                      [page.items.first],
+                ),
+              ],
               if (resumeBookId != null) ...[
                 const SizedBox(height: 20),
                 WebContinueReadingStrip(bookId: resumeBookId),

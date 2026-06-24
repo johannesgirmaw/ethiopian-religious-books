@@ -23,6 +23,8 @@ import '../web/screens/book_detail_body.dart';
 import '../web/widgets/shell/web_overlay_scaffold.dart';
 import '../web/widgets/shell/web_sidebar.dart';
 import '../widgets/app_state_view.dart';
+import '../widgets/book_reviews_section.dart';
+import '../widgets/premium_gate.dart';
 import '../widgets/primitives/shell_primitives.dart';
 import '../widgets/reference/book_detail_cover.dart';
 import '../widgets/skeleton_loader.dart';
@@ -218,25 +220,31 @@ class BookDetailScreen extends ConsumerWidget {
                                 if (book.authorCompiler != null &&
                                     book.authorCompiler!.isNotEmpty) ...[
                                   const SizedBox(height: 10),
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.person_outline_rounded,
-                                        size: 15,
-                                        color: AppColors.textTertiary,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(
-                                          book.authorCompiler!,
-                                          style: const TextStyle(
-                                            color: AppColors.textTertiary,
-                                            fontWeight: FontWeight.w500,
-                                            fontSize: 13,
+                                  GestureDetector(
+                                    onTap: () => context.push(
+                                      '/author/${Uri.encodeComponent(book.authorCompiler!.trim())}',
+                                    ),
+                                    behavior: HitTestBehavior.opaque,
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.person_outline_rounded,
+                                          size: 15,
+                                          color: AppColors.primary,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            book.authorCompiler!,
+                                            style: const TextStyle(
+                                              color: AppColors.primary,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 13,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ],
@@ -265,7 +273,9 @@ class BookDetailScreen extends ConsumerWidget {
                           const SizedBox(width: 10),
                           _BookDetailStatCard(
                             icon: Icons.groups_outlined,
-                            value: '—',
+                            value: _statValue(
+                              book.readersCount > 0 ? book.readersCount : null,
+                            ),
                             label: l10n.bookStatReaders,
                           ),
                         ],
@@ -293,6 +303,8 @@ class BookDetailScreen extends ConsumerWidget {
                         const SizedBox(height: 16),
                         _DownloadStatusCard(job: currentJob),
                       ],
+                      const SizedBox(height: 22),
+                      BookReviewsSection(bookId: bookId),
                       const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
@@ -329,8 +341,12 @@ class BookDetailScreen extends ConsumerWidget {
                   child: SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: () =>
-                          context.push('/reader/$bookId?pickChapter=1'),
+                      onPressed: () async {
+                        if (await ensureBookUnlocked(context, book) &&
+                            context.mounted) {
+                          context.push('/reader/$bookId?pickChapter=1');
+                        }
+                      },
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.referencePrimary,
                         foregroundColor: Colors.white,

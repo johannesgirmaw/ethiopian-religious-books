@@ -4,6 +4,27 @@ from django.conf import settings
 from django.db import models
 
 
+class Genre(models.Model):
+    """Dynamic book category. Managed via Django admin / the genres API so new
+    categories can be added without a code change."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    slug = models.SlugField(max_length=64, unique=True)
+    label = models.CharField(max_length=120)
+    label_am = models.CharField(max_length=120, blank=True)
+    icon = models.CharField(max_length=64, blank=True)  # optional material icon
+    ordinal = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "genres"
+        ordering = ["ordinal", "label"]
+
+    def __str__(self):
+        return self.label
+
+
 class Book(models.Model):
     class Visibility(models.TextChoices):
         PUBLISHED = "published", "published"
@@ -18,6 +39,15 @@ class Book(models.Model):
     script_tags = models.JSONField(default=list, blank=True)
     chapters_draft = models.JSONField(default=list, blank=True)
     cover_object_key = models.CharField(max_length=500, blank=True)
+    # Stores a Genre.slug. Kept as a slug (not FK) so it stays nullable/blank and
+    # offline payloads remain simple; validated against the Genre table on write.
+    genre = models.CharField(max_length=64, default="other", blank=True)
+    published_year = models.PositiveIntegerField(null=True, blank=True)
+    rating_average = models.FloatField(default=0)
+    rating_count = models.PositiveIntegerField(default=0)
+    readers_count = models.PositiveIntegerField(default=0)
+    is_premium = models.BooleanField(default=False)
+    is_featured = models.BooleanField(default=False)  # "Popular" home banner
     search_text_normalized = models.TextField(blank=True, default="", db_index=True)
     published_revision = models.ForeignKey(
         "BookRevision",

@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.db.models import Avg, Count
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -7,6 +8,7 @@ from rest_framework.views import APIView
 
 from apps.catalog.models import Book
 from apps.study.models import (
+    BookReview,
     DailyReadingPlan,
     ReaderEvent,
     ReminderPreference,
@@ -14,11 +16,14 @@ from apps.study.models import (
     StudyFolderEntry,
     StudyReminder,
     UserBookmark,
+    UserFavourite,
     UserHighlight,
     UserNote,
+    UserNotification,
     UserReadingProgress,
 )
 from apps.study.serializers import (
+    BookReviewSerializer,
     DailyReadingPlanSerializer,
     ReaderEventSerializer,
     ReminderPreferenceSerializer,
@@ -26,10 +31,21 @@ from apps.study.serializers import (
     StudyFolderSerializer,
     StudyReminderSerializer,
     UserBookmarkSerializer,
+    UserFavouriteSerializer,
     UserHighlightSerializer,
     UserNoteSerializer,
+    UserNotificationSerializer,
     UserReadingProgressSerializer,
 )
+
+
+def _recompute_book_rating(book: Book) -> None:
+    agg = BookReview.objects.filter(book=book).aggregate(
+        avg=Avg("rating"), n=Count("id")
+    )
+    book.rating_average = round(agg["avg"] or 0, 2)
+    book.rating_count = agg["n"] or 0
+    book.save(update_fields=["rating_average", "rating_count"])
 
 
 class _OwnedModelView(APIView):
@@ -270,6 +286,101 @@ class StudyReadingProgressView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user, book=book)
         return Response(UserReadingProgressSerializer(row).data)
+
+
+class FavouritesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        qs = UserFavourite.objects.filter(user=request.user).select_related("book")
+        return Response({"items": UserFavouriteSerializer(qs, many=True).data})
+
+    def post(self, request):
+        book = get_object_or_404(Book, pk=request.data.get("book"))
+        obj, _ = UserFavourite.objects.get_or_create(user=request.user, book=book)
+        return Response(
+            UserFavouriteSerializer(obj).data, status=status.HTTP_201_CREATED
+        )
+
+
+class FavouriteDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, book_id):
+        UserFavourite.objects.filter(user=request.user, book_id=book_id).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BookReviewsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        book_id = request.query_params.get("book")
+        qs = BookReview.objects.select_related("user")
+        if book_id:
+            qs = qs.filter(book_id=book_id)
+        return Response({"items": BookReviewSerializer(qs, many=True).data})
+
+    def post(self, request):
+        serializer = BookReviewSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        book = serializer.validated_data["book"]
+        obj, _ = BookReview.objects.update_or_create(
+            user=request.user,
+            book=book,
+            defaults={
+                "rating": serializer.validated_data["rating"],
+                "body": serializer.validated_data.get("body", ""),
+            },
+        )
+        _recompute_book_rating(book)
+        return Response(
+            BookReviewSerializer(obj).data, status=status.HTTP_201_CREATED
+        )
+
+
+class BookReviewDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, book_id):
+        BookReview.objects.filter(user=request.user, book_id=book_id).delete()
+        book = Book.objects.filter(pk=book_id).first()
+        if book is not None:
+            _recompute_book_rating(book)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class NotificationsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        qs = UserNotification.objects.filter(user=request.user)[:100]
+        unread = UserNotification.objects.filter(
+            user=request.user, is_read=False
+        ).count()
+        return Response(
+            {
+                "items": UserNotificationSerializer(qs, many=True).data,
+                "unread": unread,
+            }
+        )
+
+    def post(self, request):
+        # Mark all as read.
+        UserNotification.objects.filter(user=request.user, is_read=False).update(
+            is_read=True
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class NotificationDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, item_id):
+        obj = get_object_or_404(UserNotification, pk=item_id, user=request.user)
+        obj.is_read = True
+        obj.save(update_fields=["is_read"])
+        return Response(UserNotificationSerializer(obj).data)
 
 
 class ReaderEventsView(APIView):

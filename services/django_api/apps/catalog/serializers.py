@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.catalog.models import Book, BookRevision, Tag
+from apps.catalog.models import Book, BookRevision, Genre, Tag
 
 
 class PublishedRevisionSerializer(serializers.ModelSerializer):
@@ -15,6 +15,12 @@ class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = ("slug", "label")
+
+
+class GenreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Genre
+        fields = ("slug", "label", "label_am", "icon", "ordinal")
 
 
 class BookListSerializer(serializers.ModelSerializer):
@@ -32,15 +38,32 @@ class BookListSerializer(serializers.ModelSerializer):
             "author_compiler",
             "primary_language",
             "script_tags",
+            "genre",
+            "published_year",
+            "rating_average",
+            "rating_count",
+            "readers_count",
+            "is_premium",
+            "is_featured",
             "catalog_visibility",
             "cover_url",
             "published_revision",
+            "created_at",
             "tags",
         )
 
     def get_cover_url(self, obj: Book) -> str | None:
-        del obj  # reserved for presigned URLs (MinIO) later
-        return None
+        if not (obj.cover_object_key or "").strip():
+            return None
+        # Stable, always-reachable URL served through the API host (no presign
+        # expiry / host-reachability issues). `?v=` busts client/image caches
+        # when the cover is replaced.
+        ver = int(obj.updated_at.timestamp()) if obj.updated_at else 0
+        path = f"/v1/books/{obj.id}/cover?v={ver}"
+        request = self.context.get("request")
+        if request is not None:
+            return request.build_absolute_uri(path)
+        return path
 
     def get_tags(self, obj: Book):
         tags = Tag.objects.filter(booktag__book=obj)

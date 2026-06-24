@@ -32,6 +32,10 @@ class AdminBookCreateSerializer(serializers.ModelSerializer):
             "author_compiler",
             "primary_language",
             "script_tags",
+            "genre",
+            "published_year",
+            "is_premium",
+            "is_featured",
             "chapters_draft",
             "tag_slugs",
         )
@@ -52,10 +56,18 @@ class AdminBookCreateSerializer(serializers.ModelSerializer):
 class AdminBookSerializer(serializers.ModelSerializer):
     published_revision_number = serializers.SerializerMethodField()
     cover_get_url = serializers.SerializerMethodField()
+    tag_slugs = serializers.SerializerMethodField()
 
     def get_published_revision_number(self, obj: Book):
         rev = getattr(obj, "published_revision", None)
         return rev.revision_number if rev is not None else None
+
+    def get_tag_slugs(self, obj: Book):
+        return list(
+            Tag.objects.filter(booktag__book=obj)
+            .order_by("label")
+            .values_list("slug", flat=True)
+        )
 
     def get_cover_get_url(self, obj: Book) -> str | None:
         key = (obj.cover_object_key or "").strip()
@@ -77,12 +89,19 @@ class AdminBookSerializer(serializers.ModelSerializer):
             "author_compiler",
             "primary_language",
             "script_tags",
+            "genre",
+            "published_year",
+            "rating_average",
+            "rating_count",
+            "readers_count",
+            "is_premium",
             "chapters_draft",
             "catalog_visibility",
             "cover_object_key",
             "cover_get_url",
             "published_revision_id",
             "published_revision_number",
+            "tag_slugs",
             "created_by_id",
             "created_at",
             "updated_at",
@@ -95,14 +114,32 @@ class AdminBookSerializer(serializers.ModelSerializer):
             "published_revision_id",
             "cover_object_key",
             "cover_get_url",
+            "tag_slugs",
+            "rating_average",
+            "rating_count",
+            "readers_count",
         )
 
 
 class AdminBookPatchSerializer(serializers.ModelSerializer):
     cover_object_key = serializers.CharField(max_length=500, allow_blank=True, required=False)
+    tag_slugs = serializers.ListField(
+        child=serializers.SlugField(),
+        required=False,
+    )
 
     def validate_chapters_draft(self, value):
         return _validate_chapters_draft(value)
+
+    def update(self, instance, validated_data):
+        tag_slugs = validated_data.pop("tag_slugs", None)
+        book = super().update(instance, validated_data)
+        if tag_slugs is not None:
+            BookTag.objects.filter(book=book).delete()
+            for slug in tag_slugs:
+                tag, _ = Tag.objects.get_or_create(slug=slug, defaults={"label": slug})
+                BookTag.objects.get_or_create(book=book, tag=tag)
+        return book
 
     def validate_cover_object_key(self, value: str) -> str:
         v = (value or "").strip()
@@ -125,8 +162,13 @@ class AdminBookPatchSerializer(serializers.ModelSerializer):
             "author_compiler",
             "primary_language",
             "script_tags",
+            "genre",
+            "published_year",
+            "is_premium",
+            "is_featured",
             "chapters_draft",
             "cover_object_key",
+            "tag_slugs",
         )
 
 

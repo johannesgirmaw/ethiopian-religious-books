@@ -15,12 +15,14 @@ import '../../widgets/primitives/shell_primitives.dart';
 import '../../models/admin_book.dart';
 import '../../providers/admin_providers.dart';
 import '../../providers/api_client.dart';
+import '../../providers/catalog_providers.dart';
 import '../../providers/session_notifier.dart';
 import '../../utils/api_error_message.dart';
+import '../../utils/catalog_language_label.dart';
 import '../../utils/rich_text_codec.dart' show documentFromStoredSummary, plainTextFromStoredSummary;
 
 /// Set true when cover presign + object storage are enabled for publishers.
-const bool kAdminCoverUploadEnabled = false;
+const bool kAdminCoverUploadEnabled = true;
 
 /// Create (`bookId == null`) or edit existing metadata (`bookId` set).
 class AdminBookEditScreen extends ConsumerStatefulWidget {
@@ -40,12 +42,17 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   final _formKey = GlobalKey<FormState>();
   final _title = TextEditingController();
   final _subtitle = TextEditingController();
+  final _summary = TextEditingController();
   final _author = TextEditingController();
   final _language = TextEditingController(text: 'am');
-  final _scriptTags = TextEditingController();
-  final _tagSlugs = TextEditingController();
+  final _publishedYear = TextEditingController();
+  List<String> _scriptTagsList = [];
+  List<String> _selectedTags = [];
   List<AdminDraftChapter> _chaptersDraft = const [];
   String _visibility = 'hidden';
+  String? _genre;
+  bool _isPremium = false;
+  bool _isFeatured = false;
   String? _createdById;
   bool _busy = false;
   String? _error;
@@ -74,9 +81,15 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     if (b == null) return;
     _title.text = b.title;
     _subtitle.text = b.subtitle ?? '';
+    _summary.text = plainTextFromStoredSummary(b.summary);
     _author.text = b.authorCompiler ?? '';
     _language.text = b.primaryLanguage;
-    _scriptTags.text = b.scriptTags.join(', ');
+    _scriptTagsList = [...b.scriptTags];
+    _selectedTags = [...b.tagSlugs];
+    _publishedYear.text = b.publishedYear?.toString() ?? '';
+    _genre = b.genre;
+    _isPremium = b.isPremium;
+    _isFeatured = b.isFeatured;
     _chaptersDraft = _withConsecutivePageNumbers(b.chaptersDraft);
     _visibility = b.catalogVisibility;
     _createdById = b.createdById;
@@ -136,10 +149,10 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     _title.removeListener(_onTitleChanged);
     _title.dispose();
     _subtitle.dispose();
+    _summary.dispose();
     _author.dispose();
     _language.dispose();
-    _scriptTags.dispose();
-    _tagSlugs.dispose();
+    _publishedYear.dispose();
     super.dispose();
   }
 
@@ -214,14 +227,6 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
         data: {'cover_object_key': ''},
       );
     }
-  }
-
-  List<String> _splitTags(String raw) {
-    return raw
-        .split(',')
-        .map((s) => s.trim())
-        .where((s) => s.isNotEmpty)
-        .toList();
   }
 
   Future<void> _upsertChapter({int? index}) async {
@@ -465,23 +470,27 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     });
     try {
       final dio = ref.read(apiDioProvider);
-      final scriptTags = _splitTags(_scriptTags.text);
+      final scriptTags = _scriptTagsList;
       final chaptersDraftPayload =
           _chaptersDraft.map((e) => e.toDraftPayload()).toList();
       if (widget.isNew) {
-        final tagSlugs = _splitTags(_tagSlugs.text);
         final res = await dio.post<Map<String, dynamic>>(
           'admin/books',
           data: {
             'title': _title.text.trim(),
             'subtitle': _subtitle.text.trim(),
-            'summary': '',
+            'summary': _summary.text.trim(),
             'author_compiler': _author.text.trim(),
             'primary_language':
                 _language.text.trim().isEmpty ? 'am' : _language.text.trim(),
             'script_tags': scriptTags,
+            if (_genre != null) 'genre': _genre,
+            if (_publishedYear.text.trim().isNotEmpty)
+              'published_year': int.tryParse(_publishedYear.text.trim()),
+            'is_premium': _isPremium,
+            'is_featured': _isFeatured,
             'chapters_draft': chaptersDraftPayload,
-            'tag_slugs': tagSlugs,
+            'tag_slugs': _selectedTags,
           },
         );
         _applyChaptersFromResponse(res.data);
@@ -496,11 +505,19 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
           data: {
             'title': _title.text.trim(),
             'subtitle': _subtitle.text.trim(),
+            'summary': _summary.text.trim(),
             'author_compiler': _author.text.trim(),
             'primary_language':
                 _language.text.trim().isEmpty ? 'am' : _language.text.trim(),
             'script_tags': scriptTags,
+            'genre': _genre ?? '',
+            'published_year': _publishedYear.text.trim().isEmpty
+                ? null
+                : int.tryParse(_publishedYear.text.trim()),
+            'is_premium': _isPremium,
+            'is_featured': _isFeatured,
             'chapters_draft': chaptersDraftPayload,
+            'tag_slugs': _selectedTags,
           },
         );
         _applyChaptersFromResponse(res.data);
@@ -509,6 +526,11 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
         }
       }
       ref.invalidate(adminBooksProvider);
+      // Refresh reader-facing data so new covers / metadata show without a
+      // manual reload.
+      ref.invalidate(catalogProvider);
+      final editedId = widget.bookId;
+      if (editedId != null) ref.invalidate(bookDetailProvider(editedId));
       if (!mounted) return;
       setState(() => _dirty = false);
       context.pop();
@@ -523,6 +545,88 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  static const _languageCodes = ['am', 'gez', 'en', 'ti', 'om'];
+
+  Widget _buildLanguageDropdown(AppLocalizations l10n) {
+    final current = _language.text.trim().isEmpty ? 'am' : _language.text.trim();
+    final codes = [
+      ..._languageCodes,
+      if (!_languageCodes.contains(current)) current,
+    ];
+    return DropdownButtonFormField<String>(
+      initialValue: current,
+      isExpanded: true,
+      decoration: InputDecoration(labelText: l10n.primaryLanguageCodeLabel),
+      items: [
+        for (final c in codes)
+          DropdownMenuItem<String>(
+            value: c,
+            child: Text('${catalogLanguageFilterLabel(c, l10n)} ($c)'),
+          ),
+      ],
+      onChanged: (v) => setState(() {
+        _language.text = v ?? 'am';
+        _dirty = true;
+      }),
+    );
+  }
+
+  Widget _buildYearDropdown(AppLocalizations l10n) {
+    final currentYear = DateTime.now().year;
+    final selected = int.tryParse(_publishedYear.text.trim());
+    final years = [for (var y = currentYear; y >= 1900; y--) y];
+    if (selected != null && !years.contains(selected)) years.insert(0, selected);
+    return DropdownButtonFormField<int?>(
+      initialValue: selected,
+      isExpanded: true,
+      decoration: InputDecoration(labelText: l10n.adminPublishedYearLabel),
+      items: [
+        DropdownMenuItem<int?>(value: null, child: Text(l10n.adminGenreNone)),
+        for (final y in years)
+          DropdownMenuItem<int?>(value: y, child: Text('$y')),
+      ],
+      onChanged: (v) => setState(() {
+        _publishedYear.text = v?.toString() ?? '';
+        _dirty = true;
+      }),
+    );
+  }
+
+  Widget _buildGenreDropdown(AppLocalizations l10n) {
+    final genres =
+        ref.watch(genresProvider).valueOrNull ?? const <GenreOption>[];
+    final isAm = Localizations.localeOf(context).languageCode == 'am';
+    final slugs = genres.map((g) => g.slug).toSet();
+    final extra =
+        (_genre != null && _genre!.isNotEmpty && !slugs.contains(_genre))
+            ? [_genre!]
+            : const <String>[];
+    return DropdownButtonFormField<String?>(
+      initialValue: _genre,
+      isExpanded: true,
+      decoration: InputDecoration(labelText: l10n.adminGenreLabel),
+      items: [
+        DropdownMenuItem<String?>(
+          value: null,
+          child: Text(l10n.adminGenreNone),
+        ),
+        for (final g in genres)
+          DropdownMenuItem<String?>(
+            value: g.slug,
+            child: Text(
+              isAm && (g.labelAm?.isNotEmpty ?? false) ? g.labelAm! : g.label,
+            ),
+          ),
+        for (final s in extra)
+          DropdownMenuItem<String?>(value: s, child: Text(s)),
+      ],
+      onChanged: (v) => setState(() {
+        _genre = v;
+        _dirty = true;
+      }),
+    );
   }
 
   @override
@@ -622,6 +726,18 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                   decoration: InputDecoration(labelText: l10n.subtitleLabel),
                   onChanged: (_) => _markDirty(),
                 ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _summary,
+                  decoration: InputDecoration(
+                    labelText: l10n.adminSummaryLabel,
+                    alignLabelWithHint: true,
+                  ),
+                  minLines: 2,
+                  maxLines: 5,
+                  textCapitalization: TextCapitalization.sentences,
+                  onChanged: (_) => _markDirty(),
+                ),
                 const SizedBox(height: 16),
                 if (kAdminCoverUploadEnabled) ...[
                   Text(
@@ -698,28 +814,52 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                   onChanged: (_) => _markDirty(),
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
-                  controller: _language,
-                  decoration: InputDecoration(
-                    labelText: l10n.primaryLanguageCodeLabel,
-                    hintText: 'am',
-                  ),
-                  validator: (value) {
-                    if ((value ?? '').trim().isEmpty) {
-                      return l10n.languageCodeRequired;
-                    }
-                    return null;
-                  },
-                  onChanged: (_) => _markDirty(),
+                _buildLanguageDropdown(l10n),
+                const SizedBox(height: 12),
+                _ChipsField(
+                  label: l10n.scriptTagsLabel,
+                  values: _scriptTagsList,
+                  onChanged: (v) => setState(() {
+                    _scriptTagsList = v;
+                    _dirty = true;
+                  }),
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  controller: _scriptTags,
-                  decoration: InputDecoration(
-                    labelText: l10n.scriptTagsLabel,
-                    hintText: l10n.commaSeparated,
-                  ),
-                  onChanged: (_) => _markDirty(),
+                _buildGenreDropdown(l10n),
+                const SizedBox(height: 12),
+                _buildYearDropdown(l10n),
+                const SizedBox(height: 12),
+                _ChipsField(
+                  label: l10n.tagsLabel,
+                  values: _selectedTags,
+                  suggestions:
+                      ref.watch(tagsProvider).valueOrNull?.map((t) => t.slug).toList() ??
+                          const [],
+                  onChanged: (v) => setState(() {
+                    _selectedTags = v;
+                    _dirty = true;
+                  }),
+                ),
+                const SizedBox(height: 8),
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.adminIsPremiumLabel),
+                  subtitle: Text(l10n.adminIsPremiumSubtitle),
+                  value: _isPremium,
+                  onChanged: (v) => setState(() {
+                    _isPremium = v;
+                    _dirty = true;
+                  }),
+                ),
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.adminIsFeaturedLabel),
+                  subtitle: Text(l10n.adminIsFeaturedSubtitle),
+                  value: _isFeatured,
+                  onChanged: (v) => setState(() {
+                    _isFeatured = v;
+                    _dirty = true;
+                  }),
                 ),
                 const SizedBox(height: 18),
                 Row(
@@ -931,17 +1071,6 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                       ),
                     );
                   }),
-                if (isNew) ...[
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _tagSlugs,
-                    decoration: InputDecoration(
-                      labelText: l10n.tagSlugsCreateOnlyLabel,
-                      hintText: l10n.tagSlugsHint,
-                    ),
-                    onChanged: (_) => _markDirty(),
-                  ),
-                ],
                 if (_error != null) ...[
                   const SizedBox(height: 16),
                   Text(_error!,
@@ -963,6 +1092,100 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
             ),
           ),
       ),
+    );
+  }
+}
+
+/// Editable list of string values rendered as deletable chips, with a text
+/// field to add new ones and optional tap-to-add suggestions.
+class _ChipsField extends StatefulWidget {
+  const _ChipsField({
+    required this.label,
+    required this.values,
+    required this.onChanged,
+    this.suggestions = const [],
+  });
+
+  final String label;
+  final List<String> values;
+  final List<String> suggestions;
+  final ValueChanged<List<String>> onChanged;
+
+  @override
+  State<_ChipsField> createState() => _ChipsFieldState();
+}
+
+class _ChipsFieldState extends State<_ChipsField> {
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _add(String raw) {
+    final v = raw.trim();
+    _ctrl.clear();
+    if (v.isEmpty || widget.values.contains(v)) return;
+    widget.onChanged([...widget.values, v]);
+  }
+
+  void _remove(String v) =>
+      widget.onChanged(widget.values.where((e) => e != v).toList());
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final available =
+        widget.suggestions.where((s) => !widget.values.contains(s)).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.label,
+          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 8),
+        if (widget.values.isNotEmpty)
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              for (final v in widget.values)
+                InputChip(label: Text(v), onDeleted: () => _remove(v)),
+            ],
+          ),
+        TextField(
+          controller: _ctrl,
+          decoration: InputDecoration(
+            isDense: true,
+            hintText: l10n.adminChipAddHint,
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () => _add(_ctrl.text),
+            ),
+          ),
+          textInputAction: TextInputAction.done,
+          onSubmitted: _add,
+        ),
+        if (available.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              for (final s in available.take(20))
+                ActionChip(
+                  label: Text(s),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => _add(s),
+                ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 }

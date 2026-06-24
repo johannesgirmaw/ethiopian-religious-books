@@ -1384,4 +1384,149 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get libraryViewGrid => 'Grid';
+
+  @override
+  String get homePopularBadge => 'Popular';
+
+  @override
+  String get homeReadMore => 'Read more';
+
+  @override
+  String get homeAllGenre => 'All Genre';
+
+  @override
+  String get homeSectionExplore => 'Explore books';
+
+  @override
+  String get homeSearchHint => 'Search books…';
+
+  @override
+  String get catalogAllResults => 'All Results';
+
+  @override
+  String get bookCategoryPsalms => 'Psalms & Mezmur';
+
+  @override
+  String get bookCategoryMarian => 'Marian';
+
+  @override
+  String get bookCategoryLiturgy => 'Liturgy';
+
+  @override
+  String get bookCategorySynaxarium => 'Synaxarium';
+
+  @override
+  String get bookCategorySaints => 'Saints & Gedl';
+
+  @override
+  String get bookCategoryOther => 'General';
+
+  @override
+  String get favouritesTitle => 'Favourites';
+
+  @override
+  String get favouritesEmptyTitle => 'No favourites yet';
+
+  @override
+  String get favouritesEmptyMessage =>
+      'Tap the heart on any book to save it here.';
+
+  @override
+  String get notificationsTitle => 'Notifications';
+
+  @override
+  String get notificationsEmptyTitle => 'You\'re all caught up';
+
+  @override
+  String get notificationsEmptyMessage =>
+      'Notifications about new books and reminders show up here.';
+
+  @override
+  String get notificationsMarkAllRead => 'Mark all read';
+
+  @override
+  String get reviewsSection => 'Reviews';
+
+  @override
+  String get reviewsEmpty =>
+      'No reviews yet — be the first to review this book.';
+
+  @override
+  String get writeReviewTitle => 'Write a review';
+
+  @override
+  String get yourRatingLabel => 'Your rating';
+
+  @override
+  String get reviewBodyHint => 'Share your thoughts (optional)';
+
+  @override
+  String get submitReviewAction => 'Submit review';
+
+  @override
+  String ratingsCountLabel(int count) {
+    return '$count ratings';
+  }
+
+  @override
+  String get homeRecommended => 'Recommended';
+
+  @override
+  String get sortLabel => 'Sort';
+
+  @override
+  String get sortNewest => 'Newest';
+
+  @override
+  String get sortOldest => 'Oldest';
+
+  @override
+  String get sortPopular => 'Popular';
+
+  @override
+  String get sortTopRated => 'Top rated';
+
+  @override
+  String get sortTitleAz => 'Title (A–Z)';
+
+  @override
+  String get premiumLockedTitle => 'Premium book';
+
+  @override
+  String get premiumLockedMessage =>
+      'This title is part of premium. Premium access isn\'t available yet — check back soon.';
+
+  @override
+  String get premiumGotIt => 'Got it';
+
+  @override
+  String get adminSummaryLabel => 'Summary';
+
+  @override
+  String get adminGenreLabel => 'Genre / category';
+
+  @override
+  String get adminGenreNone => 'None';
+
+  @override
+  String get adminPublishedYearLabel => 'Publication year';
+
+  @override
+  String get adminIsPremiumLabel => 'Premium book';
+
+  @override
+  String get adminIsPremiumSubtitle => 'Requires premium access to read';
+
+  @override
+  String get tagsLabel => 'Tags';
+
+  @override
+  String get adminChipAddHint => 'Add and press Enter';
+
+  @override
+  String get adminIsFeaturedLabel => 'Featured (Popular)';
+
+  @override
+  String get adminIsFeaturedSubtitle =>
+      'Show in the Popular banner on the home screen';
 }

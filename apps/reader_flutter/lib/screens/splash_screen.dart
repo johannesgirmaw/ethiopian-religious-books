@@ -56,7 +56,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: const Color(0xFF070412),
+      backgroundColor: const Color(0xFF041820),
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -122,7 +122,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         gradient: const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [Color(0xFFE8B84B), Color(0xFFD4A017)],
+                          colors: [Color(0xFFF5A623), Color(0xFFE08E00)],
                         ),
                         borderRadius: BorderRadius.circular(26),
                         boxShadow: AppShadows.goldGlow,
@@ -132,7 +132,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         child: Image.asset(
                           ReferenceAssets.appLogo,
                           fit: BoxFit.contain,
-                          color: const Color(0xFF1A0E2E),
+                          color: const Color(0xFF041820),
                           colorBlendMode: BlendMode.srcIn,
                         ),
                       ),

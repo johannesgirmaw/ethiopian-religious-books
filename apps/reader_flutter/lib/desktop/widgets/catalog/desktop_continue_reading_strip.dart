@@ -76,12 +76,16 @@ class DesktopContinueReadingStrip extends ConsumerWidget {
                   visualDensity: VisualDensity.compact,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
-                    vertical: 8,
+                    vertical: 12,
                   ),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: Text(l10n.readNow),
+                child: Text(l10n.readNow, style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        // color: AppColors.textTertiary,
+                      )),
               ),
             ],
           ),

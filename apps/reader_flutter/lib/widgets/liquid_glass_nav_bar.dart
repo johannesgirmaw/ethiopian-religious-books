@@ -241,7 +241,7 @@ class _SelectionOrb extends StatelessWidget {
               ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF5B3B8C)
+            color: const Color(0xFF29B6E0)
                 .withValues(alpha: isDark ? 0.20 : 0.18),
             blurRadius: 16,
             offset: const Offset(0, 4),

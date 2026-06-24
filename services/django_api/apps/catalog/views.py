@@ -3,17 +3,32 @@ import logging
 
 from django.conf import settings
 from django.db.models import F, Q
+from django.http import Http404, HttpResponse
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.catalog.etag import catalog_response_extras, compute_catalog_etag
-from apps.catalog.models import Book, BookChapter, BookContentIndex, BookPage, BookRevision
+from apps.catalog.models import (
+    Book,
+    BookChapter,
+    BookContentIndex,
+    BookPage,
+    BookRevision,
+    Genre,
+    Tag,
+)
 from apps.catalog.search_index import ensure_revision_index_from_book_draft
 from apps.catalog.search_normalization import normalize_search_text
-from apps.catalog.serializers import BookListSerializer
-from apps.catalog.storage_s3 import dev_presign_endpoint_from_request, head_object, presign_get
+from apps.catalog.serializers import BookListSerializer, GenreSerializer, TagSerializer
+from apps.catalog.storage_s3 import (
+    dev_presign_endpoint_from_request,
+    get_object_bytes,
+    head_object,
+    is_object_storage_configured,
+    presign_get,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +51,62 @@ def _encryption_payload(rev: BookRevision) -> dict:
             "wrapped_by": "server",
         },
     }
+
+
+class GenreListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        qs = Genre.objects.filter(is_active=True)
+        return Response({"items": GenreSerializer(qs, many=True).data})
+
+
+class TagListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        qs = Tag.objects.all().order_by("label")
+        return Response({"items": TagSerializer(qs, many=True).data})
+
+
+def _cover_content_type(object_key: str) -> str:
+    key = object_key.lower()
+    if key.endswith(".png"):
+        return "image/png"
+    if key.endswith(".webp"):
+        return "image/webp"
+    return "image/jpeg"
+
+
+class BookCoverView(APIView):
+    """Streams a published book's cover image from object storage through the
+    API host, so clients never depend on a reachable/short-lived presigned URL.
+    Public so <img> / Image.network (no auth header) can load it."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, book_id):
+        book = (
+            Book.objects.filter(
+                pk=book_id, catalog_visibility=Book.Visibility.PUBLISHED
+            )
+            .only("id", "cover_object_key")
+            .first()
+        )
+        key = (book.cover_object_key or "").strip() if book else ""
+        if not key or not is_object_storage_configured():
+            raise Http404("No cover")
+        try:
+            data = get_object_bytes(key)
+        except Exception as exc:  # noqa: BLE001 - any storage error -> 404
+            logger.warning("cover fetch failed for %s: %s", book_id, exc)
+            raise Http404("Cover unavailable") from exc
+        if not data:
+            raise Http404("Empty cover")
+        resp = HttpResponse(data, content_type=_cover_content_type(key))
+        # Immutable per (id, ?v=updated_at); safe to cache aggressively.
+        resp["Cache-Control"] = "public, max-age=604800"
+        return resp
 
 
 def _published_books_queryset():

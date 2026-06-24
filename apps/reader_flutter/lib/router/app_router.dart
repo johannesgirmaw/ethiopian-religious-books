@@ -11,6 +11,9 @@ import '../screens/admin/admin_book_edit_screen.dart';
 import '../screens/admin/admin_books_screen.dart';
 import '../screens/book_detail_screen.dart';
 import '../screens/downloads_screen.dart';
+import '../screens/author_books_screen.dart';
+import '../screens/favourites_screen.dart';
+import '../screens/notifications_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/main_shell_screen.dart';
@@ -141,6 +144,32 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             child: BookDetailScreen(bookId: id),
           );
         },
+      ),
+      GoRoute(
+        path: '/favourites',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) => _fadeSlide(
+          key: state.pageKey,
+          child: const FavouritesScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/notifications',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) => _fadeSlide(
+          key: state.pageKey,
+          child: const NotificationsScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/author/:name',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) => _fadeSlide(
+          key: state.pageKey,
+          child: AuthorBooksScreen(
+            author: Uri.decodeComponent(state.pathParameters['name']!),
+          ),
+        ),
       ),
       GoRoute(
         path: '/reader/:id',
