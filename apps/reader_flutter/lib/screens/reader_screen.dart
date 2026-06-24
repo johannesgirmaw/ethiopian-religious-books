@@ -16,6 +16,7 @@ import '../providers/study_providers.dart';
 import '../storage/book_content_cache_storage.dart';
 import '../storage/reader_prefs_storage.dart';
 import '../utils/rich_text_codec.dart' show plainTextFromStoredSummary;
+import '../common/platform/platform_shell.dart';
 import '../web/layout/app_layout_scope.dart';
 import '../web/widgets/reader/web_reader_chapter_grid.dart';
 import '../web/widgets/reader/web_reader_layout.dart';
@@ -1245,6 +1246,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
   static const double _readerToolbarCollapsedHeight = 52;
 
+  /// Width of the desktop chapter side-rail (master/detail layout).
+  static const double _desktopRailWidth = 300;
+
   double _readerToolbarHeight({
     required bool hasChapter,
     required bool expanded,
@@ -1462,6 +1466,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         final text = dark ? const Color(0xFFE6EDF7) : const Color(0xFF0F172A);
 
         final hasTree = contentTree != null && contentTree.chapters.isNotEmpty;
+        // Desktop reads as a master/detail: chapters in a fixed left rail,
+        // the selected chapter's pages fill the right pane.
+        final desktopTwoPane = useDesktopShell(context) && hasTree;
         BookContentChapter? selectedChapter;
         if (hasTree) {
           for (final chapter in contentTree.chapters) {
@@ -1551,8 +1558,27 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                     decoration: _readerPageBackgroundDecoration(dark, sepia),
                   ),
                 ),
+                if (desktopTwoPane)
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: _desktopRailWidth,
+                    child: _DesktopChapterRail(
+                      chapters: contentTree.chapters,
+                      selectedChapterKey: _selectedChapterKey,
+                      bookTitle: book.title,
+                      chaptersLabel: l10n.chaptersHeading,
+                      pageCountLabel: (c) => l10n.pageCount(c.pages.length),
+                      dark: dark,
+                      sepia: sepia,
+                      textColor: text,
+                      background: bg,
+                      onSelect: (chapter) => _selectChapter(chapter, contentTree),
+                    ),
+                  ),
                 Positioned(
-                  left: 0,
+                  left: desktopTwoPane ? _desktopRailWidth : 0,
                   right: 0,
                   top: contentTop,
                   bottom: contentBottom,
@@ -1585,7 +1611,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                       0,
                     ),
                     children: [
-                      if (hasTree && _selectedChapterKey == null) ...[
+                      if (desktopTwoPane && _selectedChapterKey == null) ...[
+                        // The rail lists chapters; right pane prompts a choice.
+                        _DesktopReaderPlaceholder(
+                          message: l10n.selectChapter,
+                          textColor: text,
+                        ),
+                      ] else if (hasTree && _selectedChapterKey == null) ...[
                         if (useWebShell(context)) ...[
                           WebReaderChapterGrid(
                             chapters: contentTree.chapters,
@@ -1781,7 +1813,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 AnimatedPositioned(
                   duration: const Duration(milliseconds: 220),
                   top: showChromeUi ? 0 : -72,
-                  left: 0,
+                  left: desktopTwoPane ? _desktopRailWidth : 0,
                   right: 0,
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
@@ -1830,7 +1862,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 if (showFindPanel)
                   AnimatedPositioned(
                     duration: const Duration(milliseconds: 220),
-                    left: 12,
+                    left: desktopTwoPane ? _desktopRailWidth + 12 : 12,
                     right: 12,
                     bottom: findBottom,
                     child: GestureDetector(
@@ -1971,7 +2003,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 if (showToolbarPanel)
                   AnimatedPositioned(
                     duration: const Duration(milliseconds: 220),
-                    left: 12,
+                    left: desktopTwoPane ? _desktopRailWidth + 12 : 12,
                     right: 12,
                     bottom: toolbarBottom,
                     child: GestureDetector(
@@ -2228,7 +2260,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 if (!showChromeUi && _hasSelectedChapter)
                   Positioned(
                     top: 0,
-                    left: 0,
+                    left: desktopTwoPane ? _desktopRailWidth : 0,
                     child: SafeArea(
                       child: _ReaderChromeIcon(
                         onPressed: _handleReaderBack,
@@ -2317,6 +2349,193 @@ class _ReaderChromeIcon extends StatelessWidget {
       constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
       iconSize: 20,
       icon: Icon(icon, color: color),
+    );
+  }
+}
+
+/// Desktop master/detail left rail: lists chapters; the selected one's pages
+/// render in the right reading pane.
+class _DesktopChapterRail extends StatelessWidget {
+  const _DesktopChapterRail({
+    required this.chapters,
+    required this.selectedChapterKey,
+    required this.bookTitle,
+    required this.chaptersLabel,
+    required this.pageCountLabel,
+    required this.dark,
+    required this.sepia,
+    required this.textColor,
+    required this.background,
+    required this.onSelect,
+  });
+
+  final List<BookContentChapter> chapters;
+  final String? selectedChapterKey;
+  final String bookTitle;
+  final String chaptersLabel;
+  final String Function(BookContentChapter chapter) pageCountLabel;
+  final bool dark;
+  final bool sepia;
+  final Color textColor;
+  final Color background;
+  final void Function(BookContentChapter chapter) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = AppColors.accent;
+    final divider = textColor.withValues(alpha: dark ? 0.18 : 0.1);
+    final railBg = dark
+        ? background.withValues(alpha: 0.6)
+        : Color.alphaBlend(textColor.withValues(alpha: 0.03), background);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: railBg,
+        border: Border(right: BorderSide(color: divider)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  bookTitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                    height: 1.25,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  chaptersLabel,
+                  style: TextStyle(
+                    color: textColor.withValues(alpha: 0.6),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: divider),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: chapters.length,
+              itemBuilder: (context, index) {
+                final chapter = chapters[index];
+                final selected = chapter.chapterKey == selectedChapterKey;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  child: Material(
+                    color: selected
+                        ? accent.withValues(alpha: dark ? 0.24 : 0.12)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      onTap: () => onSelect(chapter),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 3,
+                              height: 34,
+                              decoration: BoxDecoration(
+                                color: selected ? accent : Colors.transparent,
+                                borderRadius: BorderRadius.circular(99),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    chapter.title,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: textColor,
+                                      fontWeight: selected
+                                          ? FontWeight.w800
+                                          : FontWeight.w600,
+                                      fontSize: 14,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    pageCountLabel(chapter),
+                                    style: TextStyle(
+                                      color: textColor.withValues(alpha: 0.6),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Right-pane prompt shown on desktop before a chapter is chosen.
+class _DesktopReaderPlaceholder extends StatelessWidget {
+  const _DesktopReaderPlaceholder({
+    required this.message,
+    required this.textColor,
+  });
+
+  final String message;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 120),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.auto_stories_outlined,
+            size: 56,
+            color: textColor.withValues(alpha: 0.35),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: textColor.withValues(alpha: 0.6),
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
