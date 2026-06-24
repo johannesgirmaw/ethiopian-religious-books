@@ -23,18 +23,11 @@ class _BubbleNavGeometry {
     if (tabCount <= 1) {
       return [Offset(w / 2, cy)];
     }
-    if (tabCount == 2) {
-      return [
-        Offset(p + r, cy),
-        Offset(w - p - r, cy),
-      ];
-    }
-    final span = (w - 2 * p) / 2;
-    return [
-      Offset(p + r, cy),
-      Offset(p + span, cy),
-      Offset(w - p - r, cy),
-    ];
+    // Evenly distribute N bubble centres between the first and last slot.
+    final start = p + r;
+    final end = w - p - r;
+    final step = (end - start) / (tabCount - 1);
+    return [for (var i = 0; i < tabCount; i++) Offset(start + step * i, cy)];
   }
 
   static Path bubblePath(Size size, int tabCount) {
@@ -73,7 +66,8 @@ class LiquidGlassNavBar extends StatelessWidget {
     assert(items.length >= 2);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final width = MediaQuery.sizeOf(context).width;
-    final barWidth = (width - 48).clamp(260.0, 340.0);
+    final barWidth =
+        (width - 48).clamp(260.0, items.length >= 4 ? 380.0 : 340.0);
     final barSize = Size(barWidth, barHeight);
     final centers = _BubbleNavGeometry.tabCenters(barSize, items.length);
 

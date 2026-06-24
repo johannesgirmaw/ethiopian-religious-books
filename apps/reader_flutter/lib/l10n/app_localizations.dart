@@ -2863,6 +2863,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show in the Popular banner on the home screen'**
   String get adminIsFeaturedSubtitle;
+
+  /// No description provided for @readerDisplayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Display'**
+  String get readerDisplayTitle;
+
+  /// No description provided for @readerThemeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get readerThemeLabel;
+
+  /// No description provided for @readerThemeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get readerThemeLight;
+
+  /// No description provided for @readerThemeSepia.
+  ///
+  /// In en, this message translates to:
+  /// **'Sepia'**
+  String get readerThemeSepia;
+
+  /// No description provided for @readerThemeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get readerThemeDark;
+
+  /// No description provided for @readerTextSizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Text size'**
+  String get readerTextSizeLabel;
+
+  /// No description provided for @readerSpacingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Line spacing'**
+  String get readerSpacingLabel;
+
+  /// No description provided for @readerModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading mode'**
+  String get readerModeLabel;
+
+  /// No description provided for @readerModeScroll.
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll'**
+  String get readerModeScroll;
+
+  /// No description provided for @readerModePage.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages'**
+  String get readerModePage;
+
+  /// No description provided for @readerToolsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading tools'**
+  String get readerToolsTitle;
+
+  /// No description provided for @readerMoreTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading tools'**
+  String get readerMoreTooltip;
 }
 
 class _AppLocalizationsDelegate

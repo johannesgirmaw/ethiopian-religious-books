@@ -703,11 +703,39 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                       actionLabel: l10n.goBack,
                       onAction: () => context.pop(),
                     )
-                  : Form(
-              key: _formKey,
-              child: ListView(
-              padding: const EdgeInsets.all(24),
-              children: [
+                  : LayoutBuilder(
+                      builder: (context, constraints) {
+                        final wide = constraints.maxWidth >= 760;
+                        Widget pair(Widget a, Widget b) => wide
+                            ? Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(child: a),
+                                  const SizedBox(width: 16),
+                                  Expanded(child: b),
+                                ],
+                              )
+                            : Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [a, const SizedBox(height: 12), b],
+                              );
+                        return Form(
+                          key: _formKey,
+                          child: ListView(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: wide ? 32 : 16,
+                              vertical: 24,
+                            ),
+                            children: [
+                              Center(
+                                child: ConstrainedBox(
+                                  constraints:
+                                      const BoxConstraints(maxWidth: 880),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
                 AppSectionHeader(title: l10n.metadataSection),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -808,13 +836,15 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                   ),
                   const SizedBox(height: 12),
                 ],
-                TextField(
-                  controller: _author,
-                  decoration: InputDecoration(labelText: l10n.authorCompilerLabel),
-                  onChanged: (_) => _markDirty(),
+                pair(
+                  TextField(
+                    controller: _author,
+                    decoration:
+                        InputDecoration(labelText: l10n.authorCompilerLabel),
+                    onChanged: (_) => _markDirty(),
+                  ),
+                  _buildLanguageDropdown(l10n),
                 ),
-                const SizedBox(height: 12),
-                _buildLanguageDropdown(l10n),
                 const SizedBox(height: 12),
                 _ChipsField(
                   label: l10n.scriptTagsLabel,
@@ -825,9 +855,10 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                   }),
                 ),
                 const SizedBox(height: 12),
-                _buildGenreDropdown(l10n),
-                const SizedBox(height: 12),
-                _buildYearDropdown(l10n),
+                pair(
+                  _buildGenreDropdown(l10n),
+                  _buildYearDropdown(l10n),
+                ),
                 const SizedBox(height: 12),
                 _ChipsField(
                   label: l10n.tagsLabel,
@@ -841,25 +872,27 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                   }),
                 ),
                 const SizedBox(height: 8),
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l10n.adminIsPremiumLabel),
-                  subtitle: Text(l10n.adminIsPremiumSubtitle),
-                  value: _isPremium,
-                  onChanged: (v) => setState(() {
-                    _isPremium = v;
-                    _dirty = true;
-                  }),
-                ),
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l10n.adminIsFeaturedLabel),
-                  subtitle: Text(l10n.adminIsFeaturedSubtitle),
-                  value: _isFeatured,
-                  onChanged: (v) => setState(() {
-                    _isFeatured = v;
-                    _dirty = true;
-                  }),
+                pair(
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l10n.adminIsPremiumLabel),
+                    subtitle: Text(l10n.adminIsPremiumSubtitle),
+                    value: _isPremium,
+                    onChanged: (v) => setState(() {
+                      _isPremium = v;
+                      _dirty = true;
+                    }),
+                  ),
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l10n.adminIsFeaturedLabel),
+                    subtitle: Text(l10n.adminIsFeaturedSubtitle),
+                    value: _isFeatured,
+                    onChanged: (v) => setState(() {
+                      _isFeatured = v;
+                      _dirty = true;
+                    }),
+                  ),
                 ),
                 const SizedBox(height: 18),
                 Row(
@@ -1088,9 +1121,15 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                         )
                       : Text(isNew ? l10n.create : l10n.saveChanges),
                 ),
-              ],
-            ),
-          ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
       ),
     );
   }

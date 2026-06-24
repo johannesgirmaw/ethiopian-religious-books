@@ -831,5 +831,17 @@
   "tagsLabel": "መለያዎች",
   "adminChipAddHint": "ጨምረው Enter ይጫኑ",
   "adminIsFeaturedLabel": "ተለይቶ የቀረበ (ተወዳጅ)",
-  "adminIsFeaturedSubtitle": "በመነሻ ገጹ የተወዳጆች ባነር ላይ አሳይ"
+  "adminIsFeaturedSubtitle": "በመነሻ ገጹ የተወዳጆች ባነር ላይ አሳይ",
+  "readerDisplayTitle": "ማሳያ",
+  "readerThemeLabel": "ገጽታ",
+  "readerThemeLight": "ብርሃን",
+  "readerThemeSepia": "ሴፒያ",
+  "readerThemeDark": "ጨለማ",
+  "readerTextSizeLabel": "የጽሑፍ መጠን",
+  "readerSpacingLabel": "የመስመር ክፍተት",
+  "readerModeLabel": "የንባብ ዘዴ",
+  "readerModeScroll": "ሸብለላ",
+  "readerModePage": "ገጾች",
+  "readerToolsTitle": "የንባብ መሣሪያዎች",
+  "readerMoreTooltip": "የንባብ መሣሪያዎች"
 }

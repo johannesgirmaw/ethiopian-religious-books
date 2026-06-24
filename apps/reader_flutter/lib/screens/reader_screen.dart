@@ -2,11 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../router/app_navigation.dart';
 import '../design/app_tokens.dart';
 import '../design/reader_typography.dart';
-import '../design/reference_assets.dart';
 import '../l10n/app_localizations.dart';
 import '../models/book_models.dart';
 import '../providers/api_client.dart';
@@ -57,7 +55,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   final TextEditingController _findController = TextEditingController();
   final FocusNode _findFocusNode = FocusNode();
   bool _showFindBar = false;
-  bool _footerExpanded = false;
+  // Legacy expanded-grid flag — permanently off; tools live in clean sheets now.
+  static const bool _footerExpanded = false;
   bool _pageCurlEnabled = true;
   final ReaderPageController _pageController = ReaderPageController();
   int _currentPageViewIndex = 0;
@@ -70,6 +69,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   List<_ReaderSection> _allSections = const [];
   List<_ReaderSection> _renderedSections = const [];
   bool _remoteProgressApplied = false;
+  bool _autoStartApplied = false;
   Timer? _progressSyncTimer;
   Timer? _idleTimer;
 
@@ -436,7 +436,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     setState(() {
       _pageCurlEnabled = next;
       _showChrome = false;
-      if (next) _footerExpanded = true;
     });
     await ReaderPrefsStorage.writePageCurlMode(widget.bookId, next);
     if (!mounted) return;
@@ -1162,12 +1161,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     return 64;
   }
 
-  int _readerFooterActionCount({required bool hasChapter}) {
-    var count = 15;
-    if (hasChapter) count += 3;
-    return count;
-  }
-
   Widget _buildPageViewReader({
     required List<_ReaderSection> sections,
     required bool dark,
@@ -1253,12 +1246,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     required bool hasChapter,
     required bool expanded,
   }) {
-    if (!expanded) return _readerToolbarCollapsedHeight + 24;
-    const iconsPerRow = 6;
-    const rowHeight = 40.0;
-    final rows =
-        (_readerFooterActionCount(hasChapter: hasChapter) / iconsPerRow).ceil();
-    return 28.0 + rows * rowHeight + 16 + 24;
+    // Slim fixed toolbar: progress row + a single row of primary actions.
+    return _readerToolbarCollapsedHeight + 46;
   }
 
   double _readerBottomChromeInset(
@@ -1280,12 +1269,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       h += _readerFindPanelHeight(hasChapter: hasChapter) + 8;
     }
     return h + 12;
-  }
-
-  void _toggleFooterExpanded() {
-    setState(() => _footerExpanded = !_footerExpanded);
-    _idleTimer?.cancel();
-    if (_footerExpanded) _scheduleAutoHide();
   }
 
   BoxDecoration _readerChromePanelDecoration({
@@ -1436,6 +1419,326 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     );
   }
 
+  /// Polished display panel: theme, text size, line spacing, reading mode.
+  Future<void> _openDisplaySettingsSheet({
+    required Color bg,
+    required Color text,
+    required bool dark,
+  }) async {
+    final accent = Theme.of(context).colorScheme.primary;
+    final muted = text.withValues(alpha: 0.55);
+    final fill = text.withValues(alpha: dark ? 0.12 : 0.06);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: bg,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: StatefulBuilder(
+          builder: (sheetContext, setSheet) {
+            void apply(VoidCallback fn) {
+              setState(fn);
+              setSheet(() {});
+            }
+
+            Widget label(String s) => Padding(
+                  padding: const EdgeInsets.only(top: 16, bottom: 8),
+                  child: Text(
+                    s.toUpperCase(),
+                    style: TextStyle(
+                      color: muted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                );
+
+            Widget seg<T>(
+              List<({T value, String label})> items,
+              T current,
+              ValueChanged<T> onTap,
+            ) {
+              return Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: fill,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    for (final it in items)
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => onTap(it.value),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            padding: const EdgeInsets.symmetric(vertical: 9),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: current == it.value
+                                  ? accent
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              it.label,
+                              style: TextStyle(
+                                color:
+                                    current == it.value ? Colors.white : text,
+                                fontWeight: current == it.value
+                                    ? FontWeight.w700
+                                    : FontWeight.w600,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            }
+
+            Widget stepper(IconData icon, VoidCallback onTap) => GestureDetector(
+                  onTap: onTap,
+                  child: Container(
+                    width: 46,
+                    height: 40,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: fill,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, color: text, size: 20),
+                  ),
+                );
+
+            final spacing = [1.65, 1.8, 1.95].firstWhere(
+              (h) => (h - _lineHeight).abs() < 0.08,
+              orElse: () => _lineHeight,
+            );
+
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    l10n.readerDisplayTitle,
+                    style: TextStyle(
+                      color: text,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  label(l10n.readerThemeLabel),
+                  seg<String>(
+                    [
+                      (value: 'light', label: l10n.readerThemeLight),
+                      (value: 'sepia', label: l10n.readerThemeSepia),
+                      (value: 'dark', label: l10n.readerThemeDark),
+                    ],
+                    _mode,
+                    (v) async {
+                      apply(() => _mode = v);
+                      await ReaderPrefsStorage.writeThemeMode(widget.bookId, v);
+                    },
+                  ),
+                  label(l10n.readerTextSizeLabel),
+                  Row(
+                    children: [
+                      stepper(Icons.text_decrease_rounded, () async {
+                        final next = (_fontSize - 1).clamp(15, 28).toDouble();
+                        apply(() => _fontSize = next);
+                        await ReaderPrefsStorage.writeFontSize(
+                            widget.bookId, next);
+                      }),
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            '${_fontSize.round()}',
+                            style: TextStyle(
+                              color: text,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                      stepper(Icons.text_increase_rounded, () async {
+                        final next = (_fontSize + 1).clamp(15, 28).toDouble();
+                        apply(() => _fontSize = next);
+                        await ReaderPrefsStorage.writeFontSize(
+                            widget.bookId, next);
+                      }),
+                    ],
+                  ),
+                  label(l10n.readerSpacingLabel),
+                  seg<double>(
+                    [
+                      (value: 1.65, label: l10n.typographyCompact),
+                      (value: 1.8, label: l10n.typographyComfort),
+                      (value: 1.95, label: l10n.typographyLarge),
+                    ],
+                    spacing,
+                    (v) => apply(() => _lineHeight = v),
+                  ),
+                  label(l10n.readerModeLabel),
+                  seg<bool>(
+                    [
+                      (value: false, label: l10n.readerModeScroll),
+                      (value: true, label: l10n.readerModePage),
+                    ],
+                    _pageCurlEnabled,
+                    (v) {
+                      if (v != _pageCurlEnabled) {
+                        Navigator.of(sheetContext).pop();
+                        _togglePageCurlMode();
+                      }
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  /// Secondary reader tools (annotations, offline, navigation, pin).
+  Future<void> _openReaderToolsSheet({
+    required BookSummary book,
+    required List<_ReaderSection> sections,
+    required BookContentTree? contentTree,
+    required bool offlineCached,
+  }) async {
+    final dark = _mode == 'dark';
+    final bg = ReaderTypography.paperBackground(_mode);
+    final text = ReaderTypography.paperText(dark);
+    final muted = text.withValues(alpha: 0.6);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: bg,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (sheetContext) {
+        Widget tile(IconData icon, String title, VoidCallback onTap,
+            {bool enabled = true}) {
+          return ListTile(
+            enabled: enabled,
+            leading: Icon(icon, color: enabled ? text : muted, size: 22),
+            title: Text(
+              title,
+              style: TextStyle(
+                color: enabled ? text : muted,
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+              ),
+            ),
+            onTap: () {
+              Navigator.of(sheetContext).pop();
+              onTap();
+            },
+          );
+        }
+
+        Widget divider() => Divider(
+              height: 8,
+              color: text.withValues(alpha: 0.10),
+              indent: 16,
+              endIndent: 16,
+            );
+
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      l10n.readerToolsTitle,
+                      style: TextStyle(
+                        color: text,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+                if (_hasSelectedChapter) ...[
+                  tile(Icons.grid_view_rounded, l10n.backToChaptersTooltip,
+                      _returnToChapters),
+                  tile(
+                    Icons.swap_horiz_rounded,
+                    l10n.filterChapterTooltip,
+                    () {
+                      if (contentTree != null &&
+                          contentTree.chapters.isNotEmpty) {
+                        _pickChapter(contentTree.chapters);
+                      }
+                    },
+                    enabled:
+                        contentTree != null && contentTree.chapters.isNotEmpty,
+                  ),
+                  tile(Icons.tag_rounded, l10n.filterPageTooltip, _pickPage,
+                      enabled: sections.isNotEmpty),
+                  divider(),
+                ],
+                tile(Icons.bookmarks_outlined, l10n.chaptersHeading,
+                    _openBookmarksSheet),
+                tile(Icons.bookmark_add_outlined, l10n.bookmarkSaved,
+                    _toggleBookmark),
+                tile(
+                  offlineCached
+                      ? Icons.cloud_done_outlined
+                      : Icons.cloud_download_outlined,
+                  offlineCached
+                      ? l10n.removeOfflineCopy
+                      : l10n.saveChaptersOffline,
+                  () => _toggleOfflineCache(offlineCached),
+                ),
+                divider(),
+                tile(Icons.cloud_upload_outlined,
+                    l10n.saveCloudBookmarkTooltip, () => _saveCloudBookmark(book)),
+                tile(Icons.sticky_note_2_outlined, l10n.addNoteTooltip,
+                    () => _createQuickNote(book)),
+                tile(Icons.highlight_alt_outlined, l10n.addHighlightTooltip,
+                    () => _addQuickHighlight(book)),
+                tile(Icons.format_paint_outlined, l10n.highlightsTooltip,
+                    _openHighlightsSheet),
+                divider(),
+                tile(
+                  _autoHideEnabled ? Icons.push_pin_outlined : Icons.push_pin,
+                  _autoHideEnabled ? l10n.pinControls : l10n.autoHideControls,
+                  () {
+                    setState(() {
+                      _autoHideEnabled = !_autoHideEnabled;
+                      _showChrome = true;
+                    });
+                    if (_autoHideEnabled) _scheduleAutoHide();
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   final Map<int, GlobalKey> _sectionKeys = {};
   double _lineHeight = 1.8;
 
@@ -1510,6 +1813,28 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
               pageNumber: _selectedPageNumber,
             );
           });
+        }
+        // Start reading the first chapter automatically instead of showing a
+        // chapter-picker screen. Only when no saved chapter is being restored.
+        if (hasTree &&
+            contentTree.chapters.isNotEmpty &&
+            _selectedChapterKey == null &&
+            !_autoStartApplied) {
+          final cloudResolved =
+              asyncCloudProgress.hasValue || asyncCloudProgress.hasError;
+          final cloudChapter =
+              asyncCloudProgress.valueOrNull?.chapterKey ?? '';
+          final canAutoStart =
+              widget.showChapterPicker || (cloudResolved && cloudChapter.isEmpty);
+          if (canAutoStart) {
+            _autoStartApplied = true;
+            final first = contentTree.chapters.first;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && _selectedChapterKey == null) {
+                _selectChapter(first, contentTree);
+              }
+            });
+          }
         }
         final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
         final findPanelH =
@@ -2039,14 +2364,48 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                children: [
                                   _ReaderChromeIcon(
-                                    tooltip: _footerExpanded
-                                        ? l10n.readerCollapseTools
-                                        : l10n.readerExpandTools,
-                                    onPressed: _toggleFooterExpanded,
-                                    icon: _footerExpanded
-                                        ? Icons.keyboard_arrow_down_rounded
-                                        : Icons.keyboard_arrow_up_rounded,
+                                    tooltip: l10n.chaptersHeading,
+                                    onPressed: () => _openTocSheet(
+                                        book.title, sections, contentTree),
+                                    icon: Icons.toc_rounded,
+                                    color: text,
+                                  ),
+                                  _ReaderChromeIcon(
+                                    tooltip: l10n.findInBookLabel,
+                                    onPressed: _toggleFindBar,
+                                    icon: _showFindBar
+                                        ? Icons.search_off_rounded
+                                        : Icons.search_rounded,
+                                    color: text,
+                                  ),
+                                  _ReaderChromeIcon(
+                                    tooltip: l10n.readerDisplayTitle,
+                                    onPressed: () => _openDisplaySettingsSheet(
+                                        bg: bg, text: text, dark: dark),
+                                    icon: Icons.text_format_rounded,
+                                    color: text,
+                                  ),
+                                  _ReaderChromeIcon(
+                                    onPressed: _toggleBookmark,
+                                    icon: Icons.bookmark_add_outlined,
+                                    color: text,
+                                  ),
+                                  _ReaderChromeIcon(
+                                    tooltip: l10n.readerMoreTooltip,
+                                    onPressed: () => _openReaderToolsSheet(
+                                      book: book,
+                                      sections: sections,
+                                      contentTree: contentTree,
+                                      offlineCached: offlineCached,
+                                    ),
+                                    icon: Icons.more_horiz_rounded,
                                     color: text,
                                   ),
                                 ],
@@ -2382,7 +2741,7 @@ class _DesktopChapterRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = AppColors.accent;
+    final accent = AppColors.primary;
     final divider = textColor.withValues(alpha: dark ? 0.18 : 0.1);
     final railBg = dark
         ? background.withValues(alpha: 0.6)
@@ -2612,43 +2971,24 @@ List<_ReaderSection> _buildSectionsFromTree(
 }
 
 Color _readerPageAccent(int seed, bool dark, bool sepia) {
-  final hues = sepia
-      ? <double>[30, 24, 40, 18, 44, 33, 12, 48]
-      : dark
-          ? <double>[208, 172, 265, 148, 318, 188, 230, 195]
-          : <double>[212, 168, 142, 235, 352, 195, 265, 28];
-  final h = hues[seed.abs() % hues.length];
-  final s = sepia ? 0.38 : (dark ? 0.26 : 0.32);
-  final l = dark ? 0.48 : (sepia ? 0.36 : 0.38);
-  return HSLColor.fromAHSL(1, h, s, l).toColor();
+  // Consistent brand accent (no per-chapter hue shifts) for theme harmony.
+  return dark ? AppColors.primaryMid : AppColors.primary;
 }
 
 Color _readerPaperBase(bool dark, bool sepia) {
-  if (dark) return const Color(0xFF1A2130);
-  if (sepia) return const Color(0xFFFDF7EE);
-  return const Color(0xFFFFFCF8);
+  if (dark) return const Color(0xFF0F141B); // clean neutral dark
+  if (sepia) return const Color(0xFF29B6E0); // warm reading option
+  return Colors.white; // clean white, harmonised with the app theme
 }
 
-/// Full-page background — reference `bg1` pattern blended with reader paper tone.
+/// Flat, clean reading surface harmonised with the app theme (no texture).
 BoxDecoration _readerPageBackgroundDecoration(bool dark, bool sepia) {
-  final base = _readerPaperBase(dark, sepia);
-  return BoxDecoration(
-    color: base,
-    image: DecorationImage(
-      image: const AssetImage(ReferenceAssets.bgPattern),
-      fit: BoxFit.cover,
-      opacity: dark ? 0.22 : sepia ? 0.42 : 0.5,
-      colorFilter: ColorFilter.mode(
-        base.withValues(alpha: dark ? 0.78 : 0.58),
-        BlendMode.srcATop,
-      ),
-    ),
-  );
+  return BoxDecoration(color: _readerPaperBase(dark, sepia));
 }
 
 Color _readerPaperForPage(Color base, Color accent, int seed) {
-  final mix = 0.028 + (seed % 7) * 0.005;
-  return Color.lerp(base, accent, mix.clamp(0.0, 0.07)) ?? base;
+  // Consistent page background across chapters (no per-chapter tint).
+  return base;
 }
 
 bool _readerShowPageSubtitle(_ReaderSection s, AppLocalizations l10n) {

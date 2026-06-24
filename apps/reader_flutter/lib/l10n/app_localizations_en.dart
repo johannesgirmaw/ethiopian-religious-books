@@ -1529,4 +1529,40 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get adminIsFeaturedSubtitle =>
       'Show in the Popular banner on the home screen';
+
+  @override
+  String get readerDisplayTitle => 'Display';
+
+  @override
+  String get readerThemeLabel => 'Theme';
+
+  @override
+  String get readerThemeLight => 'Light';
+
+  @override
+  String get readerThemeSepia => 'Sepia';
+
+  @override
+  String get readerThemeDark => 'Dark';
+
+  @override
+  String get readerTextSizeLabel => 'Text size';
+
+  @override
+  String get readerSpacingLabel => 'Line spacing';
+
+  @override
+  String get readerModeLabel => 'Reading mode';
+
+  @override
+  String get readerModeScroll => 'Scroll';
+
+  @override
+  String get readerModePage => 'Pages';
+
+  @override
+  String get readerToolsTitle => 'Reading tools';
+
+  @override
+  String get readerMoreTooltip => 'Reading tools';
 }

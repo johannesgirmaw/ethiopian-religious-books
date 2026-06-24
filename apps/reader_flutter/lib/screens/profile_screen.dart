@@ -40,7 +40,7 @@ class ProfileScreen extends ConsumerWidget {
       body: ListView(
         padding: AppLayout.page,
         children: [
-          _ProfileHero(user: user, l10n: l10n),
+          // _ProfileHero(user: user, l10n: l10n),
           const SizedBox(height: AppLayout.sectionGap),
           AppSectionAccent(label: l10n.profileAccountDetails.toUpperCase()),
           const SizedBox(height: AppLayout.blockGap),

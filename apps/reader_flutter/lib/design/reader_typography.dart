@@ -63,19 +63,19 @@ class ReaderTypography {
   }
 
   static Color paperText(bool dark) =>
-      dark ? const Color(0xFFE8E2D8) : AppColors.textPrimary;
+      dark ? const Color(0xFFE6EDF7) : AppColors.textPrimary;
 
   static Color paperMuted(bool dark) =>
-      dark ? const Color(0xFF9C958C) : AppColors.textSecondary;
+      dark ? const Color(0xFF93A1B5) : AppColors.textSecondary;
 
   static Color paperBackground(String mode) {
     switch (mode) {
       case 'dark':
-        return const Color(0xFF1A1814);
+        return const Color(0xFF0F141B);
       case 'sepia':
-        return const Color(0xFFF3E6D0);
+        return const Color(0xFF29B6E0);
       default:
-        return const Color(0xFFFBF8F2);
+        return Colors.white;
     }
   }
 }

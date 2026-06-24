@@ -39,8 +39,10 @@ class DesktopSidebar extends StatelessWidget {
   bool _isSelected(String route) {
     if (route == '/home') return currentLocation.startsWith('/home');
     if (route == '/profile') {
-      return currentLocation.startsWith('/profile') ||
-          currentLocation.startsWith('/admin');
+      return currentLocation.startsWith('/profile');
+    }
+    if (route == '/admin') {
+      return currentLocation.startsWith('/admin');
     }
     return currentLocation.startsWith(route);
   }
@@ -221,7 +223,10 @@ class _SidebarLinkState extends State<_SidebarLink> {
   }
 }
 
-List<DesktopSidebarItem> defaultDesktopSidebarItems(AppLocalizations l10n) {
+List<DesktopSidebarItem> defaultDesktopSidebarItems(
+  AppLocalizations l10n, {
+  bool isAdmin = false,
+}) {
   return [
     DesktopSidebarItem(
       route: '/home',
@@ -251,6 +256,14 @@ List<DesktopSidebarItem> defaultDesktopSidebarItems(AppLocalizations l10n) {
       label: l10n.navProfile,
       shortcut: '⌘4',
     ),
+    if (isAdmin)
+      DesktopSidebarItem(
+        route: '/admin/books',
+        icon: Icons.admin_panel_settings_outlined,
+        selectedIcon: Icons.admin_panel_settings_rounded,
+        label: l10n.adminHomeTitle,
+        shortcut: '⌘5',
+      ),
   ];
 }
 

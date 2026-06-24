@@ -227,7 +227,10 @@ class _SidebarLinkState extends State<_SidebarLink> {
   }
 }
 
-List<WebSidebarItem> defaultWebSidebarItems(AppLocalizations l10n) {
+List<WebSidebarItem> defaultWebSidebarItems(
+  AppLocalizations l10n, {
+  bool isAdmin = false,
+}) {
   return [
     WebSidebarItem(
       route: '/home',
@@ -253,5 +256,12 @@ List<WebSidebarItem> defaultWebSidebarItems(AppLocalizations l10n) {
       selectedIcon: Icons.account_circle_rounded,
       label: l10n.navProfile,
     ),
+    if (isAdmin)
+      WebSidebarItem(
+        route: '/admin/books',
+        icon: Icons.admin_panel_settings_outlined,
+        selectedIcon: Icons.admin_panel_settings_rounded,
+        label: l10n.adminHomeTitle,
+      ),
   ];
 }

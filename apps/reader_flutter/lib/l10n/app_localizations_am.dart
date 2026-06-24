@@ -1501,4 +1501,40 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get adminIsFeaturedSubtitle => 'በመነሻ ገጹ የተወዳጆች ባነር ላይ አሳይ';
+
+  @override
+  String get readerDisplayTitle => 'ማሳያ';
+
+  @override
+  String get readerThemeLabel => 'ገጽታ';
+
+  @override
+  String get readerThemeLight => 'ብርሃን';
+
+  @override
+  String get readerThemeSepia => 'ሴፒያ';
+
+  @override
+  String get readerThemeDark => 'ጨለማ';
+
+  @override
+  String get readerTextSizeLabel => 'የጽሑፍ መጠን';
+
+  @override
+  String get readerSpacingLabel => 'የመስመር ክፍተት';
+
+  @override
+  String get readerModeLabel => 'የንባብ ዘዴ';
+
+  @override
+  String get readerModeScroll => 'ሸብለላ';
+
+  @override
+  String get readerModePage => 'ገጾች';
+
+  @override
+  String get readerToolsTitle => 'የንባብ መሣሪያዎች';
+
+  @override
+  String get readerMoreTooltip => 'የንባብ መሣሪያዎች';
 }

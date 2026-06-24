@@ -713,5 +713,17 @@
   "tagsLabel": "Tags",
   "adminChipAddHint": "Add and press Enter",
   "adminIsFeaturedLabel": "Featured (Popular)",
-  "adminIsFeaturedSubtitle": "Show in the Popular banner on the home screen"
+  "adminIsFeaturedSubtitle": "Show in the Popular banner on the home screen",
+  "readerDisplayTitle": "Display",
+  "readerThemeLabel": "Theme",
+  "readerThemeLight": "Light",
+  "readerThemeSepia": "Sepia",
+  "readerThemeDark": "Dark",
+  "readerTextSizeLabel": "Text size",
+  "readerSpacingLabel": "Line spacing",
+  "readerModeLabel": "Reading mode",
+  "readerModeScroll": "Scroll",
+  "readerModePage": "Pages",
+  "readerToolsTitle": "Reading tools",
+  "readerMoreTooltip": "Reading tools"
 }

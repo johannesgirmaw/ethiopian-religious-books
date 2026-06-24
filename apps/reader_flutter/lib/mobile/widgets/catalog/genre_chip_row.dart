@@ -85,7 +85,7 @@ class _Chip extends StatelessWidget {
           border: Border.all(
             color: active ? AppColors.primary : AppColors.line,
           ),
-          boxShadow: active ? AppShadows.floatingBtn : null,
+          // boxShadow: active ? AppShadows.floatingBtn : null,
         ),
         child: Text(
           label,
