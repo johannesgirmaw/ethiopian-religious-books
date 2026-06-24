@@ -264,6 +264,8 @@ class _MobileSearchBarState extends State<MobileSearchBar> {
                     ),
                     decoration: InputDecoration(
                       isCollapsed: true,
+                      filled: false,
+                      fillColor: Colors.transparent,
                       hintText: widget.hint,
                       hintStyle: const TextStyle(
                         color: AppColors.textTertiary,
@@ -271,6 +273,9 @@ class _MobileSearchBarState extends State<MobileSearchBar> {
                         fontWeight: FontWeight.w500,
                       ),
                       border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
                     ),
                   ),
                 ),
