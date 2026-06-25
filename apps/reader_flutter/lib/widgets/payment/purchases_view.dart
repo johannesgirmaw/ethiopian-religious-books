@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
@@ -11,18 +10,23 @@ import '../app_state_view.dart';
 import '../skeleton_loader.dart';
 import 'payment_method_icons.dart';
 import 'payment_status_chip.dart';
+import 'payments_page_header.dart';
+import 'purchase_detail_sheet.dart';
 
 /// Shared, responsive "My purchases" list: the current user's payment
 /// transactions with live status. Used by the mobile, web and desktop adapters.
 class PurchasesView extends ConsumerWidget {
-  const PurchasesView({super.key});
+  const PurchasesView({super.key, this.showHeader = false});
+
+  /// Render a page title header (web/desktop, where the scaffold has none).
+  final bool showHeader;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final async = ref.watch(myTransactionsProvider);
 
-    return RefreshIndicator(
+    final content = RefreshIndicator(
       onRefresh: () async => ref.invalidate(myTransactionsProvider),
       child: async.when(
         loading: () => const Padding(
@@ -68,6 +72,17 @@ class PurchasesView extends ConsumerWidget {
         },
       ),
     );
+
+    if (!showHeader) return content;
+    return Column(
+      children: [
+        PaymentsPageHeader(
+          title: l10n.paymentMyPurchases,
+          subtitle: l10n.paymentPurchasesSubtitle,
+        ),
+        Expanded(child: content),
+      ],
+    );
   }
 }
 
@@ -88,7 +103,7 @@ class _PurchaseTile extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final method = txn.method;
     return InkWell(
-      onTap: txn.bookId.isEmpty ? null : () => context.push('/book/${txn.bookId}'),
+      onTap: () => showPurchaseDetail(context, txn),
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: Container(
         padding: const EdgeInsets.all(14),

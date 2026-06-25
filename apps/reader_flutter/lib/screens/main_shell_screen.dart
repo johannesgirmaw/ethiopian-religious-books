@@ -19,9 +19,9 @@ class MainShellScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final location = GoRouterState.of(context).matchedLocation;
-    final isAdmin =
-        ref.watch(sessionNotifierProvider).valueOrNull?.user?.isSuperuser ??
-            false;
+    final user = ref.watch(sessionNotifierProvider).valueOrNull?.user;
+    final isAdmin = user?.isPlatformAdmin ?? false;
+    final canManageBooks = user?.canManageBooks ?? false;
 
     if (useWebShell(context)) {
       return WebShellScaffold(
@@ -41,7 +41,7 @@ class MainShellScreen extends ConsumerWidget {
       '/home',
       '/purchases',
       '/profile',
-      if (isAdmin) '/admin/books',
+      if (canManageBooks) '/admin/books',
     ];
     final index = _indexFor(location, tabs);
 
@@ -80,11 +80,15 @@ class MainShellScreen extends ConsumerWidget {
                   selectedIcon: Icons.person_rounded,
                   label: l10n.navProfile,
                 ),
-                if (isAdmin)
+                if (canManageBooks)
                   LiquidNavItem(
-                    icon: Icons.admin_panel_settings_outlined,
-                    selectedIcon: Icons.admin_panel_settings_rounded,
-                    label: l10n.adminHomeTitle,
+                    icon: isAdmin
+                        ? Icons.admin_panel_settings_outlined
+                        : Icons.menu_book_outlined,
+                    selectedIcon: isAdmin
+                        ? Icons.admin_panel_settings_rounded
+                        : Icons.menu_book_rounded,
+                    label: isAdmin ? l10n.adminHomeTitle : l10n.authorMyBooks,
                   ),
               ],
             ),

@@ -20,10 +20,11 @@ class AdminPurchasesScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
 
     if (useWebShell(context)) {
-      return const WebPageScaffold(body: AdminPurchasesView());
+      return const WebPageScaffold(body: AdminPurchasesView(showHeader: true));
     }
     if (useDesktopShell(context)) {
-      return const DesktopPageScaffold(body: AdminPurchasesView());
+      return const DesktopPageScaffold(
+          body: AdminPurchasesView(showHeader: true));
     }
 
     return Scaffold(

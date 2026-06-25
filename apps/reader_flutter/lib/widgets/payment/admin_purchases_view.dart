@@ -11,20 +11,31 @@ import '../app_state_view.dart';
 import '../skeleton_loader.dart';
 import 'payment_method_icons.dart';
 import 'payment_status_chip.dart';
+import 'payments_page_header.dart';
+import 'receipt_preview.dart';
 
-/// Admin "Orders & payments" surface: dashboard totals, a status filter, the
-/// transaction list, and a review sheet to approve (→ complete + ledger) or
-/// reject manual payments. Shared by the mobile/web/desktop admin adapters.
+String _formatDate(DateTime? d) {
+  if (d == null) return '—';
+  final l = d.toLocal();
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${l.year}-${two(l.month)}-${two(l.day)}';
+}
+
+/// Admin "Orders & payments": dashboard totals, a status filter, the
+/// transactions (table on wide screens, cards on mobile), and a review sheet to
+/// approve (→ complete + ledger) or reject manual payments.
 class AdminPurchasesView extends ConsumerStatefulWidget {
-  const AdminPurchasesView({super.key});
+  const AdminPurchasesView({super.key, this.showHeader = false});
+
+  final bool showHeader;
 
   @override
   ConsumerState<AdminPurchasesView> createState() => _AdminPurchasesViewState();
 }
 
 class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
-  // Default to the queue that needs action.
-  String _filter = PaymentStatus.onReview.apiValue;
+  // Default to All so an order stays visible (with its new status) after review.
+  String _filter = '';
 
   static const _filters = <PaymentStatus?>[
     null, // All
@@ -40,12 +51,12 @@ class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
     final dashAsync = ref.watch(adminPaymentDashboardProvider);
     final txnsAsync = ref.watch(adminTransactionsProvider(_filter));
 
-    return RefreshIndicator(
+    final body = RefreshIndicator(
       onRefresh: () async => refreshAdminPaymentsW(ref),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 820),
-          child: ListView(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final wide = constraints.maxWidth >= 760;
+          return ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
             children: [
               dashAsync.when(
@@ -63,9 +74,9 @@ class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
                 children: [
                   for (final s in _filters)
                     ChoiceChip(
-                      label: Text(
-                        s == null ? l10n.filterAll : paymentStatusLabel(s, l10n),
-                      ),
+                      label: Text(s == null
+                          ? l10n.adminOrdersAllStatuses
+                          : paymentStatusLabel(s, l10n)),
                       selected: _filter == (s?.apiValue ?? ''),
                       onSelected: (_) =>
                           setState(() => _filter = s?.apiValue ?? ''),
@@ -90,24 +101,37 @@ class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
                       child: Center(child: Text(l10n.adminNoOrders)),
                     );
                   }
-                  return Column(
-                    children: [
-                      for (final txn in items)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _AdminOrderTile(
-                            txn: txn,
-                            onReview: () => _openReview(txn),
-                          ),
-                        ),
-                    ],
-                  );
+                  return wide
+                      ? _OrdersTable(items: items, onReview: _openReview)
+                      : Column(
+                          children: [
+                            for (final txn in items)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: _AdminOrderCard(
+                                  txn: txn,
+                                  onReview: () => _openReview(txn),
+                                ),
+                              ),
+                          ],
+                        );
                 },
               ),
             ],
-          ),
-        ),
+          );
+        },
       ),
+    );
+
+    if (!widget.showHeader) return body;
+    return Column(
+      children: [
+        PaymentsPageHeader(
+          title: l10n.adminPaymentsTitle,
+          subtitle: l10n.adminOrdersSubtitle,
+        ),
+        Expanded(child: body),
+      ],
     );
   }
 
@@ -124,6 +148,9 @@ class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Dashboard summary
+// ---------------------------------------------------------------------------
 class _DashboardSummary extends StatelessWidget {
   const _DashboardSummary({required this.dashboard});
 
@@ -213,8 +240,89 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _AdminOrderTile extends StatelessWidget {
-  const _AdminOrderTile({required this.txn, required this.onReview});
+// ---------------------------------------------------------------------------
+// Desktop / web table
+// ---------------------------------------------------------------------------
+class _OrdersTable extends StatelessWidget {
+  const _OrdersTable({required this.items, required this.onReview});
+
+  final List<PaymentTransaction> items;
+  final void Function(PaymentTransaction) onReview;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceCard,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.border),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 720),
+          child: DataTable(
+            headingRowColor: const WidgetStatePropertyAll(AppColors.surfaceSoft),
+            columns: [
+              DataColumn(label: Text(l10n.paymentDate)),
+              DataColumn(label: Text(l10n.adminCustomer)),
+              DataColumn(label: Text(l10n.adminBook)),
+              DataColumn(label: Text(l10n.paymentTotal)),
+              DataColumn(label: Text(l10n.paymentMethod)),
+              DataColumn(label: Text(l10n.paymentStatusColumn)),
+              const DataColumn(label: Text('')),
+            ],
+            rows: [
+              for (final txn in items)
+                DataRow(
+                  cells: [
+                    DataCell(Text(_formatDate(txn.createdAt))),
+                    DataCell(_Truncated(txn.userEmail, 180)),
+                    DataCell(_Truncated(txn.bookTitle, 200)),
+                    DataCell(Text(formatMoney(txn.amount, txn.currency))),
+                    DataCell(Text(txn.method == null
+                        ? '—'
+                        : paymentMethodLabel(txn.method!, l10n))),
+                    DataCell(PaymentStatusChip(status: txn.status)),
+                    DataCell(
+                      FilledButton.tonal(
+                        onPressed: () => onReview(txn),
+                        child: Text(l10n.adminReview),
+                      ),
+                    ),
+                  ],
+                  onSelectChanged: (_) => onReview(txn),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Truncated extends StatelessWidget {
+  const _Truncated(this.text, this.maxWidth);
+
+  final String text;
+  final double maxWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Mobile card
+// ---------------------------------------------------------------------------
+class _AdminOrderCard extends StatelessWidget {
+  const _AdminOrderCard({required this.txn, required this.onReview});
 
   final PaymentTransaction txn;
   final VoidCallback onReview;
@@ -222,67 +330,79 @@ class _AdminOrderTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  txn.bookTitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+    return InkWell(
+      onTap: onReview,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceCard,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    txn.bookTitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              PaymentStatusChip(status: txn.status),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            txn.userEmail,
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Text(
-                formatMoney(txn.amount, txn.currency),
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primary,
+                const SizedBox(width: 8),
+                PaymentStatusChip(status: txn.status),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              txn.userEmail,
+              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Text(
+                  formatMoney(txn.amount, txn.currency),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary,
+                  ),
                 ),
-              ),
-              const Spacer(),
-              if (txn.status.isAwaitingReview)
+                const Spacer(),
+                Text(
+                  _formatDate(txn.createdAt),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+                const SizedBox(width: 10),
                 FilledButton.tonal(
                   onPressed: onReview,
                   child: Text(l10n.adminReview),
-                )
-              else
-                TextButton(onPressed: onReview, child: Text(l10n.adminReview)),
-            ],
-          ),
-        ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
+// ---------------------------------------------------------------------------
+// Review sheet (approve / reject)
+// ---------------------------------------------------------------------------
 class _ReviewSheet extends ConsumerStatefulWidget {
   const _ReviewSheet({required this.txn});
 
@@ -345,218 +465,122 @@ class _ReviewSheetState extends ConsumerState<_ReviewSheet> {
           bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpace.lg,
         ),
         child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      l10n.adminOrderDetail,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                  PaymentStatusChip(status: txn.status),
-                ],
-              ),
-              const SizedBox(height: AppSpace.md),
-              _DetailRow(label: l10n.adminBook, value: txn.bookTitle),
-              _DetailRow(label: l10n.adminCustomer, value: txn.userEmail),
-              _DetailRow(
-                label: l10n.paymentTotal,
-                value: formatMoney(txn.amount, txn.currency),
-              ),
-              if (txn.method != null)
-                _DetailRow(
-                  label: l10n.paymentTitle,
-                  value: paymentMethodLabel(txn.method!, l10n),
-                ),
-              if (txn.bank != null)
-                _DetailRow(label: l10n.adminBank, value: txn.bank!.name),
-              if (txn.transactionReference.isNotEmpty)
-                _DetailRow(
-                  label: l10n.paymentTransactionReference,
-                  value: txn.transactionReference,
-                ),
-              const SizedBox(height: AppSpace.md),
-              Text(
-                l10n.adminReceipt,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: AppSpace.xs),
-              _ReceiptPreview(txn: txn),
-              if (_error != null) ...[
-                const SizedBox(height: AppSpace.sm),
-                Text(
-                  _error!,
-                  style: const TextStyle(color: AppColors.errorText, fontSize: 13),
-                ),
-              ],
-              if (canAct) ...[
-                const SizedBox(height: AppSpace.md),
-                TextField(
-                  controller: _note,
-                  decoration: InputDecoration(
-                    labelText: l10n.adminRejectReason,
-                    border: const OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                ),
-                const SizedBox(height: AppSpace.md),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
                 Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton(
-                        onPressed: _busy ? null : () => _act(approve: false),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.errorText,
-                          side: const BorderSide(color: AppColors.errorBorder),
-                          minimumSize: const Size.fromHeight(48),
+                      child: Text(
+                        l10n.adminOrderDetail,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
                         ),
-                        child: Text(l10n.adminReject),
                       ),
                     ),
-                    const SizedBox(width: AppSpace.sm),
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: _busy ? null : () => _act(approve: true),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.successText,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size.fromHeight(48),
-                        ),
-                        child: _busy
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Text(l10n.adminApprove),
-                      ),
-                    ),
+                    PaymentStatusChip(status: txn.status),
                   ],
                 ),
+                const SizedBox(height: AppSpace.md),
+                DetailRow(label: l10n.adminBook, value: txn.bookTitle),
+                DetailRow(label: l10n.adminCustomer, value: txn.userEmail),
+                DetailRow(
+                  label: l10n.paymentTotal,
+                  value: formatMoney(txn.amount, txn.currency),
+                ),
+                DetailRow(
+                  label: l10n.paymentCommission,
+                  value: formatMoney(txn.commissionAmount, txn.currency),
+                ),
+                if (txn.method != null)
+                  DetailRow(
+                    label: l10n.paymentMethod,
+                    value: paymentMethodLabel(txn.method!, l10n),
+                  ),
+                if (txn.bank != null)
+                  DetailRow(label: l10n.adminBank, value: txn.bank!.name),
+                if (txn.transactionReference.isNotEmpty)
+                  DetailRow(
+                    label: l10n.paymentTransactionReference,
+                    value: txn.transactionReference,
+                  ),
+                DetailRow(label: l10n.paymentDate, value: _formatDate(txn.createdAt)),
+                const SizedBox(height: AppSpace.md),
+                Text(
+                  l10n.adminReceipt,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: AppSpace.xs),
+                ReceiptPreview(transaction: txn),
+                if (_error != null) ...[
+                  const SizedBox(height: AppSpace.sm),
+                  Text(
+                    _error!,
+                    style: const TextStyle(
+                        color: AppColors.errorText, fontSize: 13),
+                  ),
+                ],
+                if (canAct) ...[
+                  const SizedBox(height: AppSpace.md),
+                  TextField(
+                    controller: _note,
+                    decoration: InputDecoration(
+                      labelText: l10n.adminRejectReason,
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpace.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _busy ? null : () => _act(approve: false),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.errorText,
+                            side: const BorderSide(color: AppColors.errorBorder),
+                            minimumSize: const Size.fromHeight(48),
+                          ),
+                          child: Text(l10n.adminReject),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpace.sm),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: _busy ? null : () => _act(approve: true),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.successText,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size.fromHeight(48),
+                          ),
+                          child: _busy
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text(l10n.adminApprove),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 110,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textTertiary,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ReceiptPreview extends ConsumerWidget {
-  const _ReceiptPreview({required this.txn});
-
-  final PaymentTransaction txn;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    // Empty receipt_url means nothing was uploaded.
-    if (txn.receiptUrl.isEmpty) {
-      return _placeholder(
-          l10n.adminNoReceipt, Icons.image_not_supported_outlined);
-    }
-    final bytesAsync = ref.watch(receiptBytesProvider(txn.id));
-    return bytesAsync.when(
-      loading: () => const SizedBox(
-        height: 120,
-        child: Center(child: CircularProgressIndicator()),
-      ),
-      error: (_, __) =>
-          _placeholder(l10n.paymentErrorGeneric, Icons.error_outline_rounded),
-      data: (bytes) {
-        if (bytes == null) {
-          return _placeholder(
-              l10n.adminNoReceipt, Icons.image_not_supported_outlined);
-        }
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          child: Image.memory(
-            bytes,
-            height: 240,
-            width: double.infinity,
-            fit: BoxFit.contain,
-            // Non-image receipts (e.g. PDF) can't render as an image.
-            errorBuilder: (_, __, ___) =>
-                _placeholder(l10n.adminViewReceipt, Icons.description_outlined),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _placeholder(String label, IconData icon) {
-    return Container(
-      height: 88,
-      decoration: BoxDecoration(
-        color: AppColors.surfaceSoft,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: AppColors.textTertiary),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-          ),
-        ],
       ),
     );
   }

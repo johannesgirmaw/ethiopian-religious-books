@@ -62,6 +62,10 @@ class AdminBookCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         tag_slugs = validated_data.pop("tag_slugs", [])
         user = self.context["request"].user
+        # When an author creates a book and no author was set explicitly,
+        # attribute it to them so commission/revenue accrue correctly.
+        if not validated_data.get("author") and getattr(user, "role", "") == "author":
+            validated_data["author"] = user
         book = Book.objects.create(created_by=user, **validated_data)
         for slug in tag_slugs:
             tag, _ = Tag.objects.get_or_create(slug=slug, defaults={"label": slug})

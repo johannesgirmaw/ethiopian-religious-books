@@ -230,6 +230,7 @@ class _SidebarLinkState extends State<_SidebarLink> {
 List<WebSidebarItem> defaultWebSidebarItems(
   AppLocalizations l10n, {
   bool isAdmin = false,
+  bool canManageBooks = false,
 }) {
   return [
     WebSidebarItem(
@@ -262,19 +263,23 @@ List<WebSidebarItem> defaultWebSidebarItems(
       selectedIcon: Icons.account_circle_rounded,
       label: l10n.navProfile,
     ),
-    if (isAdmin) ...[
+    if (isAdmin || canManageBooks)
       WebSidebarItem(
         route: '/admin/books',
-        icon: Icons.admin_panel_settings_outlined,
-        selectedIcon: Icons.admin_panel_settings_rounded,
-        label: l10n.adminHomeTitle,
+        icon: isAdmin
+            ? Icons.admin_panel_settings_outlined
+            : Icons.menu_book_outlined,
+        selectedIcon: isAdmin
+            ? Icons.admin_panel_settings_rounded
+            : Icons.menu_book_rounded,
+        label: isAdmin ? l10n.adminHomeTitle : l10n.authorMyBooks,
       ),
+    if (isAdmin)
       WebSidebarItem(
         route: '/admin/payments',
         icon: Icons.receipt_long_outlined,
         selectedIcon: Icons.receipt_long_rounded,
         label: l10n.adminPaymentsTitle,
       ),
-    ],
   ];
 }

@@ -71,11 +71,19 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         return null;
       }
       final session = asyncSession.valueOrNull;
-      final isAdmin = session?.user?.isSuperuser == true;
+      final user = session?.user;
+      final isAdmin = user?.isPlatformAdmin == true;
+      final canManageBooks = user?.canManageBooks == true;
 
       if (loc.startsWith('/admin')) {
         if (session == null) return '/login';
-        if (!isAdmin) return '/home';
+        // Book management is open to authors (their own books); everything
+        // else under /admin is platform-admin only.
+        if (loc.startsWith('/admin/books')) {
+          if (!canManageBooks) return '/home';
+        } else if (!isAdmin) {
+          return '/home';
+        }
       }
       return null;
     },

@@ -820,5 +820,12 @@
   "adminApprove": "Approve & complete",
   "adminReject": "Reject",
   "adminApproved": "Order approved and completed",
-  "adminRejected": "Order rejected"
+  "adminRejected": "Order rejected",
+  "authorMyBooks": "My books",
+  "paymentDate": "Date",
+  "paymentMethod": "Method",
+  "paymentCommission": "Platform commission",
+  "paymentOrderId": "Order ID",
+  "adminOrdersAllStatuses": "All",
+  "paymentStatusColumn": "Status"
 }

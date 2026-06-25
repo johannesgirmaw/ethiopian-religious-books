@@ -938,5 +938,12 @@
   "adminApprove": "አጽድቅና አጠናቅቅ",
   "adminReject": "ውድቅ አድርግ",
   "adminApproved": "ትዕዛዙ ጸድቆ ተጠናቋል",
-  "adminRejected": "ትዕዛዙ ውድቅ ተደርጓል"
+  "adminRejected": "ትዕዛዙ ውድቅ ተደርጓል",
+  "authorMyBooks": "የእኔ መጻሕፍት",
+  "paymentDate": "ቀን",
+  "paymentMethod": "ዘዴ",
+  "paymentCommission": "የመድረክ ኮሚሽን",
+  "paymentOrderId": "የትዕዛዝ መለያ",
+  "adminOrdersAllStatuses": "ሁሉም",
+  "paymentStatusColumn": "ሁኔታ"
 }

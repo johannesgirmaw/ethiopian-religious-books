@@ -1786,4 +1786,25 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get adminRejected => 'ትዕዛዙ ውድቅ ተደርጓል';
+
+  @override
+  String get authorMyBooks => 'የእኔ መጻሕፍት';
+
+  @override
+  String get paymentDate => 'ቀን';
+
+  @override
+  String get paymentMethod => 'ዘዴ';
+
+  @override
+  String get paymentCommission => 'የመድረክ ኮሚሽን';
+
+  @override
+  String get paymentOrderId => 'የትዕዛዝ መለያ';
+
+  @override
+  String get adminOrdersAllStatuses => 'ሁሉም';
+
+  @override
+  String get paymentStatusColumn => 'ሁኔታ';
 }

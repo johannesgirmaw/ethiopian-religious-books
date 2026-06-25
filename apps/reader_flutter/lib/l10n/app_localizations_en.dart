@@ -1818,4 +1818,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adminRejected => 'Order rejected';
+
+  @override
+  String get authorMyBooks => 'My books';
+
+  @override
+  String get paymentDate => 'Date';
+
+  @override
+  String get paymentMethod => 'Method';
+
+  @override
+  String get paymentCommission => 'Platform commission';
+
+  @override
+  String get paymentOrderId => 'Order ID';
+
+  @override
+  String get adminOrdersAllStatuses => 'All';
+
+  @override
+  String get paymentStatusColumn => 'Status';
 }

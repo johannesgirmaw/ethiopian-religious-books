@@ -20,10 +20,10 @@ class PurchasesScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
 
     if (useWebShell(context)) {
-      return const WebPageScaffold(body: PurchasesView());
+      return const WebPageScaffold(body: PurchasesView(showHeader: true));
     }
     if (useDesktopShell(context)) {
-      return const DesktopPageScaffold(body: PurchasesView());
+      return const DesktopPageScaffold(body: PurchasesView(showHeader: true));
     }
     return ShellPageScaffold(
       title: l10n.paymentMyPurchases,

@@ -226,6 +226,7 @@ class _SidebarLinkState extends State<_SidebarLink> {
 List<DesktopSidebarItem> defaultDesktopSidebarItems(
   AppLocalizations l10n, {
   bool isAdmin = false,
+  bool canManageBooks = false,
 }) {
   return [
     DesktopSidebarItem(
@@ -262,21 +263,25 @@ List<DesktopSidebarItem> defaultDesktopSidebarItems(
       label: l10n.navProfile,
       shortcut: '⌘4',
     ),
-    if (isAdmin) ...[
+    if (isAdmin || canManageBooks)
       DesktopSidebarItem(
         route: '/admin/books',
-        icon: Icons.admin_panel_settings_outlined,
-        selectedIcon: Icons.admin_panel_settings_rounded,
-        label: l10n.adminHomeTitle,
+        icon: isAdmin
+            ? Icons.admin_panel_settings_outlined
+            : Icons.menu_book_outlined,
+        selectedIcon: isAdmin
+            ? Icons.admin_panel_settings_rounded
+            : Icons.menu_book_rounded,
+        label: isAdmin ? l10n.adminHomeTitle : l10n.authorMyBooks,
         shortcut: '⌘5',
       ),
+    if (isAdmin)
       DesktopSidebarItem(
         route: '/admin/payments',
         icon: Icons.receipt_long_outlined,
         selectedIcon: Icons.receipt_long_rounded,
         label: l10n.adminPaymentsTitle,
       ),
-    ],
   ];
 }
 

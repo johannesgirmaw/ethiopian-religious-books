@@ -3415,6 +3415,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Order rejected'**
   String get adminRejected;
+
+  /// No description provided for @authorMyBooks.
+  ///
+  /// In en, this message translates to:
+  /// **'My books'**
+  String get authorMyBooks;
+
+  /// No description provided for @paymentDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get paymentDate;
+
+  /// No description provided for @paymentMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Method'**
+  String get paymentMethod;
+
+  /// No description provided for @paymentCommission.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform commission'**
+  String get paymentCommission;
+
+  /// No description provided for @paymentOrderId.
+  ///
+  /// In en, this message translates to:
+  /// **'Order ID'**
+  String get paymentOrderId;
+
+  /// No description provided for @adminOrdersAllStatuses.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get adminOrdersAllStatuses;
+
+  /// No description provided for @paymentStatusColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get paymentStatusColumn;
 }
 
 class _AppLocalizationsDelegate
