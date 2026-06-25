@@ -3,6 +3,7 @@ import datetime
 import environ
 from pathlib import Path
 
+from corsheaders.defaults import default_headers
 from django.templatetags.static import static
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
@@ -126,6 +127,9 @@ CORS_ALLOWED_ORIGINS = env.list(
     "CORS_ALLOWED_ORIGINS",
     default=["http://localhost:5173", "http://127.0.0.1:5173"],
 )
+# Allow the app's custom dev header (sent by Flutter web to pick a
+# device-reachable MinIO presign host) through CORS preflight.
+CORS_ALLOW_HEADERS = (*default_headers, "x-dev-s3-origin")
 
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://localhost:6379/0")
