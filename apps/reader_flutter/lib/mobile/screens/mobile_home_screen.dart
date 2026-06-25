@@ -371,7 +371,7 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
               ),
             ),
           ],
-          _RecommendedRail(),
+          _RecommendedRail(genre: _genre),
           const SizedBox(height: 20),
           _SectionHeader(title: l10n.homeSectionExplore),
           const SizedBox(height: 4),
@@ -470,12 +470,20 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-/// Horizontal "Recommended" rail on the home screen.
+/// Horizontal "Recommended" rail on the home screen. Respects the selected
+/// genre filter.
 class _RecommendedRail extends ConsumerWidget {
+  const _RecommendedRail({this.genre});
+
+  final String? genre;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final books = ref.watch(recommendedBooksProvider).valueOrNull ?? const [];
+    final all = ref.watch(recommendedBooksProvider).valueOrNull ?? const [];
+    final books = genre == null
+        ? all
+        : all.where((b) => (b.genre ?? '').trim() == genre).toList();
     if (books.length < 2) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

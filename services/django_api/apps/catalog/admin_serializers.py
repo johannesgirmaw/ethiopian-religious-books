@@ -95,6 +95,7 @@ class AdminBookSerializer(serializers.ModelSerializer):
             "rating_count",
             "readers_count",
             "is_premium",
+            "is_featured",
             "chapters_draft",
             "catalog_visibility",
             "cover_object_key",

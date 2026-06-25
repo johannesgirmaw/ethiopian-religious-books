@@ -174,7 +174,9 @@ class _DesktopHomeScreenBodyState extends ConsumerState<DesktopHomeScreenBody> {
         ? lastOpened.bookId
         : null;
     final recommended =
-        ref.watch(recommendedBooksProvider).valueOrNull ?? const [];
+        (ref.watch(recommendedBooksProvider).valueOrNull ?? const [])
+            .where((b) => _genre == null || (b.genre ?? '').trim() == _genre)
+            .toList();
 
     final headerChildren = <Widget>[
       header,
