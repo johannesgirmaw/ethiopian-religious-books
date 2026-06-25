@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "apps.legal",
     "apps.catalog",
     "apps.study",
+    "apps.payments",
 ]
 
 MIDDLEWARE = [
@@ -75,6 +76,11 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+
+# Uploaded media (payment receipts via default_storage). In production point the
+# default STORAGES backend at object storage to keep receipts off local disk.
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 TEMPLATES = [
     {
@@ -164,6 +170,11 @@ FEATURE_BOOK_CONTENT_INDEX = env.bool("FEATURE_BOOK_CONTENT_INDEX", default=True
 FEATURE_CATALOG_TOLERANT_SEARCH = env.bool("FEATURE_CATALOG_TOLERANT_SEARCH", default=True)
 FEATURE_STUDY_TOOLS = env.bool("FEATURE_STUDY_TOOLS", default=True)
 FEATURE_DAILY_PLAN_REMINDERS = env.bool("FEATURE_DAILY_PLAN_REMINDERS", default=True)
+FEATURE_PAYMENTS = env.bool("FEATURE_PAYMENTS", default=True)
+
+# Encryption key for stored gateway credentials. Leave empty to derive a key
+# from SECRET_KEY (fine for dev); set a stable Fernet key in production.
+PAYMENTS_FERNET_KEY = env("PAYMENTS_FERNET_KEY", default="")
 
 
 def _admin_environment(request):
@@ -270,6 +281,60 @@ UNFOLD = {
                         "title": _("Book pages"),
                         "icon": "article",
                         "link": reverse_lazy("admin:catalog_bookpage_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Payments & commissions"),
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Transactions"),
+                        "icon": "payments",
+                        "link": reverse_lazy(
+                            "admin:payments_paymenttransaction_changelist"
+                        ),
+                    },
+                    {
+                        "title": _("Revenue ledger"),
+                        "icon": "account_balance",
+                        "link": reverse_lazy("admin:payments_revenueledger_changelist"),
+                    },
+                    {
+                        "title": _("Banks"),
+                        "icon": "account_balance_wallet",
+                        "link": reverse_lazy("admin:payments_bank_changelist"),
+                    },
+                    {
+                        "title": _("Author commissions"),
+                        "icon": "percent",
+                        "link": reverse_lazy(
+                            "admin:payments_authorcommission_changelist"
+                        ),
+                    },
+                    {
+                        "title": _("Author profiles"),
+                        "icon": "badge",
+                        "link": reverse_lazy("admin:payments_authorprofile_changelist"),
+                    },
+                    {
+                        "title": _("Platform settings"),
+                        "icon": "tune",
+                        "link": reverse_lazy(
+                            "admin:payments_platformsettings_changelist"
+                        ),
+                    },
+                    {
+                        "title": _("Gateway credentials"),
+                        "icon": "key",
+                        "link": reverse_lazy(
+                            "admin:payments_gatewaycredential_changelist"
+                        ),
+                    },
+                    {
+                        "title": _("Audit log"),
+                        "icon": "fact_check",
+                        "link": reverse_lazy("admin:payments_auditlog_changelist"),
                     },
                 ],
             },

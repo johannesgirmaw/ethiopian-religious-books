@@ -243,6 +243,12 @@ List<DesktopSidebarItem> defaultDesktopSidebarItems(
       shortcut: '⌘2',
     ),
     DesktopSidebarItem(
+      route: '/purchases',
+      icon: Icons.receipt_long_outlined,
+      selectedIcon: Icons.receipt_long_rounded,
+      label: l10n.paymentMyPurchases,
+    ),
+    DesktopSidebarItem(
       route: '/settings',
       icon: Icons.tune_rounded,
       selectedIcon: Icons.tune_rounded,
@@ -256,7 +262,7 @@ List<DesktopSidebarItem> defaultDesktopSidebarItems(
       label: l10n.navProfile,
       shortcut: '⌘4',
     ),
-    if (isAdmin)
+    if (isAdmin) ...[
       DesktopSidebarItem(
         route: '/admin/books',
         icon: Icons.admin_panel_settings_outlined,
@@ -264,6 +270,13 @@ List<DesktopSidebarItem> defaultDesktopSidebarItems(
         label: l10n.adminHomeTitle,
         shortcut: '⌘5',
       ),
+      DesktopSidebarItem(
+        route: '/admin/payments',
+        icon: Icons.receipt_long_outlined,
+        selectedIcon: Icons.receipt_long_rounded,
+        label: l10n.adminPaymentsTitle,
+      ),
+    ],
   ];
 }
 

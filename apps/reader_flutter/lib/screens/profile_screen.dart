@@ -95,6 +95,22 @@ class ProfileScreen extends ConsumerWidget {
           AppSectionAccent(label: l10n.aboutTitle.toUpperCase()),
           const SizedBox(height: AppLayout.blockGap),
           _ProfileLinkRow(
+            icon: Icons.tune_rounded,
+            title: l10n.navSettings,
+            subtitle: l10n.profileSettingsSubtitle,
+            onTap: () => context.go('/settings'),
+          ),
+          if (user != null) ...[
+            const SizedBox(height: AppLayout.itemGap),
+            _ProfileLinkRow(
+              icon: Icons.receipt_long_outlined,
+              title: l10n.paymentMyPurchases,
+              subtitle: l10n.paymentPurchasesSubtitle,
+              onTap: () => context.go('/purchases'),
+            ),
+          ],
+          const SizedBox(height: AppLayout.itemGap),
+          _ProfileLinkRow(
             icon: Icons.info_outline_rounded,
             title: l10n.drawerAbout,
             subtitle: l10n.aboutAppSectionTitle,
@@ -107,6 +123,13 @@ class ProfileScreen extends ConsumerWidget {
               title: l10n.adminPanel,
               subtitle: l10n.adminPanelSubtitle,
               onTap: () => context.push('/admin'),
+            ),
+            const SizedBox(height: AppLayout.itemGap),
+            _ProfileLinkRow(
+              icon: Icons.receipt_long_outlined,
+              title: l10n.adminManageOrders,
+              subtitle: l10n.adminOrdersSubtitle,
+              onTap: () => context.push('/admin/payments'),
             ),
           ],
           if (user != null) ...[

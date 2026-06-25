@@ -16,6 +16,14 @@ def _validate_chapters_draft(value):
         raise serializers.ValidationError(str(exc)) from exc
 
 
+def _validate_percent(value):
+    if value is None:
+        return value
+    if value < 0 or value > 100:
+        raise serializers.ValidationError("Commission percent must be between 0 and 100.")
+    return value
+
+
 class AdminBookCreateSerializer(serializers.ModelSerializer):
     tag_slugs = serializers.ListField(
         child=serializers.SlugField(),
@@ -36,12 +44,20 @@ class AdminBookCreateSerializer(serializers.ModelSerializer):
             "published_year",
             "is_premium",
             "is_featured",
+            "author",
+            "currency",
+            "price",
+            "sale_price",
+            "commission_percent",
             "chapters_draft",
             "tag_slugs",
         )
 
     def validate_chapters_draft(self, value):
         return _validate_chapters_draft(value)
+
+    def validate_commission_percent(self, value):
+        return _validate_percent(value)
 
     def create(self, validated_data):
         tag_slugs = validated_data.pop("tag_slugs", [])
@@ -57,6 +73,11 @@ class AdminBookSerializer(serializers.ModelSerializer):
     published_revision_number = serializers.SerializerMethodField()
     cover_get_url = serializers.SerializerMethodField()
     tag_slugs = serializers.SerializerMethodField()
+    final_price = serializers.SerializerMethodField()
+
+    def get_final_price(self, obj: Book) -> str:
+        value = obj.sale_price if obj.sale_price is not None else obj.price
+        return str(value if value is not None else 0)
 
     def get_published_revision_number(self, obj: Book):
         rev = getattr(obj, "published_revision", None)
@@ -96,6 +117,12 @@ class AdminBookSerializer(serializers.ModelSerializer):
             "readers_count",
             "is_premium",
             "is_featured",
+            "author",
+            "currency",
+            "price",
+            "sale_price",
+            "commission_percent",
+            "final_price",
             "chapters_draft",
             "catalog_visibility",
             "cover_object_key",
@@ -116,6 +143,7 @@ class AdminBookSerializer(serializers.ModelSerializer):
             "cover_object_key",
             "cover_get_url",
             "tag_slugs",
+            "final_price",
             "rating_average",
             "rating_count",
             "readers_count",
@@ -131,6 +159,9 @@ class AdminBookPatchSerializer(serializers.ModelSerializer):
 
     def validate_chapters_draft(self, value):
         return _validate_chapters_draft(value)
+
+    def validate_commission_percent(self, value):
+        return _validate_percent(value)
 
     def update(self, instance, validated_data):
         tag_slugs = validated_data.pop("tag_slugs", None)
@@ -167,6 +198,11 @@ class AdminBookPatchSerializer(serializers.ModelSerializer):
             "published_year",
             "is_premium",
             "is_featured",
+            "author",
+            "currency",
+            "price",
+            "sale_price",
+            "commission_percent",
             "chapters_draft",
             "cover_object_key",
             "tag_slugs",

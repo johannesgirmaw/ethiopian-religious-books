@@ -138,6 +138,12 @@ class DesktopProfileScreenBody extends ConsumerWidget {
               child: Column(
                 children: [
                   _LinkRow(
+                    title: l10n.paymentMyPurchases,
+                    subtitle: l10n.paymentPurchasesSubtitle,
+                    onTap: () => context.go('/purchases'),
+                  ),
+                  const Divider(height: 1),
+                  _LinkRow(
                     title: l10n.drawerAbout,
                     subtitle: l10n.aboutAppSectionTitle,
                     onTap: () => context.push('/about'),
@@ -148,6 +154,12 @@ class DesktopProfileScreenBody extends ConsumerWidget {
                       title: l10n.adminPanel,
                       subtitle: l10n.adminPanelSubtitle,
                       onTap: () => context.push('/admin'),
+                    ),
+                    const Divider(height: 1),
+                    _LinkRow(
+                      title: l10n.adminManageOrders,
+                      subtitle: l10n.adminOrdersSubtitle,
+                      onTap: () => context.push('/admin/payments'),
                     ),
                   ],
                 ],

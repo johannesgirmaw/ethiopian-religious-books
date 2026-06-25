@@ -1537,4 +1537,253 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get readerMoreTooltip => 'የንባብ መሣሪያዎች';
+
+  @override
+  String get paymentTitle => 'ክፍያ';
+
+  @override
+  String get paymentChooseMethod => 'የክፍያ ዘዴ ይምረጡ';
+
+  @override
+  String get paymentMethodStripe => 'የክሬዲት / ዴቢት ካርድ';
+
+  @override
+  String get paymentMethodPaypal => 'PayPal';
+
+  @override
+  String get paymentMethodTelebirr => 'ቴሌብር';
+
+  @override
+  String get paymentMethodBank => 'የባንክ ዝውውር';
+
+  @override
+  String get paymentOrderSummary => 'የትዕዛዝ ማጠቃለያ';
+
+  @override
+  String get paymentPrice => 'ዋጋ';
+
+  @override
+  String get paymentSalePrice => 'የቅናሽ ዋጋ';
+
+  @override
+  String get paymentTotal => 'ጠቅላላ';
+
+  @override
+  String get paymentContinue => 'ቀጥል';
+
+  @override
+  String get paymentSelectBank => 'ባንክ ይምረጡ';
+
+  @override
+  String get paymentBankDetails => 'የባንክ ዝርዝሮች';
+
+  @override
+  String get paymentAccountName => 'የሒሳብ ስም';
+
+  @override
+  String get paymentAccountNumber => 'የሒሳብ ቁጥር';
+
+  @override
+  String get paymentUploadReceipt => 'ደረሰኝ ይስቀሉ';
+
+  @override
+  String get paymentReceiptHint =>
+      'ይጎትቱ ወይም ለመስቀል ይንኩ — JPG፣ PNG ወይም PDF (ቢበዛ 10MB)';
+
+  @override
+  String paymentReceiptSelected(String name) {
+    return 'ተመርጧል፦ $name';
+  }
+
+  @override
+  String get paymentChangeFile => 'ፋይል ይቀይሩ';
+
+  @override
+  String get paymentTransactionReference => 'የግብይት ማመሳከሪያ';
+
+  @override
+  String get paymentTransactionReferenceHint => 'የባንክ ግብይት ማመሳከሪያ ያስገቡ';
+
+  @override
+  String get paymentSubmit => 'ክፍያ ያስገቡ';
+
+  @override
+  String get paymentSubmitting => 'በማስገባት ላይ…';
+
+  @override
+  String paymentPayNow(String amount) {
+    return '$amount ይክፈሉ';
+  }
+
+  @override
+  String get paymentSuccessTitle => 'ክፍያ ገብቷል';
+
+  @override
+  String get paymentSuccessMessage =>
+      'ክፍያዎ ማረጋገጫ በመጠባበቅ ላይ ነው። ሲጸድቅ እናሳውቅዎታለን።';
+
+  @override
+  String paymentSuccessReference(String reference) {
+    return 'ማመሳከሪያ፦ $reference';
+  }
+
+  @override
+  String get paymentDone => 'ተጠናቋል';
+
+  @override
+  String get paymentCopy => 'ቅዳ';
+
+  @override
+  String get paymentCopied => 'ተቀድቷል';
+
+  @override
+  String get paymentErrorGeneric => 'የሆነ ስህተት ተፈጥሯል። እባክዎ እንደገና ይሞክሩ።';
+
+  @override
+  String get paymentGatewayUnavailable => 'ይህ የክፍያ ዘዴ አሁን አይገኝም።';
+
+  @override
+  String get paymentReceiptRequired => 'እባክዎ ደረሰኝ ይስቀሉ።';
+
+  @override
+  String get paymentReferenceRequired => 'እባክዎ የግብይት ማመሳከሪያ ያስገቡ።';
+
+  @override
+  String get paymentBankRequired => 'እባክዎ ባንክ ይምረጡ።';
+
+  @override
+  String get paymentNoMethods => 'አሁን ምንም የክፍያ ዘዴ የለም።';
+
+  @override
+  String get paymentBuyToRead => 'ለማንበብ ይግዙ';
+
+  @override
+  String get purchaseBook => 'መጽሐፍ ይግዙ';
+
+  @override
+  String get paymentMyPurchases => 'የእኔ ግዢዎች';
+
+  @override
+  String get paymentStatusPending => 'በመጠባበቅ ላይ';
+
+  @override
+  String get paymentStatusOnReview => 'በግምገማ ላይ';
+
+  @override
+  String get paymentStatusApproved => 'ጸድቋል';
+
+  @override
+  String get paymentStatusCompleted => 'ተጠናቋል';
+
+  @override
+  String get paymentStatusCancelled => 'ተሰርዟል';
+
+  @override
+  String get paymentStatusRejected => 'ተቀባይነት አላገኘም';
+
+  @override
+  String get paymentStepMethod => 'ዘዴ';
+
+  @override
+  String get paymentStepDetails => 'ዝርዝሮች';
+
+  @override
+  String get paymentStepDone => 'ተጠናቋል';
+
+  @override
+  String get paymentTransferInstruction =>
+      'ጠቅላላውን ወደ ከታች ወዳለው ሒሳብ ያስተላልፉ፣ ከዚያ ደረሰኝዎንና ማመሳከሪያዎን ይስቀሉ።';
+
+  @override
+  String get paymentNoPurchases => 'እስካሁን ምንም ግዢ አላደረጉም።';
+
+  @override
+  String get paymentPurchasesSubtitle => 'ትዕዛዞችዎንና የክፍያ ሁኔታ ይከታተሉ';
+
+  @override
+  String get profileSettingsSubtitle => 'ንባብ፣ ቋንቋ እና የመተግበሪያ ምርጫዎች';
+
+  @override
+  String get adminPricingSection => 'ዋጋና ኮሚሽን';
+
+  @override
+  String get adminCurrencyLabel => 'ምንዛሬ';
+
+  @override
+  String get adminPriceLabel => 'ዋጋ';
+
+  @override
+  String get adminSalePriceLabel => 'የቅናሽ ዋጋ (አማራጭ)';
+
+  @override
+  String get adminCommissionPercentLabel => 'ኮሚሽን %';
+
+  @override
+  String get adminCommissionHelp => 'ባዶ ከተተወ የደራሲውን ወይም የመድረኩን ነባሪ ይጠቀማል';
+
+  @override
+  String get adminPaymentsTitle => 'ትዕዛዞችና ክፍያዎች';
+
+  @override
+  String get adminManageOrders => 'ትዕዛዞችን ያስተዳድሩ';
+
+  @override
+  String get adminOrdersSubtitle => 'ክፍያዎችን ይገምግሙ፣ ያጽድቁ እና ያጠናቅቁ';
+
+  @override
+  String get adminPendingReviews => 'በመጠባበቅ ላይ ያሉ ግምገማዎች';
+
+  @override
+  String get adminCompleted => 'የተጠናቀቁ';
+
+  @override
+  String get adminGrossRevenue => 'ጠቅላላ ገቢ';
+
+  @override
+  String get adminPlatformRevenue => 'የመድረክ ገቢ';
+
+  @override
+  String get adminAuthorRevenue => 'የደራሲ ገቢ';
+
+  @override
+  String get adminNoOrders => 'የሚታይ ትዕዛዝ የለም።';
+
+  @override
+  String get adminReview => 'ግምገማ';
+
+  @override
+  String get adminOrderDetail => 'የትዕዛዝ ዝርዝሮች';
+
+  @override
+  String get adminCustomer => 'ደንበኛ';
+
+  @override
+  String get adminBook => 'መጽሐፍ';
+
+  @override
+  String get adminBank => 'ባንክ';
+
+  @override
+  String get adminReceipt => 'ደረሰኝ';
+
+  @override
+  String get adminNoReceipt => 'ደረሰኝ አልተሰቀለም';
+
+  @override
+  String get adminViewReceipt => 'ደረሰኝ ይመልከቱ';
+
+  @override
+  String get adminRejectReason => 'ምክንያት (አማራጭ)';
+
+  @override
+  String get adminApprove => 'አጽድቅና አጠናቅቅ';
+
+  @override
+  String get adminReject => 'ውድቅ አድርግ';
+
+  @override
+  String get adminApproved => 'ትዕዛዙ ጸድቆ ተጠናቋል';
+
+  @override
+  String get adminRejected => 'ትዕዛዙ ውድቅ ተደርጓል';
 }

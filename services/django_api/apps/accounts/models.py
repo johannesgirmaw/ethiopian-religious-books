@@ -32,7 +32,7 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     role = models.CharField(
         max_length=20,
-        choices=[("reader", "reader"), ("admin", "admin")],
+        choices=[("reader", "reader"), ("author", "author"), ("admin", "admin")],
         default="reader",
     )
     display_name = models.CharField(max_length=255, blank=True)

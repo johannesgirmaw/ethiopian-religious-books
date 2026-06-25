@@ -39,7 +39,7 @@ class MainShellScreen extends ConsumerWidget {
 
     final tabs = <String>[
       '/home',
-      '/settings',
+      '/purchases',
       '/profile',
       if (isAdmin) '/admin/books',
     ];
@@ -71,9 +71,9 @@ class MainShellScreen extends ConsumerWidget {
                   label: l10n.navHome,
                 ),
                 LiquidNavItem(
-                  icon: Icons.settings_outlined,
-                  selectedIcon: Icons.settings_rounded,
-                  label: l10n.navSettings,
+                  icon: Icons.receipt_long_outlined,
+                  selectedIcon: Icons.receipt_long_rounded,
+                  label: l10n.paymentMyPurchases,
                 ),
                 LiquidNavItem(
                   icon: Icons.person_outline_rounded,
@@ -101,8 +101,11 @@ class MainShellScreen extends ConsumerWidget {
     }
 
     if (location.startsWith('/admin')) return find('/admin/books');
-    if (location.startsWith('/profile')) return find('/profile');
-    if (location.startsWith('/settings')) return find('/settings');
+    if (location.startsWith('/purchases')) return find('/purchases');
+    // Settings is merged into the Profile tab.
+    if (location.startsWith('/profile') || location.startsWith('/settings')) {
+      return find('/profile');
+    }
     // /home and /downloads both map to the Home tab.
     return find('/home');
   }

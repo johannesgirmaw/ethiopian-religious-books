@@ -46,6 +46,10 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   final _author = TextEditingController();
   final _language = TextEditingController(text: 'am');
   final _publishedYear = TextEditingController();
+  final _price = TextEditingController();
+  final _salePrice = TextEditingController();
+  final _commissionPercent = TextEditingController();
+  String _currency = 'USD';
   List<String> _scriptTagsList = [];
   List<String> _selectedTags = [];
   List<AdminDraftChapter> _chaptersDraft = const [];
@@ -90,6 +94,11 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     _genre = b.genre;
     _isPremium = b.isPremium;
     _isFeatured = b.isFeatured;
+    _currency = b.currency.isNotEmpty ? b.currency : 'USD';
+    _price.text = b.price > 0 ? _trimNum(b.price) : '';
+    _salePrice.text = b.salePrice != null ? _trimNum(b.salePrice!) : '';
+    _commissionPercent.text =
+        b.commissionPercent != null ? _trimNum(b.commissionPercent!) : '';
     _chaptersDraft = _withConsecutivePageNumbers(b.chaptersDraft);
     _visibility = b.catalogVisibility;
     _createdById = b.createdById;
@@ -153,7 +162,16 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     _author.dispose();
     _language.dispose();
     _publishedYear.dispose();
+    _price.dispose();
+    _salePrice.dispose();
+    _commissionPercent.dispose();
     super.dispose();
+  }
+
+  /// Formats a price/percent for an input field without a trailing `.0`.
+  String _trimNum(double v) {
+    if (v == v.roundToDouble()) return v.toInt().toString();
+    return v.toString();
   }
 
   String _mimeFromPath(String path) {
@@ -489,6 +507,14 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
               'published_year': int.tryParse(_publishedYear.text.trim()),
             'is_premium': _isPremium,
             'is_featured': _isFeatured,
+            'currency': _currency,
+            'price': double.tryParse(_price.text.trim()) ?? 0,
+            'sale_price': _salePrice.text.trim().isEmpty
+                ? null
+                : double.tryParse(_salePrice.text.trim()),
+            'commission_percent': _commissionPercent.text.trim().isEmpty
+                ? null
+                : double.tryParse(_commissionPercent.text.trim()),
             'chapters_draft': chaptersDraftPayload,
             'tag_slugs': _selectedTags,
           },
@@ -516,6 +542,14 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                 : int.tryParse(_publishedYear.text.trim()),
             'is_premium': _isPremium,
             'is_featured': _isFeatured,
+            'currency': _currency,
+            'price': double.tryParse(_price.text.trim()) ?? 0,
+            'sale_price': _salePrice.text.trim().isEmpty
+                ? null
+                : double.tryParse(_salePrice.text.trim()),
+            'commission_percent': _commissionPercent.text.trim().isEmpty
+                ? null
+                : double.tryParse(_commissionPercent.text.trim()),
             'chapters_draft': chaptersDraftPayload,
             'tag_slugs': _selectedTags,
           },
@@ -589,6 +623,28 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
       ],
       onChanged: (v) => setState(() {
         _publishedYear.text = v?.toString() ?? '';
+        _dirty = true;
+      }),
+    );
+  }
+
+  static const _currencyCodes = ['USD', 'ETB', 'EUR', 'GBP'];
+
+  Widget _buildCurrencyDropdown(AppLocalizations l10n) {
+    final codes = [
+      ..._currencyCodes,
+      if (!_currencyCodes.contains(_currency)) _currency,
+    ];
+    return DropdownButtonFormField<String>(
+      initialValue: _currency,
+      isExpanded: true,
+      decoration: InputDecoration(labelText: l10n.adminCurrencyLabel),
+      items: [
+        for (final c in codes)
+          DropdownMenuItem<String>(value: c, child: Text(c)),
+      ],
+      onChanged: (v) => setState(() {
+        _currency = v ?? 'USD';
         _dirty = true;
       }),
     );
@@ -892,6 +948,44 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                       _isFeatured = v;
                       _dirty = true;
                     }),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                AppSectionHeader(title: l10n.adminPricingSection),
+                const SizedBox(height: 12),
+                pair(
+                  _buildCurrencyDropdown(l10n),
+                  TextField(
+                    controller: _price,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: l10n.adminPriceLabel,
+                      prefixText: '$_currency ',
+                    ),
+                    onChanged: (_) => _markDirty(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                pair(
+                  TextField(
+                    controller: _salePrice,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration:
+                        InputDecoration(labelText: l10n.adminSalePriceLabel),
+                    onChanged: (_) => _markDirty(),
+                  ),
+                  TextField(
+                    controller: _commissionPercent,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: l10n.adminCommissionPercentLabel,
+                      helperText: l10n.adminCommissionHelp,
+                      suffixText: '%',
+                    ),
+                    onChanged: (_) => _markDirty(),
                   ),
                 ),
                 const SizedBox(height: 18),

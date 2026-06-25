@@ -11,6 +11,7 @@ import '../models/book_models.dart';
 import '../models/download_job.dart';
 import '../providers/catalog_providers.dart';
 import '../providers/download_jobs_provider.dart';
+import '../providers/payment_providers.dart';
 import '../router/app_navigation.dart';
 import '../utils/catalog_language_label.dart';
 import '../utils/offline_book_download.dart';
@@ -24,6 +25,7 @@ import '../web/widgets/shell/web_overlay_scaffold.dart';
 import '../web/widgets/shell/web_sidebar.dart';
 import '../widgets/app_state_view.dart';
 import '../widgets/book_reviews_section.dart';
+import '../widgets/cover_badges.dart';
 import '../widgets/premium_gate.dart';
 import '../widgets/primitives/shell_primitives.dart';
 import '../widgets/reference/book_detail_cover.dart';
@@ -252,6 +254,10 @@ class BookDetailScreen extends ConsumerWidget {
                           ),
                         ],
                       ),
+                      if (book.requiresPurchase) ...[
+                        const SizedBox(height: 16),
+                        BookPriceLabel(book: book),
+                      ],
                       const SizedBox(height: 18),
                       Row(
                         children: [
@@ -340,24 +346,39 @@ class BookDetailScreen extends ConsumerWidget {
                   ),
                   child: SizedBox(
                     width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () async {
-                        if (await ensureBookUnlocked(context, book) &&
-                            context.mounted) {
-                          context.push('/reader/$bookId?pickChapter=1');
-                        }
+                    child: Builder(
+                      builder: (context) {
+                        final owned = ref
+                                .watch(entitledBookIdsProvider)
+                                .valueOrNull
+                                ?.contains(bookId) ??
+                            false;
+                        final mustBuy = book.requiresPurchase && !owned;
+                        return FilledButton.icon(
+                          onPressed: () async {
+                            if (await ensureBookUnlocked(context, ref, book) &&
+                                context.mounted) {
+                              context.push('/reader/$bookId?pickChapter=1');
+                            }
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.referencePrimary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.cardV2),
+                            ),
+                          ),
+                          icon: Icon(
+                            mustBuy
+                                ? Icons.shopping_cart_outlined
+                                : Icons.menu_book_rounded,
+                            size: 20,
+                          ),
+                          label: Text(mustBuy ? l10n.purchaseBook : l10n.readNow),
+                        );
                       },
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.referencePrimary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.cardV2),
-                        ),
-                      ),
-                      icon: const Icon(Icons.menu_book_rounded, size: 20),
-                      label: Text(l10n.readNow),
                     ),
                   ),
                 ),

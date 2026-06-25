@@ -92,6 +92,12 @@ class DesktopBookCard extends ConsumerWidget {
                         left: 8,
                         child: PremiumBadge(compact: true),
                       ),
+                    if (book.requiresPurchase)
+                      Positioned(
+                        bottom: 8,
+                        right: 8,
+                        child: PriceBadge(book: book, compact: true),
+                      ),
                     if ((meta?.progress ?? 0) > 0)
                       Positioned(
                         left: 0,

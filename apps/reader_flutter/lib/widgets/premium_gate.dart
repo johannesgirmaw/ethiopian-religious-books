@@ -1,14 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../design/app_tokens.dart';
 import '../l10n/app_localizations.dart';
 import '../models/book_models.dart';
+import '../providers/payment_providers.dart';
 import 'cover_badges.dart';
 
-/// Returns true if [book] may be opened. For premium titles (and there is no
-/// purchase flow yet) it shows an informational sheet and returns false.
-Future<bool> ensureBookUnlocked(BuildContext context, BookSummary book) async {
+/// Returns true if [book] may be opened directly.
+///
+/// Order of checks for a premium title:
+///  - already purchased (entitled) -> allow reading (true)
+///  - priced & not purchased -> route to checkout (false)
+///  - premium with no price -> informational sheet (false)
+Future<bool> ensureBookUnlocked(
+  BuildContext context,
+  WidgetRef ref,
+  BookSummary book,
+) async {
   if (!book.isPremium) return true;
+
+  // A completed purchase entitles the user to read.
+  if (await userOwnsBook(ref, book.id)) return true;
+
+  if (book.requiresPurchase) {
+    if (context.mounted) context.push('/payment/${book.id}');
+    return false;
+  }
+  if (!context.mounted) return false;
   final l10n = AppLocalizations.of(context);
   await showModalBottomSheet<void>(
     context: context,

@@ -48,6 +48,36 @@ class Book(models.Model):
     readers_count = models.PositiveIntegerField(default=0)
     is_premium = models.BooleanField(default=False)
     is_featured = models.BooleanField(default=False)  # "Popular" home banner
+
+    # --- Monetisation (payments app) -------------------------------------
+    # The author is a User with the "author" role. Kept nullable so existing
+    # catalogue rows (which only carry the free-text ``author_compiler``) keep
+    # working; the FK is what drives commission resolution and the revenue
+    # ledger.
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="authored_books",
+    )
+    currency = models.CharField(max_length=3, default="USD")
+    price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    sale_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Optional discounted price; when set this is what buyers pay.",
+    )
+    commission_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Optional per-book override of the platform/author commission.",
+    )
+
     search_text_normalized = models.TextField(blank=True, default="", db_index=True)
     published_revision = models.ForeignKey(
         "BookRevision",

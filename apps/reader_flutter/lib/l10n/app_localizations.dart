@@ -2935,6 +2935,486 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reading tools'**
   String get readerMoreTooltip;
+
+  /// No description provided for @paymentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get paymentTitle;
+
+  /// No description provided for @paymentChooseMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a payment method'**
+  String get paymentChooseMethod;
+
+  /// No description provided for @paymentMethodStripe.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit / debit card'**
+  String get paymentMethodStripe;
+
+  /// No description provided for @paymentMethodPaypal.
+  ///
+  /// In en, this message translates to:
+  /// **'PayPal'**
+  String get paymentMethodPaypal;
+
+  /// No description provided for @paymentMethodTelebirr.
+  ///
+  /// In en, this message translates to:
+  /// **'Telebirr'**
+  String get paymentMethodTelebirr;
+
+  /// No description provided for @paymentMethodBank.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank transfer'**
+  String get paymentMethodBank;
+
+  /// No description provided for @paymentOrderSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Order summary'**
+  String get paymentOrderSummary;
+
+  /// No description provided for @paymentPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get paymentPrice;
+
+  /// No description provided for @paymentSalePrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale price'**
+  String get paymentSalePrice;
+
+  /// No description provided for @paymentTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get paymentTotal;
+
+  /// No description provided for @paymentContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get paymentContinue;
+
+  /// No description provided for @paymentSelectBank.
+  ///
+  /// In en, this message translates to:
+  /// **'Select bank'**
+  String get paymentSelectBank;
+
+  /// No description provided for @paymentBankDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank details'**
+  String get paymentBankDetails;
+
+  /// No description provided for @paymentAccountName.
+  ///
+  /// In en, this message translates to:
+  /// **'Account name'**
+  String get paymentAccountName;
+
+  /// No description provided for @paymentAccountNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Account number'**
+  String get paymentAccountNumber;
+
+  /// No description provided for @paymentUploadReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload receipt'**
+  String get paymentUploadReceipt;
+
+  /// No description provided for @paymentReceiptHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag & drop or tap to upload — JPG, PNG or PDF (max 10MB)'**
+  String get paymentReceiptHint;
+
+  /// No description provided for @paymentReceiptSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected: {name}'**
+  String paymentReceiptSelected(String name);
+
+  /// No description provided for @paymentChangeFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Change file'**
+  String get paymentChangeFile;
+
+  /// No description provided for @paymentTransactionReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction reference'**
+  String get paymentTransactionReference;
+
+  /// No description provided for @paymentTransactionReferenceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the bank transaction reference'**
+  String get paymentTransactionReferenceHint;
+
+  /// No description provided for @paymentSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit payment'**
+  String get paymentSubmit;
+
+  /// No description provided for @paymentSubmitting.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitting…'**
+  String get paymentSubmitting;
+
+  /// No description provided for @paymentPayNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay {amount}'**
+  String paymentPayNow(String amount);
+
+  /// No description provided for @paymentSuccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment submitted'**
+  String get paymentSuccessTitle;
+
+  /// No description provided for @paymentSuccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your payment is pending verification. We\'ll notify you once it\'s approved.'**
+  String get paymentSuccessMessage;
+
+  /// No description provided for @paymentSuccessReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference: {reference}'**
+  String paymentSuccessReference(String reference);
+
+  /// No description provided for @paymentDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get paymentDone;
+
+  /// No description provided for @paymentCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get paymentCopy;
+
+  /// No description provided for @paymentCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard'**
+  String get paymentCopied;
+
+  /// No description provided for @paymentErrorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get paymentErrorGeneric;
+
+  /// No description provided for @paymentGatewayUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This payment method isn\'t available right now.'**
+  String get paymentGatewayUnavailable;
+
+  /// No description provided for @paymentReceiptRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please upload a receipt.'**
+  String get paymentReceiptRequired;
+
+  /// No description provided for @paymentReferenceRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the transaction reference.'**
+  String get paymentReferenceRequired;
+
+  /// No description provided for @paymentBankRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a bank.'**
+  String get paymentBankRequired;
+
+  /// No description provided for @paymentNoMethods.
+  ///
+  /// In en, this message translates to:
+  /// **'No payment methods are available right now.'**
+  String get paymentNoMethods;
+
+  /// No description provided for @paymentBuyToRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy to read'**
+  String get paymentBuyToRead;
+
+  /// No description provided for @purchaseBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase book'**
+  String get purchaseBook;
+
+  /// No description provided for @paymentMyPurchases.
+  ///
+  /// In en, this message translates to:
+  /// **'My purchases'**
+  String get paymentMyPurchases;
+
+  /// No description provided for @paymentStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get paymentStatusPending;
+
+  /// No description provided for @paymentStatusOnReview.
+  ///
+  /// In en, this message translates to:
+  /// **'On review'**
+  String get paymentStatusOnReview;
+
+  /// No description provided for @paymentStatusApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get paymentStatusApproved;
+
+  /// No description provided for @paymentStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get paymentStatusCompleted;
+
+  /// No description provided for @paymentStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get paymentStatusCancelled;
+
+  /// No description provided for @paymentStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get paymentStatusRejected;
+
+  /// No description provided for @paymentStepMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Method'**
+  String get paymentStepMethod;
+
+  /// No description provided for @paymentStepDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get paymentStepDetails;
+
+  /// No description provided for @paymentStepDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get paymentStepDone;
+
+  /// No description provided for @paymentTransferInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer the total to the account below, then upload your receipt and reference.'**
+  String get paymentTransferInstruction;
+
+  /// No description provided for @paymentNoPurchases.
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t made any purchases yet.'**
+  String get paymentNoPurchases;
+
+  /// No description provided for @paymentPurchasesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Track your orders and payment status'**
+  String get paymentPurchasesSubtitle;
+
+  /// No description provided for @profileSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading, language and app preferences'**
+  String get profileSettingsSubtitle;
+
+  /// No description provided for @adminPricingSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Pricing & commission'**
+  String get adminPricingSection;
+
+  /// No description provided for @adminCurrencyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get adminCurrencyLabel;
+
+  /// No description provided for @adminPriceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get adminPriceLabel;
+
+  /// No description provided for @adminSalePriceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale price (optional)'**
+  String get adminSalePriceLabel;
+
+  /// No description provided for @adminCommissionPercentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Commission %'**
+  String get adminCommissionPercentLabel;
+
+  /// No description provided for @adminCommissionHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave blank to use the author or platform default'**
+  String get adminCommissionHelp;
+
+  /// No description provided for @adminPaymentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders & payments'**
+  String get adminPaymentsTitle;
+
+  /// No description provided for @adminManageOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage orders'**
+  String get adminManageOrders;
+
+  /// No description provided for @adminOrdersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review, approve and complete payments'**
+  String get adminOrdersSubtitle;
+
+  /// No description provided for @adminPendingReviews.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending reviews'**
+  String get adminPendingReviews;
+
+  /// No description provided for @adminCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get adminCompleted;
+
+  /// No description provided for @adminGrossRevenue.
+  ///
+  /// In en, this message translates to:
+  /// **'Gross revenue'**
+  String get adminGrossRevenue;
+
+  /// No description provided for @adminPlatformRevenue.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform revenue'**
+  String get adminPlatformRevenue;
+
+  /// No description provided for @adminAuthorRevenue.
+  ///
+  /// In en, this message translates to:
+  /// **'Author revenue'**
+  String get adminAuthorRevenue;
+
+  /// No description provided for @adminNoOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'No orders to show.'**
+  String get adminNoOrders;
+
+  /// No description provided for @adminReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get adminReview;
+
+  /// No description provided for @adminOrderDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Order details'**
+  String get adminOrderDetail;
+
+  /// No description provided for @adminCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get adminCustomer;
+
+  /// No description provided for @adminBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Book'**
+  String get adminBook;
+
+  /// No description provided for @adminBank.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank'**
+  String get adminBank;
+
+  /// No description provided for @adminReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt'**
+  String get adminReceipt;
+
+  /// No description provided for @adminNoReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'No receipt uploaded'**
+  String get adminNoReceipt;
+
+  /// No description provided for @adminViewReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'View receipt'**
+  String get adminViewReceipt;
+
+  /// No description provided for @adminRejectReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason (optional)'**
+  String get adminRejectReason;
+
+  /// No description provided for @adminApprove.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve & complete'**
+  String get adminApprove;
+
+  /// No description provided for @adminReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get adminReject;
+
+  /// No description provided for @adminApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Order approved and completed'**
+  String get adminApproved;
+
+  /// No description provided for @adminRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Order rejected'**
+  String get adminRejected;
 }
 
 class _AppLocalizationsDelegate

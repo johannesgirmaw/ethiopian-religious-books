@@ -27,6 +27,9 @@ class BookListSerializer(serializers.ModelSerializer):
     published_revision = PublishedRevisionSerializer(allow_null=True)
     cover_url = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
+    # The price a buyer actually pays (sale_price when set, else price). Computed
+    # inline so the catalog app keeps no dependency on the payments app.
+    final_price = serializers.SerializerMethodField()
 
     class Meta:
         model = Book
@@ -47,10 +50,18 @@ class BookListSerializer(serializers.ModelSerializer):
             "is_featured",
             "catalog_visibility",
             "cover_url",
+            "currency",
+            "price",
+            "sale_price",
+            "final_price",
             "published_revision",
             "created_at",
             "tags",
         )
+
+    def get_final_price(self, obj: Book) -> str:
+        value = obj.sale_price if obj.sale_price is not None else obj.price
+        return str(value if value is not None else 0)
 
     def get_cover_url(self, obj: Book) -> str | None:
         if not (obj.cover_object_key or "").strip():

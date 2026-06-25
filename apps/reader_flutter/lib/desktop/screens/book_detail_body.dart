@@ -9,11 +9,13 @@ import '../../models/book_models.dart';
 import '../../models/download_job.dart';
 import '../../providers/catalog_providers.dart';
 import '../../providers/download_jobs_provider.dart';
+import '../../providers/payment_providers.dart';
 import '../../router/app_navigation.dart';
 import '../../utils/catalog_language_label.dart';
 import '../../utils/offline_book_download.dart';
 import '../../widgets/app_state_view.dart';
 import '../../widgets/book_reviews_section.dart';
+import '../../widgets/cover_badges.dart';
 import '../../widgets/premium_gate.dart';
 import '../../widgets/reference/book_detail_cover.dart';
 import '../../widgets/skeleton_loader.dart';
@@ -80,8 +82,15 @@ class DesktopBookDetailBody extends ConsumerWidget {
           chapterCount: chapterCount,
           pageCount: pageCount,
           downloadJob: currentJob,
+          mustBuy: book.requiresPurchase &&
+              !(ref
+                      .watch(entitledBookIdsProvider)
+                      .valueOrNull
+                      ?.contains(bookId) ??
+                  false),
           onRead: () async {
-            if (await ensureBookUnlocked(context, book) && context.mounted) {
+            if (await ensureBookUnlocked(context, ref, book) &&
+                context.mounted) {
               context.push('/reader/$bookId?pickChapter=1');
             }
           },
@@ -200,6 +209,7 @@ class _LeftRail extends StatelessWidget {
     required this.onRead,
     required this.onDownload,
     required this.onShare,
+    required this.mustBuy,
   });
 
   final BookSummary book;
@@ -210,6 +220,7 @@ class _LeftRail extends StatelessWidget {
   final VoidCallback onRead;
   final VoidCallback onDownload;
   final VoidCallback onShare;
+  final bool mustBuy;
 
   @override
   Widget build(BuildContext context) {
@@ -241,6 +252,7 @@ class _LeftRail extends StatelessWidget {
           onRead: onRead,
           onDownload: onDownload,
           onShare: onShare,
+          mustBuy: mustBuy,
         ),
         const SizedBox(height: 24),
         _DetailsCard(
@@ -265,12 +277,14 @@ class _ActionButtons extends StatelessWidget {
     required this.onRead,
     required this.onDownload,
     required this.onShare,
+    required this.mustBuy,
   });
 
   final AppLocalizations l10n;
   final VoidCallback onRead;
   final VoidCallback onDownload;
   final VoidCallback onShare;
+  final bool mustBuy;
 
   @override
   Widget build(BuildContext context) {
@@ -291,8 +305,11 @@ class _ActionButtons extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          icon: const Icon(Icons.auto_stories_rounded, size: 19),
-          label: Text(l10n.startReading),
+          icon: Icon(
+            mustBuy ? Icons.shopping_cart_outlined : Icons.auto_stories_rounded,
+            size: 19,
+          ),
+          label: Text(mustBuy ? l10n.purchaseBook : l10n.startReading),
         ),
         const SizedBox(height: 10),
         Row(
@@ -410,6 +427,10 @@ class _ContentHeader extends StatelessWidget {
               ],
             ),
           ),
+        ],
+        if (book.requiresPurchase) ...[
+          const SizedBox(height: 16),
+          BookPriceLabel(book: book),
         ],
         const SizedBox(height: 20),
         Wrap(

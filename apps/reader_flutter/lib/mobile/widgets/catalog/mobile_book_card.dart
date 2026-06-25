@@ -6,6 +6,7 @@ import '../../../design/app_tokens.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/book_models.dart';
 import '../../../providers/catalog_providers.dart';
+import '../../../widgets/cover_badges.dart';
 import '../../../widgets/favourite_heart_button.dart';
 import 'book_cover_poster.dart';
 
@@ -60,6 +61,10 @@ class MobileBookCard extends ConsumerWidget {
                     if (book.isPremium) ...[
                       const SizedBox(height: 5),
                       const PremiumBadge(),
+                    ],
+                    if (book.requiresPurchase) ...[
+                      const SizedBox(height: 5),
+                      PriceBadge(book: book),
                     ],
                   ],
                 ),

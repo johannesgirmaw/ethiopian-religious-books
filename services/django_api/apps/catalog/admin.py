@@ -63,15 +63,18 @@ class BookAdmin(ModelAdmin):
     list_display = (
         "title",
         "catalog_visibility",
+        "is_premium",
+        "price",
+        "currency",
         "published_revision_link",
         "primary_language",
         "updated_at",
     )
-    list_filter = ("catalog_visibility", "primary_language")
+    list_filter = ("catalog_visibility", "primary_language", "is_premium")
     search_fields = ("title", "subtitle", "author_compiler", "summary")
     ordering = ("title",)
     readonly_fields = ("id", "search_text_normalized", "created_at", "updated_at")
-    raw_id_fields = ("published_revision", "created_by")
+    raw_id_fields = ("published_revision", "created_by", "author")
     inlines = (BookRevisionInline, BookTagInline)
     fieldsets = (
         (None, {"fields": ("title", "subtitle", "summary", "author_compiler")}),
@@ -84,6 +87,25 @@ class BookAdmin(ModelAdmin):
                     "catalog_visibility",
                     "published_revision",
                 )
+            },
+        ),
+        (
+            "Pricing & commission",
+            {
+                "fields": (
+                    "author",
+                    "is_premium",
+                    "currency",
+                    "price",
+                    "sale_price",
+                    "commission_percent",
+                ),
+                "description": (
+                    "Premium titles with a price require a purchase to read. "
+                    "Leave commission blank to fall back to the author override, "
+                    "then the platform default. <code>author</code> is the User "
+                    "(with the author role) who receives the author share."
+                ),
             },
         ),
         (

@@ -245,6 +245,12 @@ List<WebSidebarItem> defaultWebSidebarItems(
       label: l10n.downloadsPageTitle,
     ),
     WebSidebarItem(
+      route: '/purchases',
+      icon: Icons.receipt_long_outlined,
+      selectedIcon: Icons.receipt_long_rounded,
+      label: l10n.paymentMyPurchases,
+    ),
+    WebSidebarItem(
       route: '/settings',
       icon: Icons.tune_rounded,
       selectedIcon: Icons.tune_rounded,
@@ -256,12 +262,19 @@ List<WebSidebarItem> defaultWebSidebarItems(
       selectedIcon: Icons.account_circle_rounded,
       label: l10n.navProfile,
     ),
-    if (isAdmin)
+    if (isAdmin) ...[
       WebSidebarItem(
         route: '/admin/books',
         icon: Icons.admin_panel_settings_outlined,
         selectedIcon: Icons.admin_panel_settings_rounded,
         label: l10n.adminHomeTitle,
       ),
+      WebSidebarItem(
+        route: '/admin/payments',
+        icon: Icons.receipt_long_outlined,
+        selectedIcon: Icons.receipt_long_rounded,
+        label: l10n.adminPaymentsTitle,
+      ),
+    ],
   ];
 }

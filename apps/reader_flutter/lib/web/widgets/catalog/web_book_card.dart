@@ -89,6 +89,12 @@ class WebBookCard extends ConsumerWidget {
                         left: 10,
                         child: PremiumBadge(),
                       ),
+                    if (book.requiresPurchase)
+                      Positioned(
+                        bottom: 10,
+                        right: 10,
+                        child: PriceBadge(book: book),
+                      ),
                     if ((meta?.progress ?? 0) > 0)
                       Positioned(
                         left: 0,

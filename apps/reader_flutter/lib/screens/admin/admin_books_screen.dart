@@ -60,6 +60,11 @@ class _AdminBooksScreenState extends ConsumerState<AdminBooksScreen> {
         title: Text(l10n.adminBooksListTitle),
         actions: [
           IconButton(
+            tooltip: l10n.adminPaymentsTitle,
+            onPressed: () => context.push('/admin/payments'),
+            icon: const Icon(Icons.receipt_long_outlined),
+          ),
+          IconButton(
             tooltip: l10n.newBookTooltip,
             onPressed: () => context.push('/admin/books/new'),
             icon: const Icon(Icons.add_rounded),

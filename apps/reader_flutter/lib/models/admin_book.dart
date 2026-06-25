@@ -1,3 +1,9 @@
+double _toDouble(dynamic value) {
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0;
+  return 0;
+}
+
 class AdminBooksPage {
   AdminBooksPage({required this.items, required this.total});
 
@@ -34,6 +40,11 @@ class AdminBook {
     this.publishedYear,
     this.isPremium = false,
     this.isFeatured = false,
+    this.authorId,
+    this.currency = 'USD',
+    this.price = 0,
+    this.salePrice,
+    this.commissionPercent,
     this.coverObjectKey,
     this.coverGetUrl,
     this.publishedRevisionId,
@@ -57,6 +68,11 @@ class AdminBook {
   final int? publishedYear;
   final bool isPremium;
   final bool isFeatured;
+  final String? authorId;
+  final String currency;
+  final double price;
+  final double? salePrice;
+  final double? commissionPercent;
   final String? coverObjectKey;
   final String? coverGetUrl;
   final String? publishedRevisionId;
@@ -99,6 +115,15 @@ class AdminBook {
       publishedYear: (j['published_year'] as num?)?.toInt(),
       isPremium: j['is_premium'] as bool? ?? false,
       isFeatured: j['is_featured'] as bool? ?? false,
+      authorId: j['author'] as String?,
+      currency: (j['currency'] as String?)?.trim().isNotEmpty == true
+          ? j['currency'] as String
+          : 'USD',
+      price: _toDouble(j['price']),
+      salePrice: j['sale_price'] == null ? null : _toDouble(j['sale_price']),
+      commissionPercent: j['commission_percent'] == null
+          ? null
+          : _toDouble(j['commission_percent']),
       coverObjectKey: j['cover_object_key'] as String?,
       coverGetUrl: j['cover_get_url'] as String?,
       publishedRevisionId: j['published_revision_id'] as String?,
