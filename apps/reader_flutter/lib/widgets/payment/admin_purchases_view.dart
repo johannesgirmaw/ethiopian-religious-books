@@ -56,76 +56,104 @@ class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
     final dashAsync = ref.watch(adminPaymentDashboardProvider);
     final txnsAsync = ref.watch(adminTransactionsProvider(_filter));
 
-    final body = RefreshIndicator(
-      onRefresh: () async => refreshAdminPaymentsW(ref),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final wide = constraints.maxWidth >= 760;
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+    Widget scrollable({required List<Widget> children}) {
+      return RefreshIndicator(
+        onRefresh: () async => refreshAdminPaymentsW(ref),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          children: children,
+        ),
+      );
+    }
+
+    List<Widget> headerSection() => [
+          dashAsync.when(
+            loading: () => const SizedBox(
+              height: 90,
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (_, __) => const SizedBox.shrink(),
+            data: (d) => _DashboardSummary(dashboard: d),
+          ),
+          const SizedBox(height: AppSpace.lg),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              dashAsync.when(
-                loading: () => const SizedBox(
-                  height: 90,
-                  child: Center(child: CircularProgressIndicator()),
+              for (final s in _filters)
+                ChoiceChip(
+                  label: Text(s == null
+                      ? l10n.adminOrdersAllStatuses
+                      : paymentStatusLabel(s, l10n)),
+                  selected: _filter == (s?.apiValue ?? ''),
+                  onSelected: (_) =>
+                      setState(() => _filter = s?.apiValue ?? ''),
                 ),
-                error: (_, __) => const SizedBox.shrink(),
-                data: (d) => _DashboardSummary(dashboard: d),
-              ),
-              const SizedBox(height: AppSpace.lg),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final s in _filters)
-                    ChoiceChip(
-                      label: Text(s == null
-                          ? l10n.adminOrdersAllStatuses
-                          : paymentStatusLabel(s, l10n)),
-                      selected: _filter == (s?.apiValue ?? ''),
-                      onSelected: (_) =>
-                          setState(() => _filter = s?.apiValue ?? ''),
-                    ),
-                ],
-              ),
-              const SizedBox(height: AppSpace.md),
-              txnsAsync.when(
-                loading: () => const SkeletonCardGroup(count: 3),
-                error: (e, _) => AppStateView(
-                  title: l10n.paymentErrorGeneric,
-                  message: '$e',
-                  icon: Icons.receipt_long_outlined,
-                  actionLabel: l10n.retry,
-                  onAction: () =>
-                      ref.invalidate(adminTransactionsProvider(_filter)),
-                ),
-                data: (items) {
-                  if (items.isEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Center(child: Text(l10n.adminNoOrders)),
-                    );
-                  }
-                  return wide
-                      ? _OrdersTable(items: items, onReview: _openReview)
-                      : Column(
-                          children: [
-                            for (final txn in items)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: _AdminOrderCard(
-                                  txn: txn,
-                                  onReview: () => _openReview(txn),
-                                ),
-                              ),
-                          ],
-                        );
-                },
+            ],
+          ),
+          const SizedBox(height: AppSpace.md),
+        ];
+
+    final body = LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= 760;
+        return txnsAsync.when(
+          loading: () => scrollable(
+            children: [
+              ...headerSection(),
+              const SkeletonCardGroup(count: 3),
+            ],
+          ),
+          error: (e, _) => scrollable(
+            children: [
+              ...headerSection(),
+              AppStateView(
+                title: l10n.paymentErrorGeneric,
+                message: '$e',
+                icon: Icons.receipt_long_outlined,
+                actionLabel: l10n.retry,
+                onAction: () =>
+                    ref.invalidate(adminTransactionsProvider(_filter)),
               ),
             ],
-          );
-        },
-      ),
+          ),
+          data: (items) {
+            if (items.isEmpty) {
+              return scrollable(
+                children: [
+                  ...headerSection(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 32),
+                    child: Center(child: Text(l10n.adminNoOrders)),
+                  ),
+                ],
+              );
+            }
+            if (wide) {
+              return scrollable(
+                children: [
+                  ...headerSection(),
+                  _OrdersTable(items: items, onReview: _openReview),
+                ],
+              );
+            }
+            return scrollable(
+              children: [
+                ...headerSection(),
+                for (final txn in items)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _AdminOrderCard(
+                      txn: txn,
+                      onReview: () => _openReview(txn),
+                    ),
+                  ),
+              ],
+            );
+          },
+        );
+      },
     );
 
     if (!widget.showHeader) return body;
