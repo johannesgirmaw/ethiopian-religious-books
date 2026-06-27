@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,7 +10,11 @@ import '../../l10n/app_localizations.dart';
 import '../../models/book_models.dart';
 import '../../models/payment_models.dart';
 import '../../providers/payment_providers.dart';
+import '../../providers/session_notifier.dart';
+import '../../utils/form_draft_controller.dart';
+import '../../utils/form_draft_keys.dart';
 import '../../utils/money_format.dart';
+import '../../utils/resolve_cover_url.dart';
 import 'payment_method_icons.dart';
 
 enum _Step { method, details, success }
@@ -42,12 +48,114 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
 
   bool _busy = false;
   String? _error;
-  List<BankAccount> _banks = const [];
   PaymentTransaction? _transaction;
+  String? _pendingTransactionId;
+  late final FormDraftController _draft;
+
+  String _draftKey() => FormDraftKeys.scope(
+        userId: ref.read(sessionNotifierProvider).valueOrNull?.user?.id,
+        formKey: FormDraftKeys.payment(widget.book.id),
+      );
+
+  @override
+  void initState() {
+    super.initState();
+    _draft = FormDraftController(
+      draftKey: _draftKey(),
+      capture: _captureDraft,
+      restore: _applyDraft,
+      isEmpty: (data) {
+        final reference = (data['reference'] as String? ?? '').trim();
+        final method = data['method'] as String?;
+        return reference.isEmpty && (method == null || method.isEmpty);
+      },
+    );
+    _referenceCtrl.addListener(_draft.onChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
+  }
+
+  Future<void> _bootstrap() async {
+    unawaited(ref.read(paymentMethodsProvider.future));
+    unawaited(ref.read(banksProvider.future));
+
+    final restored = await _draft.restoreIfPresent();
+    if (restored) {
+      await _hydrateRestoredDraft();
+      if (!mounted) return;
+      setState(() {});
+      showFormDraftRestoredSnackBar(context);
+    }
+  }
+
+  Future<void> _hydrateRestoredDraft() async {
+    final txnId = _pendingTransactionId;
+    _pendingTransactionId = null;
+
+    if (_step == _Step.details) {
+      if (txnId != null && txnId.isNotEmpty && _transaction == null) {
+        try {
+          final txn = await ref.read(transactionProvider(txnId).future);
+          if (mounted) _transaction = txn;
+        } catch (_) {
+          if (mounted) {
+            _step = _Step.method;
+            _error = AppLocalizations.of(context).paymentErrorGeneric;
+          }
+        }
+      }
+
+      try {
+        final banks = await ref.read(banksProvider.future);
+        if (mounted &&
+            _selectedBankId == null &&
+            banks.length == 1) {
+          _selectedBankId = banks.first.id;
+        }
+      } catch (_) {}
+    }
+  }
+
+  Map<String, dynamic> _captureDraft() => {
+        'step': _step.index,
+        'method': _selectedMethod?.name,
+        'bankId': _selectedBankId,
+        'reference': _referenceCtrl.text,
+        'receiptName': _receiptName,
+        'transactionId': _transaction?.id,
+      };
+
+  void _applyDraft(Map<String, dynamic> data) {
+    final stepIndex = (data['step'] as num?)?.toInt();
+    if (stepIndex != null &&
+        stepIndex >= 0 &&
+        stepIndex < _Step.values.length) {
+      _step = _Step.values[stepIndex];
+    }
+    final methodName = data['method'] as String?;
+    if (methodName != null) {
+      for (final method in PaymentMethodKind.values) {
+        if (method.name == methodName) {
+          _selectedMethod = method;
+          break;
+        }
+      }
+    }
+    _selectedBankId = data['bankId'] as String?;
+    _referenceCtrl.text = data['reference'] as String? ?? '';
+    _receiptName = data['receiptName'] as String?;
+    _pendingTransactionId = data['transactionId'] as String?;
+  }
+
+  void _notifyDraftChanged() => _draft.onChanged();
 
   @override
   void dispose() {
+    if (_step != _Step.success) {
+      unawaited(_draft.persistNow());
+    }
+    _referenceCtrl.removeListener(_draft.onChanged);
     _referenceCtrl.dispose();
+    _draft.dispose();
     super.dispose();
   }
 
@@ -68,16 +176,16 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
       );
       if (!mounted) return;
       if (method.isManual) {
-        var banks = result.banks;
-        if (banks.isEmpty) {
-          banks = await ref.read(banksProvider.future);
-        }
+        final banks = await ref.read(banksProvider.future);
+        if (!mounted) return;
         setState(() {
           _transaction = result.transaction;
-          _banks = banks;
-          _selectedBankId = banks.length == 1 ? banks.first.id : null;
+          if (_selectedBankId == null && banks.length == 1) {
+            _selectedBankId = banks.first.id;
+          }
           _step = _Step.details;
         });
+        _notifyDraftChanged();
       } else {
         // Online gateways are not active yet; checkoutUrl will be null.
         setState(() => _error = l10n.paymentGatewayUnavailable);
@@ -104,6 +212,7 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
       _receiptBytes = bytes;
       _receiptName = file.name;
     });
+    _notifyDraftChanged();
   }
 
   Future<void> _submitReceipt() async {
@@ -137,6 +246,7 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
       );
       if (!mounted) return;
       ref.invalidate(myTransactionsProvider);
+      await _draft.clear();
       setState(() {
         _transaction = updated;
         _step = _Step.success;
@@ -174,19 +284,24 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
                   book: widget.book,
                   selected: _selectedMethod,
                   busy: _busy,
-                  onSelect: (m) => setState(() => _selectedMethod = m),
+                  onSelect: (m) => setState(() {
+                    _selectedMethod = m;
+                    _notifyDraftChanged();
+                  }),
                   onContinue: _selectedMethod == null || _busy
                       ? null
                       : _continueFromMethod,
                 ),
               _Step.details => _ManualDetailsStep(
                   book: widget.book,
-                  banks: _banks,
                   selectedBankId: _selectedBankId,
                   receiptName: _receiptName,
                   referenceController: _referenceCtrl,
                   busy: _busy,
-                  onSelectBank: (id) => setState(() => _selectedBankId = id),
+                  onSelectBank: (id) => setState(() {
+                    _selectedBankId = id;
+                    _notifyDraftChanged();
+                  }),
                   onPickReceipt: _pickReceipt,
                   onSubmit: _busy ? null : _submitReceipt,
                 ),
@@ -322,7 +437,10 @@ class _OrderSummary extends StatelessWidget {
                   width: 48,
                   height: 64,
                   child: book.coverUrl != null
-                      ? Image.network(book.coverUrl!, fit: BoxFit.cover)
+                      ? Image.network(
+                          resolveCoverUrl(book.coverUrl!) ?? book.coverUrl!,
+                          fit: BoxFit.cover,
+                        )
                       : Container(
                           color: AppColors.surfaceStrong,
                           child: const Icon(
@@ -587,10 +705,9 @@ class _MethodTile extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // Step 2 — manual bank-transfer details
 // ---------------------------------------------------------------------------
-class _ManualDetailsStep extends StatelessWidget {
+class _ManualDetailsStep extends ConsumerWidget {
   const _ManualDetailsStep({
     required this.book,
-    required this.banks,
     required this.selectedBankId,
     required this.receiptName,
     required this.referenceController,
@@ -601,7 +718,6 @@ class _ManualDetailsStep extends StatelessWidget {
   });
 
   final BookSummary book;
-  final List<BankAccount> banks;
   final String? selectedBankId;
   final String? receiptName;
   final TextEditingController referenceController;
@@ -611,15 +727,9 @@ class _ManualDetailsStep extends StatelessWidget {
   final VoidCallback? onSubmit;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    BankAccount? selectedBank;
-    for (final b in banks) {
-      if (b.id == selectedBankId) {
-        selectedBank = b;
-        break;
-      }
-    }
+    final banksAsync = ref.watch(banksProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -643,21 +753,54 @@ class _ManualDetailsStep extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpace.xs),
-        DropdownButtonFormField<String>(
-          initialValue: selectedBankId,
-          isExpanded: true,
-          decoration: _inputDecoration(),
-          hint: Text(l10n.paymentSelectBank),
-          items: [
-            for (final bank in banks)
-              DropdownMenuItem(value: bank.id, child: Text(bank.name)),
-          ],
-          onChanged: onSelectBank,
+        banksAsync.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: AppSpace.md),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (e, _) => Text(
+            l10n.paymentErrorGeneric,
+            style: const TextStyle(color: AppColors.textSecondary),
+          ),
+          data: (banks) {
+            if (banks.isEmpty) {
+              return Text(
+                l10n.paymentNoBanks,
+                style: const TextStyle(color: AppColors.textSecondary),
+              );
+            }
+            BankAccount? selectedBank;
+            for (final b in banks) {
+              if (b.id == selectedBankId) {
+                selectedBank = b;
+                break;
+              }
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                DropdownButtonFormField<String>(
+                  initialValue: selectedBankId,
+                  isExpanded: true,
+                  decoration: _inputDecoration(),
+                  hint: Text(l10n.paymentSelectBank),
+                  items: [
+                    for (final bank in banks)
+                      DropdownMenuItem(
+                        value: bank.id,
+                        child: Text(bank.name),
+                      ),
+                  ],
+                  onChanged: onSelectBank,
+                ),
+                if (selectedBank != null) ...[
+                  const SizedBox(height: AppSpace.md),
+                  _BankDetailsCard(bank: selectedBank),
+                ],
+              ],
+            );
+          },
         ),
-        if (selectedBank != null) ...[
-          const SizedBox(height: AppSpace.md),
-          _BankDetailsCard(bank: selectedBank),
-        ],
         const SizedBox(height: AppSpace.lg),
         Text(
           l10n.paymentUploadReceipt,

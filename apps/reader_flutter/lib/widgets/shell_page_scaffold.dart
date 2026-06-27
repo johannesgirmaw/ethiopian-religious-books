@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../design/app_tokens.dart';
 
@@ -10,12 +11,16 @@ class ShellPageScaffold extends StatelessWidget {
     required this.body,
     this.actions,
     this.floatingActionButton,
+    this.showBackButton = false,
+    this.onBack,
   });
 
   final String title;
   final Widget body;
   final List<Widget>? actions;
   final Widget? floatingActionButton;
+  final bool showBackButton;
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +43,16 @@ class ShellPageScaffold extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const SizedBox(width: AppLayout.pageHorizontal),
+                  if (showBackButton)
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      color: AppColors.textPrimary,
+                      onPressed: onBack ?? () => context.go('/home'),
+                      tooltip:
+                          MaterialLocalizations.of(context).backButtonTooltip,
+                    )
+                  else
+                    const SizedBox(width: AppLayout.pageHorizontal),
                   Expanded(
                     child: Text(
                       title,

@@ -11,7 +11,10 @@ import '../providers/api_client.dart';
 import '../providers/catalog_providers.dart';
 import '../providers/continue_reading_provider.dart';
 import '../providers/study_providers.dart';
+import '../providers/session_notifier.dart';
 import '../storage/book_content_cache_storage.dart';
+import '../utils/form_draft_keys.dart';
+import '../widgets/reader/quick_note_sheet.dart';
 import '../storage/reader_prefs_storage.dart';
 import '../utils/rich_text_codec.dart' show plainTextFromStoredSummary;
 import '../common/platform/platform_shell.dart';
@@ -70,6 +73,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   List<_ReaderSection> _renderedSections = const [];
   bool _remoteProgressApplied = false;
   bool _autoStartApplied = false;
+  // Chapter side-rail (large screens only) — open by default.
+  bool _chapterRailOpen = true;
   Timer? _progressSyncTimer;
   Timer? _idleTimer;
 
@@ -733,35 +738,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 
   Future<void> _createQuickNote(BookSummary book) async {
-    final controller = TextEditingController();
     final body = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: controller,
-                minLines: 3,
-                maxLines: 5,
-                decoration: InputDecoration(
-                  labelText: l10n.quickNoteLabel,
-                  hintText: l10n.quickNoteHint,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton(
-                  onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-                  child: Text(l10n.saveNote),
-                ),
-              ),
-            ],
-          ),
+      builder: (context) => QuickNoteSheet(
+        draftKey: FormDraftKeys.scope(
+          userId: ref.read(sessionNotifierProvider).valueOrNull?.user?.id,
+          formKey: FormDraftKeys.quickNote(book.id),
         ),
       ),
     );
@@ -1769,9 +1752,17 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         final text = dark ? const Color(0xFFE6EDF7) : const Color(0xFF0F172A);
 
         final hasTree = contentTree != null && contentTree.chapters.isNotEmpty;
-        // Desktop reads as a master/detail: chapters in a fixed left rail,
-        // the selected chapter's pages fill the right pane.
-        final desktopTwoPane = useDesktopShell(context) && hasTree;
+        // Desktop — and wide (expanded-tier) web — read as a master/detail:
+        // chapters in a fixed left rail, the selected chapter's pages fill the
+        // right pane. The rail is toggleable and open by default.
+        final layoutTier = AppLayoutScope.maybeOf(context)?.tier ??
+            tierForWidth(MediaQuery.sizeOf(context).width);
+        final webWideRail =
+            useWebShell(context) && layoutTier == AppLayoutTier.expanded;
+        // Whether this screen is wide enough to host the side-rail at all.
+        final supportsRail =
+            hasTree && (useDesktopShell(context) || webWideRail);
+        final twoPaneRail = supportsRail && _chapterRailOpen;
         BookContentChapter? selectedChapter;
         if (hasTree) {
           for (final chapter in contentTree.chapters) {
@@ -1883,7 +1874,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                     decoration: _readerPageBackgroundDecoration(dark, sepia),
                   ),
                 ),
-                if (desktopTwoPane)
+                if (twoPaneRail)
                   Positioned(
                     left: 0,
                     top: 0,
@@ -1903,7 +1894,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                     ),
                   ),
                 Positioned(
-                  left: desktopTwoPane ? _desktopRailWidth : 0,
+                  left: twoPaneRail ? _desktopRailWidth : 0,
                   right: 0,
                   top: contentTop,
                   bottom: contentBottom,
@@ -1936,7 +1927,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                       0,
                     ),
                     children: [
-                      if (desktopTwoPane && _selectedChapterKey == null) ...[
+                      if (twoPaneRail && _selectedChapterKey == null) ...[
                         // The rail lists chapters; right pane prompts a choice.
                         _DesktopReaderPlaceholder(
                           message: l10n.selectChapter,
@@ -2138,7 +2129,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 AnimatedPositioned(
                   duration: const Duration(milliseconds: 220),
                   top: showChromeUi ? 0 : -72,
-                  left: desktopTwoPane ? _desktopRailWidth : 0,
+                  left: twoPaneRail ? _desktopRailWidth : 0,
                   right: 0,
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
@@ -2152,6 +2143,17 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                           padding: const EdgeInsets.fromLTRB(4, 4, 12, 6),
                           child: Row(
                             children: [
+                              if (supportsRail)
+                                _ReaderChromeIcon(
+                                  onPressed: () => setState(
+                                    () => _chapterRailOpen = !_chapterRailOpen,
+                                  ),
+                                  icon: _chapterRailOpen
+                                      ? Icons.menu_open_rounded
+                                      : Icons.menu_rounded,
+                                  color: text,
+                                  tooltip: l10n.chaptersHeading,
+                                ),
                               _ReaderChromeIcon(
                                 onPressed: _handleReaderBack,
                                 icon: Icons.arrow_back_rounded,
@@ -2187,7 +2189,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 if (showFindPanel)
                   AnimatedPositioned(
                     duration: const Duration(milliseconds: 220),
-                    left: desktopTwoPane ? _desktopRailWidth + 12 : 12,
+                    left: twoPaneRail ? _desktopRailWidth + 12 : 12,
                     right: 12,
                     bottom: findBottom,
                     child: GestureDetector(
@@ -2328,7 +2330,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 if (showToolbarPanel)
                   AnimatedPositioned(
                     duration: const Duration(milliseconds: 220),
-                    left: desktopTwoPane ? _desktopRailWidth + 12 : 12,
+                    left: twoPaneRail ? _desktopRailWidth + 12 : 12,
                     right: 12,
                     bottom: toolbarBottom,
                     child: GestureDetector(
@@ -2619,12 +2621,28 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 if (!showChromeUi && _hasSelectedChapter)
                   Positioned(
                     top: 0,
-                    left: desktopTwoPane ? _desktopRailWidth : 0,
+                    left: twoPaneRail ? _desktopRailWidth : 0,
                     child: SafeArea(
-                      child: _ReaderChromeIcon(
-                        onPressed: _handleReaderBack,
-                        icon: Icons.arrow_back_rounded,
-                        color: text.withValues(alpha: 0.75),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (supportsRail)
+                            _ReaderChromeIcon(
+                              onPressed: () => setState(
+                                () => _chapterRailOpen = !_chapterRailOpen,
+                              ),
+                              icon: _chapterRailOpen
+                                  ? Icons.menu_open_rounded
+                                  : Icons.menu_rounded,
+                              color: text.withValues(alpha: 0.75),
+                              tooltip: l10n.chaptersHeading,
+                            ),
+                          _ReaderChromeIcon(
+                            onPressed: _handleReaderBack,
+                            icon: Icons.arrow_back_rounded,
+                            color: text.withValues(alpha: 0.75),
+                          ),
+                        ],
                       ),
                     ),
                   ),

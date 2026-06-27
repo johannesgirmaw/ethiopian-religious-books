@@ -91,6 +91,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navProfile => 'Profile';
 
   @override
+  String get navPurchases => 'Purchases';
+
+  @override
   String get drawerHome => 'Home';
 
   @override
@@ -1167,6 +1170,26 @@ class AppLocalizationsEn extends AppLocalizations {
       'You have unsaved updates in this editor. Leave without saving?';
 
   @override
+  String get formDraftRestored =>
+      'Draft restored — continue where you left off.';
+
+  @override
+  String get formDraftSaved => 'Draft saved. You can continue later.';
+
+  @override
+  String get formDraftDiscardTitle => 'Discard saved draft?';
+
+  @override
+  String get formDraftDiscardBody =>
+      'This permanently deletes your locally saved draft for this form.';
+
+  @override
+  String get formDraftDiscardAction => 'Discard draft';
+
+  @override
+  String get formDraftLeaveAndSave => 'Save draft & leave';
+
+  @override
   String get stay => 'Stay';
 
   @override
@@ -1686,13 +1709,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paymentNoMethods => 'No payment methods are available right now.';
 
   @override
+  String get paymentNoBanks =>
+      'No banks are available for bank transfer right now.';
+
+  @override
   String get paymentBuyToRead => 'Buy to read';
 
   @override
   String get purchaseBook => 'Purchase book';
 
   @override
-  String get paymentMyPurchases => 'My purchases';
+  String get paymentMyPurchases => 'Purchases';
 
   @override
   String get paymentStatusPending => 'Pending';

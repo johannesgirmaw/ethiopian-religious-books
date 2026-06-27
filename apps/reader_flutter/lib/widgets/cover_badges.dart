@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../design/app_tokens.dart';
+import '../utils/resolve_cover_url.dart';
 import '../models/book_models.dart';
 import '../utils/money_format.dart';
 
@@ -16,8 +17,9 @@ class CoverImageFill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolved = resolveCoverUrl(url) ?? url;
     return Image.network(
-      url,
+      resolved,
       fit: BoxFit.cover,
       gaplessPlayback: true,
       loadingBuilder: (context, child, progress) =>

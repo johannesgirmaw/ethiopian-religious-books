@@ -7,7 +7,7 @@ import '../models/book_models.dart';
 class CatalogCacheStorage {
   CatalogCacheStorage._();
 
-  static const String _catalogRawKey = 'catalog_cache_raw';
+  static const String _catalogRawKey = 'catalog_cache_raw_v2';
   static const String _catalogEtagKey = 'catalog_cache_etag';
   static const String _catalogSavedAtKey = 'catalog_cache_saved_at';
 

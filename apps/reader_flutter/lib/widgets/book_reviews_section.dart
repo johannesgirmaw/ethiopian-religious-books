@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../design/app_tokens.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/engagement_providers.dart';
+import '../providers/session_notifier.dart';
+import '../utils/form_draft_controller.dart';
+import '../utils/form_draft_keys.dart';
 
 /// Reviews block for the book detail page: average summary, the list of
 /// reviews, and a "write a review" action. Shared across platforms.
@@ -83,8 +88,6 @@ class BookReviewsSection extends ConsumerWidget {
     WidgetRef ref,
     AppLocalizations l10n,
   ) async {
-    var rating = 5;
-    final bodyCtrl = TextEditingController();
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -92,97 +95,166 @@ class BookReviewsSection extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            20,
-            20,
-            20,
-            20 + MediaQuery.viewInsetsOf(context).bottom,
-          ),
-          child: StatefulBuilder(
-            builder: (context, setState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    l10n.writeReviewTitle,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    l10n.yourRatingLabel,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      for (var i = 1; i <= 5; i++)
-                        GestureDetector(
-                          onTap: () => setState(() => rating = i),
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: 6),
-                            child: Icon(
-                              i <= rating
-                                  ? Icons.star_rounded
-                                  : Icons.star_outline_rounded,
-                              size: 34,
-                              color: AppColors.accent,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: bodyCtrl,
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                      hintText: l10n.reviewBodyHint,
-                      filled: true,
-                      fillColor: AppColors.surfaceSoft,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: () async {
-                      try {
-                        await submitReview(
-                          ref,
-                          bookId,
-                          rating: rating,
-                          body: bodyCtrl.text.trim(),
-                        );
-                      } catch (_) {/* ignore submit failure */}
-                      if (context.mounted) Navigator.of(context).pop();
-                    },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size.fromHeight(48),
-                    ),
-                    child: Text(l10n.submitReviewAction),
-                  ),
-                ],
-              );
-            },
-          ),
-        );
+      builder: (context) => _ReviewComposerSheet(
+        bookId: bookId,
+        draftKey: FormDraftKeys.scope(
+          userId: ref.read(sessionNotifierProvider).valueOrNull?.user?.id,
+          formKey: FormDraftKeys.bookReview(bookId),
+        ),
+        l10n: l10n,
+      ),
+    );
+  }
+}
+
+class _ReviewComposerSheet extends ConsumerStatefulWidget {
+  const _ReviewComposerSheet({
+    required this.bookId,
+    required this.draftKey,
+    required this.l10n,
+  });
+
+  final String bookId;
+  final String draftKey;
+  final AppLocalizations l10n;
+
+  @override
+  ConsumerState<_ReviewComposerSheet> createState() =>
+      _ReviewComposerSheetState();
+}
+
+class _ReviewComposerSheetState extends ConsumerState<_ReviewComposerSheet> {
+  var _rating = 5;
+  late final TextEditingController _bodyCtrl;
+  late final FormDraftController _draft;
+
+  @override
+  void initState() {
+    super.initState();
+    _bodyCtrl = TextEditingController();
+    _draft = FormDraftController(
+      draftKey: widget.draftKey,
+      capture: () => {'rating': _rating, 'body': _bodyCtrl.text},
+      restore: (data) {
+        _rating = (data['rating'] as num?)?.toInt().clamp(1, 5) ?? 5;
+        _bodyCtrl.text = data['body'] as String? ?? '';
+      },
+      isEmpty: (data) {
+        final body = (data['body'] as String? ?? '').trim();
+        final rating = (data['rating'] as num?)?.toInt() ?? 5;
+        return body.isEmpty && rating == 5;
       },
     );
-    bodyCtrl.dispose();
+    _bodyCtrl.addListener(_draft.onChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final restored = await _draft.restoreIfPresent();
+      if (!mounted || !restored) return;
+      setState(() {});
+      showFormDraftRestoredSnackBar(context);
+    });
+  }
+
+  @override
+  void dispose() {
+    unawaited(_draft.persistNow());
+    _bodyCtrl.removeListener(_draft.onChanged);
+    _bodyCtrl.dispose();
+    _draft.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    try {
+      await submitReview(
+        ref,
+        widget.bookId,
+        rating: _rating,
+        body: _bodyCtrl.text.trim(),
+      );
+      await _draft.clear();
+    } catch (_) {/* ignore submit failure */}
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = widget.l10n;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        20,
+        20,
+        20 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            l10n.writeReviewTitle,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            l10n.yourRatingLabel,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              for (var i = 1; i <= 5; i++)
+                GestureDetector(
+                  onTap: () {
+                    setState(() => _rating = i);
+                    _draft.onChanged();
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: Icon(
+                      i <= _rating
+                          ? Icons.star_rounded
+                          : Icons.star_outline_rounded,
+                      size: 34,
+                      color: AppColors.accent,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _bodyCtrl,
+            maxLines: 4,
+            decoration: InputDecoration(
+              hintText: l10n.reviewBodyHint,
+              filled: true,
+              fillColor: AppColors.surfaceSoft,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: _submit,
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(48),
+            ),
+            child: Text(l10n.submitReviewAction),
+          ),
+        ],
+      ),
+    );
   }
 }
 

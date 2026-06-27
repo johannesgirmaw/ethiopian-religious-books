@@ -63,7 +63,7 @@ import 'app_localizations_en.dart';
 /// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
-      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -86,16 +86,16 @@ abstract class AppLocalizations {
   /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('am'),
-    Locale('en')
+    Locale('en'),
   ];
 
   /// No description provided for @appTitle.
@@ -241,6 +241,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Profile'**
   String get navProfile;
+
+  /// No description provided for @navPurchases.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchases'**
+  String get navPurchases;
 
   /// No description provided for @drawerHome.
   ///
@@ -2186,6 +2192,42 @@ abstract class AppLocalizations {
   /// **'You have unsaved updates in this editor. Leave without saving?'**
   String get discardUnsavedBodyEditor;
 
+  /// No description provided for @formDraftRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft restored — continue where you left off.'**
+  String get formDraftRestored;
+
+  /// No description provided for @formDraftSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft saved. You can continue later.'**
+  String get formDraftSaved;
+
+  /// No description provided for @formDraftDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard saved draft?'**
+  String get formDraftDiscardTitle;
+
+  /// No description provided for @formDraftDiscardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently deletes your locally saved draft for this form.'**
+  String get formDraftDiscardBody;
+
+  /// No description provided for @formDraftDiscardAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard draft'**
+  String get formDraftDiscardAction;
+
+  /// No description provided for @formDraftLeaveAndSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save draft & leave'**
+  String get formDraftLeaveAndSave;
+
   /// No description provided for @stay.
   ///
   /// In en, this message translates to:
@@ -3152,6 +3194,12 @@ abstract class AppLocalizations {
   /// **'No payment methods are available right now.'**
   String get paymentNoMethods;
 
+  /// No description provided for @paymentNoBanks.
+  ///
+  /// In en, this message translates to:
+  /// **'No banks are available for bank transfer right now.'**
+  String get paymentNoBanks;
+
   /// No description provided for @paymentBuyToRead.
   ///
   /// In en, this message translates to:
@@ -3167,7 +3215,7 @@ abstract class AppLocalizations {
   /// No description provided for @paymentMyPurchases.
   ///
   /// In en, this message translates to:
-  /// **'My purchases'**
+  /// **'Purchases'**
   String get paymentMyPurchases;
 
   /// No description provided for @paymentStatusPending.
@@ -3486,8 +3534,9 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

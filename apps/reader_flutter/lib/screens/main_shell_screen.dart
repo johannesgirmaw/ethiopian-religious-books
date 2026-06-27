@@ -73,7 +73,7 @@ class MainShellScreen extends ConsumerWidget {
                 LiquidNavItem(
                   icon: Icons.receipt_long_outlined,
                   selectedIcon: Icons.receipt_long_rounded,
-                  label: l10n.paymentMyPurchases,
+                  label: l10n.navPurchases,
                 ),
                 LiquidNavItem(
                   icon: Icons.person_outline_rounded,

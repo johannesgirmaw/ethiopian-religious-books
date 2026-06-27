@@ -11,10 +11,8 @@ import '../widgets/app_state_view.dart';
 import '../widgets/payment/payment_flow_view.dart';
 import '../widgets/skeleton_loader.dart';
 import '../desktop/widgets/shell/desktop_overlay_scaffold.dart';
-import '../desktop/widgets/shell/desktop_sidebar.dart';
 import '../web/layout/app_layout_scope.dart';
 import '../web/widgets/shell/web_overlay_scaffold.dart';
-import '../web/widgets/shell/web_sidebar.dart';
 
 /// Route adapter for the checkout flow. Branches web → desktop → mobile and
 /// hosts the shared [PaymentFlowView] in the platform's overlay scaffold.
@@ -58,7 +56,6 @@ class PaymentScreen extends ConsumerWidget {
               return WebOverlayScaffold(
                 title: l10n.paymentTitle,
                 currentLocation: GoRouterState.of(context).matchedLocation,
-                sidebarItems: defaultWebSidebarItems(l10n),
                 appTitle: l10n.appTitle,
                 onBack: () => popOverlayRoute(context),
                 body: body(),
@@ -68,7 +65,6 @@ class PaymentScreen extends ConsumerWidget {
               return DesktopOverlayScaffold(
                 title: l10n.paymentTitle,
                 currentLocation: GoRouterState.of(context).matchedLocation,
-                sidebarItems: defaultDesktopSidebarItems(l10n),
                 appTitle: l10n.appTitle,
                 onBack: () => popOverlayRoute(context),
                 body: body(),

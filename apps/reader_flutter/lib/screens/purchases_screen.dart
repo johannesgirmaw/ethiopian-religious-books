@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../common/platform/platform_shell.dart';
 import '../l10n/app_localizations.dart';
@@ -27,6 +28,8 @@ class PurchasesScreen extends ConsumerWidget {
     }
     return ShellPageScaffold(
       title: l10n.paymentMyPurchases,
+      showBackButton: true,
+      onBack: () => context.go('/home'),
       body: const PurchasesView(),
     );
   }

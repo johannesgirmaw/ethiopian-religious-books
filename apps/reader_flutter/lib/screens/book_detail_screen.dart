@@ -18,11 +18,9 @@ import '../utils/offline_book_download.dart';
 import '../common/platform/platform_shell.dart';
 import '../desktop/screens/book_detail_body.dart';
 import '../desktop/widgets/shell/desktop_overlay_scaffold.dart';
-import '../desktop/widgets/shell/desktop_sidebar.dart';
 import '../web/layout/app_layout_scope.dart';
 import '../web/screens/book_detail_body.dart';
 import '../web/widgets/shell/web_overlay_scaffold.dart';
-import '../web/widgets/shell/web_sidebar.dart';
 import '../widgets/app_state_view.dart';
 import '../widgets/book_reviews_section.dart';
 import '../widgets/cover_badges.dart';
@@ -99,7 +97,6 @@ class BookDetailScreen extends ConsumerWidget {
               return WebOverlayScaffold(
                 title: l10n.bookDetailsTitle,
                 currentLocation: GoRouterState.of(context).matchedLocation,
-                sidebarItems: defaultWebSidebarItems(l10n),
                 appTitle: l10n.appTitle,
                 actions: [
                   asyncBook.maybeWhen(
@@ -122,7 +119,6 @@ class BookDetailScreen extends ConsumerWidget {
               return DesktopOverlayScaffold(
                 title: l10n.bookDetailsTitle,
                 currentLocation: GoRouterState.of(context).matchedLocation,
-                sidebarItems: defaultDesktopSidebarItems(l10n),
                 appTitle: l10n.appTitle,
                 actions: [
                   asyncBook.maybeWhen(

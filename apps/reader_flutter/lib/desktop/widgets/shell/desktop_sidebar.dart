@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../design/app_tokens.dart';
+import '../../../providers/session_notifier.dart';
 import '../../../design/reference_assets.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../design/desktop_tokens.dart';
@@ -130,7 +132,7 @@ class DesktopSidebar extends StatelessWidget {
   }
 }
 
-class _SidebarLink extends StatefulWidget {
+class _SidebarLink extends StatelessWidget {
   const _SidebarLink({
     required this.item,
     required this.selected,
@@ -142,85 +144,81 @@ class _SidebarLink extends StatefulWidget {
   final VoidCallback onTap;
 
   @override
-  State<_SidebarLink> createState() => _SidebarLinkState();
-}
-
-class _SidebarLinkState extends State<_SidebarLink> {
-  bool _hovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    final selected = widget.selected;
-    final hovered = _hovered && !selected;
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
       child: MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: widget.onTap,
-            borderRadius: BorderRadius.circular(6),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 120),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: selected
-                    ? DesktopTokens.sidebarSelectedBg
-                    : hovered
-                        ? DesktopTokens.hoverBg
-                        : Colors.transparent,
-                borderRadius: BorderRadius.circular(6),
-                border: selected
-                    ? Border(
-                        left: BorderSide(
-                          color: AppColors.referencePrimary,
-                          width: 3,
-                        ),
-                      )
-                    : null,
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    selected ? widget.item.selectedIcon : widget.item.icon,
-                    size: 18,
-                    color: selected
-                        ? AppColors.referencePrimary
-                        : AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      widget.item.label,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                        color: selected
-                            ? AppColors.referencePrimary
-                            : AppColors.textPrimary,
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color:
+                  selected ? DesktopTokens.sidebarSelectedBg : Colors.transparent,
+              borderRadius: BorderRadius.circular(6),
+              border: selected
+                  ? Border(
+                      left: BorderSide(
+                        color: AppColors.referencePrimary,
+                        width: 3,
                       ),
+                    )
+                  : null,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  selected ? item.selectedIcon : item.icon,
+                  size: 18,
+                  color: selected
+                      ? AppColors.referencePrimary
+                      : AppColors.textSecondary,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    item.label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                      color: selected
+                          ? AppColors.referencePrimary
+                          : AppColors.textPrimary,
                     ),
                   ),
-                  if (widget.item.shortcut != null)
-                    Text(
-                      widget.item.shortcut!,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: AppColors.textTertiary,
-                        fontWeight: FontWeight.w500,
-                      ),
+                ),
+                if (item.shortcut != null)
+                  Text(
+                    item.shortcut!,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppColors.textTertiary,
+                      fontWeight: FontWeight.w500,
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
           ),
         ),
       ),
     );
   }
+}
+
+/// Sidebar items for the current session — use on every desktop shell/overlay page.
+List<DesktopSidebarItem> desktopSidebarItemsFor(
+  WidgetRef ref,
+  AppLocalizations l10n,
+) {
+  final user = ref.watch(sessionNotifierProvider).valueOrNull?.user;
+  return defaultDesktopSidebarItems(
+    l10n,
+    isAdmin: user?.isPlatformAdmin ?? false,
+    canManageBooks: user?.canManageBooks ?? false,
+  );
 }
 
 List<DesktopSidebarItem> defaultDesktopSidebarItems(

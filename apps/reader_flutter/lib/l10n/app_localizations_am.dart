@@ -91,6 +91,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get navProfile => 'መገለጫ';
 
   @override
+  String get navPurchases => 'ግዢዎች';
+
+  @override
   String get drawerHome => 'መነሻ';
 
   @override
@@ -1143,6 +1146,24 @@ class AppLocalizationsAm extends AppLocalizations {
       'በአርትዖቱ ውስጥ ያልተቀመጡ ለውጦች አሉ። ያለማስቀመጥ ይወጣሉ?';
 
   @override
+  String get formDraftRestored => 'ረቂቅ ተመልሷል — ከቆሙበት ይቀጥሉ።';
+
+  @override
+  String get formDraftSaved => 'ረቂቅ ተቀምጧል። በኋላ መቀጠል ይችላሉ።';
+
+  @override
+  String get formDraftDiscardTitle => 'የተቀመጠ ረቂቅ ይወገድ?';
+
+  @override
+  String get formDraftDiscardBody => 'ለዚህ ቅጽ በአካባቢው የተቀመጠው ረቂቅ ለዘለዓለም ይሰረዛል።';
+
+  @override
+  String get formDraftDiscardAction => 'ረቂቅ ይድረስ';
+
+  @override
+  String get formDraftLeaveAndSave => 'ረቂቅ አስቀምጥ እና ውጣ';
+
+  @override
   String get stay => 'Stay';
 
   @override
@@ -1655,13 +1676,16 @@ class AppLocalizationsAm extends AppLocalizations {
   String get paymentNoMethods => 'አሁን ምንም የክፍያ ዘዴ የለም።';
 
   @override
+  String get paymentNoBanks => 'አሁን ለባንክ ማስተላለፍ ምንም ባንክ የለም።';
+
+  @override
   String get paymentBuyToRead => 'ለማንበብ ይግዙ';
 
   @override
   String get purchaseBook => 'መጽሐፍ ይግዙ';
 
   @override
-  String get paymentMyPurchases => 'የእኔ ግዢዎች';
+  String get paymentMyPurchases => 'ግዢዎች';
 
   @override
   String get paymentStatusPending => 'በመጠባበቅ ላይ';

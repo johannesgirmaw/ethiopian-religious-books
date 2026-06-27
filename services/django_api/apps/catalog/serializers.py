@@ -66,15 +66,10 @@ class BookListSerializer(serializers.ModelSerializer):
     def get_cover_url(self, obj: Book) -> str | None:
         if not (obj.cover_object_key or "").strip():
             return None
-        # Stable, always-reachable URL served through the API host (no presign
-        # expiry / host-reachability issues). `?v=` busts client/image caches
-        # when the cover is replaced.
+        # Relative path — clients resolve against their configured API base so
+        # cached catalogs stay valid across localhost vs LAN IP on desktop.
         ver = int(obj.updated_at.timestamp()) if obj.updated_at else 0
-        path = f"/v1/books/{obj.id}/cover?v={ver}"
-        request = self.context.get("request")
-        if request is not None:
-            return request.build_absolute_uri(path)
-        return path
+        return f"/v1/books/{obj.id}/cover?v={ver}"
 
     def get_tags(self, obj: Book):
         tags = Tag.objects.filter(booktag__book=obj)

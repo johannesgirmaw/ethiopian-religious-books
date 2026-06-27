@@ -18,6 +18,7 @@ import '../screens/notifications_screen.dart';
 import '../screens/payment_screen.dart';
 import '../screens/purchases_screen.dart';
 import '../screens/home_screen.dart';
+import '../screens/auth_route_shell.dart';
 import '../screens/login_screen.dart';
 import '../screens/main_shell_screen.dart';
 import '../screens/reader_screen.dart';
@@ -92,13 +93,24 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/splash',
         builder: (context, state) => const SplashScreen(),
       ),
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
-      GoRoute(
-        path: '/register',
-        builder: (context, state) => const RegisterScreen(),
+      ShellRoute(
+        builder: (context, state, child) => AuthRouteShell(child: child),
+        routes: [
+          GoRoute(
+            path: '/login',
+            pageBuilder: (context, state) => NoTransitionPage<void>(
+              key: state.pageKey,
+              child: const LoginScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/register',
+            pageBuilder: (context, state) => NoTransitionPage<void>(
+              key: state.pageKey,
+              child: const RegisterScreen(),
+            ),
+          ),
+        ],
       ),
       ShellRoute(
         navigatorKey: shellNavigatorKey,

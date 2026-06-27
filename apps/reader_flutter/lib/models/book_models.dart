@@ -1,4 +1,5 @@
 import '../utils/rich_text_codec.dart';
+import '../utils/resolve_cover_url.dart';
 
 /// Parses numbers that the API may send as either JSON numbers or strings
 /// (DecimalField fields serialize to strings, e.g. "100.00").
@@ -122,9 +123,7 @@ class BookSummary {
               j['published_revision'] as Map<String, dynamic>,
             )
           : null,
-      coverUrl: (j['cover_url'] as String?)?.trim().isEmpty == true
-          ? null
-          : j['cover_url'] as String?,
+      coverUrl: resolveCoverUrl(j['cover_url'] as String?),
       genre: j['genre'] as String?,
       publishedYear: (j['published_year'] as num?)?.toInt(),
       ratingAverage: (j['rating_average'] as num?)?.toDouble() ?? 0,

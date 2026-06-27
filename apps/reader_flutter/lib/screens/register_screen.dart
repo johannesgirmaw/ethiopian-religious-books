@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +9,9 @@ import '../l10n/app_localizations.dart';
 import '../providers/session_notifier.dart';
 import '../utils/api_error_message.dart';
 import '../utils/dio_connection_message.dart';
+import '../utils/form_draft_controller.dart';
+import '../utils/form_draft_keys.dart';
+import '../common/platform/platform_shell.dart';
 import '../web/widgets/shell/adaptive_auth_layout.dart';
 import '../widgets/primitives/shared_widgets.dart';
 
@@ -26,12 +30,43 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _busy = false;
   String? _error;
   bool _showPassword = false;
+  late final FormDraftController _draft;
+
+  @override
+  void initState() {
+    super.initState();
+    _draft = FormDraftController(
+      draftKey: FormDraftKeys.register(),
+      capture: () => {'email': _email.text, 'name': _name.text},
+      restore: (data) {
+        _email.text = data['email'] as String? ?? '';
+        _name.text = data['name'] as String? ?? '';
+      },
+      isEmpty: (data) {
+        final email = (data['email'] as String? ?? '').trim();
+        final name = (data['name'] as String? ?? '').trim();
+        return email.isEmpty && name.isEmpty;
+      },
+    );
+    _email.addListener(_draft.onChanged);
+    _name.addListener(_draft.onChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final restored = await _draft.restoreIfPresent();
+      if (!mounted || !restored) return;
+      setState(() {});
+      showFormDraftRestoredSnackBar(context);
+    });
+  }
 
   @override
   void dispose() {
+    unawaited(_draft.persistNow());
+    _email.removeListener(_draft.onChanged);
+    _name.removeListener(_draft.onChanged);
     _email.dispose();
     _password.dispose();
     _name.dispose();
+    _draft.dispose();
     super.dispose();
   }
 
@@ -62,6 +97,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       await ref
           .read(sessionNotifierProvider.notifier)
           .persistFromAuthResponse(res.data!);
+      await _draft.clear();
       if (!mounted) return;
       context.go('/home');
     } on DioException catch (e) {
@@ -81,86 +117,95 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final form = Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppTextField(
+            controller: _email,
+            label: l10n.emailFieldLabel,
+            hint: l10n.emailFieldHint,
+            icon: Icons.mail_outline_rounded,
+            keyboardType: TextInputType.emailAddress,
+            autocorrect: false,
+            validator: (v) {
+              final s = (v ?? '').trim();
+              if (s.isEmpty) return l10n.emailRequired;
+              if (!s.contains('@') || !s.contains('.')) {
+                return l10n.emailInvalid;
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 14),
+          AppTextField(
+            controller: _password,
+            label: l10n.passwordFieldLabel,
+            hint: '••••••••••',
+            icon: Icons.lock_outline_rounded,
+            obscureText: !_showPassword,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _showPassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                size: 20,
+              ),
+              onPressed: () => setState(() => _showPassword = !_showPassword),
+            ),
+            validator: (v) {
+              final s = v ?? '';
+              if (s.isEmpty) return l10n.passwordRequired;
+              if (s.length < 10) return l10n.passwordTooShort;
+              return null;
+            },
+          ),
+          const SizedBox(height: 14),
+          AppTextField(
+            controller: _name,
+            label: l10n.displayNameOptional,
+            icon: Icons.person_outline_rounded,
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 14),
+            AppErrorBanner(message: _error!),
+          ],
+          const SizedBox(height: 20),
+          FilledButton(
+            onPressed: _busy ? null : _submit,
+            child: _busy
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(l10n.createAccountTitle),
+          ),
+        ],
+      ),
+    );
+    final footer = TextButton(
+      onPressed: () => context.go('/login'),
+      child: Text(l10n.alreadyHaveAccount),
+    );
 
+    if (useWideAuthSplit(context)) {
+      return AdaptiveAuthFormPane(
+        headline: l10n.createAccountTitle,
+        subtitle: l10n.registerSubtitle,
+        formChild: form,
+        footer: footer,
+      );
+    }
     return AdaptiveAuthLayout(
       headline: l10n.createAccountTitle,
       subtitle: l10n.registerSubtitle,
-      formChild: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            AppTextField(
-              controller: _email,
-              label: l10n.emailFieldLabel,
-              hint: l10n.emailFieldHint,
-              icon: Icons.mail_outline_rounded,
-              keyboardType: TextInputType.emailAddress,
-              autocorrect: false,
-              validator: (v) {
-                final s = (v ?? '').trim();
-                if (s.isEmpty) return l10n.emailRequired;
-                if (!s.contains('@') || !s.contains('.')) {
-                  return l10n.emailInvalid;
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 14),
-            AppTextField(
-              controller: _password,
-              label: l10n.passwordFieldLabel,
-              hint: '••••••••••',
-              icon: Icons.lock_outline_rounded,
-              obscureText: !_showPassword,
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _showPassword
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  size: 20,
-                ),
-                onPressed: () =>
-                    setState(() => _showPassword = !_showPassword),
-              ),
-              validator: (v) {
-                final s = v ?? '';
-                if (s.isEmpty) return l10n.passwordRequired;
-                if (s.length < 10) return l10n.passwordTooShort;
-                return null;
-              },
-            ),
-            const SizedBox(height: 14),
-            AppTextField(
-              controller: _name,
-              label: l10n.displayNameOptional,
-              icon: Icons.person_outline_rounded,
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: 14),
-              AppErrorBanner(message: _error!),
-            ],
-            const SizedBox(height: 20),
-            FilledButton(
-              onPressed: _busy ? null : _submit,
-              child: _busy
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: Colors.white,
-                      ),
-                    )
-                  : Text(l10n.createAccountTitle),
-            ),
-          ],
-        ),
-      ),
-      footer: TextButton(
-        onPressed: () => context.go('/login'),
-        child: Text(l10n.alreadyHaveAccount),
-      ),
+      formChild: form,
+      footer: footer,
     );
   }
 }

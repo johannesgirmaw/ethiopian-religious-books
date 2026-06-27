@@ -37,6 +37,8 @@ class ProfileScreen extends ConsumerWidget {
 
     return ShellPageScaffold(
       title: l10n.profileTitle,
+      showBackButton: true,
+      onBack: () => context.go('/home'),
       body: ListView(
         padding: AppLayout.page,
         children: [

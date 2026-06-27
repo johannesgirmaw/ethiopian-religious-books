@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../design/app_tokens.dart';
+import '../../../providers/session_notifier.dart';
 import '../../../design/reference_assets.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../design/web_tokens.dart';
@@ -38,8 +40,7 @@ class WebSidebar extends StatelessWidget {
       return currentLocation.startsWith('/home');
     }
     if (route == '/profile') {
-      return currentLocation.startsWith('/profile') ||
-          currentLocation.startsWith('/admin');
+      return currentLocation.startsWith('/profile');
     }
     return currentLocation.startsWith(route);
   }
@@ -147,7 +148,7 @@ class WebSidebar extends StatelessWidget {
   }
 }
 
-class _SidebarLink extends StatefulWidget {
+class _SidebarLink extends StatelessWidget {
   const _SidebarLink({
     required this.item,
     required this.selected,
@@ -159,72 +160,68 @@ class _SidebarLink extends StatefulWidget {
   final VoidCallback onTap;
 
   @override
-  State<_SidebarLink> createState() => _SidebarLinkState();
-}
-
-class _SidebarLinkState extends State<_SidebarLink> {
-  bool _hovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    final selected = widget.selected;
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: widget.onTap,
-            borderRadius: BorderRadius.circular(10),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-              decoration: BoxDecoration(
-                color: selected
-                    ? WebTokens.sidebarSelectedBg
-                    : _hovered
-                        ? WebTokens.canvasBg
-                        : Colors.transparent,
-                borderRadius: BorderRadius.circular(10),
-                border: selected
-                    ? Border.all(
-                        color:
-                            AppColors.referencePrimary.withValues(alpha: 0.18),
-                      )
-                    : null,
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    selected ? widget.item.selectedIcon : widget.item.icon,
-                    size: 20,
-                    color: selected
-                        ? AppColors.referencePrimary
-                        : AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      widget.item.label,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                        color: selected
-                            ? AppColors.referencePrimary
-                            : AppColors.textPrimary,
-                      ),
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            decoration: BoxDecoration(
+              color: selected ? WebTokens.sidebarSelectedBg : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+              border: selected
+                  ? Border.all(
+                      color: AppColors.referencePrimary.withValues(alpha: 0.18),
+                    )
+                  : null,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  selected ? item.selectedIcon : item.icon,
+                  size: 20,
+                  color: selected
+                      ? AppColors.referencePrimary
+                      : AppColors.textSecondary,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    item.label,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                      color: selected
+                          ? AppColors.referencePrimary
+                          : AppColors.textPrimary,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
       ),
     );
   }
+}
+
+/// Sidebar items for the current session — use on every web shell/overlay page.
+List<WebSidebarItem> webSidebarItemsFor(
+  WidgetRef ref,
+  AppLocalizations l10n,
+) {
+  final user = ref.watch(sessionNotifierProvider).valueOrNull?.user;
+  return defaultWebSidebarItems(
+    l10n,
+    isAdmin: user?.isPlatformAdmin ?? false,
+    canManageBooks: user?.canManageBooks ?? false,
+  );
 }
 
 List<WebSidebarItem> defaultWebSidebarItems(

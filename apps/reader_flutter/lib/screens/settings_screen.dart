@@ -41,6 +41,8 @@ class SettingsScreen extends ConsumerWidget {
 
     return ShellPageScaffold(
       title: l10n.settingsTitle,
+      showBackButton: true,
+      onBack: () => context.go('/profile'),
       body: ListView(
         padding: AppLayout.page,
         children: [

@@ -61,15 +61,31 @@ class LiquidGlassNavBar extends StatelessWidget {
   static const double bottomInset = 110;
   static const double _hitSize = 56;
 
+  double _barWidth(double screenWidth, int tabCount) {
+    // Use more horizontal space when there are 4 tabs so labels do not wrap.
+    final maxWidth = tabCount >= 4 ? screenWidth - 12 : screenWidth - 48;
+    final minWidth = tabCount >= 4 ? 320.0 : 260.0;
+    final cap = tabCount >= 4 ? 420.0 : 340.0;
+    return maxWidth.clamp(minWidth, cap);
+  }
+
+  double _labelMaxWidth(Size barSize, int tabCount) {
+    if (tabCount <= 1) return barSize.width - 16;
+    final p = _BubbleNavGeometry.pad(barSize);
+    final r = _BubbleNavGeometry.radius(barSize);
+    final step = (barSize.width - 2 * p - 2 * r) / (tabCount - 1);
+    return (step * 0.9).clamp(52.0, 84.0);
+  }
+
   @override
   Widget build(BuildContext context) {
     assert(items.length >= 2);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final width = MediaQuery.sizeOf(context).width;
-    final barWidth =
-        (width - 48).clamp(260.0, items.length >= 4 ? 380.0 : 340.0);
+    final barWidth = _barWidth(width, items.length);
     final barSize = Size(barWidth, barHeight);
     final centers = _BubbleNavGeometry.tabCenters(barSize, items.length);
+    final labelMaxWidth = _labelMaxWidth(barSize, items.length);
 
     return SafeArea(
       top: false,
@@ -137,27 +153,40 @@ class LiquidGlassNavBar extends StatelessWidget {
                                               selected
                                                   ? item.selectedIcon
                                                   : item.icon,
-                                              size: 24,
+                                              size: selected ? 23 : 24,
                                               color: _iconColor(
                                                 isDark: isDark,
                                                 selected: selected,
                                               ),
                                             ),
-                                            if (item.label != null) ...[
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                item.label!,
-                                                style: TextStyle(
-                                                  fontSize: 9,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: _iconColor(
-                                                    isDark: isDark,
-                                                    selected: selected,
-                                                  ),
-                                                  letterSpacing: 0.3,
-                                                ),
-                                              ),
-                                            ],
+                                            SizedBox(
+                                              height: selected ? 3 : 0,
+                                              width: labelMaxWidth,
+                                              child: selected &&
+                                                      item.label != null
+                                                  ? FittedBox(
+                                                      fit: BoxFit.scaleDown,
+                                                      child: Text(
+                                                        item.label!,
+                                                        maxLines: 1,
+                                                        softWrap: false,
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                        style: TextStyle(
+                                                          fontSize: 10,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          height: 1.1,
+                                                          color: _iconColor(
+                                                            isDark: isDark,
+                                                            selected: selected,
+                                                          ),
+                                                          letterSpacing: 0.1,
+                                                        ),
+                                                      ),
+                                                    )
+                                                  : null,
+                                            ),
                                           ],
                                         ),
                                       ),
