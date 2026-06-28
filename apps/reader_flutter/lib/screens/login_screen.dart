@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../config/app_config.dart';
 import '../design/app_tokens.dart';
 import '../l10n/app_localizations.dart';
+import '../providers/auth_api.dart';
 import '../providers/session_notifier.dart';
 import '../utils/api_error_message.dart';
 import '../utils/dio_connection_message.dart';
@@ -14,6 +14,7 @@ import '../utils/form_draft_controller.dart';
 import '../utils/form_draft_keys.dart';
 import '../common/platform/platform_shell.dart';
 import '../web/widgets/shell/adaptive_auth_layout.dart';
+import '../widgets/primitives/auth_form_kit.dart';
 import '../widgets/primitives/shared_widgets.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -29,7 +30,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _password = TextEditingController();
   bool _busy = false;
   String? _error;
-  bool _showPassword = false;
   late final FormDraftController _draft;
 
   @override
@@ -71,22 +71,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _error = null;
     });
     try {
-      final dio = Dio(
-        BaseOptions(
-          baseUrl: AppConfig.apiBaseUrl,
-          connectTimeout: const Duration(seconds: 20),
-        ),
-      );
-      final res = await dio.post<Map<String, dynamic>>(
-        'auth/login',
-        data: {
-          'email': _email.text.trim(),
-          'password': _password.text,
-        },
-      );
+      final data = await ref.read(authApiProvider).login(
+            email: _email.text.trim(),
+            password: _password.text,
+          );
       await ref
           .read(sessionNotifierProvider.notifier)
-          .persistFromAuthResponse(res.data!);
+          .persistFromAuthResponse(data);
       await _draft.clear();
       if (!mounted) return;
       context.go('/home');
@@ -109,72 +100,69 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final l10n = AppLocalizations.of(context)!;
     final form = Form(
       key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AppTextField(
-            controller: _email,
-            label: l10n.emailFieldLabel,
-            hint: l10n.emailFieldHint,
-            icon: Icons.mail_outline_rounded,
-            keyboardType: TextInputType.emailAddress,
-            autocorrect: false,
-            validator: (v) {
-              final s = (v ?? '').trim();
-              if (s.isEmpty) return l10n.emailRequired;
-              if (!s.contains('@') || !s.contains('.')) {
-                return l10n.emailInvalid;
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 14),
-          AppTextField(
-            controller: _password,
-            label: l10n.passwordFieldLabel,
-            hint: '••••••••••',
-            icon: Icons.lock_outline_rounded,
-            obscureText: !_showPassword,
-            onSubmitted: (_) => _busy ? null : _submit(),
-            suffixIcon: IconButton(
-              icon: Icon(
-                _showPassword
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
-                size: 20,
-                color: AppColors.textTertiary,
-              ),
-              onPressed: () => setState(() => _showPassword = !_showPassword),
+      child: AutofillGroup(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AuthTextField(
+              controller: _email,
+              label: l10n.emailFieldLabel,
+              hint: l10n.emailFieldHint,
+              icon: Icons.mail_outline_rounded,
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              autocorrect: false,
+              autofillHints: const [AutofillHints.username, AutofillHints.email],
+              validator: (v) {
+                final s = (v ?? '').trim();
+                if (s.isEmpty) return l10n.emailRequired;
+                if (!s.contains('@') || !s.contains('.')) {
+                  return l10n.emailInvalid;
+                }
+                return null;
+              },
             ),
-            validator: (v) {
-              if ((v ?? '').isEmpty) return l10n.passwordRequired;
-              return null;
-            },
-          ),
-          if (_error != null) ...[
-            const SizedBox(height: 14),
-            AppErrorBanner(message: _error!),
+            const SizedBox(height: 16),
+            AuthPasswordField(
+              controller: _password,
+              label: l10n.passwordFieldLabel,
+              textInputAction: TextInputAction.done,
+              autofillHints: const [AutofillHints.password],
+              onSubmitted: (_) => _busy ? null : _submit(),
+              validator: (v) {
+                if ((v ?? '').isEmpty) return l10n.passwordRequired;
+                return null;
+              },
+            ),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton(
+                onPressed: () => context.go('/forgot-password'),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  visualDensity: VisualDensity.compact,
+                  foregroundColor: AppColors.referencePrimary,
+                ),
+                child: Text(l10n.forgotPassword),
+              ),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 6),
+              AppErrorBanner(message: _error!),
+            ],
+            const SizedBox(height: 18),
+            AuthPrimaryButton(
+              label: l10n.signIn,
+              busy: _busy,
+              onPressed: _busy ? null : _submit,
+            ),
           ],
-          const SizedBox(height: 20),
-          FilledButton(
-            onPressed: _busy ? null : _submit,
-            child: _busy
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: Colors.white,
-                    ),
-                  )
-                : Text(l10n.signIn),
-          ),
-        ],
+        ),
       ),
     );
-    final footer = TextButton(
-      onPressed: () => context.go('/register'),
-      child: Text(l10n.createAccount),
+    final footer = _AuthFooterPrompt(
+      onTap: () => context.go('/register'),
+      label: l10n.createAccount,
     );
 
     if (useWideAuthSplit(context)) {
@@ -190,6 +178,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       subtitle: l10n.signInSubtitle,
       formChild: form,
       footer: footer,
+    );
+  }
+}
+
+/// Centered link prompt shown beneath the auth panel.
+class _AuthFooterPrompt extends StatelessWidget {
+  const _AuthFooterPrompt({required this.onTap, required this.label});
+
+  final VoidCallback onTap;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: TextButton(
+        onPressed: onTap,
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.referencePrimary,
+          textStyle: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        child: Text(label),
+      ),
     );
   }
 }

@@ -641,6 +641,99 @@ class AppLocalizationsAm extends AppLocalizations {
   String get alreadyHaveAccount => 'መለያ አለዎት? ይግቡ';
 
   @override
+  String get forgotPassword => 'የይለፍ ቃል ረሱ?';
+
+  @override
+  String get forgotPasswordTitle => 'የይለፍ ቃል ዳግም ያስጀምሩ';
+
+  @override
+  String get forgotPasswordSubtitle =>
+      'ኢሜይልዎን ያስገቡ፤ የይለፍ ቃልዎን ዳግም ለማስጀመር ባለ 6 አሃዝ ኮድ እንልክልዎታለን።';
+
+  @override
+  String get sendResetCode => 'የማስጀመሪያ ኮድ ላክ';
+
+  @override
+  String get resetPasswordTitle => 'አዲስ የይለፍ ቃል ያስቀምጡ';
+
+  @override
+  String resetPasswordSubtitle(String email) {
+    return 'ወደ $email የላክነውን ኮድ ያስገቡ እና አዲስ የይለፍ ቃል ይምረጡ።';
+  }
+
+  @override
+  String get resetCodeFieldLabel => 'ባለ 6 አሃዝ ኮድ';
+
+  @override
+  String get resetCodeRequired => 'ባለ 6 አሃዝ ኮዱን ያስገቡ';
+
+  @override
+  String get resetCodeInvalid => 'ኮዱ 6 አሃዝ መሆን አለበት';
+
+  @override
+  String get newPasswordFieldLabel => 'አዲስ የይለፍ ቃል';
+
+  @override
+  String get confirmPasswordFieldLabel => 'አዲሱን የይለፍ ቃል ያረጋግጡ';
+
+  @override
+  String get confirmPasswordRequired => 'አዲሱን የይለፍ ቃል ያረጋግጡ';
+
+  @override
+  String get passwordsDoNotMatch => 'የይለፍ ቃላቶቹ አይዛመዱም';
+
+  @override
+  String get resetPasswordCta => 'የይለፍ ቃል ዳግም አስጀምር';
+
+  @override
+  String get passwordResetSuccess => 'የይለፍ ቃልዎ ዳግም ተጀምሯል። እባክዎ ይግቡ።';
+
+  @override
+  String get resetPasswordFailed =>
+      'የይለፍ ቃልዎን ዳግም ማስጀመር አልተቻለም። ኮዱን አረጋግጠው እንደገና ይሞክሩ።';
+
+  @override
+  String get resendCode => 'ኮድ እንደገና ላክ';
+
+  @override
+  String resendCodeIn(int seconds) {
+    return 'ኮድ በ $seconds ሰከንድ ውስጥ እንደገና ላክ';
+  }
+
+  @override
+  String get resetCodeResent => 'አዲስ ኮድ እየተላከ ነው።';
+
+  @override
+  String get backToSignIn => 'ወደ መግቢያ ተመለስ';
+
+  @override
+  String get changePasswordTitle => 'የይለፍ ቃል ቀይር';
+
+  @override
+  String get changePasswordSubtitle => 'ለመለያዎ አዲስ የይለፍ ቃል ይምረጡ።';
+
+  @override
+  String get currentPasswordFieldLabel => 'የአሁኑ የይለፍ ቃል';
+
+  @override
+  String get currentPasswordRequired => 'የአሁኑን የይለፍ ቃል ያስገቡ';
+
+  @override
+  String get changePasswordCta => 'የይለፍ ቃል አዘምን';
+
+  @override
+  String get passwordChangedSuccess => 'የይለፍ ቃልዎ ተዘምኗል።';
+
+  @override
+  String get changePasswordFailed => 'የይለፍ ቃልዎን ማዘመን አልተቻለም።';
+
+  @override
+  String get profileSecuritySection => 'ደህንነት';
+
+  @override
+  String get changePasswordLinkSubtitle => 'የመለያዎን የይለፍ ቃል ያዘምኑ';
+
+  @override
   String get languagePreferenceTitle => 'ቋንቋ';
 
   @override

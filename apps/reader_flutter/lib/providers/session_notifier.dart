@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_config.dart';
 import '../models/user_profile.dart';
+import '../security/book_crypto.dart';
+import '../storage/secure_book_store.dart';
 import '../storage/token_storage.dart';
 
 class Session {
@@ -59,6 +61,24 @@ class SessionNotifier extends AsyncNotifier<Session?> {
     );
   }
 
+  /// Replaces the stored tokens while keeping the current user (used after a
+  /// password change, where the server rotates every session and hands back a
+  /// fresh token pair so this device stays signed in).
+  Future<void> updateTokens({
+    required String accessToken,
+    required String refreshToken,
+  }) async {
+    final cur = state.valueOrNull;
+    await _storage.updateAccess(accessToken, refresh: refreshToken);
+    state = AsyncData(
+      Session(
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+        user: cur?.user,
+      ),
+    );
+  }
+
   Future<bool> tryRefresh() async {
     final cur = state.valueOrNull;
     if (cur == null) return false;
@@ -92,6 +112,14 @@ class SessionNotifier extends AsyncNotifier<Session?> {
 
   Future<void> clear() async {
     await _storage.clear();
+    // Drop the encrypted offline library and its device key so a different user
+    // on this device cannot read the previous user's downloaded books.
+    try {
+      await SecureBookStore.clearAll();
+      await BookCrypto.wipeMasterKey();
+    } catch (_) {
+      // Best-effort: never block sign-out on vault cleanup.
+    }
     state = const AsyncData(null);
   }
 }

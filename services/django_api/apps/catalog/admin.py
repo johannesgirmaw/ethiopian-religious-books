@@ -18,6 +18,7 @@ from apps.catalog.models import (
     BookRevision,
     BookTag,
     Genre,
+    OfflineDownload,
     Tag,
 )
 from apps.catalog.publishing import publish_book, unpublish_book, validate_draft_warnings
@@ -353,3 +354,61 @@ class BookContentIndexAdmin(ModelAdmin):
         if len(t) <= 80:
             return t
         return t[:80] + "…"
+
+
+@admin.register(OfflineDownload)
+class OfflineDownloadAdmin(ModelAdmin):
+    """Read-only ledger of which users saved which books offline, on which device,
+    and whether the offline lease is still active."""
+
+    list_display = (
+        "user_email",
+        "book_title",
+        "platform",
+        "device_short",
+        "first_downloaded_at",
+        "license_expires_at",
+        "is_active",
+        "renew_count",
+    )
+    list_filter = ("platform", "first_downloaded_at", "license_expires_at")
+    search_fields = ("user__email", "book__title", "device_id")
+    raw_id_fields = ("user", "book")
+    date_hierarchy = "first_downloaded_at"
+    readonly_fields = (
+        "user",
+        "book",
+        "device_id",
+        "platform",
+        "revision_id",
+        "first_downloaded_at",
+        "last_licensed_at",
+        "license_expires_at",
+        "renew_count",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("user", "book")
+
+    @admin.display(description="User", ordering="user__email")
+    def user_email(self, obj):
+        return obj.user.email
+
+    @admin.display(description="Book", ordering="book__title")
+    def book_title(self, obj):
+        return obj.book.title
+
+    @admin.display(description="Device")
+    def device_short(self, obj):
+        return obj.device_id[:12]
+
+    @admin.display(boolean=True, description="License active")
+    def is_active(self, obj):
+        from django.utils import timezone
+
+        return bool(
+            obj.license_expires_at and obj.license_expires_at > timezone.now()
+        )

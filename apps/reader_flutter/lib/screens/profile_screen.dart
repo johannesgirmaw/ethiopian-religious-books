@@ -136,6 +136,17 @@ class ProfileScreen extends ConsumerWidget {
           ],
           if (user != null) ...[
             const SizedBox(height: AppLayout.sectionGap),
+            AppSectionAccent(label: l10n.profileSecuritySection.toUpperCase()),
+            const SizedBox(height: AppLayout.blockGap),
+            _ProfileLinkRow(
+              icon: Icons.lock_outline_rounded,
+              title: l10n.changePasswordTitle,
+              subtitle: l10n.changePasswordLinkSubtitle,
+              onTap: () => context.push('/change-password'),
+            ),
+          ],
+          if (user != null) ...[
+            const SizedBox(height: AppLayout.sectionGap),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(

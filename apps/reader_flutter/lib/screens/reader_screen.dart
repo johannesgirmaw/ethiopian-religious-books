@@ -71,6 +71,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   int? _selectedPageNumber;
   List<_ReaderSection> _allSections = const [];
   List<_ReaderSection> _renderedSections = const [];
+  List<_ReaderSection> _pageViewSections = const [];
   bool _remoteProgressApplied = false;
   bool _autoStartApplied = false;
   // Chapter side-rail (large screens only) — open by default.
@@ -175,11 +176,23 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 
   _ReaderSection? _currentSectionFromProgress() {
+    if (_pageCurlEnabled && _pageViewSections.isNotEmpty) {
+      return _pageSectionAt(_currentPageViewIndex);
+    }
     if (_renderedSections.isEmpty) return null;
     final index = (_progress.clamp(0, 1) * (_renderedSections.length - 1))
         .round()
         .clamp(0, _renderedSections.length - 1);
     return _renderedSections[index];
+  }
+
+  /// Desktop / wide web: page arrows walk the full book; sidebar tracks chapter.
+  bool _supportsContinuousChapterPaging(BuildContext context) {
+    final layoutTier = AppLayoutScope.maybeOf(context)?.tier ??
+        tierForWidth(MediaQuery.sizeOf(context).width);
+    final webWideRail =
+        useWebShell(context) && layoutTier == AppLayoutTier.expanded;
+    return useDesktopShell(context) || webWideRail;
   }
 
   void _scheduleAutoHide() {
@@ -420,17 +433,21 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
   void _handlePageChanged(int index, List<_ReaderSection> sections) {
     if (index < 0 || index >= sections.length) return;
+    final section = sections[index];
     final newProgress = sections.length <= 1
         ? 0.0
         : index / (sections.length - 1);
-    final page = sections[index].pageNumber;
+    final page = section.pageNumber;
+    final chapterKey = section.chapterKey;
     if ((newProgress - _progress).abs() < 0.005 &&
-        _selectedPageNumber == page) {
+        _selectedPageNumber == page &&
+        _selectedChapterKey == chapterKey) {
       return;
     }
     setState(() {
       _progress = newProgress;
       _selectedPageNumber = page;
+      _selectedChapterKey = chapterKey;
     });
     ReaderPrefsStorage.writeProgress(widget.bookId, newProgress);
     _scheduleCloudProgressSync();
@@ -446,25 +463,25 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     if (!mounted) return;
     if (next) {
       _idleTimer?.cancel();
-      if (_renderedSections.isNotEmpty) {
-        _syncPageFromProgress(_renderedSections);
+      if (_pageViewSections.isNotEmpty) {
+        _syncPageFromProgress(_pageViewSections);
       }
-    } else if (_renderedSections.isNotEmpty) {
+    } else if (_pageViewSections.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        _jumpToSection(_pageIndexFromProgress(_renderedSections.length));
+        _jumpToSection(_pageIndexFromProgress(_pageViewSections.length));
       });
     }
   }
 
   void _jumpToSection(int index) {
-    if (_pageCurlEnabled && _renderedSections.isNotEmpty) {
-      final safe = index.clamp(0, _renderedSections.length - 1);
+    if (_pageCurlEnabled && _pageViewSections.isNotEmpty) {
+      final safe = index.clamp(0, _pageViewSections.length - 1);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _pageController.goToPage(safe);
       });
-      _handlePageChanged(safe, _renderedSections);
+      _handlePageChanged(safe, _pageViewSections);
       if (_findQuery.trim().isNotEmpty) {
         _focusFindOnPage(safe);
       } else {
@@ -509,6 +526,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 
   void _selectChapter(BookContentChapter chapter, BookContentTree contentTree) {
+    final continuous = _supportsContinuousChapterPaging(context);
     setState(() {
       _selectedChapterKey = chapter.chapterKey;
       _selectedPageNumber = null;
@@ -520,12 +538,20 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     if (_pageCurlEnabled) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        _syncPageFromProgress(
-          _buildSectionsFromTree(
-            contentTree,
-            chapterKey: chapter.chapterKey,
-          ),
+        final sections = continuous
+            ? _buildSectionsFromTree(contentTree)
+            : _buildSectionsFromTree(
+                contentTree,
+                chapterKey: chapter.chapterKey,
+              );
+        final index = sections.indexWhere(
+          (s) => s.chapterKey == chapter.chapterKey,
         );
+        if (index < 0) return;
+        if (_pageController.isAttached) {
+          _pageController.goToPage(index);
+        }
+        _handlePageChanged(index, sections);
       });
     }
     unawaited(
@@ -692,7 +718,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        _jumpToChapterAndPage(_renderedSections, pageNumber: pageNumber);
+        _jumpToChapterAndPage(_pageViewSections, pageNumber: pageNumber);
       });
       return;
     }
@@ -1014,8 +1040,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           : _renderedSections;
 
   _ReaderSection? _pageSectionAt(int index) {
-    if (index < 0 || index >= _renderedSections.length) return null;
-    return _renderedSections[index];
+    if (index < 0 || index >= _pageViewSections.length) return null;
+    return _pageViewSections[index];
   }
 
   List<int> _matchIndicesForSection(_ReaderSection section) {
@@ -1146,6 +1172,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
   Widget _buildPageViewReader({
     required List<_ReaderSection> sections,
+    required bool fullBookPaging,
     required bool dark,
     required bool sepia,
     required Color text,
@@ -1159,7 +1186,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final paper = _readerPaperBase(dark, sepia);
     return ReaderBookPageView(
       key: ValueKey(
-        'page-${widget.bookId}-${_selectedChapterKey ?? ''}-${sections.length}',
+        fullBookPaging
+            ? 'page-${widget.bookId}-book-${sections.length}'
+            : 'page-${widget.bookId}-${_selectedChapterKey ?? ''}-${sections.length}',
       ),
       controller: _pageController,
       pageCount: sections.length,
@@ -1277,7 +1306,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       _showChrome = true;
     });
     _jumpToChapterAndPage(
-      _renderedSections,
+      _pageViewSections,
       chapterKey: match.chapterKey,
       pageNumber: match.pageNumber,
     );
@@ -1782,6 +1811,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             ? _buildSectionsFromTree(contentTree)
             : const <_ReaderSection>[];
         _renderedSections = sections;
+        final continuousBookPaging =
+            twoPaneRail && _allSections.isNotEmpty;
+        _pageViewSections =
+            continuousBookPaging ? _allSections : sections;
         _pruneSectionKeys(sections.length);
         final cloud = asyncCloudProgress.valueOrNull;
         if (!widget.showChapterPicker &&
@@ -1799,7 +1832,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
               _progress = (cloud.progressPercent / 100).clamp(0, 1).toDouble();
             });
             _jumpToChapterAndPage(
-              _renderedSections,
+              _pageViewSections,
               chapterKey: _selectedChapterKey,
               pageNumber: _selectedPageNumber,
             );
@@ -1832,7 +1865,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             _readerFindPanelHeight(hasChapter: _hasSelectedChapter);
         final pageViewReading = _pageCurlEnabled &&
             _selectedChapterKey != null &&
-            sections.isNotEmpty;
+            _pageViewSections.isNotEmpty;
         final showChromeUi = _showChrome || !_hasSelectedChapter;
         final showFindPanel = showChromeUi && _showFindBar;
         final showToolbarPanel =
@@ -1901,7 +1934,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                   child: pageViewReading
                       ? ClipRect(
                           child: _buildPageViewReader(
-                            sections: sections,
+                            sections: _pageViewSections,
+                            fullBookPaging: continuousBookPaging,
                             dark: dark,
                             sepia: sepia,
                             text: text,
@@ -2732,7 +2766,7 @@ class _ReaderChromeIcon extends StatelessWidget {
 
 /// Desktop master/detail left rail: lists chapters; the selected one's pages
 /// render in the right reading pane.
-class _DesktopChapterRail extends StatelessWidget {
+class _DesktopChapterRail extends StatefulWidget {
   const _DesktopChapterRail({
     required this.chapters,
     required this.selectedChapterKey,
@@ -2758,12 +2792,53 @@ class _DesktopChapterRail extends StatelessWidget {
   final void Function(BookContentChapter chapter) onSelect;
 
   @override
+  State<_DesktopChapterRail> createState() => _DesktopChapterRailState();
+}
+
+class _DesktopChapterRailState extends State<_DesktopChapterRail> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant _DesktopChapterRail oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedChapterKey != widget.selectedChapterKey) {
+      _scrollSelectedIntoView();
+    }
+  }
+
+  void _scrollSelectedIntoView() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final index = widget.chapters.indexWhere(
+        (c) => c.chapterKey == widget.selectedChapterKey,
+      );
+      if (index < 0) return;
+      const itemExtent = 58.0;
+      final target = (index * itemExtent).clamp(
+        0.0,
+        _scrollController.position.maxScrollExtent,
+      );
+      _scrollController.animateTo(
+        target,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final accent = AppColors.primary;
-    final divider = textColor.withValues(alpha: dark ? 0.18 : 0.1);
-    final railBg = dark
-        ? background.withValues(alpha: 0.6)
-        : Color.alphaBlend(textColor.withValues(alpha: 0.03), background);
+    final divider = widget.textColor.withValues(alpha: widget.dark ? 0.18 : 0.1);
+    final railBg = widget.dark
+        ? widget.background.withValues(alpha: 0.6)
+        : Color.alphaBlend(widget.textColor.withValues(alpha: 0.03), widget.background);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -2779,11 +2854,11 @@ class _DesktopChapterRail extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  bookTitle,
+                  widget.bookTitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: textColor,
+                    color: widget.textColor,
                     fontWeight: FontWeight.w800,
                     fontSize: 16,
                     height: 1.25,
@@ -2791,9 +2866,9 @@ class _DesktopChapterRail extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  chaptersLabel,
+                  widget.chaptersLabel,
                   style: TextStyle(
-                    color: textColor.withValues(alpha: 0.6),
+                    color: widget.textColor.withValues(alpha: 0.6),
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
                     letterSpacing: 0.3,
@@ -2805,21 +2880,22 @@ class _DesktopChapterRail extends StatelessWidget {
           Divider(height: 1, color: divider),
           Expanded(
             child: ListView.builder(
+              controller: _scrollController,
               padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: chapters.length,
+              itemCount: widget.chapters.length,
               itemBuilder: (context, index) {
-                final chapter = chapters[index];
-                final selected = chapter.chapterKey == selectedChapterKey;
+                final chapter = widget.chapters[index];
+                final selected = chapter.chapterKey == widget.selectedChapterKey;
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   child: Material(
                     color: selected
-                        ? accent.withValues(alpha: dark ? 0.24 : 0.12)
+                        ? accent.withValues(alpha: widget.dark ? 0.24 : 0.12)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(AppRadius.sm),
-                      onTap: () => onSelect(chapter),
+                      onTap: () => widget.onSelect(chapter),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -2845,7 +2921,7 @@ class _DesktopChapterRail extends StatelessWidget {
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      color: textColor,
+                                      color: widget.textColor,
                                       fontWeight: selected
                                           ? FontWeight.w800
                                           : FontWeight.w600,
@@ -2855,9 +2931,9 @@ class _DesktopChapterRail extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    pageCountLabel(chapter),
+                                    widget.pageCountLabel(chapter),
                                     style: TextStyle(
-                                      color: textColor.withValues(alpha: 0.6),
+                                      color: widget.textColor.withValues(alpha: 0.6),
                                       fontSize: 12,
                                     ),
                                   ),

@@ -652,6 +652,101 @@ class AppLocalizationsEn extends AppLocalizations {
   String get alreadyHaveAccount => 'Already have an account? Sign in';
 
   @override
+  String get forgotPassword => 'Forgot password?';
+
+  @override
+  String get forgotPasswordTitle => 'Reset password';
+
+  @override
+  String get forgotPasswordSubtitle =>
+      'Enter your email and we\'ll send you a 6-digit code to reset your password.';
+
+  @override
+  String get sendResetCode => 'Send reset code';
+
+  @override
+  String get resetPasswordTitle => 'Set a new password';
+
+  @override
+  String resetPasswordSubtitle(String email) {
+    return 'Enter the code we sent to $email and choose a new password.';
+  }
+
+  @override
+  String get resetCodeFieldLabel => '6-digit code';
+
+  @override
+  String get resetCodeRequired => 'Enter the 6-digit code';
+
+  @override
+  String get resetCodeInvalid => 'The code must be 6 digits';
+
+  @override
+  String get newPasswordFieldLabel => 'New password';
+
+  @override
+  String get confirmPasswordFieldLabel => 'Confirm new password';
+
+  @override
+  String get confirmPasswordRequired => 'Confirm your new password';
+
+  @override
+  String get passwordsDoNotMatch => 'Passwords do not match';
+
+  @override
+  String get resetPasswordCta => 'Reset password';
+
+  @override
+  String get passwordResetSuccess =>
+      'Your password has been reset. Please sign in.';
+
+  @override
+  String get resetPasswordFailed =>
+      'Could not reset your password. Check the code and try again.';
+
+  @override
+  String get resendCode => 'Resend code';
+
+  @override
+  String resendCodeIn(int seconds) {
+    return 'Resend code in ${seconds}s';
+  }
+
+  @override
+  String get resetCodeResent => 'A new code is on its way.';
+
+  @override
+  String get backToSignIn => 'Back to sign in';
+
+  @override
+  String get changePasswordTitle => 'Change password';
+
+  @override
+  String get changePasswordSubtitle =>
+      'Choose a new password for your account.';
+
+  @override
+  String get currentPasswordFieldLabel => 'Current password';
+
+  @override
+  String get currentPasswordRequired => 'Enter your current password';
+
+  @override
+  String get changePasswordCta => 'Update password';
+
+  @override
+  String get passwordChangedSuccess => 'Your password has been updated.';
+
+  @override
+  String get changePasswordFailed => 'Could not update your password.';
+
+  @override
+  String get profileSecuritySection => 'Security';
+
+  @override
+  String get changePasswordLinkSubtitle => 'Update your account password';
+
+  @override
   String get languagePreferenceTitle => 'Language';
 
   @override

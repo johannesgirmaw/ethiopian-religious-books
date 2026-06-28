@@ -141,6 +141,10 @@ EMAIL_BACKEND = env(
 EMAIL_HOST = env("EMAIL_HOST", default="localhost")
 EMAIL_PORT = env.int("EMAIL_PORT", default=1025)
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=False)
+DEFAULT_FROM_EMAIL = env(
+    "DEFAULT_FROM_EMAIL",
+    default="Ethiopian Reader <no-reply@ethiopianreader.app>",
+)
 
 AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID", default="")
 AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY", default="")
@@ -179,6 +183,13 @@ FEATURE_PAYMENTS = env.bool("FEATURE_PAYMENTS", default=True)
 # Encryption key for stored gateway credentials. Leave empty to derive a key
 # from SECRET_KEY (fine for dev); set a stable Fernet key in production.
 PAYMENTS_FERNET_KEY = env("PAYMENTS_FERNET_KEY", default="")
+
+# Offline-reading licenses (apps.catalog.licensing). Leave the signing key empty
+# to derive one from SECRET_KEY (fine for dev); set a stable secret in production
+# so rotating SECRET_KEY does not invalidate live licenses. Lease length controls
+# how long a downloaded book stays readable offline before it must be renewed.
+OFFLINE_LICENSE_SIGNING_KEY = env("OFFLINE_LICENSE_SIGNING_KEY", default="")
+OFFLINE_LICENSE_LEASE_DAYS = env.int("OFFLINE_LICENSE_LEASE_DAYS", default=30)
 
 
 def _admin_environment(request):

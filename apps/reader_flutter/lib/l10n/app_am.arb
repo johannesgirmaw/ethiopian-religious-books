@@ -339,6 +339,45 @@
   "passwordTooShort": "የይለፍ ቃል ቢያንስ 10 ቁምፊዎች መሆን አለበት",
   "displayNameOptional": "የማሳያ ስም (አማራጭ)",
   "alreadyHaveAccount": "መለያ አለዎት? ይግቡ",
+  "forgotPassword": "የይለፍ ቃል ረሱ?",
+  "forgotPasswordTitle": "የይለፍ ቃል ዳግም ያስጀምሩ",
+  "forgotPasswordSubtitle": "ኢሜይልዎን ያስገቡ፤ የይለፍ ቃልዎን ዳግም ለማስጀመር ባለ 6 አሃዝ ኮድ እንልክልዎታለን።",
+  "sendResetCode": "የማስጀመሪያ ኮድ ላክ",
+  "resetPasswordTitle": "አዲስ የይለፍ ቃል ያስቀምጡ",
+  "resetPasswordSubtitle": "ወደ {email} የላክነውን ኮድ ያስገቡ እና አዲስ የይለፍ ቃል ይምረጡ።",
+  "@resetPasswordSubtitle": {
+    "placeholders": {
+      "email": {"type": "String"}
+    }
+  },
+  "resetCodeFieldLabel": "ባለ 6 አሃዝ ኮድ",
+  "resetCodeRequired": "ባለ 6 አሃዝ ኮዱን ያስገቡ",
+  "resetCodeInvalid": "ኮዱ 6 አሃዝ መሆን አለበት",
+  "newPasswordFieldLabel": "አዲስ የይለፍ ቃል",
+  "confirmPasswordFieldLabel": "አዲሱን የይለፍ ቃል ያረጋግጡ",
+  "confirmPasswordRequired": "አዲሱን የይለፍ ቃል ያረጋግጡ",
+  "passwordsDoNotMatch": "የይለፍ ቃላቶቹ አይዛመዱም",
+  "resetPasswordCta": "የይለፍ ቃል ዳግም አስጀምር",
+  "passwordResetSuccess": "የይለፍ ቃልዎ ዳግም ተጀምሯል። እባክዎ ይግቡ።",
+  "resetPasswordFailed": "የይለፍ ቃልዎን ዳግም ማስጀመር አልተቻለም። ኮዱን አረጋግጠው እንደገና ይሞክሩ።",
+  "resendCode": "ኮድ እንደገና ላክ",
+  "resendCodeIn": "ኮድ በ {seconds} ሰከንድ ውስጥ እንደገና ላክ",
+  "@resendCodeIn": {
+    "placeholders": {
+      "seconds": {"type": "int"}
+    }
+  },
+  "resetCodeResent": "አዲስ ኮድ እየተላከ ነው።",
+  "backToSignIn": "ወደ መግቢያ ተመለስ",
+  "changePasswordTitle": "የይለፍ ቃል ቀይር",
+  "changePasswordSubtitle": "ለመለያዎ አዲስ የይለፍ ቃል ይምረጡ።",
+  "currentPasswordFieldLabel": "የአሁኑ የይለፍ ቃል",
+  "currentPasswordRequired": "የአሁኑን የይለፍ ቃል ያስገቡ",
+  "changePasswordCta": "የይለፍ ቃል አዘምን",
+  "passwordChangedSuccess": "የይለፍ ቃልዎ ተዘምኗል።",
+  "changePasswordFailed": "የይለፍ ቃልዎን ማዘመን አልተቻለም።",
+  "profileSecuritySection": "ደህንነት",
+  "changePasswordLinkSubtitle": "የመለያዎን የይለፍ ቃል ያዘምኑ",
   "languagePreferenceTitle": "ቋንቋ",
   "languagePreferenceSubtitle": "ለመተግበሪያው ምናሌዎች እና ቁልፎች እንግሊዝኛ ወይም አማርኛ ይምረጡ።",
   "languageEnglish": "English",

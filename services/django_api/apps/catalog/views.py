@@ -4,12 +4,16 @@ import logging
 from django.conf import settings
 from django.db.models import F, Q
 from django.http import Http404, HttpResponse
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts.models import UserDevice
 from apps.catalog.etag import catalog_response_extras, compute_catalog_etag
+from apps.catalog.licensing import issue_license
 from apps.catalog.models import (
     Book,
     BookChapter,
@@ -17,11 +21,13 @@ from apps.catalog.models import (
     BookPage,
     BookRevision,
     Genre,
+    OfflineDownload,
     Tag,
 )
 from apps.catalog.search_index import ensure_revision_index_from_book_draft
 from apps.catalog.search_normalization import normalize_search_text
 from apps.catalog.serializers import BookListSerializer, GenreSerializer, TagSerializer
+from apps.payments.services import user_owns_book
 from apps.catalog.storage_s3 import (
     dev_presign_endpoint_from_request,
     get_object_bytes,
@@ -31,6 +37,44 @@ from apps.catalog.storage_s3 import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _record_offline_download(user, book, rev, device_id: str, expires_iso: str) -> None:
+    """Upsert the server-side offline-download ledger row for admin visibility.
+
+    Called on every license issue/renew. Best-effort: never let bookkeeping break
+    the download itself.
+    """
+    if not device_id:
+        return
+    try:
+        expires_at = parse_datetime(expires_iso) if expires_iso else None
+        platform = (
+            UserDevice.objects.filter(user=user, device_id=device_id)
+            .values_list("platform", flat=True)
+            .first()
+            or ""
+        )
+        obj, created = OfflineDownload.objects.get_or_create(
+            user=user,
+            book=book,
+            device_id=device_id,
+            defaults={
+                "revision_id": str(rev.id),
+                "platform": platform,
+                "license_expires_at": expires_at,
+            },
+        )
+        if not created:
+            OfflineDownload.objects.filter(pk=obj.pk).update(
+                revision_id=str(rev.id),
+                platform=platform or obj.platform,
+                license_expires_at=expires_at,
+                renew_count=F("renew_count") + 1,
+                last_licensed_at=timezone.now(),
+            )
+    except Exception as exc:  # pragma: no cover - bookkeeping must not block downloads
+        logger.warning("offline download bookkeeping failed: %s", exc)
 
 
 def _encryption_payload(rev: BookRevision) -> dict:
@@ -223,6 +267,16 @@ class BookDownloadView(APIView):
                 {"error": {"code": "NOT_FOUND", "message": "Book not found"}},
                 status=status.HTTP_404_NOT_FOUND,
             )
+        if not user_owns_book(request.user, book):
+            return Response(
+                {
+                    "error": {
+                        "code": "NOT_ENTITLED",
+                        "message": "Purchase this book to download it for offline reading.",
+                    }
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
         rev = book.published_revision
         if rev is None:
             return Response(
@@ -294,6 +348,16 @@ class BookDownloadView(APIView):
                     status=status.HTTP_503_SERVICE_UNAVAILABLE,
                 )
 
+        device_id = (request.query_params.get("device_id") or "").strip()
+        license_payload = issue_license(
+            user_id=request.user.id,
+            book_id=book.id,
+            revision_id=rev.id,
+            device_id=device_id,
+        )
+        _record_offline_download(
+            request.user, book, rev, device_id, license_payload.get("expires_at", "")
+        )
         payload = {
             "book_id": str(book.id),
             "revision": {
@@ -304,8 +368,63 @@ class BookDownloadView(APIView):
                 "package_parts": package_parts,
                 "encryption": _encryption_payload(rev),
             },
+            "license": license_payload,
         }
         return Response(payload)
+
+
+class BookLicenseView(APIView):
+    """Issue or renew an offline-reading lease for a book.
+
+    Used both for the first download and for periodic renewal. Re-checks
+    entitlement on every call, so a refunded/revoked purchase stops renewing and
+    the device loses offline access once its current lease lapses. Decoupled from
+    object storage so offline reading works regardless of the S3 packaging state.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, book_id):
+        try:
+            book = _published_books_queryset().get(pk=book_id)
+        except Book.DoesNotExist:
+            return Response(
+                {"error": {"code": "NOT_FOUND", "message": "Book not found"}},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if not user_owns_book(request.user, book):
+            return Response(
+                {
+                    "error": {
+                        "code": "NOT_ENTITLED",
+                        "message": "Purchase this book to read it offline.",
+                    }
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        rev = book.published_revision
+        if rev is None:
+            return Response(
+                {"error": {"code": "NO_REVISION", "message": "No published revision"}},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        device_id = (request.data.get("device_id") or "").strip()
+        license_payload = issue_license(
+            user_id=request.user.id,
+            book_id=book.id,
+            revision_id=rev.id,
+            device_id=device_id,
+        )
+        _record_offline_download(
+            request.user, book, rev, device_id, license_payload.get("expires_at", "")
+        )
+        return Response(
+            {
+                "book_id": str(book.id),
+                "revision_id": str(rev.id),
+                "license": license_payload,
+            }
+        )
 
 
 class BookChapterListView(APIView):

@@ -297,6 +297,45 @@
   "passwordTooShort": "Password must be at least 10 characters",
   "displayNameOptional": "Display name (optional)",
   "alreadyHaveAccount": "Already have an account? Sign in",
+  "forgotPassword": "Forgot password?",
+  "forgotPasswordTitle": "Reset password",
+  "forgotPasswordSubtitle": "Enter your email and we'll send you a 6-digit code to reset your password.",
+  "sendResetCode": "Send reset code",
+  "resetPasswordTitle": "Set a new password",
+  "resetPasswordSubtitle": "Enter the code we sent to {email} and choose a new password.",
+  "@resetPasswordSubtitle": {
+    "placeholders": {
+      "email": {"type": "String"}
+    }
+  },
+  "resetCodeFieldLabel": "6-digit code",
+  "resetCodeRequired": "Enter the 6-digit code",
+  "resetCodeInvalid": "The code must be 6 digits",
+  "newPasswordFieldLabel": "New password",
+  "confirmPasswordFieldLabel": "Confirm new password",
+  "confirmPasswordRequired": "Confirm your new password",
+  "passwordsDoNotMatch": "Passwords do not match",
+  "resetPasswordCta": "Reset password",
+  "passwordResetSuccess": "Your password has been reset. Please sign in.",
+  "resetPasswordFailed": "Could not reset your password. Check the code and try again.",
+  "resendCode": "Resend code",
+  "resendCodeIn": "Resend code in {seconds}s",
+  "@resendCodeIn": {
+    "placeholders": {
+      "seconds": {"type": "int"}
+    }
+  },
+  "resetCodeResent": "A new code is on its way.",
+  "backToSignIn": "Back to sign in",
+  "changePasswordTitle": "Change password",
+  "changePasswordSubtitle": "Choose a new password for your account.",
+  "currentPasswordFieldLabel": "Current password",
+  "currentPasswordRequired": "Enter your current password",
+  "changePasswordCta": "Update password",
+  "passwordChangedSuccess": "Your password has been updated.",
+  "changePasswordFailed": "Could not update your password.",
+  "profileSecuritySection": "Security",
+  "changePasswordLinkSubtitle": "Update your account password",
   "languagePreferenceTitle": "Language",
   "languagePreferenceSubtitle": "Choose English or Amharic for app menus and buttons.",
   "languageEnglish": "English",

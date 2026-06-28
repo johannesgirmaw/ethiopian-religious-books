@@ -1,8 +1,7 @@
-import 'dart:convert';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/book_models.dart';
+import 'secure_book_store.dart';
 
 /// Title/author stored when saving offline content (survives catalog changes).
 class BookCacheMeta {
@@ -37,31 +36,44 @@ class BookCacheMeta {
   }
 }
 
+/// Offline book cache façade. Historically this wrote **plaintext** book content
+/// into SharedPreferences; it now delegates to [SecureBookStore], which seals
+/// everything with AES-256-GCM under a device-bound key. The public surface is
+/// unchanged so existing callers keep working, but data at rest is encrypted.
+///
+/// On first use it also wipes any legacy plaintext entries left by older builds.
 class BookContentCacheStorage {
   BookContentCacheStorage._();
 
-  static String _contentKey(String bookId) => 'book_content_cache_$bookId';
-  static String _metaKey(String bookId) => 'book_content_cache_meta_$bookId';
-  static String _savedAtKey(String bookId) => 'book_content_cache_saved_at_$bookId';
-  static const String _indexKey = 'book_content_cache_index';
+  static const _legacyPrefix = 'book_content_cache';
+  static const _legacyWipedFlag = 'vault_legacy_wiped_v1';
+  static bool _migrated = false;
+
+  /// One-time removal of the old unencrypted cache keys. Cheap after first run.
+  static Future<void> _ensureMigrated() async {
+    if (_migrated) return;
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_legacyWipedFlag) == true) {
+      _migrated = true;
+      return;
+    }
+    final doomed =
+        prefs.getKeys().where((k) => k.startsWith(_legacyPrefix)).toList();
+    for (final key in doomed) {
+      await prefs.remove(key);
+    }
+    await prefs.setBool(_legacyWipedFlag, true);
+    _migrated = true;
+  }
 
   static Future<BookContentTree?> readBookContent(String bookId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_contentKey(bookId));
-    if (raw == null || raw.isEmpty) return null;
-    final parsed = jsonDecode(raw) as Map<String, dynamic>;
-    return BookContentTree.fromJson(parsed);
+    await _ensureMigrated();
+    return SecureBookStore.readBookContent(bookId);
   }
 
   static Future<BookCacheMeta?> readBookMeta(String bookId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_metaKey(bookId));
-    if (raw == null || raw.isEmpty) return null;
-    final meta = BookCacheMeta.fromJson(
-      jsonDecode(raw) as Map<String, dynamic>,
-    );
-    if (meta.title.isEmpty) return null;
-    return meta;
+    await _ensureMigrated();
+    return SecureBookStore.readBookMeta(bookId);
   }
 
   static String? titleFromContentTree(BookContentTree? tree) {
@@ -76,67 +88,43 @@ class BookContentCacheStorage {
     Map<String, dynamic> raw, {
     BookCacheMeta? meta,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
+    await _ensureMigrated();
     final now = DateTime.now().millisecondsSinceEpoch;
-    await prefs.setString(_contentKey(bookId), jsonEncode(raw));
-    await prefs.setInt(_savedAtKey(bookId), now);
-
     final resolvedMeta = meta ??
         BookCacheMeta(
           title: titleFromContentTree(BookContentTree.fromJson(raw)) ?? bookId,
           savedAtEpochMs: now,
         );
-    if (resolvedMeta.title.isNotEmpty) {
-      await prefs.setString(
-        _metaKey(bookId),
-        jsonEncode(resolvedMeta.toJson()),
-      );
-    }
-
-    final index = prefs.getStringList(_indexKey) ?? const [];
-    if (!index.contains(bookId)) {
-      await prefs.setStringList(_indexKey, [...index, bookId]);
-    }
+    await SecureBookStore.writeBookContent(bookId, raw, meta: resolvedMeta);
   }
 
   static Future<void> writeBookMeta(String bookId, BookCacheMeta meta) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (meta.title.trim().isEmpty) return;
-    await prefs.setString(_metaKey(bookId), jsonEncode(meta.toJson()));
+    await _ensureMigrated();
+    await SecureBookStore.writeBookMeta(bookId, meta);
   }
 
   static Future<bool> hasBookContent(String bookId) async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.containsKey(_contentKey(bookId));
+    await _ensureMigrated();
+    return SecureBookStore.hasBookContent(bookId);
   }
 
   static Future<List<String>> listCachedBookIds() async {
-    final prefs = await SharedPreferences.getInstance();
-    return List<String>.from(prefs.getStringList(_indexKey) ?? const []);
+    await _ensureMigrated();
+    return SecureBookStore.listCachedBookIds();
   }
 
   static Future<int> cachedBookCount() async {
-    final ids = await listCachedBookIds();
-    return ids.length;
+    await _ensureMigrated();
+    return SecureBookStore.cachedBookCount();
   }
 
   static Future<void> removeBookContent(String bookId) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_contentKey(bookId));
-    await prefs.remove(_metaKey(bookId));
-    await prefs.remove(_savedAtKey(bookId));
-    final index = prefs.getStringList(_indexKey) ?? const [];
-    await prefs.setStringList(_indexKey, index.where((id) => id != bookId).toList());
+    await _ensureMigrated();
+    await SecureBookStore.removeBookContent(bookId);
   }
 
   static Future<void> clearAll() async {
-    final prefs = await SharedPreferences.getInstance();
-    final index = prefs.getStringList(_indexKey) ?? const [];
-    for (final bookId in index) {
-      await prefs.remove(_contentKey(bookId));
-      await prefs.remove(_metaKey(bookId));
-      await prefs.remove(_savedAtKey(bookId));
-    }
-    await prefs.setStringList(_indexKey, const []);
+    await _ensureMigrated();
+    await SecureBookStore.clearAll();
   }
 }

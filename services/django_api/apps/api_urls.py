@@ -1,6 +1,8 @@
 from django.urls import path
 
 from apps.accounts.views import (
+    ChangePasswordView,
+    DeviceRegisterView,
     ForgotPasswordView,
     LoginView,
     LogoutView,
@@ -25,6 +27,7 @@ from apps.catalog.views import (
     BookDetailView,
     BookDownloadView,
     BookCoverView,
+    BookLicenseView,
     BookListView,
     BookSearchView,
     GenreListView,
@@ -92,7 +95,9 @@ urlpatterns = [
     path("auth/logout", LogoutView.as_view()),
     path("auth/forgot-password", ForgotPasswordView.as_view()),
     path("auth/reset-password", ResetPasswordView.as_view()),
+    path("auth/change-password", ChangePasswordView.as_view()),
     path("me", MeView.as_view()),
+    path("devices/register", DeviceRegisterView.as_view()),
     path("legal/documents", LegalDocumentListView.as_view()),
     path("legal/acceptances", LegalAcceptanceView.as_view()),
     path("genres", GenreListView.as_view()),
@@ -102,6 +107,7 @@ urlpatterns = [
     path("books/<uuid:book_id>", BookDetailView.as_view()),
     path("books/<uuid:book_id>/cover", BookCoverView.as_view()),
     path("books/<uuid:book_id>/download", BookDownloadView.as_view()),
+    path("books/<uuid:book_id>/license", BookLicenseView.as_view()),
     path("books/<uuid:book_id>/chapters", BookChapterListView.as_view()),
     path("books/<uuid:book_id>/content", BookContentView.as_view()),
     path("books/<uuid:book_id>/search", BookSearchView.as_view()),

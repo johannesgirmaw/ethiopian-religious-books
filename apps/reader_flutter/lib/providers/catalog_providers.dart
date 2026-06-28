@@ -5,9 +5,11 @@ import '../config/dev_object_storage_origin.dart';
 import '../models/book_models.dart';
 import '../models/download_payload.dart';
 import '../models/offline_cached_book.dart';
+import '../security/device_identity.dart';
 import '../storage/book_content_cache_storage.dart';
 import '../storage/catalog_cache_storage.dart';
 import '../storage/reader_prefs_storage.dart';
+import '../storage/secure_book_store.dart';
 import 'api_client.dart';
 
 class CatalogBookMeta {
@@ -235,6 +237,9 @@ final bookContentProvider = FutureProvider.autoDispose
             payload,
             meta: meta,
           );
+          // While online, renew a downloaded book's lease if it's near expiry.
+          // A revoked/refunded purchase fails renewal and loses offline access.
+          await _maybeRenewOfflineLicense(dio, bookId);
           return remote;
         }
         // API can return empty when content index is off or revision is missing;
@@ -244,10 +249,63 @@ final bookContentProvider = FutureProvider.autoDispose
         }
         return remote;
       } catch (_) {
-        if (cached != null && cached.chapters.isNotEmpty) return cached;
+        // Offline: only serve the encrypted cache if a valid, this-device
+        // offline license is present. Without one (e.g. never downloaded, or the
+        // lease lapsed), reading offline is not permitted.
+        if (cached != null && cached.chapters.isNotEmpty) {
+          final deviceId = await DeviceIdentity.deviceId();
+          final allowed = await SecureBookStore.hasValidOfflineAccess(
+            bookId,
+            deviceId: deviceId,
+          );
+          if (allowed) return cached;
+        }
         rethrow;
       }
     });
+
+/// Best-effort silent lease renewal. If the user still owns the book the lease is
+/// extended; if the purchase was revoked the server returns 403 and we drop the
+/// stored license so offline access stops at the current lease's expiry.
+Future<void> _maybeRenewOfflineLicense(Dio dio, String bookId) async {
+  try {
+    final existing = await SecureBookStore.readLicense(bookId);
+    if (existing == null || !existing.needsRenewal()) return;
+    final deviceId = await DeviceIdentity.deviceId();
+    final res = await dio.post<Map<String, dynamic>>(
+      'books/$bookId/license',
+      data: {'device_id': deviceId},
+    );
+    final lic = (res.data?['license'] as Map?)?.cast<String, dynamic>() ??
+        const <String, dynamic>{};
+    final token = (lic['token'] as String?)?.trim() ?? '';
+    if (token.isEmpty) return;
+    final expiresIso = lic['expires_at'] as String?;
+    final expiresMs = expiresIso != null
+        ? (DateTime.tryParse(expiresIso)?.millisecondsSinceEpoch ??
+            existing.expiresAtEpochMs)
+        : existing.expiresAtEpochMs;
+    await SecureBookStore.writeLicense(
+      bookId,
+      OfflineLicense(
+        token: token,
+        deviceId: deviceId,
+        expiresAtEpochMs: expiresMs,
+        revisionId: res.data?['revision_id'] as String? ?? existing.revisionId,
+      ),
+    );
+  } on DioException catch (e) {
+    // Entitlement revoked -> stop renewing and revoke local offline access.
+    if (e.response?.statusCode == 403) {
+      await SecureBookStore.writeLicense(
+        bookId,
+        OfflineLicense(token: '', deviceId: '', expiresAtEpochMs: 0),
+      );
+    }
+  } catch (_) {
+    // Transient/offline — leave the existing license untouched.
+  }
+}
 
 final offlineBookCountProvider = FutureProvider.autoDispose<int>((ref) async {
   return BookContentCacheStorage.cachedBookCount();

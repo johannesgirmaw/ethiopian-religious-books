@@ -163,6 +163,18 @@ class ProfileScreenBody extends ConsumerWidget {
               ),
             ),
           ),
+          const SizedBox(height: 24),
+          WebSection(
+            title: l10n.profileSecuritySection.toUpperCase(),
+            child: WebPanel(
+              padding: EdgeInsets.zero,
+              child: _LinkRow(
+                title: l10n.changePasswordTitle,
+                subtitle: l10n.changePasswordLinkSubtitle,
+                onTap: () => context.push('/change-password'),
+              ),
+            ),
+          ),
           const SizedBox(height: 32),
           OutlinedButton.icon(
             onPressed: () => _signOut(context, ref),

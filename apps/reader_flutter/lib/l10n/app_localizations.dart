@@ -1268,6 +1268,180 @@ abstract class AppLocalizations {
   /// **'Already have an account? Sign in'**
   String get alreadyHaveAccount;
 
+  /// No description provided for @forgotPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot password?'**
+  String get forgotPassword;
+
+  /// No description provided for @forgotPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset password'**
+  String get forgotPasswordTitle;
+
+  /// No description provided for @forgotPasswordSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your email and we\'ll send you a 6-digit code to reset your password.'**
+  String get forgotPasswordSubtitle;
+
+  /// No description provided for @sendResetCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Send reset code'**
+  String get sendResetCode;
+
+  /// No description provided for @resetPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a new password'**
+  String get resetPasswordTitle;
+
+  /// No description provided for @resetPasswordSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code we sent to {email} and choose a new password.'**
+  String resetPasswordSubtitle(String email);
+
+  /// No description provided for @resetCodeFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'6-digit code'**
+  String get resetCodeFieldLabel;
+
+  /// No description provided for @resetCodeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit code'**
+  String get resetCodeRequired;
+
+  /// No description provided for @resetCodeInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The code must be 6 digits'**
+  String get resetCodeInvalid;
+
+  /// No description provided for @newPasswordFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get newPasswordFieldLabel;
+
+  /// No description provided for @confirmPasswordFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm new password'**
+  String get confirmPasswordFieldLabel;
+
+  /// No description provided for @confirmPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm your new password'**
+  String get confirmPasswordRequired;
+
+  /// No description provided for @passwordsDoNotMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get passwordsDoNotMatch;
+
+  /// No description provided for @resetPasswordCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset password'**
+  String get resetPasswordCta;
+
+  /// No description provided for @passwordResetSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Your password has been reset. Please sign in.'**
+  String get passwordResetSuccess;
+
+  /// No description provided for @resetPasswordFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reset your password. Check the code and try again.'**
+  String get resetPasswordFailed;
+
+  /// No description provided for @resendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend code'**
+  String get resendCode;
+
+  /// No description provided for @resendCodeIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend code in {seconds}s'**
+  String resendCodeIn(int seconds);
+
+  /// No description provided for @resetCodeResent.
+  ///
+  /// In en, this message translates to:
+  /// **'A new code is on its way.'**
+  String get resetCodeResent;
+
+  /// No description provided for @backToSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to sign in'**
+  String get backToSignIn;
+
+  /// No description provided for @changePasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get changePasswordTitle;
+
+  /// No description provided for @changePasswordSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a new password for your account.'**
+  String get changePasswordSubtitle;
+
+  /// No description provided for @currentPasswordFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current password'**
+  String get currentPasswordFieldLabel;
+
+  /// No description provided for @currentPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your current password'**
+  String get currentPasswordRequired;
+
+  /// No description provided for @changePasswordCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Update password'**
+  String get changePasswordCta;
+
+  /// No description provided for @passwordChangedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Your password has been updated.'**
+  String get passwordChangedSuccess;
+
+  /// No description provided for @changePasswordFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update your password.'**
+  String get changePasswordFailed;
+
+  /// No description provided for @profileSecuritySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Security'**
+  String get profileSecuritySection;
+
+  /// No description provided for @changePasswordLinkSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update your account password'**
+  String get changePasswordLinkSubtitle;
+
   /// No description provided for @languagePreferenceTitle.
   ///
   /// In en, this message translates to:

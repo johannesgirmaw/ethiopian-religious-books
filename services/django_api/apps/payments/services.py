@@ -36,6 +36,23 @@ def final_price(book: Book) -> Decimal:
     return _money(book.price or Decimal("0"))
 
 
+def user_owns_book(user, book: Book) -> bool:
+    """Whether ``user`` is entitled to read ``book`` (including offline).
+
+    True when the book is free (``final_price`` <= 0) or the user has a COMPLETED
+    purchase for it. This is the single gate shared by the download endpoint, the
+    offline-license endpoint and the reader's buy-gate, so they never disagree.
+    Mirrors the query in :class:`apps.payments.views.EntitlementsView`.
+    """
+    if final_price(book) <= 0:
+        return True
+    if user is None or not getattr(user, "is_authenticated", False):
+        return False
+    return PaymentTransaction.objects.filter(
+        user=user, book=book, status=TransactionStatus.COMPLETED
+    ).exists()
+
+
 def resolve_commission_percent(
     book: Book, settings_obj: PlatformSettings | None = None
 ) -> Decimal:

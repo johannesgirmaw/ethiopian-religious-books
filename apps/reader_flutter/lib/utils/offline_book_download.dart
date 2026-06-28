@@ -1,16 +1,39 @@
-import 'dart:io';
-
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/download_job.dart';
+import '../providers/api_client.dart';
 import '../providers/catalog_providers.dart';
+import '../security/device_identity.dart';
 import '../storage/download_jobs_storage.dart';
+import '../storage/secure_book_store.dart';
 import 'dio_connection_message.dart';
 
-/// Downloads a book revision for offline reading. Returns a user-facing error, or null on success.
+/// A download failure with a ready-to-show, user-facing [message].
+class _DownloadException implements Exception {
+  _DownloadException(this.message);
+  final String message;
+}
+
+/// Parse the server's ISO-8601 license expiry into epoch millis, defaulting to a
+/// conservative 30-day lease if the field is missing or unparseable.
+int _expiryEpochMs(String? iso) {
+  if (iso != null && iso.trim().isNotEmpty) {
+    final parsed = DateTime.tryParse(iso);
+    if (parsed != null) return parsed.millisecondsSinceEpoch;
+  }
+  return DateTime.now().add(const Duration(days: 30)).millisecondsSinceEpoch;
+}
+
+/// Downloads a book for **encrypted** offline reading. Returns a user-facing
+/// error, or null on success.
+///
+/// Flow: register this device → obtain a server-issued offline license (the
+/// backend re-checks entitlement here, so unowned books are rejected) → fetch
+/// the content, which [bookContentProvider] seals into the device-bound vault →
+/// store the license. The content is therefore never written to disk in
+/// plaintext, and the book only opens offline while the lease is valid.
 Future<String?> runOfflineBookDownload(
   WidgetRef ref,
   String bookId, {
@@ -24,23 +47,40 @@ Future<String?> runOfflineBookDownload(
     ),
   );
   try {
-    final payload = await ref.read(downloadInfoProvider(bookId).future);
-    final dir = await getApplicationDocumentsDirectory();
-    final bookDir =
-        Directory('${dir.path}/books/$bookId/${payload.revisionId}');
-    await bookDir.create(recursive: true);
-    final manifestPath = '${bookDir.path}/manifest.json';
-    final plain = Dio(
-      BaseOptions(
-        connectTimeout: const Duration(seconds: 20),
-        receiveTimeout: const Duration(minutes: 5),
+    final dio = ref.read(apiDioProvider);
+    await DeviceIdentity.ensureRegistered(dio);
+    final deviceId = await DeviceIdentity.deviceId();
+
+    // 1) Obtain the offline license (entitlement-checked server-side).
+    final licRes = await dio.post<Map<String, dynamic>>(
+      'books/$bookId/license',
+      data: {'device_id': deviceId},
+    );
+    final licBody = licRes.data ?? const <String, dynamic>{};
+    final lic = (licBody['license'] as Map?)?.cast<String, dynamic>() ??
+        const <String, dynamic>{};
+    final token = (lic['token'] as String?)?.trim() ?? '';
+    if (token.isEmpty) {
+      throw _DownloadException('Could not obtain an offline license.');
+    }
+
+    // 2) Fetch content — this seals it into the encrypted vault as a side effect.
+    final tree = await ref.read(bookContentProvider(bookId).future);
+    if (tree.chapters.isEmpty) {
+      throw _DownloadException('This book has no readable content yet.');
+    }
+
+    // 3) Persist the license so the book can be opened offline.
+    await SecureBookStore.writeLicense(
+      bookId,
+      OfflineLicense(
+        token: token,
+        deviceId: deviceId,
+        expiresAtEpochMs: _expiryEpochMs(lic['expires_at'] as String?),
+        revisionId: licBody['revision_id'] as String?,
       ),
     );
-    await plain.download(payload.manifestUrl, manifestPath);
-    for (final part in payload.packageParts) {
-      final name = 'part_${part.partIndex}.bin';
-      await plain.download(part.url, '${bookDir.path}/$name');
-    }
+
     await DownloadJobsStorage.upsertJob(
       DownloadJob(
         bookId: bookId,
@@ -50,7 +90,9 @@ Future<String?> runOfflineBookDownload(
     );
     return null;
   } catch (e) {
-    final message = friendlyDownloadError(e, l10n: l10n);
+    final message = e is _DownloadException
+        ? e.message
+        : friendlyDownloadError(e, l10n: l10n);
     await DownloadJobsStorage.upsertJob(
       DownloadJob(
         bookId: bookId,
@@ -68,6 +110,13 @@ String friendlyDownloadError(
   AppLocalizations? l10n,
 }) {
   if (error is DioException) {
+    final code = error.response?.statusCode;
+    if (code == 403) {
+      return 'You need to purchase this book before you can download it.';
+    }
+    if (code == 404) {
+      return 'This book is not available for download yet.';
+    }
     if (_isDevStorageDownloadError(error)) {
       return l10n?.downloadErrorStorageUnreachable ??
           'Could not reach the file server. Make sure Docker is running (MinIO on port 19000) '

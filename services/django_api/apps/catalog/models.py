@@ -247,3 +247,48 @@ class BookContentIndex(models.Model):
             models.Index(fields=["revision", "chapter_key"], name="idx_bci_rev_chapter"),
             models.Index(fields=["revision", "page_number"], name="idx_bci_rev_page"),
         ]
+
+
+class OfflineDownload(models.Model):
+    """Server-side ledger of offline downloads (one row per user + book + device).
+
+    The encrypted book itself lives on the device, not the server — this records
+    *that* a download/license was issued so admins can see who has saved what
+    offline, on which device, and whether the lease is still active. Upserted on
+    every license issue/renew (``renew_count`` counts re-issues).
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="offline_downloads",
+    )
+    book = models.ForeignKey(
+        Book, on_delete=models.CASCADE, related_name="offline_downloads"
+    )
+    device_id = models.CharField(max_length=128)
+    platform = models.CharField(max_length=40, blank=True)
+    revision_id = models.CharField(max_length=64, blank=True)
+    first_downloaded_at = models.DateTimeField(auto_now_add=True)
+    last_licensed_at = models.DateTimeField(auto_now=True)
+    license_expires_at = models.DateTimeField(null=True, blank=True)
+    renew_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = "offline_downloads"
+        ordering = ["-last_licensed_at"]
+        verbose_name = "Offline book download"
+        verbose_name_plural = "Offline book downloads"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "book", "device_id"], name="uniq_offline_download"
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["user", "-last_licensed_at"], name="idx_offdl_user"),
+            models.Index(fields=["book", "-last_licensed_at"], name="idx_offdl_book"),
+        ]
+
+    def __str__(self):
+        return f"{self.user_id} · {self.book_id} · {self.device_id[:8]}"

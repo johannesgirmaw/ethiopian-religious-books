@@ -19,10 +19,13 @@ import '../screens/payment_screen.dart';
 import '../screens/purchases_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/auth_route_shell.dart';
+import '../screens/change_password_screen.dart';
+import '../screens/forgot_password_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/main_shell_screen.dart';
 import '../screens/reader_screen.dart';
 import '../screens/register_screen.dart';
+import '../screens/reset_password_screen.dart';
 import '../screens/splash_screen.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -110,6 +113,24 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               child: const RegisterScreen(),
             ),
           ),
+          GoRoute(
+            path: '/forgot-password',
+            pageBuilder: (context, state) => NoTransitionPage<void>(
+              key: state.pageKey,
+              child: ForgotPasswordScreen(
+                initialEmail: state.uri.queryParameters['email'],
+              ),
+            ),
+          ),
+          GoRoute(
+            path: '/reset-password',
+            pageBuilder: (context, state) => NoTransitionPage<void>(
+              key: state.pageKey,
+              child: ResetPasswordScreen(
+                initialEmail: state.uri.queryParameters['email'],
+              ),
+            ),
+          ),
         ],
       ),
       ShellRoute(
@@ -166,6 +187,18 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _fadeSlide(
           key: state.pageKey,
           child: const AboutScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/change-password',
+        parentNavigatorKey: rootNavigatorKey,
+        redirect: (context, state) {
+          final session = ref.read(sessionNotifierProvider).valueOrNull;
+          return session == null ? '/login' : null;
+        },
+        pageBuilder: (context, state) => _fadeSlide(
+          key: state.pageKey,
+          child: const ChangePasswordScreen(),
         ),
       ),
       GoRoute(
