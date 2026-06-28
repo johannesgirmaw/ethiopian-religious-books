@@ -171,6 +171,69 @@ class BookContentLazyIndexTests(TestCase):
         )
 
 
+class AuthorBookManagementTests(TestCase):
+    """Authors manage only their own books via the admin book API."""
+
+    def setUp(self):
+        user_model = get_user_model()
+        self.author = user_model.objects.create_user(
+            email="author@example.com", password="pw123456", role="author"
+        )
+        self.other = user_model.objects.create_user(
+            email="other@example.com", password="pw123456", role="author"
+        )
+        self.reader = user_model.objects.create_user(
+            email="reader@example.com", password="pw123456"
+        )
+        self.client = APIClient()
+
+    def test_author_can_create_book_attributed_to_self(self):
+        self.client.force_authenticate(self.author)
+        res = self.client.post(
+            "/v1/admin/books", {"title": "My Title"}, format="json"
+        )
+        self.assertEqual(res.status_code, 201, res.data)
+        book = Book.objects.get(title="My Title")
+        self.assertEqual(book.created_by_id, self.author.id)
+        # Auto-attributed so revenue/commission accrue to the author.
+        self.assertEqual(book.author_id, self.author.id)
+
+    def test_author_list_is_scoped_to_own_books(self):
+        Book.objects.create(title="Mine", created_by=self.author, author=self.author)
+        Book.objects.create(title="Theirs", created_by=self.other, author=self.other)
+        self.client.force_authenticate(self.author)
+        res = self.client.get("/v1/admin/books")
+        titles = {b["title"] for b in res.data["items"]}
+        self.assertIn("Mine", titles)
+        self.assertNotIn("Theirs", titles)
+
+    def test_author_cannot_view_others_book(self):
+        book = Book.objects.create(
+            title="Theirs", created_by=self.other, author=self.other
+        )
+        self.client.force_authenticate(self.author)
+        res = self.client.get(f"/v1/admin/books/{book.id}")
+        self.assertEqual(res.status_code, 403)
+
+    def test_author_can_edit_own_book(self):
+        book = Book.objects.create(
+            title="Mine", created_by=self.author, author=self.author
+        )
+        self.client.force_authenticate(self.author)
+        res = self.client.patch(
+            f"/v1/admin/books/{book.id}", {"price": "12.00"}, format="json"
+        )
+        self.assertEqual(res.status_code, 200, res.data)
+
+    def test_reader_cannot_access_admin_books(self):
+        self.client.force_authenticate(self.reader)
+        self.assertEqual(self.client.get("/v1/admin/books").status_code, 403)
+        self.assertEqual(
+            self.client.post("/v1/admin/books", {"title": "X"}, format="json").status_code,
+            403,
+        )
+
+
 class NormalizeChaptersDraftTests(TestCase):
     def test_assigns_chapter_keys_and_global_page_numbers(self):
         normalized = normalize_chapters_draft(

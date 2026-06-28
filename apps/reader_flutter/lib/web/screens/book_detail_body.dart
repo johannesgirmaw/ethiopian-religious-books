@@ -10,10 +10,14 @@ import '../../models/book_models.dart';
 import '../../models/download_job.dart';
 import '../../providers/catalog_providers.dart';
 import '../../providers/download_jobs_provider.dart';
+import '../../providers/payment_providers.dart';
 import '../../router/app_navigation.dart';
 import '../../utils/catalog_language_label.dart';
 import '../../utils/offline_book_download.dart';
 import '../../widgets/app_state_view.dart';
+import '../../widgets/book_reviews_section.dart';
+import '../../widgets/cover_badges.dart';
+import '../../widgets/premium_gate.dart';
 import '../../widgets/primitives/shell_primitives.dart';
 import '../../widgets/reference/book_detail_cover.dart';
 import '../../widgets/skeleton_loader.dart';
@@ -96,6 +100,10 @@ class BookDetailBody extends ConsumerWidget {
                 if (book.subtitle?.isNotEmpty == true) book.subtitle!,
               ].join(' · '),
             ),
+            if (book.requiresPurchase) ...[
+              const SizedBox(height: 12),
+              BookPriceLabel(book: book),
+            ],
             const SizedBox(height: 24),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,10 +117,20 @@ class BookDetailBody extends ConsumerWidget {
                   child: _BookMetadataColumn(
                     book: book,
                     l10n: l10n,
+                    mustBuy: book.requiresPurchase &&
+                        !(ref
+                                .watch(entitledBookIdsProvider)
+                                .valueOrNull
+                                ?.contains(bookId) ??
+                            false),
                     onShare: () => onShare(book),
                     onDownload: () => _downloadSample(context, ref),
-                    onRead: () =>
-                        context.push('/reader/$bookId?pickChapter=1'),
+                    onRead: () async {
+                      if (await ensureBookUnlocked(context, ref, book) &&
+                          context.mounted) {
+                        context.push('/reader/$bookId?pickChapter=1');
+                      }
+                    },
                   ),
                 ),
               ],
@@ -160,6 +178,8 @@ class BookDetailBody extends ConsumerWidget {
               const SizedBox(height: 16),
               _DownloadStatusCard(job: currentJob),
             ],
+            const SizedBox(height: 28),
+            BookReviewsSection(bookId: bookId),
           ],
         );
       },
@@ -193,6 +213,7 @@ class _BookMetadataColumn extends StatelessWidget {
     required this.onShare,
     required this.onDownload,
     required this.onRead,
+    required this.mustBuy,
   });
 
   final BookSummary book;
@@ -200,6 +221,7 @@ class _BookMetadataColumn extends StatelessWidget {
   final VoidCallback onShare;
   final VoidCallback onDownload;
   final VoidCallback onRead;
+  final bool mustBuy;
 
   @override
   Widget build(BuildContext context) {
@@ -227,8 +249,11 @@ class _BookMetadataColumn extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              icon: const Icon(Icons.menu_book_rounded, size: 20),
-              label: Text(l10n.readNow),
+              icon: Icon(
+                mustBuy ? Icons.shopping_cart_outlined : Icons.menu_book_rounded,
+                size: 20,
+              ),
+              label: Text(mustBuy ? l10n.purchaseBook : l10n.readNow),
             ),
             OutlinedButton.icon(
               onPressed: onDownload,

@@ -123,6 +123,16 @@ class _ReaderBookPageViewState extends State<ReaderBookPageView> {
               duration: const Duration(milliseconds: 220),
               switchInCurve: Curves.easeOut,
               switchOutCurve: Curves.easeIn,
+              // Top-align pages so short content starts at the top, not centered.
+              layoutBuilder: (currentChild, previousChildren) {
+                return Stack(
+                  alignment: Alignment.topCenter,
+                  children: [
+                    ...previousChildren,
+                    if (currentChild != null) currentChild,
+                  ],
+                );
+              },
               transitionBuilder: (child, animation) {
                 return FadeTransition(opacity: animation, child: child);
               },

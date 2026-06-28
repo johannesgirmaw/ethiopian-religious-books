@@ -15,12 +15,16 @@ import '../../widgets/primitives/shell_primitives.dart';
 import '../../models/admin_book.dart';
 import '../../providers/admin_providers.dart';
 import '../../providers/api_client.dart';
+import '../../providers/catalog_providers.dart';
 import '../../providers/session_notifier.dart';
 import '../../utils/api_error_message.dart';
+import '../../utils/catalog_language_label.dart';
+import '../../utils/form_draft_controller.dart';
+import '../../utils/form_draft_keys.dart';
 import '../../utils/rich_text_codec.dart' show documentFromStoredSummary, plainTextFromStoredSummary;
 
 /// Set true when cover presign + object storage are enabled for publishers.
-const bool kAdminCoverUploadEnabled = false;
+const bool kAdminCoverUploadEnabled = true;
 
 /// Create (`bookId == null`) or edit existing metadata (`bookId` set).
 class AdminBookEditScreen extends ConsumerStatefulWidget {
@@ -40,12 +44,21 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   final _formKey = GlobalKey<FormState>();
   final _title = TextEditingController();
   final _subtitle = TextEditingController();
+  final _summary = TextEditingController();
   final _author = TextEditingController();
   final _language = TextEditingController(text: 'am');
-  final _scriptTags = TextEditingController();
-  final _tagSlugs = TextEditingController();
+  final _publishedYear = TextEditingController();
+  final _price = TextEditingController();
+  final _salePrice = TextEditingController();
+  final _commissionPercent = TextEditingController();
+  String _currency = 'USD';
+  List<String> _scriptTagsList = [];
+  List<String> _selectedTags = [];
   List<AdminDraftChapter> _chaptersDraft = const [];
   String _visibility = 'hidden';
+  String? _genre;
+  bool _isPremium = false;
+  bool _isFeatured = false;
   String? _createdById;
   bool _busy = false;
   String? _error;
@@ -56,13 +69,129 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   String? _pendingCoverMime;
   String? _serverCoverGetUrl;
   bool _clearCoverOnSave = false;
+  late final FormDraftController _bookDraft;
+
+  String? _draftUserId() =>
+      ref.read(sessionNotifierProvider).valueOrNull?.user?.id;
+
+  String _bookDraftKey() => FormDraftKeys.scope(
+        userId: _draftUserId(),
+        formKey: FormDraftKeys.adminBook(bookId: widget.bookId),
+      );
 
   @override
   void initState() {
     super.initState();
+    _bookDraft = FormDraftController(
+      draftKey: _bookDraftKey(),
+      capture: _captureBookDraft,
+      restore: _applyBookDraft,
+      isEmpty: _isBookDraftEmpty,
+    );
     _title.addListener(_onTitleChanged);
     _primeFromBook(widget.initialBook);
-    if (widget.isNew) _loaded = true;
+    if (widget.isNew) {
+      _loaded = true;
+      _restoreBookDraftIfPresent();
+    }
+  }
+
+  Future<void> _restoreBookDraftIfPresent() async {
+    final restored = await _bookDraft.restoreIfPresent();
+    if (!mounted) return;
+    if (restored) {
+      setState(() => _dirty = true);
+      showFormDraftRestoredSnackBar(context);
+    }
+  }
+
+  Map<String, dynamic> _captureBookDraft() {
+    final coverBytes = _pendingCoverBytes;
+    return {
+      'title': _title.text,
+      'subtitle': _subtitle.text,
+      'summary': _summary.text,
+      'author': _author.text,
+      'language': _language.text,
+      'publishedYear': _publishedYear.text,
+      'price': _price.text,
+      'salePrice': _salePrice.text,
+      'commissionPercent': _commissionPercent.text,
+      'currency': _currency,
+      'scriptTags': _scriptTagsList,
+      'selectedTags': _selectedTags,
+      'chaptersDraft': _chaptersDraft.map((e) => e.toJson()).toList(),
+      'genre': _genre,
+      'isPremium': _isPremium,
+      'isFeatured': _isFeatured,
+      if (coverBytes != null &&
+          coverBytes.isNotEmpty &&
+          coverBytes.length <= 2 * 1024 * 1024)
+        'coverBytesB64': base64Encode(coverBytes),
+      'coverMime': _pendingCoverMime,
+      'clearCoverOnSave': _clearCoverOnSave,
+    };
+  }
+
+  void _applyBookDraft(Map<String, dynamic> data) {
+    _title.text = data['title'] as String? ?? '';
+    _subtitle.text = data['subtitle'] as String? ?? '';
+    _summary.text = data['summary'] as String? ?? '';
+    _author.text = data['author'] as String? ?? '';
+    _language.text = data['language'] as String? ?? 'am';
+    _publishedYear.text = data['publishedYear'] as String? ?? '';
+    _price.text = data['price'] as String? ?? '';
+    _salePrice.text = data['salePrice'] as String? ?? '';
+    _commissionPercent.text = data['commissionPercent'] as String? ?? '';
+    _currency = data['currency'] as String? ?? 'USD';
+    _scriptTagsList = [
+      for (final tag in (data['scriptTags'] as List? ?? const []))
+        tag.toString(),
+    ];
+    _selectedTags = [
+      for (final tag in (data['selectedTags'] as List? ?? const []))
+        tag.toString(),
+    ];
+    final chaptersRaw = data['chaptersDraft'];
+    if (chaptersRaw is List) {
+      _chaptersDraft = _withConsecutivePageNumbers(
+        chaptersRaw
+            .whereType<Map>()
+            .map((e) => AdminDraftChapter.fromJson(Map<String, dynamic>.from(e)))
+            .toList(),
+      );
+    }
+    _genre = data['genre'] as String?;
+    _isPremium = data['isPremium'] as bool? ?? false;
+    _isFeatured = data['isFeatured'] as bool? ?? false;
+    _clearCoverOnSave = data['clearCoverOnSave'] as bool? ?? false;
+    final coverB64 = data['coverBytesB64'] as String?;
+    if (coverB64 != null && coverB64.isNotEmpty) {
+      try {
+        _pendingCoverBytes = base64Decode(coverB64);
+        _pendingCoverMime = data['coverMime'] as String? ?? 'image/jpeg';
+      } catch (_) {
+        _pendingCoverBytes = null;
+        _pendingCoverMime = null;
+      }
+    }
+  }
+
+  bool _isBookDraftEmpty(Map<String, dynamic> data) {
+    final title = (data['title'] as String? ?? '').trim();
+    final subtitle = (data['subtitle'] as String? ?? '').trim();
+    final summary = (data['summary'] as String? ?? '').trim();
+    final author = (data['author'] as String? ?? '').trim();
+    final chapters = data['chaptersDraft'];
+    final hasChapters = chapters is List && chapters.isNotEmpty;
+    final hasCover = data['coverBytesB64'] is String &&
+        (data['coverBytesB64'] as String).isNotEmpty;
+    return title.isEmpty &&
+        subtitle.isEmpty &&
+        summary.isEmpty &&
+        author.isEmpty &&
+        !hasChapters &&
+        !hasCover;
   }
 
   void _onTitleChanged() {
@@ -74,9 +203,20 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     if (b == null) return;
     _title.text = b.title;
     _subtitle.text = b.subtitle ?? '';
+    _summary.text = plainTextFromStoredSummary(b.summary);
     _author.text = b.authorCompiler ?? '';
     _language.text = b.primaryLanguage;
-    _scriptTags.text = b.scriptTags.join(', ');
+    _scriptTagsList = [...b.scriptTags];
+    _selectedTags = [...b.tagSlugs];
+    _publishedYear.text = b.publishedYear?.toString() ?? '';
+    _genre = b.genre;
+    _isPremium = b.isPremium;
+    _isFeatured = b.isFeatured;
+    _currency = b.currency.isNotEmpty ? b.currency : 'USD';
+    _price.text = b.price > 0 ? _trimNum(b.price) : '';
+    _salePrice.text = b.salePrice != null ? _trimNum(b.salePrice!) : '';
+    _commissionPercent.text =
+        b.commissionPercent != null ? _trimNum(b.commissionPercent!) : '';
     _chaptersDraft = _withConsecutivePageNumbers(b.chaptersDraft);
     _visibility = b.catalogVisibility;
     _createdById = b.createdById;
@@ -88,6 +228,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   }
 
   void _markDirty() {
+    _bookDraft.onChanged();
     if (_dirty) return;
     setState(() => _dirty = true);
   }
@@ -116,6 +257,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
           _primeFromBook(b);
           _loaded = true;
         });
+        await _restoreBookDraftIfPresent();
       } else {
         setState(() {
           _error = AppLocalizations.of(context).bookNotFound;
@@ -136,11 +278,21 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     _title.removeListener(_onTitleChanged);
     _title.dispose();
     _subtitle.dispose();
+    _summary.dispose();
     _author.dispose();
     _language.dispose();
-    _scriptTags.dispose();
-    _tagSlugs.dispose();
+    _publishedYear.dispose();
+    _price.dispose();
+    _salePrice.dispose();
+    _commissionPercent.dispose();
+    _bookDraft.dispose();
     super.dispose();
+  }
+
+  /// Formats a price/percent for an input field without a trailing `.0`.
+  String _trimNum(double v) {
+    if (v == v.roundToDouble()) return v.toInt().toString();
+    return v.toString();
   }
 
   String _mimeFromPath(String path) {
@@ -164,7 +316,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
       _pendingCoverBytes = bytes;
       _pendingCoverMime = _mimeFromPath(x.path);
       _clearCoverOnSave = false;
-      _dirty = true;
+      _markDirty();
     });
   }
 
@@ -173,7 +325,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
       _pendingCoverBytes = null;
       _pendingCoverMime = null;
       _clearCoverOnSave = true;
-      _dirty = true;
+      _markDirty();
     });
   }
 
@@ -216,51 +368,23 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     }
   }
 
-  List<String> _splitTags(String raw) {
-    return raw
-        .split(',')
-        .map((s) => s.trim())
-        .where((s) => s.isNotEmpty)
-        .toList();
-  }
-
   Future<void> _upsertChapter({int? index}) async {
     final editing = index != null ? _chaptersDraft[index] : null;
-    final titleController = TextEditingController(text: editing?.title ?? '');
     final result = await showDialog<AdminDraftChapter>(
       context: context,
-      builder: (ctx) {
-        final d = AppLocalizations.of(ctx)!;
-        return AlertDialog(
-          title: Text(index == null ? d.addChapterTitle : d.editChapterTitle),
-          content: SizedBox(
-            width: 420,
-            child: TextField(
-              controller: titleController,
-              decoration: InputDecoration(labelText: d.chapterTitleLabel),
-            ),
+      builder: (ctx) => _ChapterEditorDialog(
+        draftKey: FormDraftKeys.scope(
+          userId: _draftUserId(),
+          formKey: FormDraftKeys.adminBookChapter(
+            bookId: widget.bookId,
+            chapterKey: editing?.chapterKey,
+            chapterIndex: index,
+            isNew: index == null,
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(d.cancel),
-            ),
-            FilledButton(
-              onPressed: () {
-                final title = titleController.text.trim();
-                Navigator.of(ctx).pop(
-                  AdminDraftChapter(
-                    chapterKey: editing?.chapterKey ?? '',
-                    title: title.isEmpty ? d.untitledChapter : title,
-                    pages: editing?.pages ?? const [],
-                  ),
-                );
-              },
-              child: Text(d.save),
-            ),
-          ],
-        );
-      },
+        ),
+        isNew: index == null,
+        initialChapter: editing,
+      ),
     );
     if (result == null) return;
     if (index == null) {
@@ -301,6 +425,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
       _chaptersDraft = _withConsecutivePageNumbers(chapters);
       if (markDirty) _dirty = true;
     });
+    if (markDirty) _bookDraft.onChanged();
   }
 
   void _applyChaptersFromResponse(Map<String, dynamic>? data) {
@@ -326,6 +451,15 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
           isNewPage: pageIndex == null,
           initialTitle: editing?.title ?? '',
           initialBody: editing?.body ?? '',
+          draftKey: FormDraftKeys.scope(
+            userId: _draftUserId(),
+            formKey: FormDraftKeys.adminBookPage(
+              bookId: widget.bookId,
+              chapterIndex: chapterIndex,
+              pageIndex: pageIndex,
+              isNew: pageIndex == null,
+            ),
+          ),
         ),
       ),
     );
@@ -465,23 +599,35 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     });
     try {
       final dio = ref.read(apiDioProvider);
-      final scriptTags = _splitTags(_scriptTags.text);
+      final scriptTags = _scriptTagsList;
       final chaptersDraftPayload =
           _chaptersDraft.map((e) => e.toDraftPayload()).toList();
       if (widget.isNew) {
-        final tagSlugs = _splitTags(_tagSlugs.text);
         final res = await dio.post<Map<String, dynamic>>(
           'admin/books',
           data: {
             'title': _title.text.trim(),
             'subtitle': _subtitle.text.trim(),
-            'summary': '',
+            'summary': _summary.text.trim(),
             'author_compiler': _author.text.trim(),
             'primary_language':
                 _language.text.trim().isEmpty ? 'am' : _language.text.trim(),
             'script_tags': scriptTags,
+            if (_genre != null) 'genre': _genre,
+            if (_publishedYear.text.trim().isNotEmpty)
+              'published_year': int.tryParse(_publishedYear.text.trim()),
+            'is_premium': _isPremium,
+            'is_featured': _isFeatured,
+            'currency': _currency,
+            'price': double.tryParse(_price.text.trim()) ?? 0,
+            'sale_price': _salePrice.text.trim().isEmpty
+                ? null
+                : double.tryParse(_salePrice.text.trim()),
+            'commission_percent': _commissionPercent.text.trim().isEmpty
+                ? null
+                : double.tryParse(_commissionPercent.text.trim()),
             'chapters_draft': chaptersDraftPayload,
-            'tag_slugs': tagSlugs,
+            'tag_slugs': _selectedTags,
           },
         );
         _applyChaptersFromResponse(res.data);
@@ -496,11 +642,27 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
           data: {
             'title': _title.text.trim(),
             'subtitle': _subtitle.text.trim(),
+            'summary': _summary.text.trim(),
             'author_compiler': _author.text.trim(),
             'primary_language':
                 _language.text.trim().isEmpty ? 'am' : _language.text.trim(),
             'script_tags': scriptTags,
+            'genre': _genre ?? '',
+            'published_year': _publishedYear.text.trim().isEmpty
+                ? null
+                : int.tryParse(_publishedYear.text.trim()),
+            'is_premium': _isPremium,
+            'is_featured': _isFeatured,
+            'currency': _currency,
+            'price': double.tryParse(_price.text.trim()) ?? 0,
+            'sale_price': _salePrice.text.trim().isEmpty
+                ? null
+                : double.tryParse(_salePrice.text.trim()),
+            'commission_percent': _commissionPercent.text.trim().isEmpty
+                ? null
+                : double.tryParse(_commissionPercent.text.trim()),
             'chapters_draft': chaptersDraftPayload,
+            'tag_slugs': _selectedTags,
           },
         );
         _applyChaptersFromResponse(res.data);
@@ -509,8 +671,14 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
         }
       }
       ref.invalidate(adminBooksProvider);
+      // Refresh reader-facing data so new covers / metadata show without a
+      // manual reload.
+      ref.invalidate(catalogProvider);
+      final editedId = widget.bookId;
+      if (editedId != null) ref.invalidate(bookDetailProvider(editedId));
       if (!mounted) return;
       setState(() => _dirty = false);
+      await _bookDraft.clear();
       context.pop();
     } on DioException catch (e) {
       setState(() {
@@ -523,6 +691,110 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  static const _languageCodes = ['am', 'gez', 'en', 'ti', 'om'];
+
+  Widget _buildLanguageDropdown(AppLocalizations l10n) {
+    final current = _language.text.trim().isEmpty ? 'am' : _language.text.trim();
+    final codes = [
+      ..._languageCodes,
+      if (!_languageCodes.contains(current)) current,
+    ];
+    return DropdownButtonFormField<String>(
+      initialValue: current,
+      isExpanded: true,
+      decoration: InputDecoration(labelText: l10n.primaryLanguageCodeLabel),
+      items: [
+        for (final c in codes)
+          DropdownMenuItem<String>(
+            value: c,
+            child: Text('${catalogLanguageFilterLabel(c, l10n)} ($c)'),
+          ),
+      ],
+      onChanged: (v) {
+        setState(() => _language.text = v ?? 'am');
+        _markDirty();
+      },
+    );
+  }
+
+  Widget _buildYearDropdown(AppLocalizations l10n) {
+    final currentYear = DateTime.now().year;
+    final selected = int.tryParse(_publishedYear.text.trim());
+    final years = [for (var y = currentYear; y >= 1900; y--) y];
+    if (selected != null && !years.contains(selected)) years.insert(0, selected);
+    return DropdownButtonFormField<int?>(
+      initialValue: selected,
+      isExpanded: true,
+      decoration: InputDecoration(labelText: l10n.adminPublishedYearLabel),
+      items: [
+        DropdownMenuItem<int?>(value: null, child: Text(l10n.adminGenreNone)),
+        for (final y in years)
+          DropdownMenuItem<int?>(value: y, child: Text('$y')),
+      ],
+      onChanged: (v) {
+        setState(() => _publishedYear.text = v?.toString() ?? '');
+        _markDirty();
+      },
+    );
+  }
+
+  static const _currencyCodes = ['USD', 'ETB', 'EUR', 'GBP'];
+
+  Widget _buildCurrencyDropdown(AppLocalizations l10n) {
+    final codes = [
+      ..._currencyCodes,
+      if (!_currencyCodes.contains(_currency)) _currency,
+    ];
+    return DropdownButtonFormField<String>(
+      initialValue: _currency,
+      isExpanded: true,
+      decoration: InputDecoration(labelText: l10n.adminCurrencyLabel),
+      items: [
+        for (final c in codes)
+          DropdownMenuItem<String>(value: c, child: Text(c)),
+      ],
+      onChanged: (v) {
+        setState(() => _currency = v ?? 'USD');
+        _markDirty();
+      },
+    );
+  }
+
+  Widget _buildGenreDropdown(AppLocalizations l10n) {
+    final genres =
+        ref.watch(genresProvider).valueOrNull ?? const <GenreOption>[];
+    final isAm = Localizations.localeOf(context).languageCode == 'am';
+    final slugs = genres.map((g) => g.slug).toSet();
+    final extra =
+        (_genre != null && _genre!.isNotEmpty && !slugs.contains(_genre))
+            ? [_genre!]
+            : const <String>[];
+    return DropdownButtonFormField<String?>(
+      initialValue: _genre,
+      isExpanded: true,
+      decoration: InputDecoration(labelText: l10n.adminGenreLabel),
+      items: [
+        DropdownMenuItem<String?>(
+          value: null,
+          child: Text(l10n.adminGenreNone),
+        ),
+        for (final g in genres)
+          DropdownMenuItem<String?>(
+            value: g.slug,
+            child: Text(
+              isAm && (g.labelAm?.isNotEmpty ?? false) ? g.labelAm! : g.label,
+            ),
+          ),
+        for (final s in extra)
+          DropdownMenuItem<String?>(value: s, child: Text(s)),
+      ],
+      onChanged: (v) {
+        setState(() => _genre = v);
+        _markDirty();
+      },
+    );
   }
 
   @override
@@ -543,7 +815,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
       canPop: !_dirty || _busy,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop || !_dirty || _busy) return;
-        final leave = await showDialog<bool>(
+        final leave = await showDialog<String>(
           context: context,
           builder: (ctx) {
             final d = AppLocalizations.of(ctx)!;
@@ -552,18 +824,28 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
               content: Text(d.discardUnsavedBodyEditor),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(false),
+                  onPressed: () => Navigator.of(ctx).pop('stay'),
                   child: Text(d.stay),
                 ),
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop('discard_draft'),
+                  child: Text(d.formDraftDiscardAction),
+                ),
                 FilledButton(
-                  onPressed: () => Navigator.of(ctx).pop(true),
-                  child: Text(d.discard),
+                  onPressed: () => Navigator.of(ctx).pop('save_draft'),
+                  child: Text(d.formDraftLeaveAndSave),
                 ),
               ],
             );
           },
         );
-        if (leave == true) {
+        if (leave == 'save_draft') {
+          await _bookDraft.persistNow();
+          if (!context.mounted) return;
+          showFormDraftSavedSnackBar(context);
+          Navigator.of(context).pop();
+        } else if (leave == 'discard_draft') {
+          await _bookDraft.clear();
           if (!context.mounted) return;
           Navigator.of(context).pop();
         }
@@ -599,11 +881,39 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                       actionLabel: l10n.goBack,
                       onAction: () => context.pop(),
                     )
-                  : Form(
-              key: _formKey,
-              child: ListView(
-              padding: const EdgeInsets.all(24),
-              children: [
+                  : LayoutBuilder(
+                      builder: (context, constraints) {
+                        final wide = constraints.maxWidth >= 760;
+                        Widget pair(Widget a, Widget b) => wide
+                            ? Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(child: a),
+                                  const SizedBox(width: 16),
+                                  Expanded(child: b),
+                                ],
+                              )
+                            : Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [a, const SizedBox(height: 12), b],
+                              );
+                        return Form(
+                          key: _formKey,
+                          child: ListView(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: wide ? 32 : 16,
+                              vertical: 24,
+                            ),
+                            children: [
+                              Center(
+                                child: ConstrainedBox(
+                                  constraints:
+                                      const BoxConstraints(maxWidth: 880),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
                 AppSectionHeader(title: l10n.metadataSection),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -620,6 +930,18 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                 TextField(
                   controller: _subtitle,
                   decoration: InputDecoration(labelText: l10n.subtitleLabel),
+                  onChanged: (_) => _markDirty(),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _summary,
+                  decoration: InputDecoration(
+                    labelText: l10n.adminSummaryLabel,
+                    alignLabelWithHint: true,
+                  ),
+                  minLines: 2,
+                  maxLines: 5,
+                  textCapitalization: TextCapitalization.sentences,
                   onChanged: (_) => _markDirty(),
                 ),
                 const SizedBox(height: 16),
@@ -692,34 +1014,101 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                   ),
                   const SizedBox(height: 12),
                 ],
-                TextField(
-                  controller: _author,
-                  decoration: InputDecoration(labelText: l10n.authorCompilerLabel),
-                  onChanged: (_) => _markDirty(),
+                pair(
+                  TextField(
+                    controller: _author,
+                    decoration:
+                        InputDecoration(labelText: l10n.authorCompilerLabel),
+                    onChanged: (_) => _markDirty(),
+                  ),
+                  _buildLanguageDropdown(l10n),
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
-                  controller: _language,
-                  decoration: InputDecoration(
-                    labelText: l10n.primaryLanguageCodeLabel,
-                    hintText: 'am',
-                  ),
-                  validator: (value) {
-                    if ((value ?? '').trim().isEmpty) {
-                      return l10n.languageCodeRequired;
-                    }
-                    return null;
+                _ChipsField(
+                  label: l10n.scriptTagsLabel,
+                  values: _scriptTagsList,
+                  onChanged: (v) {
+                    setState(() => _scriptTagsList = v);
+                    _markDirty();
                   },
-                  onChanged: (_) => _markDirty(),
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  controller: _scriptTags,
-                  decoration: InputDecoration(
-                    labelText: l10n.scriptTagsLabel,
-                    hintText: l10n.commaSeparated,
+                pair(
+                  _buildGenreDropdown(l10n),
+                  _buildYearDropdown(l10n),
+                ),
+                const SizedBox(height: 12),
+                _ChipsField(
+                  label: l10n.tagsLabel,
+                  values: _selectedTags,
+                  suggestions:
+                      ref.watch(tagsProvider).valueOrNull?.map((t) => t.slug).toList() ??
+                          const [],
+                  onChanged: (v) {
+                    setState(() => _selectedTags = v);
+                    _markDirty();
+                  },
+                ),
+                const SizedBox(height: 8),
+                pair(
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l10n.adminIsPremiumLabel),
+                    subtitle: Text(l10n.adminIsPremiumSubtitle),
+                    value: _isPremium,
+                    onChanged: (v) {
+                      setState(() => _isPremium = v);
+                      _markDirty();
+                    },
                   ),
-                  onChanged: (_) => _markDirty(),
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l10n.adminIsFeaturedLabel),
+                    subtitle: Text(l10n.adminIsFeaturedSubtitle),
+                    value: _isFeatured,
+                    onChanged: (v) {
+                      setState(() => _isFeatured = v);
+                      _markDirty();
+                    },
+                  ),
+                ),
+                const SizedBox(height: 18),
+                AppSectionHeader(title: l10n.adminPricingSection),
+                const SizedBox(height: 12),
+                pair(
+                  _buildCurrencyDropdown(l10n),
+                  TextField(
+                    controller: _price,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: l10n.adminPriceLabel,
+                      prefixText: '$_currency ',
+                    ),
+                    onChanged: (_) => _markDirty(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                pair(
+                  TextField(
+                    controller: _salePrice,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration:
+                        InputDecoration(labelText: l10n.adminSalePriceLabel),
+                    onChanged: (_) => _markDirty(),
+                  ),
+                  TextField(
+                    controller: _commissionPercent,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: l10n.adminCommissionPercentLabel,
+                      helperText: l10n.adminCommissionHelp,
+                      suffixText: '%',
+                    ),
+                    onChanged: (_) => _markDirty(),
+                  ),
                 ),
                 const SizedBox(height: 18),
                 Row(
@@ -931,17 +1320,6 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                       ),
                     );
                   }),
-                if (isNew) ...[
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _tagSlugs,
-                    decoration: InputDecoration(
-                      labelText: l10n.tagSlugsCreateOnlyLabel,
-                      hintText: l10n.tagSlugsHint,
-                    ),
-                    onChanged: (_) => _markDirty(),
-                  ),
-                ],
                 if (_error != null) ...[
                   const SizedBox(height: 16),
                   Text(_error!,
@@ -959,10 +1337,204 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                         )
                       : Text(isNew ? l10n.create : l10n.saveChanges),
                 ),
-              ],
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+      ),
+    );
+  }
+}
+
+/// Editable list of string values rendered as deletable chips, with a text
+/// field to add new ones and optional tap-to-add suggestions.
+class _ChipsField extends StatefulWidget {
+  const _ChipsField({
+    required this.label,
+    required this.values,
+    required this.onChanged,
+    this.suggestions = const [],
+  });
+
+  final String label;
+  final List<String> values;
+  final List<String> suggestions;
+  final ValueChanged<List<String>> onChanged;
+
+  @override
+  State<_ChipsField> createState() => _ChipsFieldState();
+}
+
+class _ChipsFieldState extends State<_ChipsField> {
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _add(String raw) {
+    final v = raw.trim();
+    _ctrl.clear();
+    if (v.isEmpty || widget.values.contains(v)) return;
+    widget.onChanged([...widget.values, v]);
+  }
+
+  void _remove(String v) =>
+      widget.onChanged(widget.values.where((e) => e != v).toList());
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final available =
+        widget.suggestions.where((s) => !widget.values.contains(s)).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.label,
+          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 8),
+        if (widget.values.isNotEmpty)
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              for (final v in widget.values)
+                InputChip(label: Text(v), onDeleted: () => _remove(v)),
+            ],
+          ),
+        TextField(
+          controller: _ctrl,
+          decoration: InputDecoration(
+            isDense: true,
+            hintText: l10n.adminChipAddHint,
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () => _add(_ctrl.text),
             ),
           ),
+          textInputAction: TextInputAction.done,
+          onSubmitted: _add,
+        ),
+        if (available.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              for (final s in available.take(20))
+                ActionChip(
+                  label: Text(s),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => _add(s),
+                ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _ChapterEditorDialog extends StatefulWidget {
+  const _ChapterEditorDialog({
+    required this.draftKey,
+    required this.isNew,
+    this.initialChapter,
+  });
+
+  final String draftKey;
+  final bool isNew;
+  final AdminDraftChapter? initialChapter;
+
+  @override
+  State<_ChapterEditorDialog> createState() => _ChapterEditorDialogState();
+}
+
+class _ChapterEditorDialogState extends State<_ChapterEditorDialog> {
+  late final TextEditingController _title;
+  late final FormDraftController _draft;
+
+  @override
+  void initState() {
+    super.initState();
+    _title = TextEditingController(text: widget.initialChapter?.title ?? '');
+    _draft = FormDraftController(
+      draftKey: widget.draftKey,
+      capture: () => {'title': _title.text},
+      restore: (data) {
+        _title.text = data['title'] as String? ?? '';
+      },
+      isEmpty: (data) => (data['title'] as String? ?? '').trim().isEmpty,
+    );
+    _title.addListener(_draft.onChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final restored = await _draft.restoreIfPresent();
+      if (!mounted || !restored) return;
+      setState(() {});
+      showFormDraftRestoredSnackBar(context);
+    });
+  }
+
+  @override
+  void dispose() {
+    _title.removeListener(_draft.onChanged);
+    _title.dispose();
+    _draft.dispose();
+    super.dispose();
+  }
+
+  Future<void> _cancel() async {
+    await _draft.persistNow();
+    if (!mounted) return;
+    Navigator.of(context).pop();
+  }
+
+  Future<void> _save() async {
+    final l10n = AppLocalizations.of(context)!;
+    final title = _title.text.trim();
+    await _draft.clear();
+    if (!mounted) return;
+    Navigator.of(context).pop(
+      AdminDraftChapter(
+        chapterKey: widget.initialChapter?.chapterKey ?? '',
+        title: title.isEmpty ? l10n.untitledChapter : title,
+        pages: widget.initialChapter?.pages ?? const [],
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AlertDialog(
+      title: Text(widget.isNew ? l10n.addChapterTitle : l10n.editChapterTitle),
+      content: SizedBox(
+        width: 420,
+        child: TextField(
+          controller: _title,
+          decoration: InputDecoration(labelText: l10n.chapterTitleLabel),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _cancel,
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: _save,
+          child: Text(l10n.save),
+        ),
+      ],
     );
   }
 }
@@ -972,11 +1544,13 @@ class _DraftPageEditorDialog extends StatefulWidget {
     required this.isNewPage,
     required this.initialTitle,
     required this.initialBody,
+    required this.draftKey,
   });
 
   final bool isNewPage;
   final String initialTitle;
   final String initialBody;
+  final String draftKey;
 
   @override
   State<_DraftPageEditorDialog> createState() => _DraftPageEditorDialogState();
@@ -985,41 +1559,79 @@ class _DraftPageEditorDialog extends StatefulWidget {
 class _DraftPageEditorDialogState extends State<_DraftPageEditorDialog> {
   late final TextEditingController _title;
   late final QuillController _bodyQuill;
+  late final FormDraftController _draft;
   /// Full Quill toolbar lives in the bottom sheet; collapsed by default for typing space.
   bool _toolbarExpanded = false;
+
+  void _applyBodyFromStored(String body) {
+    final richDoc = documentFromStoredSummary(body);
+    if (richDoc != null) {
+      _bodyQuill.document = richDoc;
+      return;
+    }
+    final normalized = body.replaceAll('\uFFFC', '').trimRight();
+    final next = normalized.isEmpty ? '\n' : '$normalized\n';
+    final len = _bodyQuill.document.length;
+    _bodyQuill.replaceText(
+      0,
+      len - 1,
+      next,
+      TextSelection.collapsed(offset: next.length - 1),
+    );
+  }
 
   @override
   void initState() {
     super.initState();
     _title = TextEditingController(text: widget.initialTitle);
     _bodyQuill = QuillController.basic();
-    final richDoc = documentFromStoredSummary(widget.initialBody);
-    if (richDoc != null) {
-      _bodyQuill.document = richDoc;
-    } else {
-      final normalized =
-          widget.initialBody.replaceAll('\uFFFC', '').trimRight();
-      final next = normalized.isEmpty ? '\n' : '$normalized\n';
-      final len = _bodyQuill.document.length;
-      _bodyQuill.replaceText(
-        0,
-        len - 1,
-        next,
-        TextSelection.collapsed(offset: next.length - 1),
-      );
-    }
+    _applyBodyFromStored(widget.initialBody);
+    _draft = FormDraftController(
+      draftKey: widget.draftKey,
+      capture: () => {
+        'title': _title.text,
+        'body': jsonEncode(_bodyQuill.document.toDelta().toJson()),
+      },
+      restore: (data) {
+        _title.text = data['title'] as String? ?? '';
+        _applyBodyFromStored(data['body'] as String? ?? '');
+      },
+      isEmpty: (data) {
+        final title = (data['title'] as String? ?? '').trim();
+        final body = (data['body'] as String? ?? '').trim();
+        return title.isEmpty && body.isEmpty;
+      },
+    );
+    _title.addListener(_draft.onChanged);
+    _bodyQuill.document.changes.listen((_) => _draft.onChanged());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final restored = await _draft.restoreIfPresent();
+      if (!mounted || !restored) return;
+      setState(() {});
+      showFormDraftRestoredSnackBar(context);
+    });
   }
 
   @override
   void dispose() {
+    _title.removeListener(_draft.onChanged);
     _title.dispose();
     _bodyQuill.dispose();
+    _draft.dispose();
     super.dispose();
   }
 
-  void _saveAndPop() {
+  Future<void> _cancel() async {
+    await _draft.persistNow();
+    if (!mounted) return;
+    Navigator.of(context).pop();
+  }
+
+  Future<void> _saveAndPop() async {
     final t = _title.text.trim();
     final body = jsonEncode(_bodyQuill.document.toDelta().toJson());
+    await _draft.clear();
+    if (!mounted) return;
     Navigator.of(context).pop(
       AdminDraftPage(
         pageNumber: 0,
@@ -1034,7 +1646,13 @@ class _DraftPageEditorDialogState extends State<_DraftPageEditorDialog> {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        await _cancel();
+      },
+      child: Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -1046,7 +1664,7 @@ class _DraftPageEditorDialogState extends State<_DraftPageEditorDialog> {
           IconButton(
             tooltip: l10n.cancel,
             icon: const Icon(Icons.close),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: _cancel,
           ),
         ],
       ),
@@ -1173,7 +1791,8 @@ class _DraftPageEditorDialogState extends State<_DraftPageEditorDialog> {
                             showItalicButton: true,
                             showUnderLineButton: true,
                             showStrikeThrough: true,
-                            showHeaderStyle: false,
+                            showHeaderStyle: true,
+                            headerStyleType: HeaderStyleType.buttons,
                             showListBullets: true,
                             showListNumbers: true,
                             showQuote: true,
@@ -1184,7 +1803,7 @@ class _DraftPageEditorDialogState extends State<_DraftPageEditorDialog> {
                             showSuperscript: false,
                             showSearchButton: false,
                             showFontFamily: false,
-                            showFontSize: false,
+                            showFontSize: true,
                             showDirection: false,
                             showInlineCode: true,
                             showIndent: true,
@@ -1207,6 +1826,7 @@ class _DraftPageEditorDialogState extends State<_DraftPageEditorDialog> {
           ),
         ),
       ),
+    ),
     );
   }
 }

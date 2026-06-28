@@ -138,6 +138,12 @@ class DesktopProfileScreenBody extends ConsumerWidget {
               child: Column(
                 children: [
                   _LinkRow(
+                    title: l10n.paymentMyPurchases,
+                    subtitle: l10n.paymentPurchasesSubtitle,
+                    onTap: () => context.go('/purchases'),
+                  ),
+                  const Divider(height: 1),
+                  _LinkRow(
                     title: l10n.drawerAbout,
                     subtitle: l10n.aboutAppSectionTitle,
                     onTap: () => context.push('/about'),
@@ -149,8 +155,26 @@ class DesktopProfileScreenBody extends ConsumerWidget {
                       subtitle: l10n.adminPanelSubtitle,
                       onTap: () => context.push('/admin'),
                     ),
+                    const Divider(height: 1),
+                    _LinkRow(
+                      title: l10n.adminManageOrders,
+                      subtitle: l10n.adminOrdersSubtitle,
+                      onTap: () => context.push('/admin/payments'),
+                    ),
                   ],
                 ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          DesktopSection(
+            title: l10n.profileSecuritySection.toUpperCase(),
+            child: DesktopPanel(
+              padding: EdgeInsets.zero,
+              child: _LinkRow(
+                title: l10n.changePasswordTitle,
+                subtitle: l10n.changePasswordLinkSubtitle,
+                onTap: () => context.push('/change-password'),
               ),
             ),
           ),

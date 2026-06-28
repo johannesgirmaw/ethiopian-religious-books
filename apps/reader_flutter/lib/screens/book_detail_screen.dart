@@ -11,18 +11,20 @@ import '../models/book_models.dart';
 import '../models/download_job.dart';
 import '../providers/catalog_providers.dart';
 import '../providers/download_jobs_provider.dart';
+import '../providers/payment_providers.dart';
 import '../router/app_navigation.dart';
 import '../utils/catalog_language_label.dart';
 import '../utils/offline_book_download.dart';
 import '../common/platform/platform_shell.dart';
 import '../desktop/screens/book_detail_body.dart';
 import '../desktop/widgets/shell/desktop_overlay_scaffold.dart';
-import '../desktop/widgets/shell/desktop_sidebar.dart';
 import '../web/layout/app_layout_scope.dart';
 import '../web/screens/book_detail_body.dart';
 import '../web/widgets/shell/web_overlay_scaffold.dart';
-import '../web/widgets/shell/web_sidebar.dart';
 import '../widgets/app_state_view.dart';
+import '../widgets/book_reviews_section.dart';
+import '../widgets/cover_badges.dart';
+import '../widgets/premium_gate.dart';
 import '../widgets/primitives/shell_primitives.dart';
 import '../widgets/reference/book_detail_cover.dart';
 import '../widgets/skeleton_loader.dart';
@@ -95,7 +97,6 @@ class BookDetailScreen extends ConsumerWidget {
               return WebOverlayScaffold(
                 title: l10n.bookDetailsTitle,
                 currentLocation: GoRouterState.of(context).matchedLocation,
-                sidebarItems: defaultWebSidebarItems(l10n),
                 appTitle: l10n.appTitle,
                 actions: [
                   asyncBook.maybeWhen(
@@ -118,7 +119,6 @@ class BookDetailScreen extends ConsumerWidget {
               return DesktopOverlayScaffold(
                 title: l10n.bookDetailsTitle,
                 currentLocation: GoRouterState.of(context).matchedLocation,
-                sidebarItems: defaultDesktopSidebarItems(l10n),
                 appTitle: l10n.appTitle,
                 actions: [
                   asyncBook.maybeWhen(
@@ -218,25 +218,31 @@ class BookDetailScreen extends ConsumerWidget {
                                 if (book.authorCompiler != null &&
                                     book.authorCompiler!.isNotEmpty) ...[
                                   const SizedBox(height: 10),
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.person_outline_rounded,
-                                        size: 15,
-                                        color: AppColors.textTertiary,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(
-                                          book.authorCompiler!,
-                                          style: const TextStyle(
-                                            color: AppColors.textTertiary,
-                                            fontWeight: FontWeight.w500,
-                                            fontSize: 13,
+                                  GestureDetector(
+                                    onTap: () => context.push(
+                                      '/author/${Uri.encodeComponent(book.authorCompiler!.trim())}',
+                                    ),
+                                    behavior: HitTestBehavior.opaque,
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.person_outline_rounded,
+                                          size: 15,
+                                          color: AppColors.primary,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            book.authorCompiler!,
+                                            style: const TextStyle(
+                                              color: AppColors.primary,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 13,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ],
@@ -244,6 +250,10 @@ class BookDetailScreen extends ConsumerWidget {
                           ),
                         ],
                       ),
+                      if (book.requiresPurchase) ...[
+                        const SizedBox(height: 16),
+                        BookPriceLabel(book: book),
+                      ],
                       const SizedBox(height: 18),
                       Row(
                         children: [
@@ -265,7 +275,9 @@ class BookDetailScreen extends ConsumerWidget {
                           const SizedBox(width: 10),
                           _BookDetailStatCard(
                             icon: Icons.groups_outlined,
-                            value: '—',
+                            value: _statValue(
+                              book.readersCount > 0 ? book.readersCount : null,
+                            ),
                             label: l10n.bookStatReaders,
                           ),
                         ],
@@ -293,6 +305,8 @@ class BookDetailScreen extends ConsumerWidget {
                         const SizedBox(height: 16),
                         _DownloadStatusCard(job: currentJob),
                       ],
+                      const SizedBox(height: 22),
+                      BookReviewsSection(bookId: bookId),
                       const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
@@ -328,20 +342,39 @@ class BookDetailScreen extends ConsumerWidget {
                   ),
                   child: SizedBox(
                     width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () =>
-                          context.push('/reader/$bookId?pickChapter=1'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.referencePrimary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.cardV2),
-                        ),
-                      ),
-                      icon: const Icon(Icons.menu_book_rounded, size: 20),
-                      label: Text(l10n.readNow),
+                    child: Builder(
+                      builder: (context) {
+                        final owned = ref
+                                .watch(entitledBookIdsProvider)
+                                .valueOrNull
+                                ?.contains(bookId) ??
+                            false;
+                        final mustBuy = book.requiresPurchase && !owned;
+                        return FilledButton.icon(
+                          onPressed: () async {
+                            if (await ensureBookUnlocked(context, ref, book) &&
+                                context.mounted) {
+                              context.push('/reader/$bookId?pickChapter=1');
+                            }
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.referencePrimary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.cardV2),
+                            ),
+                          ),
+                          icon: Icon(
+                            mustBuy
+                                ? Icons.shopping_cart_outlined
+                                : Icons.menu_book_rounded,
+                            size: 20,
+                          ),
+                          label: Text(mustBuy ? l10n.purchaseBook : l10n.readNow),
+                        );
+                      },
                     ),
                   ),
                 ),

@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.study.models import (
+    BookReview,
     DailyReadingPlan,
     DailyReadingPlanItem,
     ReaderEvent,
@@ -9,10 +10,52 @@ from apps.study.models import (
     StudyFolderEntry,
     StudyReminder,
     UserBookmark,
+    UserFavourite,
     UserHighlight,
     UserNote,
+    UserNotification,
     UserReadingProgress,
 )
+
+
+class UserFavouriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserFavourite
+        fields = ("id", "book", "created_at")
+        read_only_fields = ("id", "created_at")
+
+
+class BookReviewSerializer(serializers.ModelSerializer):
+    user_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BookReview
+        fields = (
+            "id",
+            "book",
+            "rating",
+            "body",
+            "user_name",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("id", "user_name", "created_at", "updated_at")
+
+    def get_user_name(self, obj: BookReview) -> str:
+        name = (getattr(obj.user, "display_name", "") or "").strip()
+        return name or obj.user.email.split("@")[0]
+
+    def validate_rating(self, value: int) -> int:
+        if value < 1 or value > 5:
+            raise serializers.ValidationError("rating must be between 1 and 5")
+        return value
+
+
+class UserNotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserNotification
+        fields = ("id", "kind", "title", "body", "book", "is_read", "created_at")
+        read_only_fields = fields
 
 
 class UserBookmarkSerializer(serializers.ModelSerializer):

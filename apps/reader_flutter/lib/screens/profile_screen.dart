@@ -37,10 +37,12 @@ class ProfileScreen extends ConsumerWidget {
 
     return ShellPageScaffold(
       title: l10n.profileTitle,
+      showBackButton: true,
+      onBack: () => context.go('/home'),
       body: ListView(
         padding: AppLayout.page,
         children: [
-          _ProfileHero(user: user, l10n: l10n),
+          // _ProfileHero(user: user, l10n: l10n),
           const SizedBox(height: AppLayout.sectionGap),
           AppSectionAccent(label: l10n.profileAccountDetails.toUpperCase()),
           const SizedBox(height: AppLayout.blockGap),
@@ -95,6 +97,22 @@ class ProfileScreen extends ConsumerWidget {
           AppSectionAccent(label: l10n.aboutTitle.toUpperCase()),
           const SizedBox(height: AppLayout.blockGap),
           _ProfileLinkRow(
+            icon: Icons.tune_rounded,
+            title: l10n.navSettings,
+            subtitle: l10n.profileSettingsSubtitle,
+            onTap: () => context.go('/settings'),
+          ),
+          if (user != null) ...[
+            const SizedBox(height: AppLayout.itemGap),
+            _ProfileLinkRow(
+              icon: Icons.receipt_long_outlined,
+              title: l10n.paymentMyPurchases,
+              subtitle: l10n.paymentPurchasesSubtitle,
+              onTap: () => context.go('/purchases'),
+            ),
+          ],
+          const SizedBox(height: AppLayout.itemGap),
+          _ProfileLinkRow(
             icon: Icons.info_outline_rounded,
             title: l10n.drawerAbout,
             subtitle: l10n.aboutAppSectionTitle,
@@ -107,6 +125,24 @@ class ProfileScreen extends ConsumerWidget {
               title: l10n.adminPanel,
               subtitle: l10n.adminPanelSubtitle,
               onTap: () => context.push('/admin'),
+            ),
+            const SizedBox(height: AppLayout.itemGap),
+            _ProfileLinkRow(
+              icon: Icons.receipt_long_outlined,
+              title: l10n.adminManageOrders,
+              subtitle: l10n.adminOrdersSubtitle,
+              onTap: () => context.push('/admin/payments'),
+            ),
+          ],
+          if (user != null) ...[
+            const SizedBox(height: AppLayout.sectionGap),
+            AppSectionAccent(label: l10n.profileSecuritySection.toUpperCase()),
+            const SizedBox(height: AppLayout.blockGap),
+            _ProfileLinkRow(
+              icon: Icons.lock_outline_rounded,
+              title: l10n.changePasswordTitle,
+              subtitle: l10n.changePasswordLinkSubtitle,
+              onTap: () => context.push('/change-password'),
             ),
           ],
           if (user != null) ...[

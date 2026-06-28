@@ -3,24 +3,26 @@ import 'package:flutter/material.dart';
 import '../../design/app_tokens.dart';
 import '../../models/book_models.dart';
 import '../../utils/catalog_book_visuals.dart';
+import '../cover_badges.dart';
 
 class BookDetailCover extends StatelessWidget {
   const BookDetailCover({
     super.key,
     required this.book,
     this.width = 108,
+    this.expand = false,
   });
 
   final BookSummary book;
   final double width;
-
+  final bool expand;
   @override
   Widget build(BuildContext context) {
     final icon = catalogBookIcon(book, 0);
     final height = width * 1.38;
 
     return SizedBox(
-      width: width,
+      width: expand?double.infinity:width,
       height: height,
       child: DecoratedBox(
         decoration: BoxDecoration(
@@ -62,6 +64,8 @@ class BookDetailCover extends StatelessWidget {
                   ],
                 ),
               ),
+              if (book.coverUrl != null)
+                Positioned.fill(child: CoverImageFill(url: book.coverUrl!)),
             ],
           ),
         ),

@@ -26,7 +26,6 @@ class WebAuthLayout extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
     final tier = AppLayoutScope.tierOf(context);
     final isExpanded = tier == AppLayoutTier.expanded;
 
@@ -37,14 +36,13 @@ class WebAuthLayout extends ConsumerWidget {
           child: isExpanded
               ? Row(
                   children: [
-                    Expanded(
+                    const Expanded(
                       flex: 5,
-                      child: _BrandPanel(l10n: l10n),
+                      child: WebAuthBrandPanel(),
                     ),
                     Expanded(
                       flex: 4,
-                      child: _FormColumn(
-                        l10n: l10n,
+                      child: WebAuthFormPane(
                         headline: headline,
                         subtitle: subtitle,
                         formChild: formChild,
@@ -58,8 +56,7 @@ class WebAuthLayout extends ConsumerWidget {
                     padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 480),
-                      child: _FormColumn(
-                        l10n: l10n,
+                      child: WebAuthFormPane(
                         headline: headline,
                         subtitle: subtitle,
                         formChild: formChild,
@@ -74,13 +71,13 @@ class WebAuthLayout extends ConsumerWidget {
   }
 }
 
-class _BrandPanel extends StatelessWidget {
-  const _BrandPanel({required this.l10n});
-
-  final AppLocalizations l10n;
+class WebAuthBrandPanel extends StatelessWidget {
+  const WebAuthBrandPanel({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return DecoratedBox(
       decoration: const BoxDecoration(
         gradient: AppGradients.greetingMesh,
@@ -140,16 +137,15 @@ class _BrandPanel extends StatelessWidget {
   }
 }
 
-class _FormColumn extends ConsumerWidget {
-  const _FormColumn({
-    required this.l10n,
+class WebAuthFormPane extends ConsumerWidget {
+  const WebAuthFormPane({
+    super.key,
     required this.headline,
     required this.subtitle,
     required this.formChild,
     this.footer,
   });
 
-  final AppLocalizations l10n;
   final String headline;
   final String subtitle;
   final Widget formChild;

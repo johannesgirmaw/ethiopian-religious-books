@@ -210,6 +210,72 @@ class UserReadingProgress(models.Model):
         ]
 
 
+class UserFavourite(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="favourites",
+    )
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="favourited_by")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "user_favourites"
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["user", "book"], name="uniq_user_favourite"),
+        ]
+
+
+class BookReview(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="book_reviews",
+    )
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="reviews")
+    rating = models.PositiveSmallIntegerField(default=5)  # 1..5
+    body = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "book_reviews"
+        ordering = ["-updated_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["user", "book"], name="uniq_user_book_review"),
+        ]
+
+
+class UserNotification(models.Model):
+    class Kind(models.TextChoices):
+        INFO = "info", "info"
+        NEW_BOOK = "new_book", "new_book"
+        REMINDER = "reminder", "reminder"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="notifications",
+    )
+    kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.INFO)
+    title = models.CharField(max_length=200)
+    body = models.CharField(max_length=500, blank=True)
+    book = models.ForeignKey(Book, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "user_notifications"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "is_read", "-created_at"], name="idx_notif_user_read"),
+        ]
+
+
 class ReaderEvent(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(

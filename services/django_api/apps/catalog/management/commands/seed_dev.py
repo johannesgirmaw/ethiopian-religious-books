@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
+from apps.catalog.cover_art import assign_cover_for_book
 from apps.catalog.models import Book, BookRevision
 from apps.catalog.storage_s3 import ensure_bucket, put_bytes
 from apps.legal.models import LegalDocument
@@ -92,6 +93,8 @@ class Command(BaseCommand):
         book.published_revision = rev
         book.catalog_visibility = Book.Visibility.PUBLISHED
         book.save()
+        if assign_cover_for_book(book, index=0):
+            self.stdout.write("seed_dev: cover uploaded for sample book")
 
         self.stdout.write(self.style.SUCCESS("seed_dev: ok (admin@localhost / adminadminadmin)"))
 

@@ -55,6 +55,8 @@ class DownloadsScreen extends ConsumerWidget {
 
     return ShellPageScaffold(
       title: l10n.downloadsPageTitle,
+      showBackButton: true,
+      onBack: () => context.go('/settings'),
       actions: [
         IconButton(
           tooltip: l10n.downloadsClearAllCache,

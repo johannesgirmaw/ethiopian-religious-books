@@ -41,14 +41,16 @@ class SettingsScreen extends ConsumerWidget {
 
     return ShellPageScaffold(
       title: l10n.settingsTitle,
+      showBackButton: true,
+      onBack: () => context.go('/profile'),
       body: ListView(
         padding: AppLayout.page,
         children: [
-          AppGreetingCard(
-            greetingLine: greetingForL10n(l10n),
-            title: l10n.settingsTitle,
-            subtitle: l10n.homeQuickSettingsSubtitle,
-          ),
+          // AppGreetingCard(
+          //   greetingLine: greetingForL10n(l10n),
+          //   title: l10n.settingsTitle,
+          //   subtitle: l10n.homeQuickSettingsSubtitle,
+          // ),
           const SizedBox(height: AppLayout.sectionGap),
           AppSectionAccent(label: l10n.dashboard.toUpperCase()),
           const SizedBox(height: AppLayout.blockGap),

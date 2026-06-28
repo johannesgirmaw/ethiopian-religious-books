@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/app_localizations.dart';
 import 'desktop_app_shell.dart';
 import 'desktop_sidebar.dart';
 
 /// Overlay pages keep the sidebar and show a title bar.
-class DesktopOverlayScaffold extends StatelessWidget {
+class DesktopOverlayScaffold extends ConsumerWidget {
   const DesktopOverlayScaffold({
     super.key,
     required this.title,
     required this.body,
     required this.currentLocation,
-    required this.sidebarItems,
     required this.appTitle,
     this.actions,
     this.onBack,
@@ -19,16 +20,16 @@ class DesktopOverlayScaffold extends StatelessWidget {
   final String title;
   final Widget body;
   final String currentLocation;
-  final List<DesktopSidebarItem> sidebarItems;
   final String appTitle;
   final List<Widget>? actions;
   final VoidCallback? onBack;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     return DesktopAppShell(
       currentLocation: currentLocation,
-      sidebarItems: sidebarItems,
+      sidebarItems: desktopSidebarItemsFor(ref, l10n),
       appTitle: appTitle,
       breadcrumb: title,
       actions: actions,

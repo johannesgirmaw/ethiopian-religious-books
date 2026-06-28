@@ -37,3 +37,12 @@ bool useMobileShell(BuildContext context) {
 
 /// Native desktop UI (macOS, Linux, Windows). Never true on web.
 bool useDesktopShell(BuildContext context) => isDesktopPlatform;
+
+/// Wide split auth layout: fixed brand panel + animated form column.
+bool useWideAuthSplit(BuildContext context) {
+  if (useDesktopShell(context)) return true;
+  if (kIsWeb && useWebShell(context)) {
+    return AppLayoutScope.tierOf(context) == AppLayoutTier.expanded;
+  }
+  return false;
+}

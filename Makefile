@@ -62,6 +62,9 @@ run-dev:
 seed:
 	docker compose -f infra/docker-compose.yml --env-file infra/.env exec api python manage.py seed_dev
 
+seed-covers:
+	docker compose -f infra/docker-compose.yml --env-file infra/.env exec api python manage.py seed_book_covers
+
 print-api-url:
 	@chmod +x scripts/print_api_url.sh 2>/dev/null || true
 	@./scripts/print_api_url.sh

@@ -21,6 +21,8 @@ from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
+from apps.catalog.cover_art import render_cover_png
+from apps.catalog.cover_fetch import assign_internet_cover_for_book
 from apps.catalog.models import Book, BookContentIndex, BookPage, BookTag, Tag
 from apps.catalog.publishing import publish_book
 from apps.catalog.storage_s3 import ensure_bucket, is_object_storage_configured
@@ -504,6 +506,18 @@ READERS = [
 ]
 
 
+def _assign_cover(book: Book, *, index: int) -> bool:
+    return assign_internet_cover_for_book(
+        book,
+        fallback_generator=lambda b: render_cover_png(
+            b.title,
+            subtitle=b.subtitle or "",
+            author=b.author_compiler or "",
+            index=index,
+        ),
+    )
+
+
 class Command(BaseCommand):
     help = "Seed ~30 realistic published books plus data for every backend feature."
 
@@ -612,6 +626,8 @@ class Command(BaseCommand):
             if already:
                 self.stdout.write(f"[{idx}/{count}] already published: {book.title}")
                 published.append(book)
+                if _assign_cover(book, index=idx - 1):
+                    self.stdout.write(f"  cover uploaded for {book.title}")
                 continue
 
             outcome = publish_book(book, admin)
@@ -623,6 +639,8 @@ class Command(BaseCommand):
             book.refresh_from_db()
             published.append(book)
             pages = BookPage.objects.filter(revision=book.published_revision).count()
+            if _assign_cover(book, index=idx - 1):
+                self.stdout.write(f"  cover uploaded for {book.title}")
             self.stdout.write(f"[{idx}/{count}] published: {book.title} ({pages} pages)")
         return published
 

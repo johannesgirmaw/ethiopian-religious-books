@@ -6,6 +6,8 @@ import '../../../l10n/app_localizations.dart';
 import '../../../models/book_models.dart';
 import '../../../providers/catalog_providers.dart';
 import '../../../utils/catalog_book_visuals.dart';
+import '../../../utils/catalog_categories.dart';
+import '../../../widgets/cover_badges.dart';
 import '../../design/desktop_tokens.dart';
 import 'book_tile_hover.dart';
 
@@ -22,10 +24,10 @@ class DesktopBookCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final meta = ref.watch(catalogBookMetaProvider(book.id)).valueOrNull;
     final gradient = catalogBookGradient(index);
-    final icon = catalogBookIcon(book, index);
+    final icon = categoryForBook(book).icon;
 
     return DesktopBookTileHover(
       route: '/book/${book.id}',
@@ -47,12 +49,55 @@ class DesktopBookCard extends ConsumerWidget {
                     const CatalogCrossWatermark(),
                     Padding(
                       padding: const EdgeInsets.all(10),
-                      child: Icon(
-                        icon,
-                        color: Colors.white.withValues(alpha: 0.85),
-                        size: 18,
+                      child: Container(
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.20),
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: Icon(
+                          icon,
+                          color: Colors.white,
+                          size: 17,
+                        ),
                       ),
                     ),
+                    if (book.coverUrl != null)
+                      Positioned.fill(
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(7),
+                          ),
+                          child: CoverImageFill(url: book.coverUrl!),
+                        ),
+                      ),
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: ReadNowBadge(label: l10n.readNow, compact: true),
+                    ),
+                    if (book.hasRating)
+                      Positioned(
+                        top: 10,
+                        left: 10,
+                        child: RatingBadge(
+                          average: book.ratingAverage,
+                          compact: true,
+                        ),
+                      ),
+                    if (book.isPremium)
+                      const Positioned(
+                        bottom: 8,
+                        left: 8,
+                        child: PremiumBadge(compact: true),
+                      ),
+                    if (book.requiresPurchase)
+                      Positioned(
+                        bottom: 8,
+                        right: 8,
+                        child: PriceBadge(book: book, compact: true),
+                      ),
                     if ((meta?.progress ?? 0) > 0)
                       Positioned(
                         left: 0,
@@ -62,7 +107,7 @@ class DesktopBookCard extends ConsumerWidget {
                           value: meta!.progress.clamp(0, 1),
                           minHeight: 2,
                           backgroundColor: Colors.white24,
-                          color: DesktopTokens.accentGold,
+                          color: AppColors.accent,
                         ),
                       ),
                   ],

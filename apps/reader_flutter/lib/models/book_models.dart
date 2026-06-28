@@ -1,4 +1,13 @@
 import '../utils/rich_text_codec.dart';
+import '../utils/resolve_cover_url.dart';
+
+/// Parses numbers that the API may send as either JSON numbers or strings
+/// (DecimalField fields serialize to strings, e.g. "100.00").
+double _toDouble(dynamic value) {
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0;
+  return 0;
+}
 
 class PublishedRevision {
   PublishedRevision({
@@ -41,6 +50,19 @@ class BookSummary {
     this.primaryLanguage,
     this.catalogVisibility,
     this.publishedRevision,
+    this.coverUrl,
+    this.genre,
+    this.publishedYear,
+    this.ratingAverage = 0,
+    this.ratingCount = 0,
+    this.readersCount = 0,
+    this.isPremium = false,
+    this.isFeatured = false,
+    this.currency = 'USD',
+    this.price = 0,
+    this.salePrice,
+    this.finalPrice = 0,
+    this.createdAt,
   });
 
   final String id;
@@ -52,6 +74,38 @@ class BookSummary {
   final String? primaryLanguage;
   final String? catalogVisibility;
   final PublishedRevision? publishedRevision;
+
+  /// Presigned cover image URL (null when no cover or storage unconfigured).
+  final String? coverUrl;
+
+  /// Server-assigned genre slug (mirrors [BookCategory] keys).
+  final String? genre;
+  final int? publishedYear;
+  final double ratingAverage;
+  final int ratingCount;
+  final int readersCount;
+  final bool isPremium;
+  final bool isFeatured;
+
+  /// ISO currency code for [price] / [salePrice] / [finalPrice].
+  final String currency;
+
+  /// Regular selling price.
+  final double price;
+
+  /// Optional discounted price (null when not on sale).
+  final double? salePrice;
+
+  /// What a buyer actually pays: [salePrice] when set, else [price].
+  final double finalPrice;
+  final DateTime? createdAt;
+
+  bool get hasRating => ratingCount > 0;
+
+  /// Whether this title requires a purchase to read.
+  bool get requiresPurchase => isPremium && finalPrice > 0;
+
+  bool get isOnSale => salePrice != null && salePrice! < price;
 
   factory BookSummary.fromJson(Map<String, dynamic> j) {
     final rawSummary = j['summary'] as String?;
@@ -69,6 +123,21 @@ class BookSummary {
               j['published_revision'] as Map<String, dynamic>,
             )
           : null,
+      coverUrl: resolveCoverUrl(j['cover_url'] as String?),
+      genre: j['genre'] as String?,
+      publishedYear: (j['published_year'] as num?)?.toInt(),
+      ratingAverage: (j['rating_average'] as num?)?.toDouble() ?? 0,
+      ratingCount: (j['rating_count'] as num?)?.toInt() ?? 0,
+      readersCount: (j['readers_count'] as num?)?.toInt() ?? 0,
+      isPremium: j['is_premium'] as bool? ?? false,
+      isFeatured: j['is_featured'] as bool? ?? false,
+      currency: (j['currency'] as String?)?.trim().isNotEmpty == true
+          ? j['currency'] as String
+          : 'USD',
+      price: _toDouble(j['price']),
+      salePrice: j['sale_price'] == null ? null : _toDouble(j['sale_price']),
+      finalPrice: _toDouble(j['final_price']),
+      createdAt: DateTime.tryParse(j['created_at'] as String? ?? ''),
     );
   }
 }
