@@ -22,3 +22,5 @@ dist/
 .vscode/
 *.swp
 Mobileapp ui design/
+
+services/django_api/media/
