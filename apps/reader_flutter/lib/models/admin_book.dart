@@ -1,3 +1,9 @@
+double _toDouble(dynamic value) {
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0;
+  return 0;
+}
+
 class AdminBooksPage {
   AdminBooksPage({required this.items, required this.total});
 
@@ -27,8 +33,18 @@ class AdminBook {
     this.authorCompiler,
     required this.primaryLanguage,
     required this.scriptTags,
+    this.tagSlugs = const [],
     required this.chaptersDraft,
     required this.catalogVisibility,
+    this.genre,
+    this.publishedYear,
+    this.isPremium = false,
+    this.isFeatured = false,
+    this.authorId,
+    this.currency = 'USD',
+    this.price = 0,
+    this.salePrice,
+    this.commissionPercent,
     this.coverObjectKey,
     this.coverGetUrl,
     this.publishedRevisionId,
@@ -45,8 +61,18 @@ class AdminBook {
   final String? authorCompiler;
   final String primaryLanguage;
   final List<String> scriptTags;
+  final List<String> tagSlugs;
   final List<AdminDraftChapter> chaptersDraft;
   final String catalogVisibility;
+  final String? genre;
+  final int? publishedYear;
+  final bool isPremium;
+  final bool isFeatured;
+  final String? authorId;
+  final String currency;
+  final double price;
+  final double? salePrice;
+  final double? commissionPercent;
   final String? coverObjectKey;
   final String? coverGetUrl;
   final String? publishedRevisionId;
@@ -60,6 +86,11 @@ class AdminBook {
     final st = j['script_tags'];
     if (st is List) {
       tags = st.map((e) => e.toString()).toList();
+    }
+    List<String> tagSlugs = [];
+    final ts = j['tag_slugs'];
+    if (ts is List) {
+      tagSlugs = ts.map((e) => e.toString()).toList();
     }
     List<AdminDraftChapter> chapters = [];
     final cd = j['chapters_draft'];
@@ -77,8 +108,22 @@ class AdminBook {
       authorCompiler: j['author_compiler'] as String?,
       primaryLanguage: j['primary_language'] as String? ?? 'am',
       scriptTags: tags,
+      tagSlugs: tagSlugs,
       chaptersDraft: chapters,
       catalogVisibility: j['catalog_visibility'] as String? ?? 'hidden',
+      genre: j['genre'] as String?,
+      publishedYear: (j['published_year'] as num?)?.toInt(),
+      isPremium: j['is_premium'] as bool? ?? false,
+      isFeatured: j['is_featured'] as bool? ?? false,
+      authorId: j['author'] as String?,
+      currency: (j['currency'] as String?)?.trim().isNotEmpty == true
+          ? j['currency'] as String
+          : 'USD',
+      price: _toDouble(j['price']),
+      salePrice: j['sale_price'] == null ? null : _toDouble(j['sale_price']),
+      commissionPercent: j['commission_percent'] == null
+          ? null
+          : _toDouble(j['commission_percent']),
       coverObjectKey: j['cover_object_key'] as String?,
       coverGetUrl: j['cover_get_url'] as String?,
       publishedRevisionId: j['published_revision_id'] as String?,

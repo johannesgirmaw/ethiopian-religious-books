@@ -18,12 +18,12 @@ class WebTokens {
   static const double gridSpacing = 20;
   static const double gridMainSpacing = 24;
 
-  static const Color canvasBg = Color(0xFFF4F2EC);
+  static const Color canvasBg = Color(0xFFF4F8FB);
   static const Color surfaceBg = Color(0xFFFFFFFF);
-  static const Color borderColor = Color(0xFFE4DDD2);
-  static const Color sidebarSelectedBg = Color(0xFFF3EEFF);
-  static const Color accentGold = Color(0xFFC9A227);
-  static const Color mutedLabel = Color(0xFF7A7268);
+  static const Color borderColor = Color(0xFFE3E8EC);
+  static const Color sidebarSelectedBg = Color(0xFFEAF1F6);
+  static const Color accentGold = Color(0xFFF5A623);
+  static const Color mutedLabel = Color(0xFF8A9199);
 
   static double pageHorizontal(AppLayoutTier tier) {
     switch (tier) {

@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../design/web_tokens.dart';
-import '../../layout/app_layout_scope.dart';
+import '../../../l10n/app_localizations.dart';
 import 'web_app_shell.dart';
 import 'web_sidebar.dart';
 
 /// Overlay pages keep the sidebar and show a breadcrumb bar.
-class WebOverlayScaffold extends StatelessWidget {
+class WebOverlayScaffold extends ConsumerWidget {
   const WebOverlayScaffold({
     super.key,
     required this.title,
     required this.body,
     required this.currentLocation,
-    required this.sidebarItems,
     required this.appTitle,
     this.actions,
     this.onBack,
@@ -21,19 +20,20 @@ class WebOverlayScaffold extends StatelessWidget {
   final String title;
   final Widget body;
   final String currentLocation;
-  final List<WebSidebarItem> sidebarItems;
   final String appTitle;
   final List<Widget>? actions;
   final VoidCallback? onBack;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     return WebAppShell(
       currentLocation: currentLocation,
-      sidebarItems: sidebarItems,
+      sidebarItems: webSidebarItemsFor(ref, l10n),
       appTitle: appTitle,
       breadcrumb: title,
       actions: actions,
+      onBack: onBack,
       child: body,
     );
   }

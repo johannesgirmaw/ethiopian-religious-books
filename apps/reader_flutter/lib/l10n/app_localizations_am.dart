@@ -91,6 +91,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get navProfile => 'መገለጫ';
 
   @override
+  String get navPurchases => 'ግዢዎች';
+
+  @override
   String get drawerHome => 'መነሻ';
 
   @override
@@ -638,6 +641,99 @@ class AppLocalizationsAm extends AppLocalizations {
   String get alreadyHaveAccount => 'መለያ አለዎት? ይግቡ';
 
   @override
+  String get forgotPassword => 'የይለፍ ቃል ረሱ?';
+
+  @override
+  String get forgotPasswordTitle => 'የይለፍ ቃል ዳግም ያስጀምሩ';
+
+  @override
+  String get forgotPasswordSubtitle =>
+      'ኢሜይልዎን ያስገቡ፤ የይለፍ ቃልዎን ዳግም ለማስጀመር ባለ 6 አሃዝ ኮድ እንልክልዎታለን።';
+
+  @override
+  String get sendResetCode => 'የማስጀመሪያ ኮድ ላክ';
+
+  @override
+  String get resetPasswordTitle => 'አዲስ የይለፍ ቃል ያስቀምጡ';
+
+  @override
+  String resetPasswordSubtitle(String email) {
+    return 'ወደ $email የላክነውን ኮድ ያስገቡ እና አዲስ የይለፍ ቃል ይምረጡ።';
+  }
+
+  @override
+  String get resetCodeFieldLabel => 'ባለ 6 አሃዝ ኮድ';
+
+  @override
+  String get resetCodeRequired => 'ባለ 6 አሃዝ ኮዱን ያስገቡ';
+
+  @override
+  String get resetCodeInvalid => 'ኮዱ 6 አሃዝ መሆን አለበት';
+
+  @override
+  String get newPasswordFieldLabel => 'አዲስ የይለፍ ቃል';
+
+  @override
+  String get confirmPasswordFieldLabel => 'አዲሱን የይለፍ ቃል ያረጋግጡ';
+
+  @override
+  String get confirmPasswordRequired => 'አዲሱን የይለፍ ቃል ያረጋግጡ';
+
+  @override
+  String get passwordsDoNotMatch => 'የይለፍ ቃላቶቹ አይዛመዱም';
+
+  @override
+  String get resetPasswordCta => 'የይለፍ ቃል ዳግም አስጀምር';
+
+  @override
+  String get passwordResetSuccess => 'የይለፍ ቃልዎ ዳግም ተጀምሯል። እባክዎ ይግቡ።';
+
+  @override
+  String get resetPasswordFailed =>
+      'የይለፍ ቃልዎን ዳግም ማስጀመር አልተቻለም። ኮዱን አረጋግጠው እንደገና ይሞክሩ።';
+
+  @override
+  String get resendCode => 'ኮድ እንደገና ላክ';
+
+  @override
+  String resendCodeIn(int seconds) {
+    return 'ኮድ በ $seconds ሰከንድ ውስጥ እንደገና ላክ';
+  }
+
+  @override
+  String get resetCodeResent => 'አዲስ ኮድ እየተላከ ነው።';
+
+  @override
+  String get backToSignIn => 'ወደ መግቢያ ተመለስ';
+
+  @override
+  String get changePasswordTitle => 'የይለፍ ቃል ቀይር';
+
+  @override
+  String get changePasswordSubtitle => 'ለመለያዎ አዲስ የይለፍ ቃል ይምረጡ።';
+
+  @override
+  String get currentPasswordFieldLabel => 'የአሁኑ የይለፍ ቃል';
+
+  @override
+  String get currentPasswordRequired => 'የአሁኑን የይለፍ ቃል ያስገቡ';
+
+  @override
+  String get changePasswordCta => 'የይለፍ ቃል አዘምን';
+
+  @override
+  String get passwordChangedSuccess => 'የይለፍ ቃልዎ ተዘምኗል።';
+
+  @override
+  String get changePasswordFailed => 'የይለፍ ቃልዎን ማዘመን አልተቻለም።';
+
+  @override
+  String get profileSecuritySection => 'ደህንነት';
+
+  @override
+  String get changePasswordLinkSubtitle => 'የመለያዎን የይለፍ ቃል ያዘምኑ';
+
+  @override
   String get languagePreferenceTitle => 'ቋንቋ';
 
   @override
@@ -1143,6 +1239,24 @@ class AppLocalizationsAm extends AppLocalizations {
       'በአርትዖቱ ውስጥ ያልተቀመጡ ለውጦች አሉ። ያለማስቀመጥ ይወጣሉ?';
 
   @override
+  String get formDraftRestored => 'ረቂቅ ተመልሷል — ከቆሙበት ይቀጥሉ።';
+
+  @override
+  String get formDraftSaved => 'ረቂቅ ተቀምጧል። በኋላ መቀጠል ይችላሉ።';
+
+  @override
+  String get formDraftDiscardTitle => 'የተቀመጠ ረቂቅ ይወገድ?';
+
+  @override
+  String get formDraftDiscardBody => 'ለዚህ ቅጽ በአካባቢው የተቀመጠው ረቂቅ ለዘለዓለም ይሰረዛል።';
+
+  @override
+  String get formDraftDiscardAction => 'ረቂቅ ይድረስ';
+
+  @override
+  String get formDraftLeaveAndSave => 'ረቂቅ አስቀምጥ እና ውጣ';
+
+  @override
   String get stay => 'Stay';
 
   @override
@@ -1359,4 +1473,455 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get libraryViewGrid => 'ፍርግርግ';
+
+  @override
+  String get homePopularBadge => 'ተወዳጅ';
+
+  @override
+  String get homeReadMore => 'ተጨማሪ አንብብ';
+
+  @override
+  String get homeAllGenre => 'ሁሉም ዘርፍ';
+
+  @override
+  String get homeSectionExplore => 'መጻሕፍትን ያስሱ';
+
+  @override
+  String get homeSearchHint => 'መጻሕፍት ይፈልጉ…';
+
+  @override
+  String get catalogAllResults => 'ሁሉም ውጤቶች';
+
+  @override
+  String get bookCategoryPsalms => 'መዝሙር እና ዳዊት';
+
+  @override
+  String get bookCategoryMarian => 'ማርያማዊ';
+
+  @override
+  String get bookCategoryLiturgy => 'ቅዳሴ';
+
+  @override
+  String get bookCategorySynaxarium => 'ስንክሳር';
+
+  @override
+  String get bookCategorySaints => 'ገድላት';
+
+  @override
+  String get bookCategoryOther => 'አጠቃላይ';
+
+  @override
+  String get favouritesTitle => 'ተወዳጆች';
+
+  @override
+  String get favouritesEmptyTitle => 'እስካሁን ተወዳጆች የሉም';
+
+  @override
+  String get favouritesEmptyMessage => 'መጽሐፍን ለማስቀመጥ የልብ ምልክቱን ይንኩ።';
+
+  @override
+  String get notificationsTitle => 'ማሳወቂያዎች';
+
+  @override
+  String get notificationsEmptyTitle => 'ሁሉንም አይተዋል';
+
+  @override
+  String get notificationsEmptyMessage =>
+      'ስለ አዲስ መጻሕፍትና አስታዋሾች ማሳወቂያዎች እዚህ ይታያሉ።';
+
+  @override
+  String get notificationsMarkAllRead => 'ሁሉንም እንዳነበበ ምልክት አድርግ';
+
+  @override
+  String get reviewsSection => 'ግምገማዎች';
+
+  @override
+  String get reviewsEmpty => 'እስካሁን ግምገማ የለም — የመጀመሪያው ይሁኑ።';
+
+  @override
+  String get writeReviewTitle => 'ግምገማ ይጻፉ';
+
+  @override
+  String get yourRatingLabel => 'የእርስዎ ደረጃ';
+
+  @override
+  String get reviewBodyHint => 'ሐሳብዎን ያካፍሉ (አማራጭ)';
+
+  @override
+  String get submitReviewAction => 'ግምገማ አስገባ';
+
+  @override
+  String ratingsCountLabel(int count) {
+    return '$count ደረጃዎች';
+  }
+
+  @override
+  String get homeRecommended => 'የሚመከሩ';
+
+  @override
+  String get sortLabel => 'ደርድር';
+
+  @override
+  String get sortNewest => 'አዲስ';
+
+  @override
+  String get sortOldest => 'የቆየ';
+
+  @override
+  String get sortPopular => 'ተወዳጅ';
+
+  @override
+  String get sortTopRated => 'ከፍተኛ ደረጃ';
+
+  @override
+  String get sortTitleAz => 'ርዕስ (ሀ–ፐ)';
+
+  @override
+  String get premiumLockedTitle => 'ፕሪሚየም መጽሐፍ';
+
+  @override
+  String get premiumLockedMessage =>
+      'ይህ መጽሐፍ የፕሪሚየም አካል ነው። የፕሪሚየም መዳረሻ ገና አልተዘጋጀም — በቅርቡ ይመለሱ።';
+
+  @override
+  String get premiumGotIt => 'ገባኝ';
+
+  @override
+  String get adminSummaryLabel => 'ማጠቃለያ';
+
+  @override
+  String get adminGenreLabel => 'ዘርፍ / ምድብ';
+
+  @override
+  String get adminGenreNone => 'የለም';
+
+  @override
+  String get adminPublishedYearLabel => 'የታተመበት ዓመት';
+
+  @override
+  String get adminIsPremiumLabel => 'ፕሪሚየም መጽሐፍ';
+
+  @override
+  String get adminIsPremiumSubtitle => 'ለማንበብ የፕሪሚየም መዳረሻ ይፈልጋል';
+
+  @override
+  String get tagsLabel => 'መለያዎች';
+
+  @override
+  String get adminChipAddHint => 'ጨምረው Enter ይጫኑ';
+
+  @override
+  String get adminIsFeaturedLabel => 'ተለይቶ የቀረበ (ተወዳጅ)';
+
+  @override
+  String get adminIsFeaturedSubtitle => 'በመነሻ ገጹ የተወዳጆች ባነር ላይ አሳይ';
+
+  @override
+  String get readerDisplayTitle => 'ማሳያ';
+
+  @override
+  String get readerThemeLabel => 'ገጽታ';
+
+  @override
+  String get readerThemeLight => 'ብርሃን';
+
+  @override
+  String get readerThemeSepia => 'ሴፒያ';
+
+  @override
+  String get readerThemeDark => 'ጨለማ';
+
+  @override
+  String get readerTextSizeLabel => 'የጽሑፍ መጠን';
+
+  @override
+  String get readerSpacingLabel => 'የመስመር ክፍተት';
+
+  @override
+  String get readerModeLabel => 'የንባብ ዘዴ';
+
+  @override
+  String get readerModeScroll => 'ሸብለላ';
+
+  @override
+  String get readerModePage => 'ገጾች';
+
+  @override
+  String get readerToolsTitle => 'የንባብ መሣሪያዎች';
+
+  @override
+  String get readerMoreTooltip => 'የንባብ መሣሪያዎች';
+
+  @override
+  String get paymentTitle => 'ክፍያ';
+
+  @override
+  String get paymentChooseMethod => 'የክፍያ ዘዴ ይምረጡ';
+
+  @override
+  String get paymentMethodStripe => 'የክሬዲት / ዴቢት ካርድ';
+
+  @override
+  String get paymentMethodPaypal => 'PayPal';
+
+  @override
+  String get paymentMethodTelebirr => 'ቴሌብር';
+
+  @override
+  String get paymentMethodBank => 'የባንክ ዝውውር';
+
+  @override
+  String get paymentOrderSummary => 'የትዕዛዝ ማጠቃለያ';
+
+  @override
+  String get paymentPrice => 'ዋጋ';
+
+  @override
+  String get paymentSalePrice => 'የቅናሽ ዋጋ';
+
+  @override
+  String get paymentTotal => 'ጠቅላላ';
+
+  @override
+  String get paymentContinue => 'ቀጥል';
+
+  @override
+  String get paymentSelectBank => 'ባንክ ይምረጡ';
+
+  @override
+  String get paymentBankDetails => 'የባንክ ዝርዝሮች';
+
+  @override
+  String get paymentAccountName => 'የሒሳብ ስም';
+
+  @override
+  String get paymentAccountNumber => 'የሒሳብ ቁጥር';
+
+  @override
+  String get paymentUploadReceipt => 'ደረሰኝ ይስቀሉ';
+
+  @override
+  String get paymentReceiptHint =>
+      'ይጎትቱ ወይም ለመስቀል ይንኩ — JPG፣ PNG ወይም PDF (ቢበዛ 10MB)';
+
+  @override
+  String paymentReceiptSelected(String name) {
+    return 'ተመርጧል፦ $name';
+  }
+
+  @override
+  String get paymentChangeFile => 'ፋይል ይቀይሩ';
+
+  @override
+  String get paymentTransactionReference => 'የግብይት ማመሳከሪያ';
+
+  @override
+  String get paymentTransactionReferenceHint => 'የባንክ ግብይት ማመሳከሪያ ያስገቡ';
+
+  @override
+  String get paymentSubmit => 'ክፍያ ያስገቡ';
+
+  @override
+  String get paymentSubmitting => 'በማስገባት ላይ…';
+
+  @override
+  String paymentPayNow(String amount) {
+    return '$amount ይክፈሉ';
+  }
+
+  @override
+  String get paymentSuccessTitle => 'ክፍያ ገብቷል';
+
+  @override
+  String get paymentSuccessMessage =>
+      'ክፍያዎ ማረጋገጫ በመጠባበቅ ላይ ነው። ሲጸድቅ እናሳውቅዎታለን።';
+
+  @override
+  String paymentSuccessReference(String reference) {
+    return 'ማመሳከሪያ፦ $reference';
+  }
+
+  @override
+  String get paymentDone => 'ተጠናቋል';
+
+  @override
+  String get paymentCopy => 'ቅዳ';
+
+  @override
+  String get paymentCopied => 'ተቀድቷል';
+
+  @override
+  String get paymentErrorGeneric => 'የሆነ ስህተት ተፈጥሯል። እባክዎ እንደገና ይሞክሩ።';
+
+  @override
+  String get paymentGatewayUnavailable => 'ይህ የክፍያ ዘዴ አሁን አይገኝም።';
+
+  @override
+  String get paymentReceiptRequired => 'እባክዎ ደረሰኝ ይስቀሉ።';
+
+  @override
+  String get paymentReferenceRequired => 'እባክዎ የግብይት ማመሳከሪያ ያስገቡ።';
+
+  @override
+  String get paymentBankRequired => 'እባክዎ ባንክ ይምረጡ።';
+
+  @override
+  String get paymentNoMethods => 'አሁን ምንም የክፍያ ዘዴ የለም።';
+
+  @override
+  String get paymentNoBanks => 'አሁን ለባንክ ማስተላለፍ ምንም ባንክ የለም።';
+
+  @override
+  String get paymentBuyToRead => 'ለማንበብ ይግዙ';
+
+  @override
+  String get purchaseBook => 'መጽሐፍ ይግዙ';
+
+  @override
+  String get paymentMyPurchases => 'ግዢዎች';
+
+  @override
+  String get paymentStatusPending => 'በመጠባበቅ ላይ';
+
+  @override
+  String get paymentStatusOnReview => 'በግምገማ ላይ';
+
+  @override
+  String get paymentStatusApproved => 'ጸድቋል';
+
+  @override
+  String get paymentStatusCompleted => 'ተጠናቋል';
+
+  @override
+  String get paymentStatusCancelled => 'ተሰርዟል';
+
+  @override
+  String get paymentStatusRejected => 'ተቀባይነት አላገኘም';
+
+  @override
+  String get paymentStepMethod => 'ዘዴ';
+
+  @override
+  String get paymentStepDetails => 'ዝርዝሮች';
+
+  @override
+  String get paymentStepDone => 'ተጠናቋል';
+
+  @override
+  String get paymentTransferInstruction =>
+      'ጠቅላላውን ወደ ከታች ወዳለው ሒሳብ ያስተላልፉ፣ ከዚያ ደረሰኝዎንና ማመሳከሪያዎን ይስቀሉ።';
+
+  @override
+  String get paymentNoPurchases => 'እስካሁን ምንም ግዢ አላደረጉም።';
+
+  @override
+  String get paymentPurchasesSubtitle => 'ትዕዛዞችዎንና የክፍያ ሁኔታ ይከታተሉ';
+
+  @override
+  String get profileSettingsSubtitle => 'ንባብ፣ ቋንቋ እና የመተግበሪያ ምርጫዎች';
+
+  @override
+  String get adminPricingSection => 'ዋጋና ኮሚሽን';
+
+  @override
+  String get adminCurrencyLabel => 'ምንዛሬ';
+
+  @override
+  String get adminPriceLabel => 'ዋጋ';
+
+  @override
+  String get adminSalePriceLabel => 'የቅናሽ ዋጋ (አማራጭ)';
+
+  @override
+  String get adminCommissionPercentLabel => 'ኮሚሽን %';
+
+  @override
+  String get adminCommissionHelp => 'ባዶ ከተተወ የደራሲውን ወይም የመድረኩን ነባሪ ይጠቀማል';
+
+  @override
+  String get adminPaymentsTitle => 'ትዕዛዞችና ክፍያዎች';
+
+  @override
+  String get adminManageOrders => 'ትዕዛዞችን ያስተዳድሩ';
+
+  @override
+  String get adminOrdersSubtitle => 'ክፍያዎችን ይገምግሙ፣ ያጽድቁ እና ያጠናቅቁ';
+
+  @override
+  String get adminPendingReviews => 'በመጠባበቅ ላይ ያሉ ግምገማዎች';
+
+  @override
+  String get adminCompleted => 'የተጠናቀቁ';
+
+  @override
+  String get adminGrossRevenue => 'ጠቅላላ ገቢ';
+
+  @override
+  String get adminPlatformRevenue => 'የመድረክ ገቢ';
+
+  @override
+  String get adminAuthorRevenue => 'የደራሲ ገቢ';
+
+  @override
+  String get adminNoOrders => 'የሚታይ ትዕዛዝ የለም።';
+
+  @override
+  String get adminReview => 'ግምገማ';
+
+  @override
+  String get adminOrderDetail => 'የትዕዛዝ ዝርዝሮች';
+
+  @override
+  String get adminCustomer => 'ደንበኛ';
+
+  @override
+  String get adminBook => 'መጽሐፍ';
+
+  @override
+  String get adminBank => 'ባንክ';
+
+  @override
+  String get adminReceipt => 'ደረሰኝ';
+
+  @override
+  String get adminNoReceipt => 'ደረሰኝ አልተሰቀለም';
+
+  @override
+  String get adminViewReceipt => 'ደረሰኝ ይመልከቱ';
+
+  @override
+  String get adminRejectReason => 'ምክንያት (አማራጭ)';
+
+  @override
+  String get adminApprove => 'አጽድቅና አጠናቅቅ';
+
+  @override
+  String get adminReject => 'ውድቅ አድርግ';
+
+  @override
+  String get adminApproved => 'ትዕዛዙ ጸድቆ ተጠናቋል';
+
+  @override
+  String get adminRejected => 'ትዕዛዙ ውድቅ ተደርጓል';
+
+  @override
+  String get authorMyBooks => 'የእኔ መጻሕፍት';
+
+  @override
+  String get paymentDate => 'ቀን';
+
+  @override
+  String get paymentMethod => 'ዘዴ';
+
+  @override
+  String get paymentCommission => 'የመድረክ ኮሚሽን';
+
+  @override
+  String get paymentOrderId => 'የትዕዛዝ መለያ';
+
+  @override
+  String get adminOrdersAllStatuses => 'ሁሉም';
+
+  @override
+  String get paymentStatusColumn => 'ሁኔታ';
 }

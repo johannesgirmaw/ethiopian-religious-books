@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../design/app_tokens.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/book_models.dart';
+import '../../../providers/catalog_providers.dart';
 import '../../../utils/catalog_language_label.dart';
 import '../../../widgets/app_state_view.dart';
 import '../../../widgets/primitives/shell_primitives.dart';
-import '../../layout/app_layout_scope.dart';
 import 'catalog_grid_delegate.dart';
 import 'web_book_card.dart';
 
@@ -31,32 +31,60 @@ class WebCatalogBrowsePanel extends ConsumerStatefulWidget {
 }
 
 class _WebCatalogBrowsePanelState extends ConsumerState<WebCatalogBrowsePanel> {
+  String? _selectedGenre;
   String? _selectedLanguage;
   bool _gridView = true;
 
   List<String> _languageKeys(AppLocalizations l10n) {
-    final keys = <String>{};
-    for (final book in widget.books) {
-      keys.add(catalogLanguageFilterKey(book.primaryLanguage, l10n));
-    }
-    final list = keys.toList()..sort();
-    return list;
+    final keys = <String>{
+      for (final b in widget.books)
+        catalogLanguageFilterKey(b.primaryLanguage, l10n),
+    };
+    return keys.toList()..sort();
   }
 
   String _languageLabel(String key, AppLocalizations l10n) {
-    for (final book in widget.books) {
-      if (catalogLanguageFilterKey(book.primaryLanguage, l10n) == key) {
-        return catalogLanguageFilterLabel(book.primaryLanguage, l10n);
+    for (final b in widget.books) {
+      if (catalogLanguageFilterKey(b.primaryLanguage, l10n) == key) {
+        return catalogLanguageFilterLabel(b.primaryLanguage, l10n);
       }
     }
     return key;
   }
 
+  List<GenreOption> _genreOptions() {
+    final lookup =
+        ref.watch(genresProvider).valueOrNull ?? const <GenreOption>[];
+    final present = <String>{
+      for (final b in widget.books) (b.genre ?? '').trim(),
+    }..removeWhere((s) => s.isEmpty);
+    final bySlug = {for (final g in lookup) g.slug: g};
+    final options = <GenreOption>[
+      for (final g in lookup)
+        if (present.contains(g.slug)) g,
+    ];
+    for (final s in present) {
+      if (!bySlug.containsKey(s)) options.add(GenreOption(slug: s, label: s));
+    }
+    return options;
+  }
+
+  String _genreLabel(BuildContext context, GenreOption g) {
+    final isAm = Localizations.localeOf(context).languageCode == 'am';
+    if (isAm && (g.labelAm?.isNotEmpty ?? false)) return g.labelAm!;
+    return g.label.isNotEmpty ? g.label : g.slug;
+  }
+
   List<BookSummary> _filtered(AppLocalizations l10n) {
     final q = widget.searchQuery.trim().toLowerCase();
     return widget.books.where((book) {
-      final langKey = catalogLanguageFilterKey(book.primaryLanguage, l10n);
-      if (_selectedLanguage != null && langKey != _selectedLanguage) {
+      if (_selectedGenre != null &&
+          (book.genre ?? '').trim() != _selectedGenre) {
+        return false;
+      }
+      if (_selectedLanguage != null &&
+          catalogLanguageFilterKey(book.primaryLanguage, l10n) !=
+              _selectedLanguage) {
         return false;
       }
       if (q.isEmpty) return true;
@@ -65,7 +93,6 @@ class _WebCatalogBrowsePanelState extends ConsumerState<WebCatalogBrowsePanel> {
         book.authorCompiler ?? '',
         book.summary ?? '',
         book.subtitle ?? '',
-        catalogLanguageFilterLabel(book.primaryLanguage, l10n),
       ].join(' ').toLowerCase();
       return haystack.contains(q);
     }).toList();
@@ -74,6 +101,7 @@ class _WebCatalogBrowsePanelState extends ConsumerState<WebCatalogBrowsePanel> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final genreOptions = _genreOptions();
     final languageKeys = _languageKeys(l10n);
     final filtered = _filtered(l10n);
     final sorted = [...filtered]
@@ -91,14 +119,14 @@ class _WebCatalogBrowsePanelState extends ConsumerState<WebCatalogBrowsePanel> {
                 children: [
                   _FilterChip(
                     label: l10n.filterAll,
-                    selected: _selectedLanguage == null,
-                    onTap: () => setState(() => _selectedLanguage = null),
+                    selected: _selectedGenre == null,
+                    onTap: () => setState(() => _selectedGenre = null),
                   ),
-                  for (final key in languageKeys)
+                  for (final g in genreOptions)
                     _FilterChip(
-                      label: _languageLabel(key, l10n),
-                      selected: _selectedLanguage == key,
-                      onTap: () => setState(() => _selectedLanguage = key),
+                      label: _genreLabel(context, g),
+                      selected: _selectedGenre == g.slug,
+                      onTap: () => setState(() => _selectedGenre = g.slug),
                     ),
                 ],
               ),
@@ -114,6 +142,37 @@ class _WebCatalogBrowsePanelState extends ConsumerState<WebCatalogBrowsePanel> {
             ),
           ],
         ),
+        if (languageKeys.length > 1) ...[
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(right: 8),
+                child: Icon(Icons.translate_rounded,
+                    size: 16, color: AppColors.textTertiary),
+              ),
+              Expanded(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _FilterChip(
+                      label: l10n.filterAll,
+                      selected: _selectedLanguage == null,
+                      onTap: () => setState(() => _selectedLanguage = null),
+                    ),
+                    for (final key in languageKeys)
+                      _FilterChip(
+                        label: _languageLabel(key, l10n),
+                        selected: _selectedLanguage == key,
+                        onTap: () => setState(() => _selectedLanguage = key),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
         const SizedBox(height: 8),
         Text(
           l10n.booksAvailable(sorted.length),

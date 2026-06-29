@@ -91,6 +91,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navProfile => 'Profile';
 
   @override
+  String get navPurchases => 'Purchases';
+
+  @override
   String get drawerHome => 'Home';
 
   @override
@@ -649,6 +652,101 @@ class AppLocalizationsEn extends AppLocalizations {
   String get alreadyHaveAccount => 'Already have an account? Sign in';
 
   @override
+  String get forgotPassword => 'Forgot password?';
+
+  @override
+  String get forgotPasswordTitle => 'Reset password';
+
+  @override
+  String get forgotPasswordSubtitle =>
+      'Enter your email and we\'ll send you a 6-digit code to reset your password.';
+
+  @override
+  String get sendResetCode => 'Send reset code';
+
+  @override
+  String get resetPasswordTitle => 'Set a new password';
+
+  @override
+  String resetPasswordSubtitle(String email) {
+    return 'Enter the code we sent to $email and choose a new password.';
+  }
+
+  @override
+  String get resetCodeFieldLabel => '6-digit code';
+
+  @override
+  String get resetCodeRequired => 'Enter the 6-digit code';
+
+  @override
+  String get resetCodeInvalid => 'The code must be 6 digits';
+
+  @override
+  String get newPasswordFieldLabel => 'New password';
+
+  @override
+  String get confirmPasswordFieldLabel => 'Confirm new password';
+
+  @override
+  String get confirmPasswordRequired => 'Confirm your new password';
+
+  @override
+  String get passwordsDoNotMatch => 'Passwords do not match';
+
+  @override
+  String get resetPasswordCta => 'Reset password';
+
+  @override
+  String get passwordResetSuccess =>
+      'Your password has been reset. Please sign in.';
+
+  @override
+  String get resetPasswordFailed =>
+      'Could not reset your password. Check the code and try again.';
+
+  @override
+  String get resendCode => 'Resend code';
+
+  @override
+  String resendCodeIn(int seconds) {
+    return 'Resend code in ${seconds}s';
+  }
+
+  @override
+  String get resetCodeResent => 'A new code is on its way.';
+
+  @override
+  String get backToSignIn => 'Back to sign in';
+
+  @override
+  String get changePasswordTitle => 'Change password';
+
+  @override
+  String get changePasswordSubtitle =>
+      'Choose a new password for your account.';
+
+  @override
+  String get currentPasswordFieldLabel => 'Current password';
+
+  @override
+  String get currentPasswordRequired => 'Enter your current password';
+
+  @override
+  String get changePasswordCta => 'Update password';
+
+  @override
+  String get passwordChangedSuccess => 'Your password has been updated.';
+
+  @override
+  String get changePasswordFailed => 'Could not update your password.';
+
+  @override
+  String get profileSecuritySection => 'Security';
+
+  @override
+  String get changePasswordLinkSubtitle => 'Update your account password';
+
+  @override
   String get languagePreferenceTitle => 'Language';
 
   @override
@@ -1167,6 +1265,26 @@ class AppLocalizationsEn extends AppLocalizations {
       'You have unsaved updates in this editor. Leave without saving?';
 
   @override
+  String get formDraftRestored =>
+      'Draft restored — continue where you left off.';
+
+  @override
+  String get formDraftSaved => 'Draft saved. You can continue later.';
+
+  @override
+  String get formDraftDiscardTitle => 'Discard saved draft?';
+
+  @override
+  String get formDraftDiscardBody =>
+      'This permanently deletes your locally saved draft for this form.';
+
+  @override
+  String get formDraftDiscardAction => 'Discard draft';
+
+  @override
+  String get formDraftLeaveAndSave => 'Save draft & leave';
+
+  @override
   String get stay => 'Stay';
 
   @override
@@ -1384,4 +1502,463 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get libraryViewGrid => 'Grid';
+
+  @override
+  String get homePopularBadge => 'Popular';
+
+  @override
+  String get homeReadMore => 'Read more';
+
+  @override
+  String get homeAllGenre => 'All Genre';
+
+  @override
+  String get homeSectionExplore => 'Explore books';
+
+  @override
+  String get homeSearchHint => 'Search books…';
+
+  @override
+  String get catalogAllResults => 'All Results';
+
+  @override
+  String get bookCategoryPsalms => 'Psalms & Mezmur';
+
+  @override
+  String get bookCategoryMarian => 'Marian';
+
+  @override
+  String get bookCategoryLiturgy => 'Liturgy';
+
+  @override
+  String get bookCategorySynaxarium => 'Synaxarium';
+
+  @override
+  String get bookCategorySaints => 'Saints & Gedl';
+
+  @override
+  String get bookCategoryOther => 'General';
+
+  @override
+  String get favouritesTitle => 'Favourites';
+
+  @override
+  String get favouritesEmptyTitle => 'No favourites yet';
+
+  @override
+  String get favouritesEmptyMessage =>
+      'Tap the heart on any book to save it here.';
+
+  @override
+  String get notificationsTitle => 'Notifications';
+
+  @override
+  String get notificationsEmptyTitle => 'You\'re all caught up';
+
+  @override
+  String get notificationsEmptyMessage =>
+      'Notifications about new books and reminders show up here.';
+
+  @override
+  String get notificationsMarkAllRead => 'Mark all read';
+
+  @override
+  String get reviewsSection => 'Reviews';
+
+  @override
+  String get reviewsEmpty =>
+      'No reviews yet — be the first to review this book.';
+
+  @override
+  String get writeReviewTitle => 'Write a review';
+
+  @override
+  String get yourRatingLabel => 'Your rating';
+
+  @override
+  String get reviewBodyHint => 'Share your thoughts (optional)';
+
+  @override
+  String get submitReviewAction => 'Submit review';
+
+  @override
+  String ratingsCountLabel(int count) {
+    return '$count ratings';
+  }
+
+  @override
+  String get homeRecommended => 'Recommended';
+
+  @override
+  String get sortLabel => 'Sort';
+
+  @override
+  String get sortNewest => 'Newest';
+
+  @override
+  String get sortOldest => 'Oldest';
+
+  @override
+  String get sortPopular => 'Popular';
+
+  @override
+  String get sortTopRated => 'Top rated';
+
+  @override
+  String get sortTitleAz => 'Title (A–Z)';
+
+  @override
+  String get premiumLockedTitle => 'Premium book';
+
+  @override
+  String get premiumLockedMessage =>
+      'This title is part of premium. Premium access isn\'t available yet — check back soon.';
+
+  @override
+  String get premiumGotIt => 'Got it';
+
+  @override
+  String get adminSummaryLabel => 'Summary';
+
+  @override
+  String get adminGenreLabel => 'Genre / category';
+
+  @override
+  String get adminGenreNone => 'None';
+
+  @override
+  String get adminPublishedYearLabel => 'Publication year';
+
+  @override
+  String get adminIsPremiumLabel => 'Premium book';
+
+  @override
+  String get adminIsPremiumSubtitle => 'Requires premium access to read';
+
+  @override
+  String get tagsLabel => 'Tags';
+
+  @override
+  String get adminChipAddHint => 'Add and press Enter';
+
+  @override
+  String get adminIsFeaturedLabel => 'Featured (Popular)';
+
+  @override
+  String get adminIsFeaturedSubtitle =>
+      'Show in the Popular banner on the home screen';
+
+  @override
+  String get readerDisplayTitle => 'Display';
+
+  @override
+  String get readerThemeLabel => 'Theme';
+
+  @override
+  String get readerThemeLight => 'Light';
+
+  @override
+  String get readerThemeSepia => 'Sepia';
+
+  @override
+  String get readerThemeDark => 'Dark';
+
+  @override
+  String get readerTextSizeLabel => 'Text size';
+
+  @override
+  String get readerSpacingLabel => 'Line spacing';
+
+  @override
+  String get readerModeLabel => 'Reading mode';
+
+  @override
+  String get readerModeScroll => 'Scroll';
+
+  @override
+  String get readerModePage => 'Pages';
+
+  @override
+  String get readerToolsTitle => 'Reading tools';
+
+  @override
+  String get readerMoreTooltip => 'Reading tools';
+
+  @override
+  String get paymentTitle => 'Payment';
+
+  @override
+  String get paymentChooseMethod => 'Choose a payment method';
+
+  @override
+  String get paymentMethodStripe => 'Credit / debit card';
+
+  @override
+  String get paymentMethodPaypal => 'PayPal';
+
+  @override
+  String get paymentMethodTelebirr => 'Telebirr';
+
+  @override
+  String get paymentMethodBank => 'Bank transfer';
+
+  @override
+  String get paymentOrderSummary => 'Order summary';
+
+  @override
+  String get paymentPrice => 'Price';
+
+  @override
+  String get paymentSalePrice => 'Sale price';
+
+  @override
+  String get paymentTotal => 'Total';
+
+  @override
+  String get paymentContinue => 'Continue';
+
+  @override
+  String get paymentSelectBank => 'Select bank';
+
+  @override
+  String get paymentBankDetails => 'Bank details';
+
+  @override
+  String get paymentAccountName => 'Account name';
+
+  @override
+  String get paymentAccountNumber => 'Account number';
+
+  @override
+  String get paymentUploadReceipt => 'Upload receipt';
+
+  @override
+  String get paymentReceiptHint =>
+      'Drag & drop or tap to upload — JPG, PNG or PDF (max 10MB)';
+
+  @override
+  String paymentReceiptSelected(String name) {
+    return 'Selected: $name';
+  }
+
+  @override
+  String get paymentChangeFile => 'Change file';
+
+  @override
+  String get paymentTransactionReference => 'Transaction reference';
+
+  @override
+  String get paymentTransactionReferenceHint =>
+      'Enter the bank transaction reference';
+
+  @override
+  String get paymentSubmit => 'Submit payment';
+
+  @override
+  String get paymentSubmitting => 'Submitting…';
+
+  @override
+  String paymentPayNow(String amount) {
+    return 'Pay $amount';
+  }
+
+  @override
+  String get paymentSuccessTitle => 'Payment submitted';
+
+  @override
+  String get paymentSuccessMessage =>
+      'Your payment is pending verification. We\'ll notify you once it\'s approved.';
+
+  @override
+  String paymentSuccessReference(String reference) {
+    return 'Reference: $reference';
+  }
+
+  @override
+  String get paymentDone => 'Done';
+
+  @override
+  String get paymentCopy => 'Copy';
+
+  @override
+  String get paymentCopied => 'Copied to clipboard';
+
+  @override
+  String get paymentErrorGeneric => 'Something went wrong. Please try again.';
+
+  @override
+  String get paymentGatewayUnavailable =>
+      'This payment method isn\'t available right now.';
+
+  @override
+  String get paymentReceiptRequired => 'Please upload a receipt.';
+
+  @override
+  String get paymentReferenceRequired =>
+      'Please enter the transaction reference.';
+
+  @override
+  String get paymentBankRequired => 'Please select a bank.';
+
+  @override
+  String get paymentNoMethods => 'No payment methods are available right now.';
+
+  @override
+  String get paymentNoBanks =>
+      'No banks are available for bank transfer right now.';
+
+  @override
+  String get paymentBuyToRead => 'Buy to read';
+
+  @override
+  String get purchaseBook => 'Purchase book';
+
+  @override
+  String get paymentMyPurchases => 'Purchases';
+
+  @override
+  String get paymentStatusPending => 'Pending';
+
+  @override
+  String get paymentStatusOnReview => 'On review';
+
+  @override
+  String get paymentStatusApproved => 'Approved';
+
+  @override
+  String get paymentStatusCompleted => 'Completed';
+
+  @override
+  String get paymentStatusCancelled => 'Cancelled';
+
+  @override
+  String get paymentStatusRejected => 'Rejected';
+
+  @override
+  String get paymentStepMethod => 'Method';
+
+  @override
+  String get paymentStepDetails => 'Details';
+
+  @override
+  String get paymentStepDone => 'Done';
+
+  @override
+  String get paymentTransferInstruction =>
+      'Transfer the total to the account below, then upload your receipt and reference.';
+
+  @override
+  String get paymentNoPurchases => 'You haven\'t made any purchases yet.';
+
+  @override
+  String get paymentPurchasesSubtitle => 'Track your orders and payment status';
+
+  @override
+  String get profileSettingsSubtitle => 'Reading, language and app preferences';
+
+  @override
+  String get adminPricingSection => 'Pricing & commission';
+
+  @override
+  String get adminCurrencyLabel => 'Currency';
+
+  @override
+  String get adminPriceLabel => 'Price';
+
+  @override
+  String get adminSalePriceLabel => 'Sale price (optional)';
+
+  @override
+  String get adminCommissionPercentLabel => 'Commission %';
+
+  @override
+  String get adminCommissionHelp =>
+      'Leave blank to use the author or platform default';
+
+  @override
+  String get adminPaymentsTitle => 'Orders & payments';
+
+  @override
+  String get adminManageOrders => 'Manage orders';
+
+  @override
+  String get adminOrdersSubtitle => 'Review, approve and complete payments';
+
+  @override
+  String get adminPendingReviews => 'Pending reviews';
+
+  @override
+  String get adminCompleted => 'Completed';
+
+  @override
+  String get adminGrossRevenue => 'Gross revenue';
+
+  @override
+  String get adminPlatformRevenue => 'Platform revenue';
+
+  @override
+  String get adminAuthorRevenue => 'Author revenue';
+
+  @override
+  String get adminNoOrders => 'No orders to show.';
+
+  @override
+  String get adminReview => 'Review';
+
+  @override
+  String get adminOrderDetail => 'Order details';
+
+  @override
+  String get adminCustomer => 'Customer';
+
+  @override
+  String get adminBook => 'Book';
+
+  @override
+  String get adminBank => 'Bank';
+
+  @override
+  String get adminReceipt => 'Receipt';
+
+  @override
+  String get adminNoReceipt => 'No receipt uploaded';
+
+  @override
+  String get adminViewReceipt => 'View receipt';
+
+  @override
+  String get adminRejectReason => 'Reason (optional)';
+
+  @override
+  String get adminApprove => 'Approve & complete';
+
+  @override
+  String get adminReject => 'Reject';
+
+  @override
+  String get adminApproved => 'Order approved and completed';
+
+  @override
+  String get adminRejected => 'Order rejected';
+
+  @override
+  String get authorMyBooks => 'My books';
+
+  @override
+  String get paymentDate => 'Date';
+
+  @override
+  String get paymentMethod => 'Method';
+
+  @override
+  String get paymentCommission => 'Platform commission';
+
+  @override
+  String get paymentOrderId => 'Order ID';
+
+  @override
+  String get adminOrdersAllStatuses => 'All';
+
+  @override
+  String get paymentStatusColumn => 'Status';
 }

@@ -21,7 +21,11 @@ from apps.catalog.admin_serializers import (
     AdminRevisionCreateSerializer,
 )
 from apps.catalog.models import Book, BookRevision
-from apps.catalog.permissions import IsPublisherAdmin
+from apps.catalog.permissions import (
+    IsPublisherOrAuthor,
+    can_manage_book,
+    is_platform_admin,
+)
 from apps.catalog.publishing import publish_book, unpublish_book, validate_draft_warnings
 from apps.catalog.search_normalization import normalize_search_text
 from apps.catalog.storage_s3 import head_object, presign_put, put_bytes
@@ -46,7 +50,7 @@ def _user_is_book_creator(book: Book, user) -> bool:
 
 
 class AdminBooksRootView(APIView):
-    permission_classes = [IsPublisherAdmin]
+    permission_classes = [IsPublisherOrAuthor]
 
     def get(self, request):
         limit = min(int(request.query_params.get("limit", 50)), 100)
@@ -54,6 +58,11 @@ class AdminBooksRootView(APIView):
         visibility = request.query_params.get("visibility")
         query = request.query_params.get("query") or request.query_params.get("q")
         qs = Book.objects.all().order_by("-updated_at")
+        # Authors only manage their own catalogue; admins see everything.
+        if not is_platform_admin(request.user):
+            qs = qs.filter(
+                Q(created_by=request.user) | Q(author=request.user)
+            )
         if visibility:
             qs = qs.filter(catalog_visibility=visibility)
         if query:
@@ -83,11 +92,12 @@ class AdminBooksRootView(APIView):
 
 
 class AdminBookDetailView(APIView):
-    permission_classes = [IsPublisherAdmin]
+    permission_classes = [IsPublisherOrAuthor]
 
     def get(self, request, book_id):
-        del request
         book = get_object_or_404(Book, pk=book_id)
+        if not can_manage_book(book, request.user):
+            return _not_book_creator_response()
         return Response(AdminBookSerializer(book).data)
 
     def patch(self, request, book_id):
@@ -102,7 +112,7 @@ class AdminBookDetailView(APIView):
                 },
                 status=status.HTTP_409_CONFLICT,
             )
-        if not _user_is_book_creator(book, request.user):
+        if not can_manage_book(book, request.user):
             return _not_book_creator_response()
         ser = AdminBookPatchSerializer(book, data=request.data, partial=True)
         ser.is_valid(raise_exception=True)
@@ -118,7 +128,7 @@ _ALLOWED_COVER_TYPES = {
 
 
 class AdminBookCoverPresignView(APIView):
-    permission_classes = [IsPublisherAdmin]
+    permission_classes = [IsPublisherOrAuthor]
 
     def post(self, request, book_id):
         book = get_object_or_404(Book, pk=book_id)
@@ -132,7 +142,7 @@ class AdminBookCoverPresignView(APIView):
                 },
                 status=status.HTTP_409_CONFLICT,
             )
-        if not _user_is_book_creator(book, request.user):
+        if not can_manage_book(book, request.user):
             return _not_book_creator_response()
         content_type = (request.data.get("content_type") or "image/jpeg").strip().lower()
         if content_type not in _ALLOWED_COVER_TYPES:
@@ -164,11 +174,11 @@ class AdminBookCoverPresignView(APIView):
 
 
 class AdminBookDraftValidationView(APIView):
-    permission_classes = [IsPublisherAdmin]
+    permission_classes = [IsPublisherOrAuthor]
 
     def get(self, request, book_id):
         book = get_object_or_404(Book, pk=book_id)
-        if not _user_is_book_creator(book, request.user):
+        if not can_manage_book(book, request.user):
             return _not_book_creator_response()
         chapters_draft = book.chapters_draft if isinstance(book.chapters_draft, list) else []
         return Response(validate_draft_warnings(chapters_draft))
@@ -191,11 +201,11 @@ def _pick_paths(files: list[dict[str, Any]]) -> tuple[str, str | None]:
 
 
 class AdminRevisionCreateView(APIView):
-    permission_classes = [IsPublisherAdmin]
+    permission_classes = [IsPublisherOrAuthor]
 
     def post(self, request, book_id):
         book = get_object_or_404(Book, pk=book_id)
-        if not _user_is_book_creator(book, request.user):
+        if not can_manage_book(book, request.user):
             return _not_book_creator_response()
         ser = AdminRevisionCreateSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
@@ -242,11 +252,11 @@ class AdminRevisionCreateView(APIView):
 
 
 class AdminRevisionCompleteView(APIView):
-    permission_classes = [IsPublisherAdmin]
+    permission_classes = [IsPublisherOrAuthor]
 
     def post(self, request, book_id, revision_id):
         book = get_object_or_404(Book, pk=book_id)
-        if not _user_is_book_creator(book, request.user):
+        if not can_manage_book(book, request.user):
             return _not_book_creator_response()
         rev = get_object_or_404(BookRevision, pk=revision_id, book=book)
         ser = AdminRevisionCompleteSerializer(data=request.data)
@@ -278,10 +288,12 @@ class AdminRevisionCompleteView(APIView):
 
 
 class AdminBookPublishView(APIView):
-    permission_classes = [IsPublisherAdmin]
+    permission_classes = [IsPublisherOrAuthor]
 
     def post(self, request, book_id):
         book = get_object_or_404(Book, pk=book_id)
+        if not can_manage_book(book, request.user):
+            return _not_book_creator_response()
         ser = AdminPublishSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         outcome = publish_book(book, request.user, ser.validated_data.get("revision_id"))
@@ -291,11 +303,11 @@ class AdminBookPublishView(APIView):
 
 
 class AdminBookUnpublishView(APIView):
-    permission_classes = [IsPublisherAdmin]
+    permission_classes = [IsPublisherOrAuthor]
 
     def post(self, request, book_id):
         book = get_object_or_404(Book, pk=book_id)
-        if not _user_is_book_creator(book, request.user):
+        if not can_manage_book(book, request.user):
             return _not_book_creator_response()
         unpublish_book(book)
         return Response(status=status.HTTP_204_NO_CONTENT)

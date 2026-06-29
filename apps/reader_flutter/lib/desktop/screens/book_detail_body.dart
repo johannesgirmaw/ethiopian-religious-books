@@ -9,10 +9,14 @@ import '../../models/book_models.dart';
 import '../../models/download_job.dart';
 import '../../providers/catalog_providers.dart';
 import '../../providers/download_jobs_provider.dart';
+import '../../providers/payment_providers.dart';
 import '../../router/app_navigation.dart';
 import '../../utils/catalog_language_label.dart';
 import '../../utils/offline_book_download.dart';
 import '../../widgets/app_state_view.dart';
+import '../../widgets/book_reviews_section.dart';
+import '../../widgets/cover_badges.dart';
+import '../../widgets/premium_gate.dart';
 import '../../widgets/reference/book_detail_cover.dart';
 import '../../widgets/skeleton_loader.dart';
 import '../../widgets/stored_rich_text_view.dart';
@@ -21,10 +25,7 @@ import '../layout/desktop_layout_scope.dart';
 import '../widgets/common/desktop_section.dart';
 
 /// Maximum width of the detail content column on very large displays.
-const double _kDetailMaxWidth = 1160;
-
-/// Width of the right-hand "details" aside on medium / expanded tiers.
-const double _kAsideWidth = 340;
+const double _kDetailMaxWidth = 1440;
 
 class DesktopBookDetailBody extends ConsumerWidget {
   const DesktopBookDetailBody({
@@ -75,17 +76,34 @@ class DesktopBookDetailBody extends ConsumerWidget {
         final pageCount = tree?.totalPages;
         final twoColumn = tier != DesktopLayoutTier.compact;
 
-        final hero = _HeroCard(
+        final rail = _LeftRail(
+          book: book,
+          l10n: l10n,
+          chapterCount: chapterCount,
+          pageCount: pageCount,
+          downloadJob: currentJob,
+          mustBuy: book.requiresPurchase &&
+              !(ref
+                      .watch(entitledBookIdsProvider)
+                      .valueOrNull
+                      ?.contains(bookId) ??
+                  false),
+          onRead: () async {
+            if (await ensureBookUnlocked(context, ref, book) &&
+                context.mounted) {
+              context.push('/reader/$bookId?pickChapter=1');
+            }
+          },
+          onDownload: () => _downloadSample(context, ref),
+          onShare: () => onShare(book),
+        );
+        final header = _ContentHeader(
           book: book,
           l10n: l10n,
           tier: tier,
           chapterCount: chapterCount,
           pageCount: pageCount,
-          onRead: () => context.push('/reader/$bookId?pickChapter=1'),
-          onDownload: () => _downloadSample(context, ref),
-          onShare: () => onShare(book),
         );
-
         final about = _AboutSection(book: book, l10n: l10n);
         final contents = _ContentsSection(
           tree: tree,
@@ -94,72 +112,63 @@ class DesktopBookDetailBody extends ConsumerWidget {
           onChapter: (key) => context.push('/reader/$bookId?chapter=$key'),
           onReadStart: () => context.push('/reader/$bookId?pickChapter=1'),
         );
-        final details = _DetailsCard(
-          book: book,
-          l10n: l10n,
-          chapterCount: chapterCount,
-          pageCount: pageCount,
-        );
 
-        final Widget body;
-        if (twoColumn) {
-          body = Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
+        if (!twoColumn) {
+          return SingleChildScrollView(
+            padding: padding,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 640),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    rail,
+                    const SizedBox(height: 28),
+                    header,
+                    const SizedBox(height: 24),
                     about,
                     const SizedBox(height: 24),
                     contents,
+                    const SizedBox(height: 24),
+                    BookReviewsSection(bookId: bookId),
                   ],
                 ),
               ),
-              const SizedBox(width: 24),
-              SizedBox(
-                width: _kAsideWidth,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    details,
-                    if (currentJob != null) ...[
-                      const SizedBox(height: 16),
-                      _DownloadStatusCard(job: currentJob),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          );
-        } else {
-          body = Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              about,
-              const SizedBox(height: 20),
-              contents,
-              const SizedBox(height: 20),
-              details,
-              if (currentJob != null) ...[
-                const SizedBox(height: 16),
-                _DownloadStatusCard(job: currentJob),
-              ],
-            ],
+            ),
           );
         }
 
-        return SingleChildScrollView(
-          padding: padding,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: _kDetailMaxWidth),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+        final railWidth = tier == DesktopLayoutTier.expanded ? 320.0 : 280.0;
+        return Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: _kDetailMaxWidth),
+            child: Padding(
+              padding: padding,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  hero,
-                  const SizedBox(height: 28),
-                  body,
+                  SizedBox(
+                    width: railWidth,
+                    child: SingleChildScrollView(child: rail),
+                  ),
+                  const SizedBox(width: 36),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          header,
+                          const SizedBox(height: 28),
+                          about,
+                          const SizedBox(height: 24),
+                          contents,
+                          const SizedBox(height: 24),
+                          BookReviewsSection(bookId: bookId),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -189,17 +198,164 @@ class DesktopBookDetailBody extends ConsumerWidget {
   }
 }
 
-/// Polished header band: large cover, title block, quick stats and actions.
-class _HeroCard extends StatelessWidget {
-  const _HeroCard({
+/// Fixed left rail: large cover, primary actions, and the details card.
+class _LeftRail extends StatelessWidget {
+  const _LeftRail({
+    required this.book,
+    required this.l10n,
+    required this.chapterCount,
+    required this.pageCount,
+    required this.downloadJob,
+    required this.onRead,
+    required this.onDownload,
+    required this.onShare,
+    required this.mustBuy,
+  });
+
+  final BookSummary book;
+  final AppLocalizations l10n;
+  final int? chapterCount;
+  final int? pageCount;
+  final DownloadJob? downloadJob;
+  final VoidCallback onRead;
+  final VoidCallback onDownload;
+  final VoidCallback onShare;
+  final bool mustBuy;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 460),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.18),
+                    blurRadius: 28,
+                    offset: const Offset(0, 14),
+                  ),
+                ],
+              ),
+              // Fills the rail width (capped) instead of a fixed size.
+              child: BookDetailCover(book: book,width: 260, expand: true),
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        _ActionButtons(
+          l10n: l10n,
+          onRead: onRead,
+          onDownload: onDownload,
+          onShare: onShare,
+          mustBuy: mustBuy,
+        ),
+        const SizedBox(height: 24),
+        _DetailsCard(
+          book: book,
+          l10n: l10n,
+          chapterCount: chapterCount,
+          pageCount: pageCount,
+        ),
+        if (downloadJob != null) ...[
+          const SizedBox(height: 16),
+          _DownloadStatusCard(job: downloadJob!),
+        ],
+      ],
+    );
+  }
+}
+
+/// Stacked, full-width primary actions for the rail.
+class _ActionButtons extends StatelessWidget {
+  const _ActionButtons({
+    required this.l10n,
+    required this.onRead,
+    required this.onDownload,
+    required this.onShare,
+    required this.mustBuy,
+  });
+
+  final AppLocalizations l10n;
+  final VoidCallback onRead;
+  final VoidCallback onDownload;
+  final VoidCallback onShare;
+  final bool mustBuy;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FilledButton.icon(
+          onPressed: onRead,
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.referencePrimary,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 15),
+            textStyle: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          icon: Icon(
+            mustBuy ? Icons.shopping_cart_outlined : Icons.auto_stories_rounded,
+            size: 19,
+          ),
+          label: Text(mustBuy ? l10n.purchaseBook : l10n.startReading),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: onDownload,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textPrimary,
+                  side: const BorderSide(color: DesktopTokens.borderColor),
+                  backgroundColor: DesktopTokens.surfaceBg,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.download_outlined, size: 18),
+                label: Text(l10n.downloadOffline),
+              ),
+            ),
+            const SizedBox(width: 10),
+            IconButton.outlined(
+              onPressed: onShare,
+              tooltip: l10n.shareBookTooltip,
+              style: IconButton.styleFrom(
+                side: const BorderSide(color: DesktopTokens.borderColor),
+                backgroundColor: DesktopTokens.surfaceBg,
+                padding: const EdgeInsets.all(13),
+              ),
+              icon: const Icon(Icons.share_outlined, size: 18),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Title block shown at the top of the scrolling content column.
+class _ContentHeader extends StatelessWidget {
+  const _ContentHeader({
     required this.book,
     required this.l10n,
     required this.tier,
     required this.chapterCount,
     required this.pageCount,
-    required this.onRead,
-    required this.onDownload,
-    required this.onShare,
   });
 
   final BookSummary book;
@@ -207,201 +363,107 @@ class _HeroCard extends StatelessWidget {
   final DesktopLayoutTier tier;
   final int? chapterCount;
   final int? pageCount;
-  final VoidCallback onRead;
-  final VoidCallback onDownload;
-  final VoidCallback onShare;
 
   @override
   Widget build(BuildContext context) {
-    final coverWidth = switch (tier) {
-      DesktopLayoutTier.expanded => 210.0,
-      DesktopLayoutTier.medium => 176.0,
-      DesktopLayoutTier.compact => 148.0,
-    };
     final titleSize = tier == DesktopLayoutTier.expanded ? 32.0 : 26.0;
 
-    return Container(
-      padding: EdgeInsets.all(tier == DesktopLayoutTier.expanded ? 32 : 24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color.alphaBlend(
-              AppColors.referencePrimary.withValues(alpha: 0.09),
-              DesktopTokens.surfaceBg,
-            ),
-            Color.alphaBlend(
-              AppColors.referenceAccent.withValues(alpha: 0.05),
-              DesktopTokens.surfaceBg,
-            ),
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _LanguagePill(
+          label: catalogLanguageFilterLabel(book.primaryLanguage, l10n),
         ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: DesktopTokens.borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.referencePrimary.withValues(alpha: 0.07),
-            blurRadius: 28,
-            offset: const Offset(0, 10),
+        const SizedBox(height: 14),
+        Text(
+          book.title,
+          style: TextStyle(
+            fontSize: titleSize,
+            fontWeight: FontWeight.w800,
+            height: 1.12,
+            letterSpacing: -0.5,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        if (book.subtitle?.isNotEmpty == true) ...[
+          const SizedBox(height: 10),
+          Text(
+            book.subtitle!,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              height: 1.35,
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.18),
-                  blurRadius: 24,
-                  offset: const Offset(0, 12),
-                ),
-              ],
+        if (book.authorCompiler?.isNotEmpty == true) ...[
+          const SizedBox(height: 12),
+          InkWell(
+            onTap: () => context.push(
+              '/author/${Uri.encodeComponent(book.authorCompiler!.trim())}',
             ),
-            child: BookDetailCover(book: book, width: coverWidth),
-          ),
-          SizedBox(width: tier == DesktopLayoutTier.expanded ? 32 : 24),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            borderRadius: BorderRadius.circular(6),
+            child: Row(
               children: [
-                _LanguagePill(
-                  label: catalogLanguageFilterLabel(book.primaryLanguage, l10n),
+                const Icon(
+                  Icons.edit_note_rounded,
+                  size: 18,
+                  color: AppColors.primary,
                 ),
-                const SizedBox(height: 14),
-                Text(
-                  book.title,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: titleSize,
-                    fontWeight: FontWeight.w800,
-                    height: 1.12,
-                    letterSpacing: -0.5,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                if (book.subtitle?.isNotEmpty == true) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    book.subtitle!,
-                    maxLines: 2,
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    book.authorCompiler!,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      height: 1.35,
-                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
                     ),
                   ),
-                ],
-                if (book.authorCompiler?.isNotEmpty == true) ...[
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.edit_note_rounded,
-                        size: 18,
-                        color: AppColors.textTertiary,
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          book.authorCompiler!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textTertiary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-                const SizedBox(height: 20),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    _MetaChip(
-                      icon: Icons.menu_book_outlined,
-                      value: chapterCount == null ? '—' : '$chapterCount',
-                      label: l10n.bookStatChapters,
-                    ),
-                    _MetaChip(
-                      icon: Icons.description_outlined,
-                      value: (pageCount != null && pageCount! > 0)
-                          ? '$pageCount'
-                          : '—',
-                      label: l10n.bookStatPages,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    FilledButton.icon(
-                      onPressed: onRead,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.referencePrimary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 15,
-                        ),
-                        textStyle: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      icon: const Icon(Icons.auto_stories_rounded, size: 19),
-                      label: Text(l10n.startReading),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: onDownload,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textPrimary,
-                        side: const BorderSide(color: DesktopTokens.borderColor),
-                        backgroundColor: DesktopTokens.surfaceBg,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 15,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      icon: const Icon(Icons.download_outlined, size: 18),
-                      label: Text(l10n.downloadOffline),
-                    ),
-                    IconButton.outlined(
-                      onPressed: onShare,
-                      tooltip: l10n.shareBookTooltip,
-                      style: IconButton.styleFrom(
-                        side: const BorderSide(color: DesktopTokens.borderColor),
-                        backgroundColor: DesktopTokens.surfaceBg,
-                        padding: const EdgeInsets.all(13),
-                      ),
-                      icon: const Icon(Icons.share_outlined, size: 18),
-                    ),
-                  ],
                 ),
               ],
             ),
           ),
         ],
-      ),
+        if (book.requiresPurchase) ...[
+          const SizedBox(height: 16),
+          BookPriceLabel(book: book),
+        ],
+        const SizedBox(height: 20),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            _MetaChip(
+              icon: Icons.menu_book_outlined,
+              value: chapterCount == null ? '—' : '$chapterCount',
+              label: l10n.bookStatChapters,
+            ),
+            _MetaChip(
+              icon: Icons.description_outlined,
+              value: (pageCount != null && pageCount! > 0)
+                  ? '$pageCount'
+                  : '—',
+              label: l10n.bookStatPages,
+            ),
+            if (book.hasRating)
+              _MetaChip(
+                icon: Icons.star_rounded,
+                value: book.ratingAverage.toStringAsFixed(1),
+                label: '${book.ratingCount}',
+              ),
+            if (book.readersCount > 0)
+              _MetaChip(
+                icon: Icons.groups_outlined,
+                value: '${book.readersCount}',
+                label: l10n.bookStatReaders,
+              ),
+          ],
+        ),
+      ],
     );
   }
 }

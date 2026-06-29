@@ -49,6 +49,9 @@ class _AdminBooksScreenState extends ConsumerState<AdminBooksScreen> {
     }
 
     final async = ref.watch(adminBooksProvider);
+    final isAdmin =
+        ref.watch(sessionNotifierProvider).valueOrNull?.user?.isPlatformAdmin ??
+            false;
 
     return Scaffold(
       backgroundColor: AppColors.referencePageBg,
@@ -57,8 +60,14 @@ class _AdminBooksScreenState extends ConsumerState<AdminBooksScreen> {
           icon: const Icon(Icons.close_rounded),
           onPressed: () => context.pop(),
         ),
-        title: Text(l10n.adminBooksListTitle),
+        title: Text(isAdmin ? l10n.adminBooksListTitle : l10n.authorMyBooks),
         actions: [
+          if (isAdmin)
+            IconButton(
+              tooltip: l10n.adminPaymentsTitle,
+              onPressed: () => context.push('/admin/payments'),
+              icon: const Icon(Icons.receipt_long_outlined),
+            ),
           IconButton(
             tooltip: l10n.newBookTooltip,
             onPressed: () => context.push('/admin/books/new'),

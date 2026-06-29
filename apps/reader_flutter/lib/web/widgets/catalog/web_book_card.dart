@@ -6,6 +6,8 @@ import '../../../l10n/app_localizations.dart';
 import '../../../models/book_models.dart';
 import '../../../providers/catalog_providers.dart';
 import '../../../utils/catalog_book_visuals.dart';
+import '../../../utils/catalog_categories.dart';
+import '../../../widgets/cover_badges.dart';
 import '../../design/web_tokens.dart';
 import 'book_tile_hover.dart';
 
@@ -22,10 +24,10 @@ class WebBookCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final meta = ref.watch(catalogBookMetaProvider(book.id)).valueOrNull;
     final gradient = catalogBookGradient(index);
-    final icon = catalogBookIcon(book, index);
+    final icon = categoryForBook(book).icon;
 
     return WebBookTileHover(
       route: '/book/${book.id}',
@@ -47,12 +49,52 @@ class WebBookCard extends ConsumerWidget {
                     const CatalogCrossWatermark(),
                     Padding(
                       padding: const EdgeInsets.all(14),
-                      child: Icon(
-                        icon,
-                        color: Colors.white.withValues(alpha: 0.85),
-                        size: 22,
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.20),
+                          borderRadius: BorderRadius.circular(11),
+                        ),
+                        child: Icon(
+                          icon,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                     ),
+                    if (book.coverUrl != null)
+                      Positioned.fill(
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(13),
+                          ),
+                          child: CoverImageFill(url: book.coverUrl!),
+                        ),
+                      ),
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: ReadNowBadge(label: l10n.readNow),
+                    ),
+                    if (book.hasRating)
+                      Positioned(
+                        top: 12,
+                        left: 12,
+                        child: RatingBadge(average: book.ratingAverage),
+                      ),
+                    if (book.isPremium)
+                      const Positioned(
+                        bottom: 10,
+                        left: 10,
+                        child: PremiumBadge(),
+                      ),
+                    if (book.requiresPurchase)
+                      Positioned(
+                        bottom: 10,
+                        right: 10,
+                        child: PriceBadge(book: book),
+                      ),
                     if ((meta?.progress ?? 0) > 0)
                       Positioned(
                         left: 0,
@@ -62,7 +104,7 @@ class WebBookCard extends ConsumerWidget {
                           value: meta!.progress.clamp(0, 1),
                           minHeight: 3,
                           backgroundColor: Colors.white24,
-                          color: WebTokens.accentGold,
+                          color: AppColors.accent,
                         ),
                       ),
                   ],

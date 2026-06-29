@@ -3,22 +3,22 @@ import 'package:flutter/material.dart';
 import '../design/app_tokens.dart';
 import '../models/book_models.dart';
 
-const _purpleGradient = LinearGradient(
+const _cyanGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
-  colors: [Color(0xFF2D1B69), Color(0xFF5B3B8C), Color(0xFF6E4A9E)],
+  colors: [Color(0xFF14708F), Color(0xFF29B6E0), Color(0xFF5CCDEC)],
   stops: [0.0, 0.55, 1.0],
 );
 
-const _crimsonGradient = LinearGradient(
+const _deepBlueGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
-  colors: [Color(0xFF8B1A1A), Color(0xFFC1272D), Color(0xFF9E2A32)],
+  colors: [Color(0xFF0A3A4A), Color(0xFF1E9BC2), Color(0xFF14708F)],
   stops: [0.0, 0.55, 1.0],
 );
 
 LinearGradient catalogBookGradient(int index) {
-  return index.isEven ? _purpleGradient : _crimsonGradient;
+  return index.isEven ? _cyanGradient : _deepBlueGradient;
 }
 
 Color catalogBookAccentColor(int index) {

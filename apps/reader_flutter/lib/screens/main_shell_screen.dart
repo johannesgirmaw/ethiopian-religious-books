@@ -1,25 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../common/platform/platform_shell.dart';
 import '../desktop/widgets/shell/desktop_shell_scaffold.dart';
 import '../l10n/app_localizations.dart';
+import '../providers/session_notifier.dart';
 import '../web/layout/app_layout_scope.dart';
 import '../web/widgets/shell/web_shell_scaffold.dart';
 import '../widgets/liquid_glass_nav_bar.dart';
 
-class MainShellScreen extends StatelessWidget {
+class MainShellScreen extends ConsumerWidget {
   const MainShellScreen({super.key, required this.child});
 
   final Widget child;
 
-  static const _tabs = <String>['/home', '/settings', '/profile'];
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final location = GoRouterState.of(context).matchedLocation;
-    final index = _indexFor(location);
+    final user = ref.watch(sessionNotifierProvider).valueOrNull?.user;
+    final isAdmin = user?.isPlatformAdmin ?? false;
+    final canManageBooks = user?.canManageBooks ?? false;
 
     if (useWebShell(context)) {
       return WebShellScaffold(
@@ -34,6 +36,14 @@ class MainShellScreen extends StatelessWidget {
         child: child,
       );
     }
+
+    final tabs = <String>[
+      '/home',
+      '/purchases',
+      '/profile',
+      if (canManageBooks) '/admin/books',
+    ];
+    final index = _indexFor(location, tabs);
 
     return Scaffold(
       extendBody: true,
@@ -53,7 +63,7 @@ class MainShellScreen extends StatelessWidget {
             bottom: 0,
             child: LiquidGlassNavBar(
               selectedIndex: index,
-              onSelected: (newIndex) => context.go(_tabs[newIndex]),
+              onSelected: (newIndex) => context.go(tabs[newIndex]),
               items: [
                 LiquidNavItem(
                   icon: Icons.explore_outlined,
@@ -61,15 +71,25 @@ class MainShellScreen extends StatelessWidget {
                   label: l10n.navHome,
                 ),
                 LiquidNavItem(
-                  icon: Icons.settings_outlined,
-                  selectedIcon: Icons.settings_rounded,
-                  label: l10n.navSettings,
+                  icon: Icons.receipt_long_outlined,
+                  selectedIcon: Icons.receipt_long_rounded,
+                  label: l10n.navPurchases,
                 ),
                 LiquidNavItem(
                   icon: Icons.person_outline_rounded,
                   selectedIcon: Icons.person_rounded,
                   label: l10n.navProfile,
                 ),
+                if (canManageBooks)
+                  LiquidNavItem(
+                    icon: isAdmin
+                        ? Icons.admin_panel_settings_outlined
+                        : Icons.menu_book_outlined,
+                    selectedIcon: isAdmin
+                        ? Icons.admin_panel_settings_rounded
+                        : Icons.menu_book_rounded,
+                    label: isAdmin ? l10n.adminHomeTitle : l10n.authorMyBooks,
+                  ),
               ],
             ),
           ),
@@ -78,11 +98,19 @@ class MainShellScreen extends StatelessWidget {
     );
   }
 
-  static int _indexFor(String location) {
-    if (location.startsWith('/profile')) return 2;
-    if (location.startsWith('/settings')) return 1;
-    if (location.startsWith('/home')) return 0;
-    if (location.startsWith('/downloads')) return 0;
-    return 0;
+  static int _indexFor(String location, List<String> tabs) {
+    int find(String route) {
+      final i = tabs.indexOf(route);
+      return i < 0 ? 0 : i;
+    }
+
+    if (location.startsWith('/admin')) return find('/admin/books');
+    if (location.startsWith('/purchases')) return find('/purchases');
+    // Settings is merged into the Profile tab.
+    if (location.startsWith('/profile') || location.startsWith('/settings')) {
+      return find('/profile');
+    }
+    // /home and /downloads both map to the Home tab.
+    return find('/home');
   }
 }

@@ -59,7 +59,7 @@ class WebPageHeader extends StatelessWidget {
                       gradient: const LinearGradient(
                         colors: [
                           AppColors.referencePrimary,
-                          Color(0xFFC9A227),
+                          Color(0xFFF5A623),
                         ],
                       ),
                     ),

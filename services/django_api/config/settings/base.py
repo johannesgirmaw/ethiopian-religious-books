@@ -3,6 +3,7 @@ import datetime
 import environ
 from pathlib import Path
 
+from corsheaders.defaults import default_headers
 from django.templatetags.static import static
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
@@ -36,6 +37,7 @@ INSTALLED_APPS = [
     "apps.legal",
     "apps.catalog",
     "apps.study",
+    "apps.payments",
 ]
 
 MIDDLEWARE = [
@@ -75,6 +77,11 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+
+# Uploaded media (payment receipts via default_storage). In production point the
+# default STORAGES backend at object storage to keep receipts off local disk.
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 TEMPLATES = [
     {
@@ -120,6 +127,9 @@ CORS_ALLOWED_ORIGINS = env.list(
     "CORS_ALLOWED_ORIGINS",
     default=["http://localhost:5173", "http://127.0.0.1:5173"],
 )
+# Allow the app's custom dev header (sent by Flutter web to pick a
+# device-reachable MinIO presign host) through CORS preflight.
+CORS_ALLOW_HEADERS = (*default_headers, "x-dev-s3-origin")
 
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://localhost:6379/0")
@@ -131,6 +141,10 @@ EMAIL_BACKEND = env(
 EMAIL_HOST = env("EMAIL_HOST", default="localhost")
 EMAIL_PORT = env.int("EMAIL_PORT", default=1025)
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=False)
+DEFAULT_FROM_EMAIL = env(
+    "DEFAULT_FROM_EMAIL",
+    default="Ethiopian Reader <no-reply@ethiopianreader.app>",
+)
 
 AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID", default="")
 AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY", default="")
@@ -164,6 +178,18 @@ FEATURE_BOOK_CONTENT_INDEX = env.bool("FEATURE_BOOK_CONTENT_INDEX", default=True
 FEATURE_CATALOG_TOLERANT_SEARCH = env.bool("FEATURE_CATALOG_TOLERANT_SEARCH", default=True)
 FEATURE_STUDY_TOOLS = env.bool("FEATURE_STUDY_TOOLS", default=True)
 FEATURE_DAILY_PLAN_REMINDERS = env.bool("FEATURE_DAILY_PLAN_REMINDERS", default=True)
+FEATURE_PAYMENTS = env.bool("FEATURE_PAYMENTS", default=True)
+
+# Encryption key for stored gateway credentials. Leave empty to derive a key
+# from SECRET_KEY (fine for dev); set a stable Fernet key in production.
+PAYMENTS_FERNET_KEY = env("PAYMENTS_FERNET_KEY", default="")
+
+# Offline-reading licenses (apps.catalog.licensing). Leave the signing key empty
+# to derive one from SECRET_KEY (fine for dev); set a stable secret in production
+# so rotating SECRET_KEY does not invalidate live licenses. Lease length controls
+# how long a downloaded book stays readable offline before it must be renewed.
+OFFLINE_LICENSE_SIGNING_KEY = env("OFFLINE_LICENSE_SIGNING_KEY", default="")
+OFFLINE_LICENSE_LEASE_DAYS = env.int("OFFLINE_LICENSE_LEASE_DAYS", default=30)
 
 
 def _admin_environment(request):
@@ -270,6 +296,60 @@ UNFOLD = {
                         "title": _("Book pages"),
                         "icon": "article",
                         "link": reverse_lazy("admin:catalog_bookpage_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Payments & commissions"),
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Transactions"),
+                        "icon": "payments",
+                        "link": reverse_lazy(
+                            "admin:payments_paymenttransaction_changelist"
+                        ),
+                    },
+                    {
+                        "title": _("Revenue ledger"),
+                        "icon": "account_balance",
+                        "link": reverse_lazy("admin:payments_revenueledger_changelist"),
+                    },
+                    {
+                        "title": _("Banks"),
+                        "icon": "account_balance_wallet",
+                        "link": reverse_lazy("admin:payments_bank_changelist"),
+                    },
+                    {
+                        "title": _("Author commissions"),
+                        "icon": "percent",
+                        "link": reverse_lazy(
+                            "admin:payments_authorcommission_changelist"
+                        ),
+                    },
+                    {
+                        "title": _("Author profiles"),
+                        "icon": "badge",
+                        "link": reverse_lazy("admin:payments_authorprofile_changelist"),
+                    },
+                    {
+                        "title": _("Platform settings"),
+                        "icon": "tune",
+                        "link": reverse_lazy(
+                            "admin:payments_platformsettings_changelist"
+                        ),
+                    },
+                    {
+                        "title": _("Gateway credentials"),
+                        "icon": "key",
+                        "link": reverse_lazy(
+                            "admin:payments_gatewaycredential_changelist"
+                        ),
+                    },
+                    {
+                        "title": _("Audit log"),
+                        "icon": "fact_check",
+                        "link": reverse_lazy("admin:payments_auditlog_changelist"),
                     },
                 ],
             },

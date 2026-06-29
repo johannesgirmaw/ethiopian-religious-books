@@ -17,6 +17,8 @@ from apps.catalog.models import (
     BookPage,
     BookRevision,
     BookTag,
+    Genre,
+    OfflineDownload,
     Tag,
 )
 from apps.catalog.publishing import publish_book, unpublish_book, validate_draft_warnings
@@ -62,15 +64,18 @@ class BookAdmin(ModelAdmin):
     list_display = (
         "title",
         "catalog_visibility",
+        "is_premium",
+        "price",
+        "currency",
         "published_revision_link",
         "primary_language",
         "updated_at",
     )
-    list_filter = ("catalog_visibility", "primary_language")
+    list_filter = ("catalog_visibility", "primary_language", "is_premium")
     search_fields = ("title", "subtitle", "author_compiler", "summary")
     ordering = ("title",)
     readonly_fields = ("id", "search_text_normalized", "created_at", "updated_at")
-    raw_id_fields = ("published_revision", "created_by")
+    raw_id_fields = ("published_revision", "created_by", "author")
     inlines = (BookRevisionInline, BookTagInline)
     fieldsets = (
         (None, {"fields": ("title", "subtitle", "summary", "author_compiler")}),
@@ -83,6 +88,25 @@ class BookAdmin(ModelAdmin):
                     "catalog_visibility",
                     "published_revision",
                 )
+            },
+        ),
+        (
+            "Pricing & commission",
+            {
+                "fields": (
+                    "author",
+                    "is_premium",
+                    "currency",
+                    "price",
+                    "sale_price",
+                    "commission_percent",
+                ),
+                "description": (
+                    "Premium titles with a price require a purchase to read. "
+                    "Leave commission blank to fall back to the author override, "
+                    "then the platform default. <code>author</code> is the User "
+                    "(with the author role) who receives the author share."
+                ),
             },
         ),
         (
@@ -239,6 +263,15 @@ class BookRevisionAdmin(ModelAdmin):
     )
 
 
+@admin.register(Genre)
+class GenreAdmin(ModelAdmin):
+    list_display = ("label", "slug", "ordinal", "is_active")
+    list_editable = ("ordinal", "is_active")
+    search_fields = ("label", "slug")
+    ordering = ("ordinal", "label")
+    prepopulated_fields = {"slug": ("label",)}
+
+
 @admin.register(Tag)
 class TagAdmin(ModelAdmin):
     list_display = ("label", "slug")
@@ -321,3 +354,61 @@ class BookContentIndexAdmin(ModelAdmin):
         if len(t) <= 80:
             return t
         return t[:80] + "…"
+
+
+@admin.register(OfflineDownload)
+class OfflineDownloadAdmin(ModelAdmin):
+    """Read-only ledger of which users saved which books offline, on which device,
+    and whether the offline lease is still active."""
+
+    list_display = (
+        "user_email",
+        "book_title",
+        "platform",
+        "device_short",
+        "first_downloaded_at",
+        "license_expires_at",
+        "is_active",
+        "renew_count",
+    )
+    list_filter = ("platform", "first_downloaded_at", "license_expires_at")
+    search_fields = ("user__email", "book__title", "device_id")
+    raw_id_fields = ("user", "book")
+    date_hierarchy = "first_downloaded_at"
+    readonly_fields = (
+        "user",
+        "book",
+        "device_id",
+        "platform",
+        "revision_id",
+        "first_downloaded_at",
+        "last_licensed_at",
+        "license_expires_at",
+        "renew_count",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("user", "book")
+
+    @admin.display(description="User", ordering="user__email")
+    def user_email(self, obj):
+        return obj.user.email
+
+    @admin.display(description="Book", ordering="book__title")
+    def book_title(self, obj):
+        return obj.book.title
+
+    @admin.display(description="Device")
+    def device_short(self, obj):
+        return obj.device_id[:12]
+
+    @admin.display(boolean=True, description="License active")
+    def is_active(self, obj):
+        from django.utils import timezone
+
+        return bool(
+            obj.license_expires_at and obj.license_expires_at > timezone.now()
+        )

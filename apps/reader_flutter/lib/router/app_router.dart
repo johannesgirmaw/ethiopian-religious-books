@@ -9,13 +9,23 @@ import '../screens/profile_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/admin/admin_book_edit_screen.dart';
 import '../screens/admin/admin_books_screen.dart';
+import '../screens/admin/admin_purchases_screen.dart';
 import '../screens/book_detail_screen.dart';
 import '../screens/downloads_screen.dart';
+import '../screens/author_books_screen.dart';
+import '../screens/favourites_screen.dart';
+import '../screens/notifications_screen.dart';
+import '../screens/payment_screen.dart';
+import '../screens/purchases_screen.dart';
 import '../screens/home_screen.dart';
+import '../screens/auth_route_shell.dart';
+import '../screens/change_password_screen.dart';
+import '../screens/forgot_password_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/main_shell_screen.dart';
 import '../screens/reader_screen.dart';
 import '../screens/register_screen.dart';
+import '../screens/reset_password_screen.dart';
 import '../screens/splash_screen.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -65,11 +75,19 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         return null;
       }
       final session = asyncSession.valueOrNull;
-      final isAdmin = session?.user?.isSuperuser == true;
+      final user = session?.user;
+      final isAdmin = user?.isPlatformAdmin == true;
+      final canManageBooks = user?.canManageBooks == true;
 
       if (loc.startsWith('/admin')) {
         if (session == null) return '/login';
-        if (!isAdmin) return '/home';
+        // Book management is open to authors (their own books); everything
+        // else under /admin is platform-admin only.
+        if (loc.startsWith('/admin/books')) {
+          if (!canManageBooks) return '/home';
+        } else if (!isAdmin) {
+          return '/home';
+        }
       }
       return null;
     },
@@ -78,13 +96,42 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/splash',
         builder: (context, state) => const SplashScreen(),
       ),
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
-      GoRoute(
-        path: '/register',
-        builder: (context, state) => const RegisterScreen(),
+      ShellRoute(
+        builder: (context, state, child) => AuthRouteShell(child: child),
+        routes: [
+          GoRoute(
+            path: '/login',
+            pageBuilder: (context, state) => NoTransitionPage<void>(
+              key: state.pageKey,
+              child: const LoginScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/register',
+            pageBuilder: (context, state) => NoTransitionPage<void>(
+              key: state.pageKey,
+              child: const RegisterScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/forgot-password',
+            pageBuilder: (context, state) => NoTransitionPage<void>(
+              key: state.pageKey,
+              child: ForgotPasswordScreen(
+                initialEmail: state.uri.queryParameters['email'],
+              ),
+            ),
+          ),
+          GoRoute(
+            path: '/reset-password',
+            pageBuilder: (context, state) => NoTransitionPage<void>(
+              key: state.pageKey,
+              child: ResetPasswordScreen(
+                initialEmail: state.uri.queryParameters['email'],
+              ),
+            ),
+          ),
+        ],
       ),
       ShellRoute(
         navigatorKey: shellNavigatorKey,
@@ -97,6 +144,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/downloads',
             builder: (context, state) => const DownloadsScreen(),
+          ),
+          GoRoute(
+            path: '/purchases',
+            builder: (context, state) => const PurchasesScreen(),
           ),
           GoRoute(
             path: '/profile',
@@ -118,6 +169,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
+            path: '/admin/payments',
+            pageBuilder: (context, state) => NoTransitionPage<void>(
+              key: state.pageKey,
+              child: const AdminPurchasesScreen(),
+            ),
+          ),
+          GoRoute(
             path: '/admin',
             redirect: (context, state) => '/admin/books',
           ),
@@ -132,6 +190,18 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: '/change-password',
+        parentNavigatorKey: rootNavigatorKey,
+        redirect: (context, state) {
+          final session = ref.read(sessionNotifierProvider).valueOrNull;
+          return session == null ? '/login' : null;
+        },
+        pageBuilder: (context, state) => _fadeSlide(
+          key: state.pageKey,
+          child: const ChangePasswordScreen(),
+        ),
+      ),
+      GoRoute(
         path: '/book/:id',
         parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) {
@@ -139,6 +209,43 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           return _fadeSlide(
             key: state.pageKey,
             child: BookDetailScreen(bookId: id),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/favourites',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) => _fadeSlide(
+          key: state.pageKey,
+          child: const FavouritesScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/notifications',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) => _fadeSlide(
+          key: state.pageKey,
+          child: const NotificationsScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/author/:name',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) => _fadeSlide(
+          key: state.pageKey,
+          child: AuthorBooksScreen(
+            author: Uri.decodeComponent(state.pathParameters['name']!),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/payment/:id',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return _fadeSlide(
+            key: state.pageKey,
+            child: PaymentScreen(bookId: id),
           );
         },
       ),

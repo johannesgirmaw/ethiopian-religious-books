@@ -41,13 +41,13 @@ class AuthScreenLayout extends StatelessWidget {
                     alignment: Alignment.centerRight,
                     child: _LangToggle(),
                   ),
-                  const SizedBox(height: 12),
-                  AppGreetingCard(
-                    greetingLine: greetingForL10n(l10n),
-                    title: headline,
-                    subtitle: subtitle,
-                  ),
-                  const SizedBox(height: 20),
+                  // const SizedBox(height: 12),
+                  // AppGreetingCard(
+                  //   greetingLine: greetingForL10n(l10n),
+                  //   title: headline,
+                  //   subtitle: subtitle,
+                  // ),
+                  // const SizedBox(height: 20),
                   const Center(child: AppLogoTile(size: 72)),
                   const SizedBox(height: 24),
                   AppPanel(

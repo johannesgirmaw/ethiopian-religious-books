@@ -25,20 +25,17 @@ class DesktopAuthLayout extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-
     return Scaffold(
       backgroundColor: DesktopTokens.canvasBg,
       body: Row(
         children: [
-          Expanded(
+          const Expanded(
             flex: 5,
-            child: _BrandPanel(l10n: l10n),
+            child: DesktopAuthBrandPanel(),
           ),
           Expanded(
             flex: 4,
-            child: _FormColumn(
-              l10n: l10n,
+            child: DesktopAuthFormPane(
               headline: headline,
               subtitle: subtitle,
               formChild: formChild,
@@ -51,13 +48,13 @@ class DesktopAuthLayout extends ConsumerWidget {
   }
 }
 
-class _BrandPanel extends StatelessWidget {
-  const _BrandPanel({required this.l10n});
-
-  final AppLocalizations l10n;
+class DesktopAuthBrandPanel extends StatelessWidget {
+  const DesktopAuthBrandPanel({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return DecoratedBox(
       decoration: const BoxDecoration(
         gradient: AppGradients.greetingMesh,
@@ -117,16 +114,15 @@ class _BrandPanel extends StatelessWidget {
   }
 }
 
-class _FormColumn extends ConsumerWidget {
-  const _FormColumn({
-    required this.l10n,
+class DesktopAuthFormPane extends ConsumerWidget {
+  const DesktopAuthFormPane({
+    super.key,
     required this.headline,
     required this.subtitle,
     required this.formChild,
     this.footer,
   });
 
-  final AppLocalizations l10n;
   final String headline;
   final String subtitle;
   final Widget formChild;
