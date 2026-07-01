@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../models/admin_book.dart';
+import '../providers/catalog_providers.dart';
 import '../providers/session_notifier.dart';
 import '../screens/about_screen.dart';
+import '../screens/bible_screen.dart';
+import '../screens/bible_reader_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/admin/admin_book_edit_screen.dart';
@@ -146,6 +149,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const DownloadsScreen(),
           ),
           GoRoute(
+            path: '/bible',
+            builder: (context, state) => const BibleScreen(),
+          ),
+          GoRoute(
             path: '/purchases',
             builder: (context, state) => const PurchasesScreen(),
           ),
@@ -202,8 +209,41 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: '/bible/book/:bookId',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final bookId = state.pathParameters['bookId']!;
+          final chapter =
+              int.tryParse(state.uri.queryParameters['chapter'] ?? '') ?? 1;
+          final verse = int.tryParse(state.uri.queryParameters['verse'] ?? '');
+          return _fadeSlide(
+            key: state.pageKey,
+            child: BibleReaderScreen(
+              bookId: bookId,
+              initialChapter: chapter,
+              highlightVerse: verse,
+            ),
+          );
+        },
+      ),
+      GoRoute(
         path: '/book/:id',
         parentNavigatorKey: rootNavigatorKey,
+        // Bible books are verse-served: route them straight to the Bible reader
+        // instead of the page detail screen. Uses the loaded catalog to decide;
+        // BookDetailScreen also redirects as a cold-open fallback.
+        redirect: (context, state) {
+          final id = state.pathParameters['id'];
+          if (id == null) return null;
+          final items = ref.read(catalogProvider).valueOrNull?.items;
+          if (items == null) return null;
+          for (final b in items) {
+            if (b.id == id) {
+              return b.isBible ? '/bible/book/$id' : null;
+            }
+          }
+          return null;
+        },
         pageBuilder: (context, state) {
           final id = state.pathParameters['id']!;
           return _fadeSlide(

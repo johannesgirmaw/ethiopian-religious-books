@@ -42,6 +42,8 @@ class BookListSerializer(serializers.ModelSerializer):
             "primary_language",
             "script_tags",
             "genre",
+            "is_bible",
+            "testament_type",
             "published_year",
             "rating_average",
             "rating_count",

@@ -72,6 +72,17 @@ class BookDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final asyncBook = ref.watch(bookDetailProvider(bookId));
+
+    // Cold-open fallback: if this turns out to be a Bible book (e.g. deep link
+    // opened before the catalog was cached), send it to the verse reader. The
+    // /book/:id route redirect handles the common (catalog-loaded) case.
+    final loadedBook = asyncBook.valueOrNull;
+    if (loadedBook != null && loadedBook.isBible) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) context.go('/bible/book/$bookId');
+      });
+    }
+
     final contentAsync = ref.watch(bookContentProvider(bookId));
     final downloadJobs = ref.watch(downloadJobsProvider);
     DownloadJob? currentJob;

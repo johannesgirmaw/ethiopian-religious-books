@@ -11,6 +11,7 @@ import '../../providers/catalog_providers.dart';
 import '../../providers/continue_reading_provider.dart';
 import '../../providers/engagement_providers.dart';
 import '../../providers/session_notifier.dart';
+import '../../utils/catalog_categories.dart';
 import '../../utils/catalog_language_label.dart';
 import '../../widgets/app_state_view.dart';
 import '../../widgets/liquid_glass_nav_bar.dart';
@@ -191,6 +192,7 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
     final l10n = AppLocalizations.of(context);
     final q = _query.trim().toLowerCase();
     final result = books.where((b) {
+      if (bibleHiddenForGenre(b, _genre)) return false;
       if (_genre != null && (b.genre ?? '').trim() != _genre) return false;
       if (_language != null &&
           catalogLanguageFilterKey(b.primaryLanguage, l10n) != _language) {
@@ -481,9 +483,11 @@ class _RecommendedRail extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final all = ref.watch(recommendedBooksProvider).valueOrNull ?? const [];
-    final books = genre == null
-        ? all
-        : all.where((b) => (b.genre ?? '').trim() == genre).toList();
+    final books = all
+        .where((b) =>
+            !bibleHiddenForGenre(b, genre) &&
+            (genre == null || (b.genre ?? '').trim() == genre))
+        .toList();
     if (books.length < 2) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

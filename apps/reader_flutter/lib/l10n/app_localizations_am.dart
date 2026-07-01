@@ -1866,6 +1866,154 @@ class AppLocalizationsAm extends AppLocalizations {
   String get adminNoOrders => 'የሚታይ ትዕዛዝ የለም።';
 
   @override
+  String get adminNoMatchingOrders => 'ከፍለጋዎ ጋር የሚዛመድ ትዕዛዝ የለም።';
+
+  @override
+  String get adminSearchOrdersHint => 'ደንበኛ፣ መጽሐፍ ወይም ማመሳከሪያ ይፈልጉ';
+
+  @override
+  String get adminShowingResultsFor => 'የሚታዩ ውጤቶች:';
+
+  @override
+  String get adminClearFilters => 'ሁሉንም አጽዳ';
+
+  @override
+  String get adminRowsPerPage => 'በገጽ ረድፎች';
+
+  @override
+  String get adminActionsTooltip => 'እርምጃዎች';
+
+  @override
+  String get adminCopyReference => 'ማመሳከሪያ ቅዳ';
+
+  @override
+  String get adminApproveConfirm => 'ይህን ክፍያ ያጽድቁ?';
+
+  @override
+  String get bibleTitle => 'መጽሐፍ ቅዱስ';
+
+  @override
+  String get bibleOldTestament => 'ብሉይ ኪዳን';
+
+  @override
+  String get bibleNewTestament => 'አዲስ ኪዳን';
+
+  @override
+  String get bibleChapter => 'ምዕራፍ';
+
+  @override
+  String get bibleChapters => 'ምዕራፎች';
+
+  @override
+  String get bibleSearchHint => 'ጥቅስ ወይም ማመሳከሪያ ይፈልጉ (ለምሳሌ ማቴ 3:16)';
+
+  @override
+  String get bibleNoResults => 'ምንም ጥቅስ አልተገኘም።';
+
+  @override
+  String get bibleReferenceNotFound => 'ያን ማመሳከሪያ ማግኘት አልተቻለም።';
+
+  @override
+  String get bibleSearchScopeAll => 'ሁሉም';
+
+  @override
+  String get bibleSearch => 'መጽሐፍ ቅዱስን ይፈልጉ';
+
+  @override
+  String get numberSystemTitle => 'የግዕዝ ቁጥሮች';
+
+  @override
+  String get numberSystemSubtitle => 'የምዕራፍና የጥቅስ ቁጥሮችን በግዕዝ አሳይ (፩ ፪ ፫)';
+
+  @override
+  String get geezConvertTooltip => 'የተመረጡ ቁጥሮችን ወደ ግዕዝ ቀይር (1 → ፩)';
+
+  @override
+  String get adminIsBibleLabel => 'የመጽሐፍ ቅዱስ መጽሐፍ';
+
+  @override
+  String get adminIsBibleSubtitle => 'ከገጾች ይልቅ ምዕራፎችን፣ ክፍሎችንና ጥቅሶችን ያስተዳድሩ';
+
+  @override
+  String get adminTestamentLabel => 'ኪዳን';
+
+  @override
+  String get adminBibleSaveFirst => 'መጀመሪያ መጽሐፉን ያስቀምጡ፣ ከዚያ ይዘቱን ያስተዳድሩ።';
+
+  @override
+  String get adminManageBibleContent => 'የመጽሐፍ ቅዱስ ይዘት አስተዳድር';
+
+  @override
+  String get adminBibleContentTitle => 'የመጽሐፍ ቅዱስ ይዘት';
+
+  @override
+  String get adminAddChapter => 'ምዕራፍ ጨምር';
+
+  @override
+  String get adminAddSection => 'ክፍል ጨምር';
+
+  @override
+  String get adminAddVerse => 'ጥቅስ ጨምር';
+
+  @override
+  String get adminSectionTitle => 'የክፍል ርዕስ';
+
+  @override
+  String get adminVerseNumberLabel => 'ቁ.';
+
+  @override
+  String get adminVerseTextLabel => 'የጥቅስ ጽሑፍ';
+
+  @override
+  String adminChapterLabel(int number) {
+    return 'ምዕራፍ $number';
+  }
+
+  @override
+  String get adminChapterSaved => 'ምዕራፍ ተቀምጧል';
+
+  @override
+  String get adminDeleteChapterConfirm => 'የዚህን ምዕራፍ ይዘት ይሰረዝ?';
+
+  @override
+  String get adminNoChaptersYet => 'እስካሁን ምዕራፍ የለም። ለመጀመር አንድ ይጨምሩ።';
+
+  @override
+  String adminVersesCount(int count) {
+    return '$count ጥቅሶች';
+  }
+
+  @override
+  String get adminSelectChapter => 'ለማስተካከል ምዕራፍ ይምረጡ፣ ወይም አዲስ ይጨምሩ።';
+
+  @override
+  String get adminUnsavedChanges => 'ያልተቀመጡ ለውጦች';
+
+  @override
+  String get adminDiscardChangesConfirm => 'ያልተቀመጡ ለውጦችን ይጣሉ?';
+
+  @override
+  String get adminDiscard => 'ጣል';
+
+  @override
+  String get adminDeleteChapter => 'ምዕራፍ ሰርዝ';
+
+  @override
+  String adminSectionLabel(int number) {
+    return 'ክፍል $number';
+  }
+
+  @override
+  String bibleResultsCount(int count) {
+    return '$count ጥቅሶች';
+  }
+
+  @override
+  String adminOrdersRange(int start, int end, int total) {
+    return '$start–$end ከ $total';
+  }
+
+  @override
   String get adminReview => 'ግምገማ';
 
   @override

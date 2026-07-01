@@ -10,6 +10,7 @@ import '../../providers/download_jobs_provider.dart';
 import '../../storage/book_content_cache_storage.dart';
 import '../../utils/format_catalog_cache_age.dart';
 import '../../widgets/language_preference_card.dart';
+import '../../widgets/number_system_preference_card.dart';
 import '../../widgets/skeleton_loader.dart';
 import '../layout/app_layout_scope.dart';
 import '../widgets/common/web_page_header.dart';
@@ -83,6 +84,11 @@ class SettingsScreenBody extends ConsumerWidget {
         WebSection(
           title: l10n.languagePreferenceTitle.toUpperCase(),
           child: const WebPanel(child: LanguagePreferenceCard()),
+        ),
+        const SizedBox(height: 24),
+        WebSection(
+          title: l10n.numberSystemTitle.toUpperCase(),
+          child: const WebPanel(child: NumberSystemPreferenceCard()),
         ),
         const SizedBox(height: 24),
         WebSection(

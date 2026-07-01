@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/book_models.dart';
+import '../../utils/catalog_categories.dart';
 import '../../providers/catalog_providers.dart';
 import '../../providers/continue_reading_provider.dart';
 import '../../providers/engagement_providers.dart';
@@ -61,6 +62,7 @@ class _DesktopHomeScreenBodyState extends ConsumerState<DesktopHomeScreenBody> {
   List<BookSummary> _filtered(List<BookSummary> books, AppLocalizations l10n) {
     final q = _query.trim().toLowerCase();
     final result = books.where((b) {
+      if (bibleHiddenForGenre(b, _genre)) return false;
       if (_genre != null && (b.genre ?? '').trim() != _genre) return false;
       if (!bookMatchesLanguage(b, _language, l10n)) return false;
       if (q.isEmpty) return true;
@@ -175,7 +177,9 @@ class _DesktopHomeScreenBodyState extends ConsumerState<DesktopHomeScreenBody> {
         : null;
     final recommended =
         (ref.watch(recommendedBooksProvider).valueOrNull ?? const [])
-            .where((b) => _genre == null || (b.genre ?? '').trim() == _genre)
+            .where((b) =>
+                !bibleHiddenForGenre(b, _genre) &&
+                (_genre == null || (b.genre ?? '').trim() == _genre))
             .toList();
 
     final headerChildren = <Widget>[

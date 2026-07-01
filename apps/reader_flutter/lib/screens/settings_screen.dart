@@ -10,6 +10,7 @@ import '../providers/download_jobs_provider.dart';
 import '../storage/book_content_cache_storage.dart';
 import '../utils/format_catalog_cache_age.dart';
 import '../widgets/language_preference_card.dart';
+import '../widgets/number_system_preference_card.dart';
 import '../widgets/primitives/shell_primitives.dart';
 import '../widgets/shell_page_scaffold.dart';
 import '../widgets/skeleton_loader.dart';
@@ -156,6 +157,8 @@ class SettingsScreen extends ConsumerWidget {
           AppSectionAccent(label: l10n.languagePreferenceTitle.toUpperCase()),
           const SizedBox(height: AppLayout.itemGap),
           const LanguagePreferenceCard(),
+          const SizedBox(height: AppLayout.itemGap),
+          const NumberSystemPreferenceCard(),
           const SizedBox(height: AppLayout.sectionGap),
           AppSectionAccent(label: l10n.settingsCacheSection.toUpperCase()),
           const SizedBox(height: AppLayout.itemGap),

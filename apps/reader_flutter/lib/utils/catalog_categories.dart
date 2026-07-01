@@ -3,6 +3,13 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../models/book_models.dart';
 
+/// Bible books are surfaced in the catalogue **only** under the "Bible"
+/// category (genre slug `bible`). Everywhere else — the "All" feed, other
+/// categories, recommendations — they are hidden. Returns true when [book]
+/// should be hidden given the currently [selectedGenre] (null = "All").
+bool bibleHiddenForGenre(BookSummary book, String? selectedGenre) =>
+    book.isBible && selectedGenre != 'bible';
+
 /// Content categories derived from book titles — the meaningful "genre" axis
 /// for Ethiopian religious texts (there is no genre field in the data model,
 /// so we classify by well-known title keywords).

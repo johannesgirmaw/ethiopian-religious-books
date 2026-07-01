@@ -49,6 +49,23 @@ class Book(models.Model):
     is_premium = models.BooleanField(default=False)
     is_featured = models.BooleanField(default=False)  # "Popular" home banner
 
+    # --- Bible books -----------------------------------------------------
+    # Bible books are verse-addressable (see BibleVerse / BibleSection) and
+    # served as open DB rows, not as the encrypted page package. They are
+    # excluded from the normal catalogue list and surfaced via the /bible API.
+    # The name fields below double as reference-parser aliases ("ማቴ", "Matt").
+    is_bible = models.BooleanField(default=False, db_index=True)
+    testament_type = models.CharField(
+        max_length=3,
+        choices=[("old", "Old Testament"), ("new", "New Testament")],
+        blank=True,
+        default="",
+    )
+    canonical_number = models.PositiveSmallIntegerField(null=True, blank=True)
+    bible_name_en = models.CharField(max_length=200, blank=True, default="")
+    bible_short_name_am = models.CharField(max_length=64, blank=True, default="")
+    bible_short_name_en = models.CharField(max_length=64, blank=True, default="")
+
     # --- Monetisation (payments app) -------------------------------------
     # The author is a User with the "author" role. Kept nullable so existing
     # catalogue rows (which only carry the free-text ``author_compiler``) keep
@@ -292,3 +309,91 @@ class OfflineDownload(models.Model):
 
     def __str__(self):
         return f"{self.user_id} · {self.book_id} · {self.device_id[:8]}"
+
+
+class BibleSection(models.Model):
+    """A titled pericope within a Bible chapter (e.g. 'የኢየሱስ ክርስቶስ የትውልድ ሐረግ').
+
+    Sections are non-overlapping verse ranges within one chapter; they drive the
+    in-reading headings. Verses point back at their section via a nullable FK.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    revision = models.ForeignKey(
+        BookRevision, on_delete=models.CASCADE, related_name="bible_sections"
+    )
+    book = models.ForeignKey(
+        Book, on_delete=models.CASCADE, related_name="bible_sections"
+    )
+    chapter = models.PositiveSmallIntegerField()
+    ordinal = models.PositiveSmallIntegerField(default=0)
+    title = models.CharField(max_length=500, blank=True, default="")
+    start_verse = models.PositiveSmallIntegerField(default=0)
+    end_verse = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        db_table = "bible_sections"
+        ordering = ["revision", "chapter", "ordinal"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["revision", "chapter", "ordinal"],
+                name="uniq_bible_section",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["book", "chapter"], name="idx_bible_section_book_ch"),
+        ]
+
+    def __str__(self):
+        return f"{self.book_id} {self.chapter}:{self.start_verse}-{self.end_verse}"
+
+
+class BibleVerse(models.Model):
+    """One verse — the atomic, stable, addressable unit.
+
+    The verse number is the edition's own and may be **sparse** (a chapter can
+    skip numbers where an edition merges/omits verses), so it is stored
+    explicitly and never derived from row order.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    revision = models.ForeignKey(
+        BookRevision, on_delete=models.CASCADE, related_name="bible_verses"
+    )
+    book = models.ForeignKey(
+        Book, on_delete=models.CASCADE, related_name="bible_verses"
+    )
+    section = models.ForeignKey(
+        BibleSection,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="verses",
+    )
+    chapter = models.PositiveSmallIntegerField()
+    # The edition's own verse number — used for display and reference lookup.
+    # NOT unique within a chapter: some editions merge psalms (e.g. Septuagint
+    # Ps 9+10) so verse numbering can legitimately restart mid-chapter.
+    verse = models.PositiveSmallIntegerField()
+    # Running 1-based position within the chapter; stable ordering + uniqueness.
+    verse_seq = models.PositiveSmallIntegerField(default=0)
+    text_plain = models.TextField(blank=True, default="")
+    text_normalized = models.TextField(blank=True, default="", db_index=True)
+
+    class Meta:
+        db_table = "bible_verses"
+        ordering = ["revision", "chapter", "verse_seq"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["revision", "chapter", "verse_seq"],
+                name="uniq_bible_verse_seq",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["book", "chapter", "verse"], name="idx_bible_verse_book_ch_v"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.book_id} {self.chapter}:{self.verse}"

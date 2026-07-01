@@ -37,6 +37,8 @@ class AdminBook {
     required this.chaptersDraft,
     required this.catalogVisibility,
     this.genre,
+    this.isBible = false,
+    this.testamentType,
     this.publishedYear,
     this.isPremium = false,
     this.isFeatured = false,
@@ -65,6 +67,13 @@ class AdminBook {
   final List<AdminDraftChapter> chaptersDraft;
   final String catalogVisibility;
   final String? genre;
+
+  /// Bible books hold verse content (managed via the Bible chapter editor),
+  /// not page-based [chaptersDraft].
+  final bool isBible;
+
+  /// "old" | "new" | null — only meaningful when [isBible].
+  final String? testamentType;
   final int? publishedYear;
   final bool isPremium;
   final bool isFeatured;
@@ -112,6 +121,8 @@ class AdminBook {
       chaptersDraft: chapters,
       catalogVisibility: j['catalog_visibility'] as String? ?? 'hidden',
       genre: j['genre'] as String?,
+      isBible: j['is_bible'] as bool? ?? false,
+      testamentType: j['testament_type'] as String?,
       publishedYear: (j['published_year'] as num?)?.toInt(),
       isPremium: j['is_premium'] as bool? ?? false,
       isFeatured: j['is_featured'] as bool? ?? false,

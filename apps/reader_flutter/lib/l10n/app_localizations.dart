@@ -3560,6 +3560,282 @@ abstract class AppLocalizations {
   /// **'No orders to show.'**
   String get adminNoOrders;
 
+  /// No description provided for @adminNoMatchingOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'No orders match your search.'**
+  String get adminNoMatchingOrders;
+
+  /// No description provided for @adminSearchOrdersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search customer, book or reference'**
+  String get adminSearchOrdersHint;
+
+  /// No description provided for @adminShowingResultsFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing results for:'**
+  String get adminShowingResultsFor;
+
+  /// No description provided for @adminClearFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get adminClearFilters;
+
+  /// No description provided for @adminRowsPerPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Rows per page'**
+  String get adminRowsPerPage;
+
+  /// No description provided for @adminActionsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get adminActionsTooltip;
+
+  /// No description provided for @adminCopyReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy reference'**
+  String get adminCopyReference;
+
+  /// No description provided for @adminApproveConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve this payment?'**
+  String get adminApproveConfirm;
+
+  /// No description provided for @bibleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bible'**
+  String get bibleTitle;
+
+  /// No description provided for @bibleOldTestament.
+  ///
+  /// In en, this message translates to:
+  /// **'Old Testament'**
+  String get bibleOldTestament;
+
+  /// No description provided for @bibleNewTestament.
+  ///
+  /// In en, this message translates to:
+  /// **'New Testament'**
+  String get bibleNewTestament;
+
+  /// No description provided for @bibleChapter.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter'**
+  String get bibleChapter;
+
+  /// No description provided for @bibleChapters.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapters'**
+  String get bibleChapters;
+
+  /// No description provided for @bibleSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search verses or a reference (e.g. ማቴ 3:16)'**
+  String get bibleSearchHint;
+
+  /// No description provided for @bibleNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No verses found.'**
+  String get bibleNoResults;
+
+  /// No description provided for @bibleReferenceNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t resolve that reference.'**
+  String get bibleReferenceNotFound;
+
+  /// No description provided for @bibleSearchScopeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get bibleSearchScopeAll;
+
+  /// No description provided for @bibleSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search the Bible'**
+  String get bibleSearch;
+
+  /// No description provided for @numberSystemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ge\'ez numerals'**
+  String get numberSystemTitle;
+
+  /// No description provided for @numberSystemSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show chapter and verse numbers in Ge\'ez (፩ ፪ ፫)'**
+  String get numberSystemSubtitle;
+
+  /// No description provided for @geezConvertTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert selected numbers to Ge\'ez (1 → ፩)'**
+  String get geezConvertTooltip;
+
+  /// No description provided for @adminIsBibleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Bible book'**
+  String get adminIsBibleLabel;
+
+  /// No description provided for @adminIsBibleSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage chapters, sections and verses instead of pages'**
+  String get adminIsBibleSubtitle;
+
+  /// No description provided for @adminTestamentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Testament'**
+  String get adminTestamentLabel;
+
+  /// No description provided for @adminBibleSaveFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Save the book first, then manage its Bible content.'**
+  String get adminBibleSaveFirst;
+
+  /// No description provided for @adminManageBibleContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Bible content'**
+  String get adminManageBibleContent;
+
+  /// No description provided for @adminBibleContentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bible content'**
+  String get adminBibleContentTitle;
+
+  /// No description provided for @adminAddChapter.
+  ///
+  /// In en, this message translates to:
+  /// **'Add chapter'**
+  String get adminAddChapter;
+
+  /// No description provided for @adminAddSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Add section'**
+  String get adminAddSection;
+
+  /// No description provided for @adminAddVerse.
+  ///
+  /// In en, this message translates to:
+  /// **'Add verse'**
+  String get adminAddVerse;
+
+  /// No description provided for @adminSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Section title'**
+  String get adminSectionTitle;
+
+  /// No description provided for @adminVerseNumberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No.'**
+  String get adminVerseNumberLabel;
+
+  /// No description provided for @adminVerseTextLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Verse text'**
+  String get adminVerseTextLabel;
+
+  /// No description provided for @adminChapterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter {number}'**
+  String adminChapterLabel(int number);
+
+  /// No description provided for @adminChapterSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter saved'**
+  String get adminChapterSaved;
+
+  /// No description provided for @adminDeleteChapterConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this chapter\'s content?'**
+  String get adminDeleteChapterConfirm;
+
+  /// No description provided for @adminNoChaptersYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No chapters yet. Add one to begin.'**
+  String get adminNoChaptersYet;
+
+  /// No description provided for @adminVersesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} verses'**
+  String adminVersesCount(int count);
+
+  /// No description provided for @adminSelectChapter.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a chapter to edit, or add a new one.'**
+  String get adminSelectChapter;
+
+  /// No description provided for @adminUnsavedChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved changes'**
+  String get adminUnsavedChanges;
+
+  /// No description provided for @adminDiscardChangesConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard unsaved changes?'**
+  String get adminDiscardChangesConfirm;
+
+  /// No description provided for @adminDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get adminDiscard;
+
+  /// No description provided for @adminDeleteChapter.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete chapter'**
+  String get adminDeleteChapter;
+
+  /// No description provided for @adminSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Section {number}'**
+  String adminSectionLabel(int number);
+
+  /// No description provided for @bibleResultsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} verses'**
+  String bibleResultsCount(int count);
+
+  /// No description provided for @adminOrdersRange.
+  ///
+  /// In en, this message translates to:
+  /// **'{start}–{end} of {total}'**
+  String adminOrdersRange(int start, int end, int total);
+
   /// No description provided for @adminReview.
   ///
   /// In en, this message translates to:

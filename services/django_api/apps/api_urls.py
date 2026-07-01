@@ -21,6 +21,17 @@ from apps.catalog.admin_views import (
     AdminRevisionCompleteView,
     AdminRevisionCreateView,
 )
+from apps.catalog.admin_bible_views import (
+    AdminBibleChaptersView,
+    AdminBibleChapterView,
+)
+from apps.catalog.bible_views import (
+    BibleBookListView,
+    BibleChapterListView,
+    BibleChapterView,
+    BibleReferenceView,
+    BibleSearchView,
+)
 from apps.catalog.views import (
     BookChapterListView,
     BookContentView,
@@ -111,6 +122,20 @@ urlpatterns = [
     path("books/<uuid:book_id>/chapters", BookChapterListView.as_view()),
     path("books/<uuid:book_id>/content", BookContentView.as_view()),
     path("books/<uuid:book_id>/search", BookSearchView.as_view()),
+    # --- Bible (verse-addressable open content) ---
+    path("bible/books", BibleBookListView.as_view()),
+    path("bible/search", BibleSearchView.as_view()),
+    path("bible/reference", BibleReferenceView.as_view()),
+    path("bible/books/<uuid:book_id>/chapters", BibleChapterListView.as_view()),
+    path("bible/books/<uuid:book_id>/chapters/<int:chapter>", BibleChapterView.as_view()),
+    path(
+        "admin/bible/books/<uuid:book_id>/chapters",
+        AdminBibleChaptersView.as_view(),
+    ),
+    path(
+        "admin/bible/books/<uuid:book_id>/chapters/<int:chapter>",
+        AdminBibleChapterView.as_view(),
+    ),
     path("admin/books", AdminBooksRootView.as_view()),
     path("admin/books/<uuid:book_id>", AdminBookDetailView.as_view()),
     path("admin/books/<uuid:book_id>/validate-draft", AdminBookDraftValidationView.as_view()),

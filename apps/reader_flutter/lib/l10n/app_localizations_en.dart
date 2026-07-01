@@ -1903,6 +1903,158 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminNoOrders => 'No orders to show.';
 
   @override
+  String get adminNoMatchingOrders => 'No orders match your search.';
+
+  @override
+  String get adminSearchOrdersHint => 'Search customer, book or reference';
+
+  @override
+  String get adminShowingResultsFor => 'Showing results for:';
+
+  @override
+  String get adminClearFilters => 'Clear all';
+
+  @override
+  String get adminRowsPerPage => 'Rows per page';
+
+  @override
+  String get adminActionsTooltip => 'Actions';
+
+  @override
+  String get adminCopyReference => 'Copy reference';
+
+  @override
+  String get adminApproveConfirm => 'Approve this payment?';
+
+  @override
+  String get bibleTitle => 'Bible';
+
+  @override
+  String get bibleOldTestament => 'Old Testament';
+
+  @override
+  String get bibleNewTestament => 'New Testament';
+
+  @override
+  String get bibleChapter => 'Chapter';
+
+  @override
+  String get bibleChapters => 'Chapters';
+
+  @override
+  String get bibleSearchHint => 'Search verses or a reference (e.g. ማቴ 3:16)';
+
+  @override
+  String get bibleNoResults => 'No verses found.';
+
+  @override
+  String get bibleReferenceNotFound => 'Couldn\'t resolve that reference.';
+
+  @override
+  String get bibleSearchScopeAll => 'All';
+
+  @override
+  String get bibleSearch => 'Search the Bible';
+
+  @override
+  String get numberSystemTitle => 'Ge\'ez numerals';
+
+  @override
+  String get numberSystemSubtitle =>
+      'Show chapter and verse numbers in Ge\'ez (፩ ፪ ፫)';
+
+  @override
+  String get geezConvertTooltip => 'Convert selected numbers to Ge\'ez (1 → ፩)';
+
+  @override
+  String get adminIsBibleLabel => 'Bible book';
+
+  @override
+  String get adminIsBibleSubtitle =>
+      'Manage chapters, sections and verses instead of pages';
+
+  @override
+  String get adminTestamentLabel => 'Testament';
+
+  @override
+  String get adminBibleSaveFirst =>
+      'Save the book first, then manage its Bible content.';
+
+  @override
+  String get adminManageBibleContent => 'Manage Bible content';
+
+  @override
+  String get adminBibleContentTitle => 'Bible content';
+
+  @override
+  String get adminAddChapter => 'Add chapter';
+
+  @override
+  String get adminAddSection => 'Add section';
+
+  @override
+  String get adminAddVerse => 'Add verse';
+
+  @override
+  String get adminSectionTitle => 'Section title';
+
+  @override
+  String get adminVerseNumberLabel => 'No.';
+
+  @override
+  String get adminVerseTextLabel => 'Verse text';
+
+  @override
+  String adminChapterLabel(int number) {
+    return 'Chapter $number';
+  }
+
+  @override
+  String get adminChapterSaved => 'Chapter saved';
+
+  @override
+  String get adminDeleteChapterConfirm => 'Delete this chapter\'s content?';
+
+  @override
+  String get adminNoChaptersYet => 'No chapters yet. Add one to begin.';
+
+  @override
+  String adminVersesCount(int count) {
+    return '$count verses';
+  }
+
+  @override
+  String get adminSelectChapter =>
+      'Select a chapter to edit, or add a new one.';
+
+  @override
+  String get adminUnsavedChanges => 'Unsaved changes';
+
+  @override
+  String get adminDiscardChangesConfirm => 'Discard unsaved changes?';
+
+  @override
+  String get adminDiscard => 'Discard';
+
+  @override
+  String get adminDeleteChapter => 'Delete chapter';
+
+  @override
+  String adminSectionLabel(int number) {
+    return 'Section $number';
+  }
+
+  @override
+  String bibleResultsCount(int count) {
+    return '$count verses';
+  }
+
+  @override
+  String adminOrdersRange(int start, int end, int total) {
+    return '$start–$end of $total';
+  }
+
+  @override
   String get adminReview => 'Review';
 
   @override

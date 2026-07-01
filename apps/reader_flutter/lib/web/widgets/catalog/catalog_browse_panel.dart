@@ -5,6 +5,7 @@ import '../../../design/app_tokens.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/book_models.dart';
 import '../../../providers/catalog_providers.dart';
+import '../../../utils/catalog_categories.dart';
 import '../../../utils/catalog_language_label.dart';
 import '../../../widgets/app_state_view.dart';
 import '../../../widgets/primitives/shell_primitives.dart';
@@ -78,6 +79,7 @@ class _WebCatalogBrowsePanelState extends ConsumerState<WebCatalogBrowsePanel> {
   List<BookSummary> _filtered(AppLocalizations l10n) {
     final q = widget.searchQuery.trim().toLowerCase();
     return widget.books.where((book) {
+      if (bibleHiddenForGenre(book, _selectedGenre)) return false;
       if (_selectedGenre != null &&
           (book.genre ?? '').trim() != _selectedGenre) {
         return false;

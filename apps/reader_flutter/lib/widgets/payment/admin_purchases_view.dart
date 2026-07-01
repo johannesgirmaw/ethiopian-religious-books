@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../design/app_tokens.dart';
@@ -26,9 +27,110 @@ String _formatDate(DateTime? d) {
   return '${l.year}-${two(l.month)}-${two(l.day)}';
 }
 
-/// Admin "Orders & payments": dashboard totals, a status filter, the
-/// transactions (table on wide screens, cards on mobile), and a review sheet to
-/// approve (→ complete + ledger) or reject manual payments.
+/// Columns the orders table can be sorted by (client-side, on the loaded page).
+enum _SortCol { date, customer, book, total, status }
+
+/// Avatar tint palette — stable per customer so a row keeps its colour.
+const _avatarPalette = <Color>[
+  AppColors.primary,
+  AppColors.primaryDeep,
+  AppColors.primaryMid,
+  AppColors.accent,
+  AppColors.successText,
+  AppColors.crimson,
+];
+
+Color _avatarColor(String seed) =>
+    seed.isEmpty ? AppColors.primary : _avatarPalette[seed.codeUnitAt(0) % _avatarPalette.length];
+
+String _initial(String text) {
+  final t = text.trim();
+  return t.isEmpty ? '?' : t.characters.first.toUpperCase();
+}
+
+/// Per-row actions shared by the table's kebab/right-click menu and the
+/// mobile card. Wired to the state's approve/reject/review/copy handlers.
+class _RowActions {
+  const _RowActions({
+    required this.onReview,
+    required this.onApprove,
+    required this.onReject,
+    required this.onCopyReference,
+  });
+
+  final void Function(PaymentTransaction) onReview;
+  final void Function(PaymentTransaction) onApprove;
+  final void Function(PaymentTransaction) onReject;
+  final void Function(PaymentTransaction) onCopyReference;
+}
+
+/// Builds the context-menu entries for one transaction. Approve/Reject only
+/// appear while the payment is still actionable (not terminal); Copy reference
+/// only when there is one.
+List<PopupMenuEntry<String>> _rowMenuEntries(
+  BuildContext context,
+  PaymentTransaction txn,
+) {
+  final l10n = AppLocalizations.of(context);
+  final canAct = !txn.status.isTerminal;
+  PopupMenuItem<String> item(
+    String value,
+    IconData icon,
+    String label,
+    Color color,
+  ) {
+    return PopupMenuItem<String>(
+      value: value,
+      height: 44,
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 12),
+          Text(label, style: TextStyle(color: color, fontSize: 14)),
+        ],
+      ),
+    );
+  }
+
+  return [
+    item('review', Icons.visibility_outlined, l10n.adminReview,
+        AppColors.textPrimary),
+    if (canAct)
+      item('approve', Icons.check_circle_outline, l10n.adminApprove,
+          AppColors.successText),
+    if (canAct)
+      item('reject', Icons.cancel_outlined, l10n.adminReject,
+          AppColors.errorText),
+    if (txn.transactionReference.trim().isNotEmpty)
+      item('copy_ref', Icons.copy_outlined, l10n.adminCopyReference,
+          AppColors.textPrimary),
+  ];
+}
+
+void _dispatchRowAction(
+  String value,
+  PaymentTransaction txn,
+  _RowActions actions,
+) {
+  switch (value) {
+    case 'review':
+      actions.onReview(txn);
+      break;
+    case 'approve':
+      actions.onApprove(txn);
+      break;
+    case 'reject':
+      actions.onReject(txn);
+      break;
+    case 'copy_ref':
+      actions.onCopyReference(txn);
+      break;
+  }
+}
+
+/// Admin "Orders & payments": dashboard totals, a status filter, search, a
+/// sortable + paginated transactions table (cards on mobile), and a review sheet
+/// to approve (→ complete + ledger) or reject manual payments.
 class AdminPurchasesView extends ConsumerStatefulWidget {
   const AdminPurchasesView({super.key, this.showHeader = false});
 
@@ -41,6 +143,14 @@ class AdminPurchasesView extends ConsumerStatefulWidget {
 class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
   // Default to All so an order stays visible (with its new status) after review.
   String _filter = '';
+  final _searchCtrl = TextEditingController();
+  String _query = '';
+  _SortCol _sortCol = _SortCol.date;
+  bool _sortAsc = false; // newest first by default
+  int _page = 0;
+  int _rowsPerPage = 10;
+
+  static const _rowsPerPageOptions = <int>[5,10, 25, 50, 100];
 
   static const _filters = <PaymentStatus?>[
     null, // All
@@ -49,6 +159,190 @@ class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
     PaymentStatus.completed,
     PaymentStatus.rejected,
   ];
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  PaymentStatus? get _statusFilter {
+    for (final s in _filters) {
+      if (s != null && s.apiValue == _filter) return s;
+    }
+    return null;
+  }
+
+  /// Search-filter then sort the loaded list (pagination is applied by the caller).
+  List<PaymentTransaction> _process(List<PaymentTransaction> src) {
+    final q = _query.trim().toLowerCase();
+    final list = q.isEmpty
+        ? List<PaymentTransaction>.of(src)
+        : src
+            .where((t) =>
+                t.userEmail.toLowerCase().contains(q) ||
+                t.bookTitle.toLowerCase().contains(q) ||
+                t.transactionReference.toLowerCase().contains(q))
+            .toList();
+
+    int base(PaymentTransaction a, PaymentTransaction b) {
+      switch (_sortCol) {
+        case _SortCol.date:
+          return (a.createdAt?.millisecondsSinceEpoch ?? 0)
+              .compareTo(b.createdAt?.millisecondsSinceEpoch ?? 0);
+        case _SortCol.customer:
+          return a.userEmail.toLowerCase().compareTo(b.userEmail.toLowerCase());
+        case _SortCol.book:
+          return a.bookTitle.toLowerCase().compareTo(b.bookTitle.toLowerCase());
+        case _SortCol.total:
+          return a.amount.compareTo(b.amount);
+        case _SortCol.status:
+          return a.status.apiValue.compareTo(b.status.apiValue);
+      }
+    }
+
+    list.sort((a, b) => _sortAsc ? base(a, b) : -base(a, b));
+    return list;
+  }
+
+  void _onSort(_SortCol col) {
+    setState(() {
+      if (_sortCol == col) {
+        _sortAsc = !_sortAsc;
+      } else {
+        _sortCol = col;
+        _sortAsc = col != _SortCol.date; // dates default newest-first
+      }
+      _page = 0;
+    });
+  }
+
+  void _setFilter(String value) => setState(() {
+        _filter = value;
+        _page = 0;
+      });
+
+  void _setQuery(String value) => setState(() {
+        _query = value;
+        _page = 0;
+      });
+
+  void _setRowsPerPage(int value) => setState(() {
+        _rowsPerPage = value;
+        _page = 0;
+      });
+
+  // --- Row actions (context menu) ----------------------------------------
+
+  Future<void> _runAction(
+    Future<void> Function() op,
+    String successMsg,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await op();
+      refreshAdminPaymentsW(ref);
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text(successMsg)));
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text(paymentErrorMessage(e, l10n.paymentErrorGeneric))),
+      );
+    }
+  }
+
+  Future<void> _approve(PaymentTransaction txn) async {
+    final l10n = AppLocalizations.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text(l10n.adminApproveConfirm),
+        content: Text(
+          txn.bookTitle.isEmpty ? txn.userEmail : txn.bookTitle,
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(c, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.successText,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(l10n.adminApprove),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    await _runAction(
+      () => ref.read(adminPaymentRepositoryProvider).approve(txn.id),
+      l10n.adminApproved,
+    );
+  }
+
+  Future<void> _reject(PaymentTransaction txn) async {
+    final l10n = AppLocalizations.of(context);
+    final ctrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text(l10n.adminReject),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          minLines: 1,
+          maxLines: 3,
+          decoration: InputDecoration(
+            labelText: l10n.adminRejectReason,
+            border: const OutlineInputBorder(),
+            isDense: true,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(c, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.errorText,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(l10n.adminReject),
+          ),
+        ],
+      ),
+    );
+    final note = ctrl.text.trim();
+    ctrl.dispose();
+    if (ok != true || !mounted) return;
+    await _runAction(
+      () => ref.read(adminPaymentRepositoryProvider).reject(txn.id, note: note),
+      l10n.adminRejected,
+    );
+  }
+
+  Future<void> _copyReference(PaymentTransaction txn) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    await Clipboard.setData(ClipboardData(text: txn.transactionReference));
+    if (!mounted) return;
+    messenger.showSnackBar(SnackBar(content: Text(l10n.paymentCopied)));
+  }
+
+  _RowActions get _rowActions => _RowActions(
+        onReview: _openReview,
+        onApprove: _approve,
+        onReject: _reject,
+        onCopyReference: _copyReference,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +361,9 @@ class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
       );
     }
 
-    List<Widget> headerSection() => [
+    // Dashboard + status tabs + search + active-filter chips. Shown above every
+    // state (loading / error / data) so the controls never jump around.
+    List<Widget> controls() => [
           dashAsync.when(
             loading: () => const SizedBox(
               height: 90,
@@ -87,10 +383,49 @@ class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
                       ? l10n.adminOrdersAllStatuses
                       : paymentStatusLabel(s, l10n)),
                   selected: _filter == (s?.apiValue ?? ''),
-                  onSelected: (_) =>
-                      setState(() => _filter = s?.apiValue ?? ''),
+                  showCheckmark: false,
+                  selectedColor: AppColors.primary.withValues(alpha: 0.14),
+                  side: BorderSide(
+                    color: _filter == (s?.apiValue ?? '')
+                        ? AppColors.primary
+                        : AppColors.border,
+                  ),
+                  labelStyle: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: _filter == (s?.apiValue ?? '')
+                        ? AppColors.primaryDeep
+                        : AppColors.textSecondary,
+                  ),
+                  backgroundColor: AppColors.surfaceCard,
+                  onSelected: (_) => _setFilter(s?.apiValue ?? ''),
                 ),
             ],
+          ),
+          const SizedBox(height: AppSpace.sm),
+          _SearchField(
+            controller: _searchCtrl,
+            hint: l10n.adminSearchOrdersHint,
+            onChanged: _setQuery,
+          ),
+          _ActiveFilters(
+            statusLabel: _statusFilter == null
+                ? null
+                : paymentStatusLabel(_statusFilter!, l10n),
+            query: _query.trim(),
+            onClearStatus: () => _setFilter(''),
+            onClearQuery: () {
+              _searchCtrl.clear();
+              _setQuery('');
+            },
+            onClearAll: () {
+              _searchCtrl.clear();
+              setState(() {
+                _filter = '';
+                _query = '';
+                _page = 0;
+              });
+            },
           ),
           const SizedBox(height: AppSpace.md),
         ];
@@ -101,13 +436,13 @@ class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
         return txnsAsync.when(
           loading: () => scrollable(
             children: [
-              ...headerSection(),
+              ...controls(),
               const SkeletonCardGroup(count: 3),
             ],
           ),
           error: (e, _) => scrollable(
             children: [
-              ...headerSection(),
+              ...controls(),
               AppStateView(
                 title: l10n.paymentErrorGeneric,
                 message: '$e',
@@ -119,36 +454,74 @@ class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
             ],
           ),
           data: (items) {
-            if (items.isEmpty) {
+            final processed = _process(items);
+            final total = processed.length;
+
+            // Empty: distinguish "no orders at all" from "search filtered all out".
+            if (total == 0) {
               return scrollable(
                 children: [
-                  ...headerSection(),
+                  ...controls(),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 32),
-                    child: Center(child: Text(l10n.adminNoOrders)),
+                    child: Center(
+                      child: Text(items.isEmpty
+                          ? l10n.adminNoOrders
+                          : l10n.adminNoMatchingOrders),
+                    ),
                   ),
                 ],
               );
             }
+
+            final pageCount = (total + _rowsPerPage - 1) ~/ _rowsPerPage;
+            final page = _page.clamp(0, pageCount - 1);
+            final start = page * _rowsPerPage;
+            final end = (start + _rowsPerPage) > total ? total : start + _rowsPerPage;
+            final slice = processed.sublist(start, end);
+
+            final pagination = _PaginationBar(
+              page: page,
+              pageCount: pageCount,
+              rangeStart: start + 1,
+              rangeEnd: end,
+              total: total,
+              compact: !wide,
+              rowsPerPage: _rowsPerPage,
+              rowsPerPageOptions: _rowsPerPageOptions,
+              onRowsPerPageChanged: _setRowsPerPage,
+              onSelect: (p) => setState(() => _page = p.clamp(0, pageCount - 1)),
+            );
+
             if (wide) {
               return scrollable(
                 children: [
-                  ...headerSection(),
-                  _OrdersTable(items: items, onReview: _openReview),
+                  ...controls(),
+                  _OrdersTable(
+                    items: slice,
+                    sortCol: _sortCol,
+                    sortAsc: _sortAsc,
+                    onSort: _onSort,
+                    actions: _rowActions,
+                  ),
+                  const SizedBox(height: AppSpace.sm),
+                  pagination,
                 ],
               );
             }
             return scrollable(
               children: [
-                ...headerSection(),
-                for (final txn in items)
+                ...controls(),
+                for (final txn in slice)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: _AdminOrderCard(
                       txn: txn,
-                      onReview: () => _openReview(txn),
+                      actions: _rowActions,
                     ),
                   ),
+                const SizedBox(height: AppSpace.xs),
+                pagination,
               ],
             );
           },
@@ -177,6 +550,188 @@ class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
       builder: (_) => _ReviewSheet(txn: txn),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Search field
+// ---------------------------------------------------------------------------
+class _SearchField extends StatelessWidget {
+  const _SearchField({
+    required this.controller,
+    required this.hint,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final String hint;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final field = ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        return TextField(
+          controller: controller,
+          onChanged: onChanged,
+          style: const TextStyle(fontSize: 13.5, color: AppColors.textPrimary),
+          decoration: InputDecoration(
+            isDense: true,
+            hintText: hint,
+            hintStyle: const TextStyle(
+              fontSize: 13.5,
+              color: AppColors.textTertiary,
+            ),
+            prefixIcon: const Icon(Icons.search,
+                size: 20, color: AppColors.textTertiary),
+            suffixIcon: value.text.isEmpty
+                ? null
+                : IconButton(
+                    icon: const Icon(Icons.close, size: 18),
+                    color: AppColors.textTertiary,
+                    splashRadius: 18,
+                    onPressed: () {
+                      controller.clear();
+                      onChanged('');
+                    },
+                  ),
+            filled: true,
+            fillColor: AppColors.surfaceCard,
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
+            ),
+          ),
+        );
+      },
+    );
+
+    // Constrain width on wide screens so it reads like a toolbar, not a banner.
+    return LayoutBuilder(
+      builder: (context, c) {
+        if (c.maxWidth >= 760) {
+          return Align(
+            alignment: Alignment.centerLeft,
+            child: SizedBox(width: 360, child: field),
+          );
+        }
+        return field;
+      },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// "Showing results for:" active-filter chips
+// ---------------------------------------------------------------------------
+class _ActiveFilters extends StatelessWidget {
+  const _ActiveFilters({
+    required this.statusLabel,
+    required this.query,
+    required this.onClearStatus,
+    required this.onClearQuery,
+    required this.onClearAll,
+  });
+
+  final String? statusLabel;
+  final String query;
+  final VoidCallback onClearStatus;
+  final VoidCallback onClearQuery;
+  final VoidCallback onClearAll;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasStatus = statusLabel != null;
+    final hasQuery = query.isNotEmpty;
+    if (!hasStatus && !hasQuery) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpace.sm),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text(
+            l10n.adminShowingResultsFor,
+            style: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          if (hasStatus)
+            _RemovableChip(label: statusLabel!, onRemove: onClearStatus),
+          if (hasQuery)
+            _RemovableChip(label: '“$query”', onRemove: onClearQuery),
+          TextButton(
+            onPressed: onClearAll,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              foregroundColor: AppColors.primaryDeep,
+            ),
+            child: Text(
+              l10n.adminClearFilters,
+              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RemovableChip extends StatelessWidget {
+  const _RemovableChip({required this.label, required this.onRemove});
+
+  final String label;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 5, 6, 5),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceSoft,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primaryDeep,
+            ),
+          ),
+          const SizedBox(width: 4),
+          InkWell(
+            onTap: onRemove,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            child: const Padding(
+              padding: EdgeInsets.all(2),
+              child: Icon(Icons.close, size: 14, color: AppColors.textTertiary),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -277,17 +832,19 @@ class _StatCard extends StatelessWidget {
 // Desktop / web table
 // ---------------------------------------------------------------------------
 class _OrdersTable extends StatelessWidget {
-  const _OrdersTable({required this.items, required this.onReview});
+  const _OrdersTable({
+    required this.items,
+    required this.sortCol,
+    required this.sortAsc,
+    required this.onSort,
+    required this.actions,
+  });
 
   final List<PaymentTransaction> items;
-  final void Function(PaymentTransaction) onReview;
-
-  static const _headerStyle = TextStyle(
-    fontSize: 12,
-    fontWeight: FontWeight.w700,
-    color: AppColors.textSecondary,
-    letterSpacing: 0.2,
-  );
+  final _SortCol sortCol;
+  final bool sortAsc;
+  final void Function(_SortCol) onSort;
+  final _RowActions actions;
 
   static const _cellPrimary = TextStyle(
     fontSize: 13.5,
@@ -310,64 +867,150 @@ class _OrdersTable extends StatelessWidget {
         color: AppColors.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: AppColors.border),
+        boxShadow: AppShadows.panel,
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          _TableHeaderRow(
-            labels: [
-              l10n.paymentDate,
-              l10n.adminCustomer,
-              l10n.adminBook,
-              l10n.paymentTotal,
-              l10n.paymentMethod,
-              l10n.paymentStatusColumn,
-              '',
-            ],
-            style: _headerStyle,
+          // Header with clickable sort affordances.
+          Container(
+            color: AppColors.surfaceSoft,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                _SortHeader(
+                  label: l10n.paymentDate,
+                  flex: 2,
+                  col: _SortCol.date,
+                  active: sortCol,
+                  asc: sortAsc,
+                  onSort: onSort,
+                ),
+                _SortHeader(
+                  label: l10n.adminCustomer,
+                  flex: 3,
+                  col: _SortCol.customer,
+                  active: sortCol,
+                  asc: sortAsc,
+                  onSort: onSort,
+                ),
+                _SortHeader(
+                  label: l10n.adminBook,
+                  flex: 4,
+                  col: _SortCol.book,
+                  active: sortCol,
+                  asc: sortAsc,
+                  onSort: onSort,
+                ),
+                _SortHeader(
+                  label: l10n.paymentTotal,
+                  flex: 2,
+                  col: _SortCol.total,
+                  active: sortCol,
+                  asc: sortAsc,
+                  onSort: onSort,
+                ),
+                _SortHeader(
+                  label: l10n.paymentMethod,
+                  flex: 2,
+                  col: null,
+                  active: sortCol,
+                  asc: sortAsc,
+                  onSort: onSort,
+                ),
+                _SortHeader(
+                  label: l10n.paymentStatusColumn,
+                  flex: 2,
+                  col: _SortCol.status,
+                  active: sortCol,
+                  asc: sortAsc,
+                  onSort: onSort,
+                ),
+                const SizedBox(width: 48),
+              ],
+            ),
           ),
-          for (var i = 0; i < items.length; i++) ...[
-            if (i > 0) const Divider(height: 1, color: AppColors.border),
+          for (var i = 0; i < items.length; i++)
             _OrderTableRow(
               txn: items[i],
               l10n: l10n,
-              onReview: () => onReview(items[i]),
+              zebra: i.isOdd,
+              actions: actions,
             ),
-          ],
         ],
       ),
     );
   }
 }
 
-class _TableHeaderRow extends StatelessWidget {
-  const _TableHeaderRow({required this.labels, required this.style});
+class _SortHeader extends StatelessWidget {
+  const _SortHeader({
+    required this.label,
+    required this.flex,
+    required this.col,
+    required this.active,
+    required this.asc,
+    required this.onSort,
+  });
 
-  final List<String> labels;
-  final TextStyle style;
+  final String label;
+  final int flex;
+  final _SortCol? col;
+  final _SortCol active;
+  final bool asc;
+  final void Function(_SortCol) onSort;
+
+  static const _style = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w700,
+    color: AppColors.textSecondary,
+    letterSpacing: 0.2,
+  );
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.surfaceSoft,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          _TableCell(flex: 2, child: Text(labels[0], style: style)),
-          _TableCell(flex: 3, child: Text(labels[1], style: style)),
-          _TableCell(flex: 4, child: Text(labels[2], style: style)),
-          _TableCell(flex: 2, child: Text(labels[3], style: style)),
-          _TableCell(flex: 2, child: Text(labels[4], style: style)),
-          _TableCell(flex: 2, child: Text(labels[5], style: style)),
-          SizedBox(
-            width: 96,
-            child: labels[6].isEmpty
-                ? const SizedBox.shrink()
-                : Text(labels[6], style: style),
+    final isActive = col != null && col == active;
+    final icon = col == null
+        ? null
+        : isActive
+            ? (asc ? Icons.arrow_upward : Icons.arrow_downward)
+            : Icons.unfold_more;
+    final content = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: Text(
+            label,
+            overflow: TextOverflow.ellipsis,
+            style: _style.copyWith(
+              color: isActive ? AppColors.primaryDeep : AppColors.textSecondary,
+            ),
+          ),
+        ),
+        if (icon != null) ...[
+          const SizedBox(width: 3),
+          Icon(
+            icon,
+            size: 13,
+            color: isActive ? AppColors.primary : AppColors.textTertiary,
           ),
         ],
+      ],
+    );
+
+    return Expanded(
+      flex: flex,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 12),
+        child: col == null
+            ? content
+            : InkWell(
+                onTap: () => onSort(col!),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
+                child: content,
+              ),
       ),
     );
   }
@@ -377,29 +1020,49 @@ class _OrderTableRow extends StatelessWidget {
   const _OrderTableRow({
     required this.txn,
     required this.l10n,
-    required this.onReview,
+    required this.zebra,
+    required this.actions,
   });
 
   final PaymentTransaction txn;
   final AppLocalizations l10n;
-  final VoidCallback onReview;
+  final bool zebra;
+  final _RowActions actions;
+
+  // Desktop/web right-click → same menu as the kebab button.
+  Future<void> _showContextMenu(BuildContext context, Offset globalPos) async {
+    final overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final value = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromRect(
+        globalPos & const Size(40, 40),
+        Offset.zero & overlay.size,
+      ),
+      items: _rowMenuEntries(context, txn),
+    );
+    if (value != null) _dispatchRowAction(value, txn, actions);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final method = txn.method == null
-        ? '—'
-        : paymentMethodLabel(txn.method!, l10n);
+    final method =
+        txn.method == null ? '—' : paymentMethodLabel(txn.method!, l10n);
     final ref = txn.transactionReference.trim();
+    final email = txn.userEmail.isEmpty ? '—' : txn.userEmail;
 
     return Material(
-      color: Colors.transparent,
+      color: zebra
+          ? AppColors.surfaceSoft.withValues(alpha: 0.4)
+          : Colors.transparent,
       child: InkWell(
-        onTap: onReview,
+        onTap: () => actions.onReview(txn),
+        onSecondaryTapDown: (d) => _showContextMenu(context, d.globalPosition),
         hoverColor: AppColors.surfaceSoft,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _TableCell(
                 flex: 2,
@@ -410,9 +1073,18 @@ class _OrderTableRow extends StatelessWidget {
               ),
               _TableCell(
                 flex: 3,
-                child: _TableTextCell(
-                  text: txn.userEmail.isEmpty ? '—' : txn.userEmail,
-                  style: _OrdersTable._cellPrimary,
+                child: Row(
+                  children: [
+                    _Avatar(seed: email),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _TableTextCell(
+                        text: email,
+                        style: _OrdersTable._cellPrimary,
+                        maxLines: 1,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               _TableCell(
@@ -437,6 +1109,7 @@ class _OrderTableRow extends StatelessWidget {
                 flex: 2,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(method, style: _OrdersTable._cellPrimary),
                     if (ref.isNotEmpty)
@@ -459,25 +1132,67 @@ class _OrderTableRow extends StatelessWidget {
                 ),
               ),
               SizedBox(
-                width: 96,
+                width: 48,
                 child: Align(
                   alignment: Alignment.centerRight,
-                  child: FilledButton.tonal(
-                    onPressed: onReview,
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: Text(l10n.adminReview),
-                  ),
+                  child: _RowActionsMenu(txn: txn, actions: actions),
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Kebab (⋮) button opening the per-row context menu. Used by both the table
+/// rows and the mobile cards.
+class _RowActionsMenu extends StatelessWidget {
+  const _RowActionsMenu({required this.txn, required this.actions});
+
+  final PaymentTransaction txn;
+  final _RowActions actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return PopupMenuButton<String>(
+      tooltip: l10n.adminActionsTooltip,
+      icon: const Icon(Icons.more_vert, size: 20, color: AppColors.textSecondary),
+      padding: EdgeInsets.zero,
+      splashRadius: 20,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      itemBuilder: (context) => _rowMenuEntries(context, txn),
+      onSelected: (value) => _dispatchRowAction(value, txn, actions),
+    );
+  }
+}
+
+class _Avatar extends StatelessWidget {
+  const _Avatar({required this.seed});
+
+  final String seed;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _avatarColor(seed);
+    return Container(
+      width: 30,
+      height: 30,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        _initial(seed),
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w800,
+          color: color,
         ),
       ),
     );
@@ -529,19 +1244,278 @@ class _TableTextCell extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Mobile card
+// Pagination bar
 // ---------------------------------------------------------------------------
-class _AdminOrderCard extends StatelessWidget {
-  const _AdminOrderCard({required this.txn, required this.onReview});
+class _PaginationBar extends StatelessWidget {
+  const _PaginationBar({
+    required this.page,
+    required this.pageCount,
+    required this.rangeStart,
+    required this.rangeEnd,
+    required this.total,
+    required this.onSelect,
+    required this.rowsPerPage,
+    required this.rowsPerPageOptions,
+    required this.onRowsPerPageChanged,
+    this.compact = false,
+  });
 
-  final PaymentTransaction txn;
-  final VoidCallback onReview;
+  final int page; // 0-based
+  final int pageCount;
+  final int rangeStart; // 1-based, inclusive
+  final int rangeEnd; // 1-based, inclusive
+  final int total;
+  final bool compact;
+  final int rowsPerPage;
+  final List<int> rowsPerPageOptions;
+  final ValueChanged<int> onRowsPerPageChanged;
+  final ValueChanged<int> onSelect;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final rangeText = Text(
+      l10n.adminOrdersRange(rangeStart, rangeEnd, total),
+      style: const TextStyle(
+        fontSize: 12.5,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textTertiary,
+      ),
+    );
+
+    final selector = _RowsPerPageSelector(
+      value: rowsPerPage,
+      options: rowsPerPageOptions,
+      onChanged: onRowsPerPageChanged,
+    );
+
+    final prev = _NavButton(
+      icon: Icons.chevron_left,
+      enabled: page > 0,
+      onTap: () => onSelect(page - 1),
+    );
+    final next = _NavButton(
+      icon: Icons.chevron_right,
+      enabled: page < pageCount - 1,
+      onTap: () => onSelect(page + 1),
+    );
+
+    if (compact) {
+      // Selector on its own line so the pager never overflows on narrow phones.
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(children: [selector, const Spacer(), rangeText]),
+          const SizedBox(height: AppSpace.sm),
+          Row(
+            children: [
+              const Spacer(),
+              prev,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Text(
+                  '${page + 1} / $pageCount',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+              next,
+            ],
+          ),
+        ],
+      );
+    }
+
+    // Windowed page numbers: up to 5 around the current page.
+    final windowStart = (page - 2).clamp(0, (pageCount - 5).clamp(0, pageCount));
+    final windowEnd = (windowStart + 5) > pageCount ? pageCount : windowStart + 5;
+
+    return Row(
+      children: [
+        selector,
+        const SizedBox(width: AppSpace.md),
+        rangeText,
+        const Spacer(),
+        prev,
+        const SizedBox(width: 4),
+        for (var p = windowStart; p < windowEnd; p++) ...[
+          _PageButton(
+            label: '${p + 1}',
+            selected: p == page,
+            onTap: () => onSelect(p),
+          ),
+          const SizedBox(width: 4),
+        ],
+        next,
+      ],
+    );
+  }
+}
+
+class _RowsPerPageSelector extends StatelessWidget {
+  const _RowsPerPageSelector({
+    required this.value,
+    required this.options,
+    required this.onChanged,
+  });
+
+  final int value;
+  final List<int> options;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          l10n.adminRowsPerPage,
+          style: const TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textTertiary,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceCard,
+            borderRadius: BorderRadius.circular(AppRadius.xs),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<int>(
+              value: value,
+              isDense: true,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              icon: const Icon(Icons.keyboard_arrow_down, size: 18),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+              items: [
+                for (final o in options)
+                  DropdownMenuItem<int>(value: o, child: Text('$o')),
+              ],
+              onChanged: (v) {
+                if (v != null) onChanged(v);
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _NavButton extends StatelessWidget {
+  const _NavButton({
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SquareTap(
+      onTap: enabled ? onTap : null,
+      child: Icon(
+        icon,
+        size: 20,
+        color: enabled ? AppColors.textSecondary : AppColors.textTertiary.withValues(alpha: 0.4),
+      ),
+    );
+  }
+}
+
+class _PageButton extends StatelessWidget {
+  const _PageButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SquareTap(
+      onTap: onTap,
+      selected: selected,
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: selected ? Colors.white : AppColors.textSecondary,
+        ),
+      ),
+    );
+  }
+}
+
+class _SquareTap extends StatelessWidget {
+  const _SquareTap({
+    required this.child,
+    required this.onTap,
+    this.selected = false,
+  });
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? AppColors.primary : Colors.transparent,
+      borderRadius: BorderRadius.circular(AppRadius.xs),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+        child: Container(
+          width: 32,
+          height: 32,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.xs),
+            border: selected
+                ? null
+                : Border.all(color: AppColors.border),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Mobile card
+// ---------------------------------------------------------------------------
+class _AdminOrderCard extends StatelessWidget {
+  const _AdminOrderCard({required this.txn, required this.actions});
+
+  final PaymentTransaction txn;
+  final _RowActions actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final email = txn.userEmail.isEmpty ? '—' : txn.userEmail;
     return InkWell(
-      onTap: onReview,
+      onTap: () => actions.onReview(txn),
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: Container(
         padding: const EdgeInsets.all(14),
@@ -549,6 +1523,7 @@ class _AdminOrderCard extends StatelessWidget {
           color: AppColors.surfaceCard,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(color: AppColors.border),
+          boxShadow: AppShadows.listRow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -556,28 +1531,41 @@ class _AdminOrderCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _Avatar(seed: email),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    txn.bookTitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        txn.bookTitle.isEmpty ? '—' : txn.bookTitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 8),
                 PaymentStatusChip(status: txn.status),
+                _RowActionsMenu(txn: txn, actions: actions),
               ],
             ),
-            const SizedBox(height: 6),
-            Text(
-              txn.userEmail,
-              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Row(
               children: [
                 Text(
@@ -595,11 +1583,6 @@ class _AdminOrderCard extends StatelessWidget {
                     fontSize: 12,
                     color: AppColors.textTertiary,
                   ),
-                ),
-                const SizedBox(width: 10),
-                FilledButton.tonal(
-                  onPressed: onReview,
-                  child: Text(l10n.adminReview),
                 ),
               ],
             ),

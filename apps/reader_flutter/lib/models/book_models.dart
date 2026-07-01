@@ -52,6 +52,8 @@ class BookSummary {
     this.publishedRevision,
     this.coverUrl,
     this.genre,
+    this.isBible = false,
+    this.testamentType,
     this.publishedYear,
     this.ratingAverage = 0,
     this.ratingCount = 0,
@@ -80,6 +82,13 @@ class BookSummary {
 
   /// Server-assigned genre slug (mirrors [BookCategory] keys).
   final String? genre;
+
+  /// Bible books are verse-served: they open in the Bible reader (not the page
+  /// reader) and are shown only under the "Bible" catalogue category.
+  final bool isBible;
+
+  /// "old" | "new" | null — only meaningful when [isBible].
+  final String? testamentType;
   final int? publishedYear;
   final double ratingAverage;
   final int ratingCount;
@@ -125,6 +134,8 @@ class BookSummary {
           : null,
       coverUrl: resolveCoverUrl(j['cover_url'] as String?),
       genre: j['genre'] as String?,
+      isBible: j['is_bible'] as bool? ?? false,
+      testamentType: j['testament_type'] as String?,
       publishedYear: (j['published_year'] as num?)?.toInt(),
       ratingAverage: (j['rating_average'] as num?)?.toDouble() ?? 0,
       ratingCount: (j['rating_count'] as num?)?.toInt() ?? 0,

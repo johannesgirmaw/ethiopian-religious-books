@@ -9,6 +9,7 @@ import '../../providers/download_jobs_provider.dart';
 import '../../storage/book_content_cache_storage.dart';
 import '../../utils/format_catalog_cache_age.dart';
 import '../../widgets/language_preference_card.dart';
+import '../../widgets/number_system_preference_card.dart';
 import '../../widgets/skeleton_loader.dart';
 import '../design/desktop_tokens.dart';
 import '../layout/desktop_layout_scope.dart';
@@ -113,6 +114,11 @@ class DesktopSettingsScreenBody extends ConsumerWidget {
         DesktopSection(
           title: l10n.languagePreferenceTitle.toUpperCase(),
           child: const LanguagePreferenceCard(),
+        ),
+        const SizedBox(height: 20),
+        DesktopSection(
+          title: l10n.numberSystemTitle.toUpperCase(),
+          child: const NumberSystemPreferenceCard(),
         ),
         const SizedBox(height: 20),
         DesktopSection(
