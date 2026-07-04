@@ -6,8 +6,8 @@ import 'resolve_api_host_stub.dart'
 
 /// API base including `/v1` prefix (must end with `/` for correct path joining in Dio).
 ///
-/// **Release / profile builds** (`!kDebugMode`): default is production on Render unless
-/// `--dart-define=API_BASE_URL=...` is set.
+/// **Release / profile builds** (`!kDebugMode`): default is production at
+/// `https://api.felegemetsahft.com/v1/` unless `--dart-define=API_BASE_URL=...` is set.
 ///
 /// **Debug builds:** defaults by platform (Docker maps API to host **8000** — see `infra/docker-compose.yml`):
 /// - **Android (emulator):** `http://10.0.2.2:8000/v1/` — use `--dart-define=API_BASE_URL=...` on a **physical** Android device.
@@ -26,7 +26,7 @@ class AppConfig {
   AppConfig._();
 
   static const String _productionApiBaseUrl =
-      'https://religious-books-api-wz6y.onrender.com/v1/';
+      'https://api.felegemetsahft.com/v1/';
 
   /// Dart's [Uri.resolve] drops `/v1` if the base has no trailing `/`.
   static String _withTrailingSlash(String base) {
