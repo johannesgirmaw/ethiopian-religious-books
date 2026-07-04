@@ -1154,6 +1154,12 @@ abstract class AppLocalizations {
   /// **'Manage books, visibility, and publishing'**
   String get adminPanelSubtitle;
 
+  /// No description provided for @adminManageBooksSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create, import, and publish your books'**
+  String get adminManageBooksSubtitle;
+
   /// No description provided for @noProfileCached.
   ///
   /// In en, this message translates to:
@@ -2083,6 +2089,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New book'**
   String get newBookTooltip;
+
+  /// No description provided for @importFromWord.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Word (.docx)'**
+  String get importFromWord;
+
+  /// No description provided for @importDocxInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing document…'**
+  String get importDocxInProgress;
+
+  /// No description provided for @importDocxSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported. Review the chapters, then publish.'**
+  String get importDocxSuccess;
+
+  /// No description provided for @importDocxFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not import the document.'**
+  String get importDocxFailed;
+
+  /// No description provided for @importScanning.
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning document…'**
+  String get importScanning;
+
+  /// No description provided for @importLegacyDocTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as .docx'**
+  String get importLegacyDocTitle;
+
+  /// No description provided for @importLegacyDocMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This is an older .doc file. Open it in Word and use Save As → Word Document (.docx), then try again.'**
+  String get importLegacyDocMessage;
+
+  /// No description provided for @importChooseStructure.
+  ///
+  /// In en, this message translates to:
+  /// **'How should chapters be detected?'**
+  String get importChooseStructure;
+
+  /// No description provided for @importModeAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic'**
+  String get importModeAuto;
+
+  /// No description provided for @importModeHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Heading styles'**
+  String get importModeHeading;
+
+  /// No description provided for @importModePatterns.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter text (e.g. ምዕራፍ 1)'**
+  String get importModePatterns;
+
+  /// No description provided for @importModeFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold / centered titles'**
+  String get importModeFormat;
+
+  /// No description provided for @importModePagebreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Page breaks'**
+  String get importModePagebreak;
+
+  /// No description provided for @importModeMarker.
+  ///
+  /// In en, this message translates to:
+  /// **'Marker lines (### / <<<CHAPTER>>>)'**
+  String get importModeMarker;
+
+  /// No description provided for @importModeSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Single chapter (by size)'**
+  String get importModeSize;
+
+  /// No description provided for @importDetectedCounts.
+  ///
+  /// In en, this message translates to:
+  /// **'{chapters} chapters · {pages} pages'**
+  String importDetectedCounts(int chapters, int pages);
+
+  /// No description provided for @importRecommendedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get importRecommendedBadge;
+
+  /// No description provided for @importCustomPatternLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom pattern (regex)'**
+  String get importCustomPatternLabel;
+
+  /// No description provided for @importCustomMarkerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom marker'**
+  String get importCustomMarkerLabel;
+
+  /// No description provided for @importRescan.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-scan'**
+  String get importRescan;
+
+  /// No description provided for @importDetectedChaptersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Detected chapters'**
+  String get importDetectedChaptersTitle;
+
+  /// No description provided for @importNoChapters.
+  ///
+  /// In en, this message translates to:
+  /// **'No chapters detected for this option.'**
+  String get importNoChapters;
+
+  /// No description provided for @importMoreTitles.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more'**
+  String importMoreTitles(int count);
+
+  /// No description provided for @importAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get importAction;
+
+  /// No description provided for @ok.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
 
   /// No description provided for @noBooksYetTitle.
   ///

@@ -16,6 +16,7 @@ import '../../web/widgets/shell/web_page_scaffold.dart';
 import '../../widgets/app_state_view.dart';
 import '../../widgets/primitives/shell_primitives.dart';
 import 'admin_book_actions.dart';
+import 'admin_book_import.dart';
 
 /// Single admin hub: search, filter, and manage every book from one list.
 class AdminBooksScreen extends ConsumerStatefulWidget {
@@ -68,6 +69,12 @@ class _AdminBooksScreenState extends ConsumerState<AdminBooksScreen> {
               onPressed: () => context.push('/admin/payments'),
               icon: const Icon(Icons.receipt_long_outlined),
             ),
+          IconButton(
+            tooltip: l10n.importFromWord,
+            onPressed: () =>
+                importBookFromDocxFlow(context: context, ref: ref),
+            icon: const Icon(Icons.upload_file_rounded),
+          ),
           IconButton(
             tooltip: l10n.newBookTooltip,
             onPressed: () => context.push('/admin/books/new'),

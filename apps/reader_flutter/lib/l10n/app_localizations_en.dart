@@ -593,6 +593,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminPanelSubtitle => 'Manage books, visibility, and publishing';
 
   @override
+  String get adminManageBooksSubtitle =>
+      'Create, import, and publish your books';
+
+  @override
   String get noProfileCached => 'No profile cached.';
 
   @override
@@ -1106,6 +1110,87 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get newBookTooltip => 'New book';
+
+  @override
+  String get importFromWord => 'Import Word (.docx)';
+
+  @override
+  String get importDocxInProgress => 'Importing document…';
+
+  @override
+  String get importDocxSuccess =>
+      'Imported. Review the chapters, then publish.';
+
+  @override
+  String get importDocxFailed => 'Could not import the document.';
+
+  @override
+  String get importScanning => 'Scanning document…';
+
+  @override
+  String get importLegacyDocTitle => 'Save as .docx';
+
+  @override
+  String get importLegacyDocMessage =>
+      'This is an older .doc file. Open it in Word and use Save As → Word Document (.docx), then try again.';
+
+  @override
+  String get importChooseStructure => 'How should chapters be detected?';
+
+  @override
+  String get importModeAuto => 'Automatic';
+
+  @override
+  String get importModeHeading => 'Heading styles';
+
+  @override
+  String get importModePatterns => 'Chapter text (e.g. ምዕራፍ 1)';
+
+  @override
+  String get importModeFormat => 'Bold / centered titles';
+
+  @override
+  String get importModePagebreak => 'Page breaks';
+
+  @override
+  String get importModeMarker => 'Marker lines (### / <<<CHAPTER>>>)';
+
+  @override
+  String get importModeSize => 'Single chapter (by size)';
+
+  @override
+  String importDetectedCounts(int chapters, int pages) {
+    return '$chapters chapters · $pages pages';
+  }
+
+  @override
+  String get importRecommendedBadge => 'Recommended';
+
+  @override
+  String get importCustomPatternLabel => 'Custom pattern (regex)';
+
+  @override
+  String get importCustomMarkerLabel => 'Custom marker';
+
+  @override
+  String get importRescan => 'Re-scan';
+
+  @override
+  String get importDetectedChaptersTitle => 'Detected chapters';
+
+  @override
+  String get importNoChapters => 'No chapters detected for this option.';
+
+  @override
+  String importMoreTitles(int count) {
+    return '+$count more';
+  }
+
+  @override
+  String get importAction => 'Import';
+
+  @override
+  String get ok => 'OK';
 
   @override
   String get noBooksYetTitle => 'No books yet';

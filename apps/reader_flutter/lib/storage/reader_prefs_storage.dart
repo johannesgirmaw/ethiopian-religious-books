@@ -101,7 +101,8 @@ class ReaderPrefsStorage {
 
   static Future<bool> readPageCurlMode(String bookId) async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_pageCurlKey(bookId)) ?? true;
+    // Scroll is the default reading mode; page-curl is opt-in.
+    return prefs.getBool(_pageCurlKey(bookId)) ?? false;
   }
 
   static Future<void> writePageCurlMode(String bookId, bool enabled) async {

@@ -9,16 +9,24 @@ from django.db import transaction
 from django.db.models import Max, Q
 from django.shortcuts import get_object_or_404
 from rest_framework import status
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.catalog.admin_serializers import (
     AdminBookCreateSerializer,
+    AdminBookImportDocxPreviewSerializer,
+    AdminBookImportDocxSerializer,
     AdminBookPatchSerializer,
     AdminBookSerializer,
     AdminPublishSerializer,
     AdminRevisionCompleteSerializer,
     AdminRevisionCreateSerializer,
+)
+from apps.catalog.docx_import import (
+    DocxImportError,
+    build_chapters_draft_from_docx,
+    summarize_docx_structure,
 )
 from apps.catalog.models import Book, BookRevision
 from apps.catalog.permissions import (
@@ -26,7 +34,12 @@ from apps.catalog.permissions import (
     can_manage_book,
     is_platform_admin,
 )
-from apps.catalog.publishing import publish_book, unpublish_book, validate_draft_warnings
+from apps.catalog.publishing import (
+    publish_book,
+    unpublish_book,
+    validate_bible_draft,
+    validate_draft_warnings,
+)
 from apps.catalog.search_normalization import normalize_search_text
 from apps.catalog.storage_s3 import head_object, presign_put, put_bytes
 
@@ -89,6 +102,169 @@ class AdminBooksRootView(APIView):
         ser.is_valid(raise_exception=True)
         book = ser.save()
         return Response(AdminBookSerializer(book).data, status=status.HTTP_201_CREATED)
+
+
+# Cap the upload so a stray large file can't exhaust request memory. A 400-page
+# text .docx is only a few MB; 25 MB leaves generous headroom.
+_MAX_DOCX_BYTES = 25 * 1024 * 1024
+
+
+def _read_docx_upload(upload):
+    """Validate a Word upload and return ``(bytes, error_response)``.
+
+    ``error_response`` is a DRF ``Response`` when the upload is rejected (wrong
+    extension, legacy .doc, or too large); otherwise it is ``None`` and ``bytes``
+    holds the file content.
+    """
+    name = (getattr(upload, "name", "") or "").lower()
+    if name.endswith(".doc") and not name.endswith(".docx"):
+        return None, Response(
+            {
+                "error": {
+                    "code": "LEGACY_DOC_FORMAT",
+                    "message": (
+                        "This is an older .doc file. Open it in Word and use "
+                        "Save As → Word Document (.docx), then upload again."
+                    ),
+                }
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if not name.endswith(".docx"):
+        return None, Response(
+            {
+                "error": {
+                    "code": "INVALID_FILE_TYPE",
+                    "message": "Upload a Word document with a .docx extension.",
+                }
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if upload.size and upload.size > _MAX_DOCX_BYTES:
+        return None, Response(
+            {
+                "error": {
+                    "code": "FILE_TOO_LARGE",
+                    "message": "The document is larger than the 25 MB limit.",
+                }
+            },
+            status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+        )
+    return upload.read(), None
+
+
+def _parse_error_response(exc: Exception) -> Response:
+    return Response(
+        {"error": {"code": "DOCX_PARSE_FAILED", "message": str(exc)}},
+        status=status.HTTP_400_BAD_REQUEST,
+    )
+
+
+class AdminBookImportDocxPreviewView(APIView):
+    """Dry-run: report the structure detected for every mode, without saving.
+
+    Lets the admin compare detection strategies (and tweak a custom pattern /
+    marker) before committing to an import. No database writes.
+    """
+
+    permission_classes = [IsPublisherOrAuthor]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        ser = AdminBookImportDocxPreviewSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        raw, error = _read_docx_upload(ser.validated_data["file"])
+        if error is not None:
+            return error
+        try:
+            summary = summarize_docx_structure(
+                raw,
+                pattern=ser.validated_data.get("pattern") or None,
+                marker=ser.validated_data.get("marker") or None,
+            )
+        except (DocxImportError, ValueError) as exc:
+            return _parse_error_response(exc)
+        return Response(summary)
+
+
+class AdminBookImportDocxView(APIView):
+    """Create a *draft* book from an uploaded Word (.docx) file.
+
+    Parses the document into ``chapters_draft`` using the selected detection
+    ``mode`` (see ``apps.catalog.docx_import``), then delegates creation to
+    ``AdminBookCreateSerializer`` so validation and author attribution match the
+    normal create flow. The book stays hidden so the admin can review
+    chapters/pages in the editor before publishing. The uploaded file is parsed
+    and discarded -- only the extracted content is persisted.
+    """
+
+    permission_classes = [IsPublisherOrAuthor]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        ser = AdminBookImportDocxSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        upload = ser.validated_data["file"]
+        name = getattr(upload, "name", "") or ""
+
+        raw, error = _read_docx_upload(upload)
+        if error is not None:
+            return error
+
+        try:
+            chapters_draft, stats = build_chapters_draft_from_docx(
+                raw,
+                mode=ser.validated_data.get("mode") or "auto",
+                pattern=ser.validated_data.get("pattern") or None,
+                marker=ser.validated_data.get("marker") or None,
+            )
+        except (DocxImportError, ValueError) as exc:
+            return _parse_error_response(exc)
+
+        if not chapters_draft:
+            return Response(
+                {
+                    "error": {
+                        "code": "EMPTY_DOCUMENT",
+                        "message": "No readable chapters or text were found in the document.",
+                    }
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        title = (ser.validated_data.get("title") or "").strip()
+        if not title:
+            title = str(chapters_draft[0].get("title") or "").strip()
+        if not title:
+            title = name.rsplit(".", 1)[0].strip() or "Imported book"
+
+        create_data: dict[str, Any] = {
+            "title": title[:500],
+            "primary_language": ser.validated_data.get("primary_language") or "am",
+            "is_premium": ser.validated_data.get("is_premium", False),
+            "chapters_draft": chapters_draft,
+        }
+        genre = (ser.validated_data.get("genre") or "").strip()
+        if genre:
+            create_data["genre"] = genre
+        author_compiler = (ser.validated_data.get("author_compiler") or "").strip()
+        if author_compiler:
+            create_data["author_compiler"] = author_compiler
+
+        create = AdminBookCreateSerializer(data=create_data, context={"request": request})
+        create.is_valid(raise_exception=True)
+        book = create.save()
+        logger.info(
+            "imported docx book %s via %s: %s chapters, %s pages, %s paragraphs",
+            book.id,
+            stats.get("strategy_used"),
+            stats.get("chapters"),
+            stats.get("pages"),
+            stats.get("paragraphs"),
+        )
+        data = AdminBookSerializer(book).data
+        data["import_stats"] = stats
+        return Response(data, status=status.HTTP_201_CREATED)
 
 
 class AdminBookDetailView(APIView):
@@ -180,6 +356,8 @@ class AdminBookDraftValidationView(APIView):
         book = get_object_or_404(Book, pk=book_id)
         if not can_manage_book(book, request.user):
             return _not_book_creator_response()
+        if book.is_bible:
+            return Response(validate_bible_draft(book))
         chapters_draft = book.chapters_draft if isinstance(book.chapters_draft, list) else []
         return Response(validate_draft_warnings(chapters_draft))
 

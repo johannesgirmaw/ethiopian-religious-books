@@ -8,6 +8,7 @@ import '../../models/admin_book.dart';
 import '../../providers/admin_providers.dart';
 import '../../providers/session_notifier.dart';
 import '../../screens/admin/admin_book_actions.dart';
+import '../../screens/admin/admin_book_import.dart';
 import '../../widgets/app_state_view.dart';
 import '../../widgets/primitives/shell_primitives.dart';
 import '../design/web_tokens.dart';
@@ -67,8 +68,30 @@ class _AdminBooksScreenBodyState extends ConsumerState<AdminBooksScreenBody> {
               title: l10n.adminBooksListTitle,
               subtitle: l10n.adminBooksCount(filtered.length, page.items.length),
               actions: [
+                // minimumSize: Size.zero overrides the app's full-width button
+                // theme (Size.fromHeight(50)); WebPageHeader measures its actions
+                // Row with unbounded width, and a full-width button there forces
+                // an infinite width and fails to lay out.
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      importBookFromDocxFlow(context: context, ref: ref),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  icon: const Icon(Icons.upload_file_rounded, size: 18),
+                  label: Text(l10n.importFromWord),
+                ),
                 FilledButton.icon(
                   onPressed: () => context.push('/admin/books/new'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
                   icon: const Icon(Icons.add_rounded, size: 18),
                   label: Text(l10n.createFirstBook),
                 ),

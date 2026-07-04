@@ -29,6 +29,7 @@ from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.catalog.models import Book, BookPage, BookTag, Tag
+from apps.catalog.pagination import chunk_lines, number_repeated_titles
 from apps.catalog.publishing import publish_book
 from apps.catalog.storage_s3 import ensure_bucket, is_object_storage_configured
 
@@ -136,11 +137,6 @@ class Command(BaseCommand):
         ))
 
     # ------------------------------------------------------------------ helpers
-    # Each page becomes a row in book_content_index whose normalized text is
-    # btree-indexed (PostgreSQL caps an index row at ~2704 bytes). Keep each
-    # page body comfortably under that in UTF-8 bytes, splitting long sections.
-    PAGE_BYTE_BUDGET = 1600
-
     def _build_draft(self, chapters, lang):
         draft = []
         n_pages = n_verses = 0
@@ -167,39 +163,14 @@ class Command(BaseCommand):
                 if not lines:
                     continue
                 # split the section's verses into byte-bounded pages
-                for part in self._chunk_lines(lines):
+                for part in chunk_lines(lines):
                     pages.append({"title": sec_title, "body": "\n".join(part)})
                     n_pages += 1
             if pages:
                 # if a section spilled into multiple pages, disambiguate titles
-                self._number_repeated_titles(pages)
+                number_repeated_titles(pages)
                 draft.append({"title": ch_title, "pages": pages})
         return draft, n_pages, n_verses
-
-    def _chunk_lines(self, lines):
-        """Group verse lines into chunks whose joined UTF-8 size <= budget."""
-        chunks, cur, size = [], [], 0
-        for line in lines:
-            b = len(line.encode("utf-8")) + 1  # +1 for the newline
-            if cur and size + b > self.PAGE_BYTE_BUDGET:
-                chunks.append(cur)
-                cur, size = [], 0
-            cur.append(line)
-            size += b
-        if cur:
-            chunks.append(cur)
-        return chunks
-
-    @staticmethod
-    def _number_repeated_titles(pages):
-        seen = {}
-        counts = {}
-        for p in pages:
-            counts[p["title"]] = counts.get(p["title"], 0) + 1
-        for p in pages:
-            if counts[p["title"]] > 1:
-                seen[p["title"]] = seen.get(p["title"], 0) + 1
-                p["title"] = f"{p['title']} ({seen[p['title']]})"
 
     def _first_verse_text(self, chapters):
         for c in chapters:

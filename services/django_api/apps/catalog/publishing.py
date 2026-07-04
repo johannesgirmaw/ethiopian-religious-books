@@ -13,7 +13,14 @@ from django.db import transaction
 from django.db.models import Max, Prefetch
 from django.shortcuts import get_object_or_404
 
-from apps.catalog.models import Book, BookChapter, BookPage, BookRevision
+from apps.catalog.models import (
+    BibleSection,
+    BibleVerse,
+    Book,
+    BookChapter,
+    BookPage,
+    BookRevision,
+)
 from apps.catalog.search_index import rebuild_revision_index
 from apps.catalog.storage_s3 import ensure_bucket, is_object_storage_configured, put_bytes
 
@@ -244,6 +251,35 @@ def validate_draft_warnings(chapters_draft: list[Any]) -> dict[str, Any]:
     }
 
 
+def validate_bible_draft(book: Book) -> dict[str, Any]:
+    """Draft validation for verse-addressable Bible books.
+
+    Bible books hold no pages/``chapters_draft`` — their content lives in the
+    ``BibleVerse`` / ``BibleSection`` tables. So the page-based checks in
+    ``validate_draft_warnings`` never apply; instead we validate verse content.
+    Same ``{ok, warnings, stats}`` shape so callers can treat both uniformly.
+    """
+    verse_count = BibleVerse.objects.filter(book=book).count()
+    section_count = BibleSection.objects.filter(book=book).count()
+    chapter_count = (
+        BibleVerse.objects.filter(book=book).values("chapter").distinct().count()
+    )
+
+    warnings: list[str] = []
+    if verse_count == 0:
+        warnings.append("No verses found.")
+
+    return {
+        "ok": len(warnings) == 0,
+        "warnings": warnings,
+        "stats": {
+            "chapters": chapter_count,
+            "verses": verse_count,
+            "sections": section_count,
+        },
+    }
+
+
 def _unique_chapter_key(base_raw: str, index: int, used: set[str]) -> str:
     base = slugify_chapter_key(base_raw, index) or f"chapter-{index}"
     key = base
@@ -435,6 +471,28 @@ def _revision_blocks_publish_without_blob_refresh(rev: BookRevision) -> bool:
 
 def publish_book(book: Book, user, revision_id: UUID | None = None) -> PublishBookOutcome:
     """Validate draft, resolve revision, publish book, rebuild chapter/page index."""
+    # Bible books are verse-served (see bible_views): their content lives in the
+    # BibleVerse/BibleSection tables, not in page revisions. None of the
+    # page-package machinery below applies — we only require verse content and
+    # flip visibility so the /bible reader (is_bible + published) can serve it.
+    if book.is_bible:
+        bible_validation = validate_bible_draft(book)
+        if int((bible_validation.get("stats") or {}).get("verses", 0)) == 0:
+            return PublishBookOutcome(
+                ok=False,
+                error={
+                    "error": {
+                        "code": "INVALID_DRAFT",
+                        "message": "Cannot publish a Bible book without verse content.",
+                    },
+                    "validation": bible_validation,
+                },
+                status_code=400,
+            )
+        book.catalog_visibility = Book.Visibility.PUBLISHED
+        book.save(update_fields=["catalog_visibility"])
+        return PublishBookOutcome(ok=True, book=book)
+
     rev: BookRevision | None = None
     synced_from_db = False
 

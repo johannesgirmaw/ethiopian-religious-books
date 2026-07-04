@@ -584,6 +584,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get adminPanelSubtitle => 'መጽሐፍት፣ ታይነት እና ህትመት ያቀናብሩ';
 
   @override
+  String get adminManageBooksSubtitle => 'መጽሐፍትዎን ይፍጠሩ፣ ያስገቡ እና ያትሙ';
+
+  @override
   String get noProfileCached => 'መገለጫ አልተቀመጠም።';
 
   @override
@@ -1085,6 +1088,86 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get newBookTooltip => 'አዲስ መጽሐፍ';
+
+  @override
+  String get importFromWord => 'ከዎርድ (.docx) አስገባ';
+
+  @override
+  String get importDocxInProgress => 'ሰነዱ እየገባ ነው…';
+
+  @override
+  String get importDocxSuccess => 'ገብቷል። ምዕራፎቹን ገምግመው ያትሙ።';
+
+  @override
+  String get importDocxFailed => 'ሰነዱን ማስገባት አልተቻለም።';
+
+  @override
+  String get importScanning => 'ሰነዱ እየተመረመረ ነው…';
+
+  @override
+  String get importLegacyDocTitle => 'እንደ .docx ያስቀምጡ';
+
+  @override
+  String get importLegacyDocMessage =>
+      'ይህ የቆየ .doc ፋይል ነው። በዎርድ ከፍተው Save As → Word Document (.docx) ካደረጉ በኋላ እንደገና ይሞክሩ።';
+
+  @override
+  String get importChooseStructure => 'ምዕራፎች እንዴት ይለዩ?';
+
+  @override
+  String get importModeAuto => 'በራስ-ሰር';
+
+  @override
+  String get importModeHeading => 'የርዕስ ቅጦች';
+
+  @override
+  String get importModePatterns => 'የምዕራፍ ጽሑፍ (ለምሳሌ ምዕራፍ 1)';
+
+  @override
+  String get importModeFormat => 'ደማቅ / መሃል ርዕሶች';
+
+  @override
+  String get importModePagebreak => 'የገጽ መጨረሻዎች';
+
+  @override
+  String get importModeMarker => 'ምልክት መስመሮች (### / <<<CHAPTER>>>)';
+
+  @override
+  String get importModeSize => 'ነጠላ ምዕራፍ (በመጠን)';
+
+  @override
+  String importDetectedCounts(int chapters, int pages) {
+    return '$chapters ምዕራፎች · $pages ገጾች';
+  }
+
+  @override
+  String get importRecommendedBadge => 'የሚመከር';
+
+  @override
+  String get importCustomPatternLabel => 'ብጁ ስርዓተ-ጥለት (regex)';
+
+  @override
+  String get importCustomMarkerLabel => 'ብጁ ምልክት';
+
+  @override
+  String get importRescan => 'እንደገና ቃኝ';
+
+  @override
+  String get importDetectedChaptersTitle => 'የተገኙ ምዕራፎች';
+
+  @override
+  String get importNoChapters => 'ለዚህ አማራጭ ምንም ምዕራፍ አልተገኘም።';
+
+  @override
+  String importMoreTitles(int count) {
+    return '+$count ተጨማሪ';
+  }
+
+  @override
+  String get importAction => 'አስገባ';
+
+  @override
+  String get ok => 'እሺ';
 
   @override
   String get noBooksYetTitle => 'እስካሁን መጽሐፍት የሉም';

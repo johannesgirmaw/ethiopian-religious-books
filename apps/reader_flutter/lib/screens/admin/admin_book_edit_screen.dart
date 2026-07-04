@@ -600,10 +600,14 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     final l10n = AppLocalizations.of(context)!;
     final form = _formKey.currentState;
     if (form == null || !form.validate()) return;
-    final chaptersError = _validateChaptersDraft(l10n);
-    if (chaptersError != null) {
-      setState(() => _error = chaptersError);
-      return;
+    // Bible books have no page-based chapters (content is verses, managed in the
+    // Bible workspace); skip the page-chapter validation for them.
+    if (!_isBible) {
+      final chaptersError = _validateChaptersDraft(l10n);
+      if (chaptersError != null) {
+        setState(() => _error = chaptersError);
+        return;
+      }
     }
     setState(() {
       _busy = true;

@@ -278,6 +278,7 @@
   "displayNameLabel": "Display name",
   "adminPanel": "Admin panel",
   "adminPanelSubtitle": "Manage books, visibility, and publishing",
+  "adminManageBooksSubtitle": "Create, import, and publish your books",
   "noProfileCached": "No profile cached.",
   "signOut": "Sign out",
   "welcomeBack": "Welcome back",
@@ -517,6 +518,42 @@
   "adminNotBookCreatorTitle": "Editing restricted",
   "adminNotBookCreatorMessage": "Only the user who created this book can edit it.",
   "newBookTooltip": "New book",
+  "importFromWord": "Import Word (.docx)",
+  "importDocxInProgress": "Importing document…",
+  "importDocxSuccess": "Imported. Review the chapters, then publish.",
+  "importDocxFailed": "Could not import the document.",
+  "importScanning": "Scanning document…",
+  "importLegacyDocTitle": "Save as .docx",
+  "importLegacyDocMessage": "This is an older .doc file. Open it in Word and use Save As → Word Document (.docx), then try again.",
+  "importChooseStructure": "How should chapters be detected?",
+  "importModeAuto": "Automatic",
+  "importModeHeading": "Heading styles",
+  "importModePatterns": "Chapter text (e.g. ምዕራፍ 1)",
+  "importModeFormat": "Bold / centered titles",
+  "importModePagebreak": "Page breaks",
+  "importModeMarker": "Marker lines (### / <<<CHAPTER>>>)",
+  "importModeSize": "Single chapter (by size)",
+  "importDetectedCounts": "{chapters} chapters · {pages} pages",
+  "@importDetectedCounts": {
+    "placeholders": {
+      "chapters": { "type": "int" },
+      "pages": { "type": "int" }
+    }
+  },
+  "importRecommendedBadge": "Recommended",
+  "importCustomPatternLabel": "Custom pattern (regex)",
+  "importCustomMarkerLabel": "Custom marker",
+  "importRescan": "Re-scan",
+  "importDetectedChaptersTitle": "Detected chapters",
+  "importNoChapters": "No chapters detected for this option.",
+  "importMoreTitles": "+{count} more",
+  "@importMoreTitles": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "importAction": "Import",
+  "ok": "OK",
   "noBooksYetTitle": "No books yet",
   "noBooksYetMessage": "Create your first book to start publishing to readers.",
   "createFirstBook": "Create",

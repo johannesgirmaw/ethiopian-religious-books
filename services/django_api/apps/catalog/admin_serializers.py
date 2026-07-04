@@ -1,7 +1,9 @@
 import logging
+import re
 
 from rest_framework import serializers
 
+from apps.catalog.docx_import import ALL_MODES
 from apps.catalog.models import Book, BookRevision, BookTag, Tag
 from apps.catalog.publishing import normalize_chapters_draft
 from apps.catalog.storage_s3 import presign_get
@@ -217,6 +219,34 @@ class AdminBookPatchSerializer(serializers.ModelSerializer):
             "cover_object_key",
             "tag_slugs",
         )
+
+
+class AdminBookImportDocxSerializer(serializers.Serializer):
+    """Validate a Word (.docx) upload plus optional metadata for the new book."""
+
+    file = serializers.FileField()
+    title = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    primary_language = serializers.CharField(max_length=32, required=False, default="am")
+    genre = serializers.CharField(max_length=64, required=False, allow_blank=True)
+    author_compiler = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    is_premium = serializers.BooleanField(required=False, default=False)
+    # Structure-detection controls (see apps.catalog.docx_import).
+    mode = serializers.ChoiceField(choices=ALL_MODES, required=False, default="auto")
+    pattern = serializers.CharField(max_length=300, required=False, allow_blank=True)
+    marker = serializers.CharField(max_length=120, required=False, allow_blank=True)
+
+    def validate_pattern(self, value):
+        v = (value or "").strip()
+        if v:
+            try:
+                re.compile(v)
+            except re.error as exc:
+                raise serializers.ValidationError(f"Invalid chapter pattern: {exc}")
+        return v
+
+
+class AdminBookImportDocxPreviewSerializer(AdminBookImportDocxSerializer):
+    """Preview (dry-run) shares the upload/detection fields; metadata is ignored."""
 
 
 class AdminRevisionCreateSerializer(serializers.Serializer):

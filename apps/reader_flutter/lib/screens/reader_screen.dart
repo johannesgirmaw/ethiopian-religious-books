@@ -60,7 +60,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   bool _showFindBar = false;
   // Legacy expanded-grid flag — permanently off; tools live in clean sheets now.
   static const bool _footerExpanded = false;
-  bool _pageCurlEnabled = true;
+  bool _pageCurlEnabled = false;
   final ReaderPageController _pageController = ReaderPageController();
   int _currentPageViewIndex = 0;
   bool _searchAllChapters = false;
@@ -2138,21 +2138,33 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                       webConstrainReaderContent(
                         context,
                         Column(
-                          children: sections.map((section) {
-                            return _ReaderBookPage(
-                              key: _sectionKeyFor(section.index),
-                              section: section,
-                              dark: dark,
-                              sepia: sepia,
-                              textColor: text,
-                              fontSize: _fontSize,
-                              lineHeight: _lineHeight,
-                              findQuery: _findQuery,
-                              activeFindMatch:
-                                  _activeFindMatchForSection(section),
-                              colorScheme: Theme.of(context).colorScheme,
-                            );
-                          }).toList(),
+                          children: [
+                            for (var i = 0; i < sections.length; i++)
+                              _ReaderBookPage(
+                                key: _sectionKeyFor(sections[i].index),
+                                section: sections[i],
+                                dark: dark,
+                                sepia: sepia,
+                                textColor: text,
+                                fontSize: _fontSize,
+                                lineHeight: _lineHeight,
+                                findQuery: _findQuery,
+                                activeFindMatch:
+                                    _activeFindMatchForSection(sections[i]),
+                                colorScheme: Theme.of(context).colorScheme,
+                                // In scroll mode, show the chapter/subtitle
+                                // header only once per chapter (the first
+                                // page); continuation pages show paragraphs
+                                // only. Page mode keeps every header.
+                                showChapterHeader: _pageCurlEnabled ||
+                                    i == 0 ||
+                                    sections[i].chapterKey !=
+                                        sections[i - 1].chapterKey,
+                                // Scroll mode reads continuously, so hide the
+                                // per-page "· N ·" marker; page mode keeps it.
+                                showPageFooter: _pageCurlEnabled,
+                              ),
+                          ],
                         ),
                       ),
                       ],
@@ -3105,6 +3117,8 @@ class _ReaderBookPage extends StatelessWidget {
     required this.findQuery,
     required this.activeFindMatch,
     required this.colorScheme,
+    this.showChapterHeader = true,
+    this.showPageFooter = true,
   });
 
   final _ReaderSection section;
@@ -3116,6 +3130,12 @@ class _ReaderBookPage extends StatelessWidget {
   final String findQuery;
   final _FindMatch? activeFindMatch;
   final ColorScheme colorScheme;
+  // When false (scroll mode, continuation page), the chapter/subtitle/page
+  // header and its divider are omitted so only the paragraphs are shown.
+  final bool showChapterHeader;
+  // When false (scroll mode), the centered "· N ·" page-number marker at the
+  // bottom of the page is omitted for uninterrupted continuous reading.
+  final bool showPageFooter;
 
   bool get _hasFindQuery => findQuery.trim().isNotEmpty;
 
@@ -3170,6 +3190,7 @@ class _ReaderBookPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        if (showChapterHeader) ...[
                         Padding(
                           padding: EdgeInsets.fromLTRB(
                             contentPadH,
@@ -3296,6 +3317,7 @@ class _ReaderBookPage extends StatelessWidget {
                             ),
                           ),
                         ),
+                        ],
                         Padding(
                           padding: EdgeInsets.fromLTRB(
                             contentPadH,
@@ -3324,19 +3346,20 @@ class _ReaderBookPage extends StatelessWidget {
                             ),
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Center(
-                            child: Text(
-                              '· ${section.pageNumber} ·',
-                              style: ReaderTypography.body(
-                                fontSize: 13,
-                                color: muted,
-                                height: 1.2,
-                              ).copyWith(letterSpacing: 3),
+                        if (showPageFooter)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: Center(
+                              child: Text(
+                                '· ${section.pageNumber} ·',
+                                style: ReaderTypography.body(
+                                  fontSize: 13,
+                                  color: muted,
+                                  height: 1.2,
+                                ).copyWith(letterSpacing: 3),
+                              ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                   ),

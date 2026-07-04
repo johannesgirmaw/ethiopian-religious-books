@@ -21,7 +21,12 @@ from apps.catalog.models import (
     OfflineDownload,
     Tag,
 )
-from apps.catalog.publishing import publish_book, unpublish_book, validate_draft_warnings
+from apps.catalog.publishing import (
+    publish_book,
+    unpublish_book,
+    validate_bible_draft,
+    validate_draft_warnings,
+)
 
 
 class BookRevisionInline(TabularInline):
@@ -160,8 +165,12 @@ class BookAdmin(ModelAdmin):
         if object_id:
             book = Book.objects.filter(pk=object_id).first()
             if book:
-                extra_context["draft_validation"] = validate_draft_warnings(
-                    book.chapters_draft if isinstance(book.chapters_draft, list) else []
+                extra_context["draft_validation"] = (
+                    validate_bible_draft(book)
+                    if book.is_bible
+                    else validate_draft_warnings(
+                        book.chapters_draft if isinstance(book.chapters_draft, list) else []
+                    )
                 )
                 extra_context["draft_revisions"] = list(
                     BookRevision.objects.filter(book=book, status=BookRevision.Status.DRAFT).order_by(

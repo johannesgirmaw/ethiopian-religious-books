@@ -8,6 +8,7 @@ import '../../models/admin_book.dart';
 import '../../providers/admin_providers.dart';
 import '../../providers/session_notifier.dart';
 import '../../screens/admin/admin_book_actions.dart';
+import '../../screens/admin/admin_book_import.dart';
 import '../../widgets/app_state_view.dart';
 import '../../widgets/primitives/shell_primitives.dart';
 import '../design/desktop_tokens.dart';
@@ -107,6 +108,21 @@ class _DesktopAdminBooksScreenBodyState
               subtitle:
                   l10n.adminBooksCount(filtered.length, page.items.length),
               actions: [
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      importBookFromDocxFlow(context: context, ref: ref),
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                  ),
+                  icon: const Icon(Icons.upload_file_rounded, size: 18),
+                  label: Text(l10n.importFromWord),
+                ),
                 FilledButton.icon(
                   onPressed: () => context.push('/admin/books/new'),
                   style: FilledButton.styleFrom(

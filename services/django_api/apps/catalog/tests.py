@@ -2,11 +2,19 @@ from django.contrib.auth import get_user_model
 from django.test import RequestFactory, TestCase, override_settings
 from rest_framework.test import APIClient
 
-from apps.catalog.models import Book, BookChapter, BookPage, BookRevision
+from apps.catalog.models import (
+    BibleVerse,
+    Book,
+    BookChapter,
+    BookPage,
+    BookRevision,
+)
 from apps.catalog.publishing import (
     normalize_chapters_draft,
+    publish_book,
     revision_chapters_draft_from_db,
     sync_book_chapters_draft_from_revision,
+    validate_bible_draft,
 )
 from apps.catalog.search_index import rebuild_revision_index
 from apps.catalog.search_normalization import normalize_search_text
@@ -282,3 +290,61 @@ class NormalizeChaptersDraftTests(TestCase):
         self.assertEqual(normalized[1]["chapter_key"], "second")
         self.assertEqual(normalized[0]["pages"][0]["page_number"], 1)
         self.assertEqual(normalized[1]["pages"][0]["page_number"], 2)
+
+
+class PublishBibleBookTests(TestCase):
+    """Bible books publish on verse content, skipping page/chapter validation."""
+
+    def setUp(self):
+        user_model = get_user_model()
+        self.user = user_model.objects.create_user(
+            email="publisher@example.com", password="pw123456", role="author"
+        )
+
+    def _bible_book(self, *, with_verse: bool) -> Book:
+        # Bible books carry no chapters_draft — content lives in BibleVerse rows.
+        book = Book.objects.create(title="Bible Book", is_bible=True, chapters_draft=[])
+        rev = BookRevision.objects.create(
+            book=book, revision_number=1, status=BookRevision.Status.DRAFT
+        )
+        if with_verse:
+            BibleVerse.objects.create(
+                revision=rev,
+                book=book,
+                chapter=1,
+                verse=1,
+                verse_seq=1,
+                text_plain="In the beginning",
+            )
+        return book
+
+    def test_publish_bible_book_with_verses_succeeds(self):
+        book = self._bible_book(with_verse=True)
+        outcome = publish_book(book, self.user)
+        self.assertTrue(outcome.ok)
+        book.refresh_from_db()
+        self.assertEqual(book.catalog_visibility, Book.Visibility.PUBLISHED)
+
+    def test_publish_bible_book_without_verses_is_rejected(self):
+        book = self._bible_book(with_verse=False)
+        outcome = publish_book(book, self.user)
+        self.assertFalse(outcome.ok)
+        self.assertEqual(outcome.status_code, 400)
+        self.assertEqual(outcome.error["error"]["code"], "INVALID_DRAFT")
+        book.refresh_from_db()
+        self.assertEqual(book.catalog_visibility, Book.Visibility.HIDDEN)
+
+    def test_validate_bible_draft_reports_verse_stats(self):
+        book = self._bible_book(with_verse=True)
+        result = validate_bible_draft(book)
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["warnings"], [])
+        self.assertEqual(result["stats"]["verses"], 1)
+        self.assertEqual(result["stats"]["chapters"], 1)
+
+    def test_publish_non_bible_book_without_pages_still_rejected(self):
+        # Regression: page-based books keep the chapters/pages requirement.
+        book = Book.objects.create(title="Empty Book", chapters_draft=[])
+        outcome = publish_book(book, self.user)
+        self.assertFalse(outcome.ok)
+        self.assertEqual(outcome.error["error"]["code"], "INVALID_DRAFT")

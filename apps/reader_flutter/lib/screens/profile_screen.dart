@@ -118,6 +118,17 @@ class ProfileScreen extends ConsumerWidget {
             subtitle: l10n.aboutAppSectionTitle,
             onTap: () => context.push('/about'),
           ),
+          // Authors (who can manage books but aren't superusers) reach Manage
+          // Books — and the .docx import — here; superusers use "Admin panel".
+          if (user?.canManageBooks == true && user?.isSuperuser != true) ...[
+            const SizedBox(height: AppLayout.itemGap),
+            _ProfileLinkRow(
+              icon: Icons.menu_book_outlined,
+              title: l10n.adminBooksListTitle,
+              subtitle: l10n.adminManageBooksSubtitle,
+              onTap: () => context.push('/admin/books'),
+            ),
+          ],
           if (user?.isSuperuser == true) ...[
             const SizedBox(height: AppLayout.itemGap),
             _ProfileLinkRow(

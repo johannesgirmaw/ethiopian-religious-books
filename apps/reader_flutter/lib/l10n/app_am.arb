@@ -320,6 +320,7 @@
   "displayNameLabel": "የማሳያ ስም",
   "adminPanel": "የአስተዳዳሪ ፓነል",
   "adminPanelSubtitle": "መጽሐፍት፣ ታይነት እና ህትመት ያቀናብሩ",
+  "adminManageBooksSubtitle": "መጽሐፍትዎን ይፍጠሩ፣ ያስገቡ እና ያትሙ",
   "noProfileCached": "መገለጫ አልተቀመጠም።",
   "signOut": "ውጣ",
   "welcomeBack": "እንኳን በደህና መጡ",
@@ -591,6 +592,42 @@
   "adminNotBookCreatorTitle": "ማስተካከል የተገደበ",
   "adminNotBookCreatorMessage": "ይህን መጽሐፍ የፈጠረው ተጠቃሚ ብቻ ማስተካከል ይችላል።",
   "newBookTooltip": "አዲስ መጽሐፍ",
+  "importFromWord": "ከዎርድ (.docx) አስገባ",
+  "importDocxInProgress": "ሰነዱ እየገባ ነው…",
+  "importDocxSuccess": "ገብቷል። ምዕራፎቹን ገምግመው ያትሙ።",
+  "importDocxFailed": "ሰነዱን ማስገባት አልተቻለም።",
+  "importScanning": "ሰነዱ እየተመረመረ ነው…",
+  "importLegacyDocTitle": "እንደ .docx ያስቀምጡ",
+  "importLegacyDocMessage": "ይህ የቆየ .doc ፋይል ነው። በዎርድ ከፍተው Save As → Word Document (.docx) ካደረጉ በኋላ እንደገና ይሞክሩ።",
+  "importChooseStructure": "ምዕራፎች እንዴት ይለዩ?",
+  "importModeAuto": "በራስ-ሰር",
+  "importModeHeading": "የርዕስ ቅጦች",
+  "importModePatterns": "የምዕራፍ ጽሑፍ (ለምሳሌ ምዕራፍ 1)",
+  "importModeFormat": "ደማቅ / መሃል ርዕሶች",
+  "importModePagebreak": "የገጽ መጨረሻዎች",
+  "importModeMarker": "ምልክት መስመሮች (### / <<<CHAPTER>>>)",
+  "importModeSize": "ነጠላ ምዕራፍ (በመጠን)",
+  "importDetectedCounts": "{chapters} ምዕራፎች · {pages} ገጾች",
+  "@importDetectedCounts": {
+    "placeholders": {
+      "chapters": { "type": "int" },
+      "pages": { "type": "int" }
+    }
+  },
+  "importRecommendedBadge": "የሚመከር",
+  "importCustomPatternLabel": "ብጁ ስርዓተ-ጥለት (regex)",
+  "importCustomMarkerLabel": "ብጁ ምልክት",
+  "importRescan": "እንደገና ቃኝ",
+  "importDetectedChaptersTitle": "የተገኙ ምዕራፎች",
+  "importNoChapters": "ለዚህ አማራጭ ምንም ምዕራፍ አልተገኘም።",
+  "importMoreTitles": "+{count} ተጨማሪ",
+  "@importMoreTitles": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "importAction": "አስገባ",
+  "ok": "እሺ",
   "noBooksYetTitle": "እስካሁን መጽሐፍት የሉም",
   "noBooksYetMessage": "ወደ አንባቢዎች ለማተም የመጀመሪያ መጽሐፍዎን ይፍጠሩ።",
   "createFirstBook": "መጽሐፍ ፍጠር",
