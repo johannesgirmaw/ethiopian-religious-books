@@ -58,3 +58,45 @@ return const MobileHomeScreen();
 ## Backend
 
 `make infra-up`, `make run-dev` · API config: `lib/config/app_config.dart`
+
+## Production deployment (felegemetsahft.com)
+
+**ALWAYS read and follow this section before deploying anything to the server.**
+
+Production runs on a single VPS (SSH alias `felegemetsahft` → root@187.55.226.86, Ubuntu 24.04).
+Docker Compose stack (Postgres + Redis + MinIO + Django/gunicorn + Celery) behind host Nginx with
+Let's Encrypt TLS. Live hosts:
+
+| Host | Serves |
+| --- | --- |
+| `felegemetsahft.com` / `www` | Flutter **web** static build (`/var/www/felegemetsahft/web`) |
+| `api.felegemetsahft.com` | Django API (`127.0.0.1:8000`) |
+| `files.felegemetsahft.com` | MinIO S3 for presigned book/cover URLs (`127.0.0.1:9000`) |
+
+Server layout: `/opt/felegemetsahft/{django_api,prod}` · compose file `prod/docker-compose.prod.yml`
+· env `prod/.env.prod` (symlinked as `prod/.env`). All release Flutter builds must set
+`--dart-define=API_BASE_URL=https://api.felegemetsahft.com/v1/`.
+
+**Deploy with the script — do not hand-run ad-hoc rsync/ssh:**
+
+```
+scripts/deploy-prod.sh        # api + web
+scripts/deploy-prod.sh api    # Django only  (rsync → rebuild → restart; migrations auto-run on start)
+scripts/deploy-prod.sh web    # Flutter web only
+```
+
+### Deployment rules (MUST follow)
+
+1. **Never** commit or print secrets. `prod/.env.prod` (DB/MinIO/Django/admin creds) lives ONLY on the
+   server and is git-ignored — never recreate it in the repo or paste its contents into chat/commits.
+2. **Never** run `docker compose down -v`, drop volumes, or `Reset DNS records` — `pgdata`/`minio_data`
+   hold all books and users. Destructive DB/volume ops require explicit user confirmation.
+3. Confirm you are deploying the intended branch/commit; the API image is built from the rsynced source,
+   not from git on the server.
+4. After every deploy, verify the three health checks pass (the script does this): web/api/files → 200.
+   If any is non-200, investigate before reporting success.
+5. Schema/data migrations run automatically in the container entrypoint on start — no manual `migrate`.
+6. Changing API URL, CORS, or hostnames means rebuilding the web bundle (URL is baked at build time)
+   AND updating `_productionApiBaseUrl` in `lib/config/app_config.dart` for desktop/mobile.
+7. TLS auto-renews via Certbot; if adding a new subdomain, extend the Nginx site + rerun certbot with
+   all `-d` domains.

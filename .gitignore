@@ -22,3 +22,7 @@ dist/
 .vscode/
 *.swp
 Mobileapp ui design/
+# Production secrets (server-only, never commit)
+infra/prod/.env.prod
+infra/prod/.env
+**/.env.prod
