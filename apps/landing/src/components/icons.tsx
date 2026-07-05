@@ -7,7 +7,7 @@ export const Logo = (p: P) => (
     <rect width="32" height="32" rx="9" fill="url(#lg)" />
     <path
       d="M9 8.5h9.5c2.2 0 4 1.8 4 4v11c0-1.2-1-2.2-2.2-2.2H9V8.5Z"
-      fill="#052a23"
+      fill="#041820"
       opacity=".55"
     />
     <path
@@ -17,11 +17,11 @@ export const Logo = (p: P) => (
       strokeLinejoin="round"
       fill="none"
     />
-    <path d="M15 5.5v4M13 7.5h4" stroke="#e6c667" strokeWidth="1.4" strokeLinecap="round" />
+    <path d="M15 5.5v4M13 7.5h4" stroke="#f5a623" strokeWidth="1.4" strokeLinecap="round" />
     <defs>
       <linearGradient id="lg" x1="0" y1="0" x2="32" y2="32">
-        <stop stopColor="#18b287" />
-        <stop offset="1" stopColor="#0d735c" />
+        <stop stopColor="#29b6e0" />
+        <stop offset="1" stopColor="#14708f" />
       </linearGradient>
     </defs>
   </svg>

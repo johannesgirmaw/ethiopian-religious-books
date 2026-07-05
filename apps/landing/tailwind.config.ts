@@ -5,28 +5,33 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Matches the app design tokens (lib/design/app_tokens.dart):
+        // primary #29B6E0, deep #14708F, mid #5CCDEC, secondary #1E9BC2.
         brand: {
-          50: '#eefdf7',
-          100: '#d5f9ea',
-          200: '#aef1d7',
-          300: '#77e3bf',
-          400: '#3ecda1',
-          500: '#18b287',
-          600: '#0d9070',
-          700: '#0d735c',
-          800: '#0f5b4a',
-          900: '#0e4b3e',
-          950: '#052a23',
+          50: '#ecfaff',
+          100: '#d0f2fd',
+          200: '#a6e7fb',
+          300: '#5ccdec',
+          400: '#29b6e0',
+          500: '#1e9bc2',
+          600: '#14708f',
+          700: '#105c76',
+          800: '#0a3a4a',
+          900: '#072c39',
+          950: '#041820',
         },
+        // App accent (notification orange #F5A623 → #E08E00).
         gold: {
-          400: '#e6c667',
-          500: '#d4af37',
-          600: '#b8912a',
+          400: '#f7b74d',
+          500: '#f5a623',
+          600: '#e08e00',
         },
+        // Dark background ramp from the app's dark hero gradient
+        // [#14708F, #0A3A4A, #041820].
         ink: {
-          900: '#07120f',
-          800: '#0b1a16',
-          700: '#0f241e',
+          900: '#041820',
+          800: '#082935',
+          700: '#0a3a4a',
         },
       },
       fontFamily: {
