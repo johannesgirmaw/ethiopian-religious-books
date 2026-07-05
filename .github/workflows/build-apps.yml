@@ -26,13 +26,24 @@ jobs:
         working-directory: ${{ env.APP_DIR }}
       - run: flutter build windows --release --dart-define=API_BASE_URL=${{ inputs.api_base_url }}
         working-directory: ${{ env.APP_DIR }}
-      - name: Zip Windows build
-        working-directory: ${{ env.APP_DIR }}/build/windows/x64/runner/Release
-        run: Compress-Archive -Path * -DestinationPath felege-metsahft-windows.zip
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+      - name: Build installer (.exe)
+        working-directory: ${{ env.APP_DIR }}
+        shell: pwsh
+        run: |
+          $ver = (Select-String -Path pubspec.yaml -Pattern '^version:\s*([0-9]+\.[0-9]+\.[0-9]+)').Matches.Groups[1].Value
+          if (-not $ver) { $ver = '1.0.0' }
+          Write-Host "Packaging version $ver"
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            "/DMyAppVersion=$ver" `
+            "/DSourceDir=build\windows\x64\runner\Release" `
+            "/DOutputDir=installer_out" `
+            "windows\packaging\felege_metsahft.iss"
       - uses: actions/upload-artifact@v4
         with:
           name: felege-metsahft-windows
-          path: ${{ env.APP_DIR }}/build/windows/x64/runner/Release/felege-metsahft-windows.zip
+          path: ${{ env.APP_DIR }}/installer_out/felege-metsahft-setup.exe
 
   linux:
     runs-on: ubuntu-latest

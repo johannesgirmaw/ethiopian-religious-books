@@ -70,15 +70,14 @@ export const platforms: Platform[] = [
   {
     id: 'windows',
     os: 'Windows',
-    label: 'Coming soon',
+    label: 'Download for Windows',
     ext: 'EXE',
-    url: process.env.NEXT_PUBLIC_WINDOWS_URL || dl('felege-metsahft-windows.zip'),
+    url: process.env.NEXT_PUBLIC_WINDOWS_URL || dl('felege-metsahft-setup.exe'),
     note: 'Windows 10/11 (64-bit)',
-    comingSoon: !process.env.NEXT_PUBLIC_WINDOWS_URL,
     install: [
-      'Download the .zip and extract it.',
-      'Open the folder and run ethiopian_reader.exe.',
+      'Download and run felege-metsahft-setup.exe.',
       'If SmartScreen appears, choose More info → Run anyway.',
+      'Follow the installer, then launch Ethiopian Reader from the Start Menu.',
     ],
   },
 ];

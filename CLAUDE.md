@@ -88,7 +88,24 @@ scripts/deploy-prod.sh          # api + web + landing
 scripts/deploy-prod.sh api      # Django only  (rsync → rebuild → restart; migrations auto-run on start)
 scripts/deploy-prod.sh web      # Flutter web app only (app.felegemetsahft.com)
 scripts/deploy-prod.sh landing  # Next.js landing only (felegemetsahft.com)
+scripts/deploy-prod.sh downloads # upload installers in dist/downloads/ -> /downloads/
 ```
+
+### Windows (and other desktop) installers
+
+Windows `.exe` **cannot be built on macOS** — it builds in GitHub Actions. Flow:
+
+1. Actions → **"Build apps (all platforms)"** → Run workflow (the Windows job builds the
+   runner and packages it into `felege-metsahft-setup.exe` via Inno Setup —
+   `apps/reader_flutter/windows/packaging/felege_metsahft.iss`).
+2. Download the `felege-metsahft-windows` artifact and drop the `.exe` into `dist/downloads/`
+   (git-ignored).
+3. `scripts/deploy-prod.sh downloads` (uploads to `/var/www/felegemetsahft/downloads/`, no
+   `--delete`), then `scripts/deploy-prod.sh landing` so the landing "Download for Windows"
+   link goes live. Landing points at `felege-metsahft-setup.exe` by default.
+
+Build is unsigned → first-run SmartScreen ("More info → Run anyway"); real signing needs a paid
+cert. `image_picker` has no Windows impl, so desktop uses `file_picker` for cover uploads.
 
 ### Deployment rules (MUST follow)
 

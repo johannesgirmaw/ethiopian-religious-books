@@ -2,11 +2,14 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+
+import '../../common/platform/platform_shell.dart';
 
 import '../../design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
@@ -315,18 +318,33 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   }
 
   Future<void> _pickCoverImage() async {
-    final picker = ImagePicker();
-    final x = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1600,
-      imageQuality: 88,
-    );
-    if (x == null || !mounted) return;
-    final bytes = await x.readAsBytes();
-    if (!mounted) return;
+    Uint8List? bytes;
+    String? name;
+    // image_picker has no Windows/Linux implementation; use file_picker there.
+    if (isDesktopPlatform) {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) return;
+      bytes = result.files.first.bytes;
+      name = result.files.first.name;
+    } else {
+      final picker = ImagePicker();
+      final x = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1600,
+        imageQuality: 88,
+      );
+      if (x == null) return;
+      bytes = await x.readAsBytes();
+      name = x.path;
+    }
+    if (bytes == null || bytes.isEmpty || !mounted) return;
+    final mime = _mimeFromPath(name);
     setState(() {
       _pendingCoverBytes = bytes;
-      _pendingCoverMime = _mimeFromPath(x.path);
+      _pendingCoverMime = mime;
       _clearCoverOnSave = false;
       _markDirty();
     });

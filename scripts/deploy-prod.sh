@@ -6,6 +6,7 @@
 #   scripts/deploy-prod.sh api        # only the Django API (rsync + rebuild + restart)
 #   scripts/deploy-prod.sh web        # only the Flutter web app (app.felegemetsahft.com)
 #   scripts/deploy-prod.sh landing    # only the Next.js landing (felegemetsahft.com)
+#   scripts/deploy-prod.sh downloads  # upload installers in dist/downloads/ -> /downloads/
 #
 # Prereqs: SSH alias `felegemetsahft` (see ~/.ssh/config), flutter, node/npm, rsync.
 set -euo pipefail
@@ -47,12 +48,28 @@ deploy_landing() {
   ssh "$SSH_HOST" "chown -R www-data:www-data /var/www/felegemetsahft/landing"
 }
 
+deploy_downloads() {
+  local dist="$REPO_ROOT/dist/downloads"
+  if [ ! -d "$dist" ] || [ -z "$(ls -A "$dist" 2>/dev/null)" ]; then
+    echo "!! No files in dist/downloads/ — drop installers there first"
+    echo "   (e.g. the felege-metsahft-setup.exe artifact from the GitHub Actions run)."
+    exit 1
+  fi
+  echo "==> Uploading installers from dist/downloads/"
+  ls -1 "$dist"
+  # No --delete: keep installers for other platforms already on the server.
+  ssh "$SSH_HOST" "mkdir -p /var/www/felegemetsahft/downloads"
+  rsync -az "$dist/" "$SSH_HOST:/var/www/felegemetsahft/downloads/"
+  ssh "$SSH_HOST" "chown -R www-data:www-data /var/www/felegemetsahft/downloads"
+}
+
 case "$target" in
   api) deploy_api ;;
   web) deploy_web ;;
   landing) deploy_landing ;;
+  downloads) deploy_downloads ;;
   all) deploy_api; deploy_web; deploy_landing ;;
-  *) echo "Unknown target: $target (use: api | web | landing | all)"; exit 1 ;;
+  *) echo "Unknown target: $target (use: api | web | landing | downloads | all)"; exit 1 ;;
 esac
 
 echo "==> Post-deploy health checks"
