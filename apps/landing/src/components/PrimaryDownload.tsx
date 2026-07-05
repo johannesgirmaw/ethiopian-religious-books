@@ -22,7 +22,7 @@ export default function PrimaryDownload() {
 
   const p = platforms.find((x) => x.id === id);
 
-  if (!p) {
+  if (!p || p.comingSoon) {
     return (
       <Link href="/download" className="btn-primary text-base">
         <DownloadIcon className="h-5 w-5" /> Download the app

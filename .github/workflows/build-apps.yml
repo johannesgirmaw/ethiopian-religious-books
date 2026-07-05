@@ -1,0 +1,96 @@
+name: Build apps (all platforms)
+
+# Manual trigger. Produces installable artifacts for every platform, including
+# Windows (which cannot be built on macOS/Linux). Download them from the run's
+# "Artifacts" section, then upload to the server's /downloads/ folder.
+on:
+  workflow_dispatch:
+    inputs:
+      api_base_url:
+        description: 'API base URL baked into the builds'
+        default: 'https://api.felegemetsahft.com/v1/'
+        required: true
+
+env:
+  FLUTTER_VERSION: '3.44.0'
+  APP_DIR: apps/reader_flutter
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { flutter-version: '3.44.0', channel: stable }
+      - run: flutter pub get
+        working-directory: ${{ env.APP_DIR }}
+      - run: flutter build windows --release --dart-define=API_BASE_URL=${{ inputs.api_base_url }}
+        working-directory: ${{ env.APP_DIR }}
+      - name: Zip Windows build
+        working-directory: ${{ env.APP_DIR }}/build/windows/x64/runner/Release
+        run: Compress-Archive -Path * -DestinationPath felege-metsahft-windows.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: felege-metsahft-windows
+          path: ${{ env.APP_DIR }}/build/windows/x64/runner/Release/felege-metsahft-windows.zip
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libsecret-1-dev libjsoncpp-dev
+      - uses: subosito/flutter-action@v2
+        with: { flutter-version: '3.44.0', channel: stable }
+      - run: flutter pub get
+        working-directory: ${{ env.APP_DIR }}
+      - run: flutter build linux --release --dart-define=API_BASE_URL=${{ inputs.api_base_url }}
+        working-directory: ${{ env.APP_DIR }}
+      - name: Package tarball
+        working-directory: ${{ env.APP_DIR }}/build/linux/x64/release
+        run: cp -r bundle FelegeMetsahft && tar czf felege-metsahft-linux-x64.tar.gz FelegeMetsahft
+      - uses: actions/upload-artifact@v4
+        with:
+          name: felege-metsahft-linux
+          path: ${{ env.APP_DIR }}/build/linux/x64/release/felege-metsahft-linux-x64.tar.gz
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: subosito/flutter-action@v2
+        with: { flutter-version: '3.44.0', channel: stable }
+      - run: flutter pub get
+        working-directory: ${{ env.APP_DIR }}
+      # NOTE: builds with debug signing unless you add a release keystore + key.properties
+      # via secrets. See scripts/ and android/app/build.gradle.kts.
+      - run: flutter build apk --release --dart-define=API_BASE_URL=${{ inputs.api_base_url }}
+        working-directory: ${{ env.APP_DIR }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: felege-metsahft-android
+          path: ${{ env.APP_DIR }}/build/app/outputs/flutter-apk/app-release.apk
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { flutter-version: '3.44.0', channel: stable }
+      - run: flutter pub get
+        working-directory: ${{ env.APP_DIR }}
+      - run: flutter build macos --release --config-only --dart-define=API_BASE_URL=${{ inputs.api_base_url }}
+        working-directory: ${{ env.APP_DIR }}
+      - name: Build (unsigned) + ad-hoc sign
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          xcodebuild -workspace macos/Runner.xcworkspace -scheme Runner -configuration Release \
+            -derivedDataPath build/macos_adhoc CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+          APP="build/macos_adhoc/Build/Products/Release/ethiopian_reader.app"
+          codesign --force --deep --sign - --entitlements macos/Runner/Release.entitlements "$APP"
+          hdiutil create -volname "Felege Metsahft" -srcfolder "$APP" -ov -format UDZO felege-metsahft-macos.dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: felege-metsahft-macos
+          path: ${{ env.APP_DIR }}/felege-metsahft-macos.dmg

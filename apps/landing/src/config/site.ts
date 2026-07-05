@@ -24,6 +24,7 @@ export type Platform = {
   size?: string;
   note: string;
   install: string[];
+  comingSoon?: boolean;
 };
 
 export const platforms: Platform[] = [
@@ -54,29 +55,30 @@ export const platforms: Platform[] = [
     ],
   },
   {
-    id: 'windows',
-    os: 'Windows',
-    label: 'Download for Windows',
-    ext: 'EXE',
-    url: process.env.NEXT_PUBLIC_WINDOWS_URL || dl('felege-metsahft-windows.exe'),
-    note: 'Windows 10 or newer (64-bit)',
-    install: [
-      'Run the downloaded installer (.exe).',
-      'If SmartScreen appears, choose More info → Run anyway.',
-      'Follow the wizard, then launch from the Start menu.',
-    ],
-  },
-  {
     id: 'linux',
     os: 'Linux',
     label: 'Download for Linux',
-    ext: 'AppImage',
-    url: process.env.NEXT_PUBLIC_LINUX_URL || dl('felege-metsahft-linux.AppImage'),
-    note: 'Most 64-bit distributions',
+    ext: 'tar.gz',
+    url: process.env.NEXT_PUBLIC_LINUX_URL || dl('felege-metsahft-linux-x64.tar.gz'),
+    note: '64-bit · GTK 3 desktop',
     install: [
-      'Download the .AppImage file.',
-      'Make it executable: chmod +x felege-metsahft-linux.AppImage',
-      'Run it: ./felege-metsahft-linux.AppImage',
+      'Download and extract: tar -xzf felege-metsahft-linux-x64.tar.gz',
+      'Enter the folder: cd FelegeMetsahft',
+      'Run it: ./ethiopian_reader',
+    ],
+  },
+  {
+    id: 'windows',
+    os: 'Windows',
+    label: 'Coming soon',
+    ext: 'EXE',
+    url: process.env.NEXT_PUBLIC_WINDOWS_URL || dl('felege-metsahft-windows.zip'),
+    note: 'Windows 10/11 (64-bit)',
+    comingSoon: !process.env.NEXT_PUBLIC_WINDOWS_URL,
+    install: [
+      'Download the .zip and extract it.',
+      'Open the folder and run ethiopian_reader.exe.',
+      'If SmartScreen appears, choose More info → Run anyway.',
     ],
   },
 ];

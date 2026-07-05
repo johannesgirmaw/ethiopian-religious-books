@@ -31,22 +31,28 @@ export default function Platforms() {
             <div className="grid grid-cols-2 gap-4">
               {platforms.map((p) => {
                 const Icon = platformIcon[p.id];
-                return (
-                  <a
-                    key={p.id}
-                    href={p.url}
-                    download
-                    className="group flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-brand-400/50 hover:bg-white/[0.06]"
-                  >
+                const cls =
+                  'group flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-brand-400/50 hover:bg-white/[0.06]';
+                const inner = (
+                  <>
                     <Icon className="h-8 w-8 text-brand-300" />
                     <div>
                       <div className="font-semibold text-white">{p.os}</div>
-                      <div className="text-xs text-slate-400">.{p.ext.toLowerCase()} · {p.note}</div>
+                      <div className="text-xs text-slate-400">
+                        {p.comingSoon ? 'Coming soon' : `.${p.ext.toLowerCase()} · ${p.note}`}
+                      </div>
                     </div>
-                    <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-brand-300 opacity-0 transition group-hover:opacity-100">
-                      Download <ArrowRight className="h-3.5 w-3.5" />
-                    </span>
-                  </a>
+                    {!p.comingSoon && (
+                      <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-brand-300 opacity-0 transition group-hover:opacity-100">
+                        Download <ArrowRight className="h-3.5 w-3.5" />
+                      </span>
+                    )}
+                  </>
+                );
+                return p.comingSoon ? (
+                  <div key={p.id} className={`${cls} opacity-60`}>{inner}</div>
+                ) : (
+                  <a key={p.id} href={p.url} download className={cls}>{inner}</a>
                 );
               })}
             </div>

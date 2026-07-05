@@ -39,9 +39,15 @@ function Card({ p, recommended }: { p: Platform; recommended: boolean }) {
         </div>
       </div>
 
-      <a href={p.url} download className="btn-primary mt-5 w-full">
-        <DownloadIcon className="h-5 w-5" /> Download {p.ext}
-      </a>
+      {p.comingSoon ? (
+        <span className="btn mt-5 w-full cursor-not-allowed border border-white/10 bg-white/5 text-slate-400">
+          Coming soon
+        </span>
+      ) : (
+        <a href={p.url} download className="btn-primary mt-5 w-full">
+          <DownloadIcon className="h-5 w-5" /> Download {p.ext}
+        </a>
+      )}
 
       <ol className="mt-5 space-y-2.5">
         {p.install.map((step, i) => (

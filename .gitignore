@@ -26,3 +26,8 @@ Mobileapp ui design/
 infra/prod/.env.prod
 infra/prod/.env
 **/.env.prod
+
+# Android release signing (never commit)
+apps/reader_flutter/android/key.properties
+apps/reader_flutter/android/**/*.jks
+apps/reader_flutter/android/**/*.keystore
