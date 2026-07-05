@@ -6,6 +6,7 @@ String? connectionTroubleshootHint(DioException e) {
     case DioExceptionType.connectionTimeout:
     case DioExceptionType.sendTimeout:
     case DioExceptionType.receiveTimeout:
+    case DioExceptionType.transformTimeout:
       return 'Request timed out. Check that the API is running and the URL is correct.';
     case DioExceptionType.connectionError:
       return 'Could not reach the server. Is the backend up and is API_BASE_URL correct for this device?';
