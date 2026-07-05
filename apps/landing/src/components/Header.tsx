@@ -3,17 +3,43 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { site } from '@/config/site';
+import { useLang } from '@/i18n/LanguageProvider';
 import { Logo, ArrowRight } from './icons';
 
-const nav = [
-  { href: '/#features', label: 'Features' },
-  { href: '/#platforms', label: 'Platforms' },
-  { href: '/download', label: 'Download' },
-];
+function LangToggle({ className = '' }: { className?: string }) {
+  const { lang, setLang } = useLang();
+  return (
+    <div
+      className={`inline-flex items-center rounded-full border border-white/15 p-0.5 text-xs font-semibold ${className}`}
+      role="group"
+      aria-label="Language"
+    >
+      <button
+        onClick={() => setLang('en')}
+        className={`rounded-full px-2.5 py-1 transition ${lang === 'en' ? 'bg-brand-500 text-ink-900' : 'text-slate-300 hover:text-white'}`}
+      >
+        EN
+      </button>
+      <button
+        onClick={() => setLang('am')}
+        className={`rounded-full px-2.5 py-1 transition ${lang === 'am' ? 'bg-brand-500 text-ink-900' : 'text-slate-300 hover:text-white'}`}
+      >
+        አማ
+      </button>
+    </div>
+  );
+}
 
 export default function Header() {
+  const { t } = useLang();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+
+  const nav = [
+    { href: '/#features', label: t.nav.features },
+    { href: '/#platforms', label: t.nav.platforms },
+    { href: '/download', label: t.nav.download },
+  ];
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -50,11 +76,12 @@ export default function Header() {
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
+          <LangToggle />
           <a href={site.login} className="text-sm font-medium text-slate-200 hover:text-white">
-            Log in
+            {t.cta.login}
           </a>
           <a href={site.register} className="btn-primary">
-            Get started <ArrowRight className="h-4 w-4" />
+            {t.cta.getStarted} <ArrowRight className="h-4 w-4" />
           </a>
         </div>
 
@@ -84,9 +111,12 @@ export default function Header() {
                 {n.label}
               </Link>
             ))}
+            <div className="mt-3 flex items-center justify-between">
+              <LangToggle />
+            </div>
             <div className="mt-2 flex gap-3">
-              <a href={site.login} className="btn-ghost flex-1">Log in</a>
-              <a href={site.register} className="btn-primary flex-1">Get started</a>
+              <a href={site.login} className="btn-ghost flex-1">{t.cta.login}</a>
+              <a href={site.register} className="btn-primary flex-1">{t.cta.getStarted}</a>
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { platforms, type Platform } from '@/config/site';
+import { useLang, fill } from '@/i18n/LanguageProvider';
 import { platformIcon, DownloadIcon } from './icons';
 
 function detect(): Platform['id'] | null {
@@ -17,6 +18,7 @@ function detect(): Platform['id'] | null {
 }
 
 export default function PrimaryDownload() {
+  const { t } = useLang();
   const [id, setId] = useState<Platform['id'] | null>(null);
   useEffect(() => setId(detect()), []);
 
@@ -25,7 +27,7 @@ export default function PrimaryDownload() {
   if (!p || p.comingSoon) {
     return (
       <Link href="/download" className="btn-primary text-base">
-        <DownloadIcon className="h-5 w-5" /> Download the app
+        <DownloadIcon className="h-5 w-5" /> {t.hero.downloadApp}
       </Link>
     );
   }
@@ -34,10 +36,10 @@ export default function PrimaryDownload() {
   return (
     <div className="flex flex-col items-center gap-2 sm:items-start">
       <a href={p.url} className="btn-primary text-base" download>
-        <Icon className="h-5 w-5" /> Download for {p.os}
+        <Icon className="h-5 w-5" /> {fill(t.hero.downloadFor, { os: p.os })}
       </a>
       <Link href="/download" className="text-xs text-slate-400 hover:text-white">
-        or choose another platform →
+        {t.hero.chooseAnother}
       </Link>
     </div>
   );

@@ -1,12 +1,19 @@
 import type { Metadata } from 'next';
-import { Inter, Fraunces } from 'next/font/google';
+import { Inter, Fraunces, Noto_Sans_Ethiopic } from 'next/font/google';
 import { site } from '@/config/site';
+import { LanguageProvider } from '@/i18n/LanguageProvider';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
 const fraunces = Fraunces({
   subsets: ['latin'],
   variable: '--font-display',
+  display: 'swap',
+  weight: ['400', '500', '600', '700'],
+});
+const ethiopic = Noto_Sans_Ethiopic({
+  subsets: ['ethiopic'],
+  variable: '--font-ethiopic',
   display: 'swap',
   weight: ['400', '500', '600', '700'],
 });
@@ -60,13 +67,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   };
 
   return (
-    <html lang="en" className={`${inter.variable} ${fraunces.variable}`}>
+    <html lang="en" className={`${inter.variable} ${fraunces.variable} ${ethiopic.variable}`}>
       <body>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        {children}
+        <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>
   );

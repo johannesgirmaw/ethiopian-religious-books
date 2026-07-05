@@ -1,8 +1,12 @@
+'use client';
+
 import { site } from '@/config/site';
+import { useLang } from '@/i18n/LanguageProvider';
 import { GlobeIcon } from './icons';
 import PrimaryDownload from './PrimaryDownload';
 
 export default function Hero() {
+  const { t } = useLang();
   return (
     <section className="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-28">
       {/* glow orbs */}
@@ -10,22 +14,20 @@ export default function Hero() {
       <div className="pointer-events-none absolute right-0 top-40 -z-10 h-72 w-72 rounded-full bg-gold-500/10 blur-3xl" />
 
       <div className="container-px flex flex-col items-center text-center">
-        <span className="eyebrow animate-fade-up">✦ {site.nameAm} · Ethiopian Orthodox Library</span>
+        <span className="eyebrow animate-fade-up">✦ {t.hero.eyebrow}</span>
 
         <h1
           className="mt-6 max-w-4xl font-display text-4xl font-semibold leading-[1.08] tracking-tight text-white animate-fade-up sm:text-6xl"
           style={{ animationDelay: '80ms' }}
         >
-          The sacred books of the Church,{' '}
-          <span className="gold-text">beautifully in your pocket</span>
+          {t.hero.titleA} <span className="gold-text">{t.hero.titleB}</span>
         </h1>
 
         <p
           className="mt-6 max-w-2xl text-lg text-slate-300 animate-fade-up"
           style={{ animationDelay: '160ms' }}
         >
-          Read Ethiopian Orthodox Tewahedo books and the Holy Bible with a calm, modern reader —
-          offline access, highlights, notes and daily reading plans. On every device you own.
+          {t.hero.subtitle}
         </p>
 
         <div
@@ -34,12 +36,12 @@ export default function Hero() {
         >
           <PrimaryDownload />
           <a href={site.webApp} className="btn-ghost text-base">
-            <GlobeIcon className="h-5 w-5" /> Open the web app
+            <GlobeIcon className="h-5 w-5" /> {t.cta.openWebApp}
           </a>
         </div>
 
         <p className="mt-5 text-xs text-slate-500 animate-fade-up" style={{ animationDelay: '320ms' }}>
-          Free · Web · Android · macOS · Windows · Linux
+          {t.hero.freeLine}
         </p>
 
         {/* device mock */}
@@ -51,9 +53,9 @@ export default function Hero() {
             <div className="rounded-2xl bg-gradient-to-b from-ink-800 to-ink-900 p-6 sm:p-10">
               <div className="grid gap-4 sm:grid-cols-3">
                 {[
-                  { t: 'መጽሐፍ ቅዱስ', s: 'Holy Bible · 81 books' },
-                  { t: 'ውዳሴ ማርያም', s: 'Praise of St. Mary' },
-                  { t: 'ስንክሳር', s: 'Synaxarium · daily' },
+                  { t: 'መጽሐፍ ቅዱስ', s: t.hero.cards.bible },
+                  { t: 'ውዳሴ ማርያም', s: t.hero.cards.praise },
+                  { t: 'ስንክሳር', s: t.hero.cards.synax },
                 ].map((c, i) => (
                   <div
                     key={c.t}
