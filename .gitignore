@@ -27,7 +27,12 @@ infra/prod/.env.prod
 infra/prod/.env
 **/.env.prod
 
-# Android release signing (never commit)
+# Android release signing.
+# NOTE: the release keystore + credentials are intentionally committed under
+# apps/reader_flutter/android/keystore/ as a backup (private repo). Losing the
+# keystore means you can never ship an update over the current APK.
 apps/reader_flutter/android/key.properties
-apps/reader_flutter/android/**/*.jks
-apps/reader_flutter/android/**/*.keystore
+apps/reader_flutter/android/*.jks
+apps/reader_flutter/android/*.keystore
+# ...but DO keep the deliberate backup copies:
+!apps/reader_flutter/android/keystore/
