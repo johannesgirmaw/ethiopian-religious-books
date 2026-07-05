@@ -6,3 +6,5 @@ GeneratedPluginRegistrant.java
 /key.properties
 **/*.keystore
 **/*.jks
+# Keep the deliberate release-keystore backup (see keystore/README.md).
+!keystore/felege-release.jks
