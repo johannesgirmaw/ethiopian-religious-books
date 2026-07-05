@@ -69,20 +69,25 @@ Let's Encrypt TLS. Live hosts:
 
 | Host | Serves |
 | --- | --- |
-| `felegemetsahft.com` / `www` | Flutter **web** static build (`/var/www/felegemetsahft/web`) |
+| `felegemetsahft.com` / `www` | Next.js **landing** static export (`/var/www/felegemetsahft/landing`) + `/downloads/` app installers (`/var/www/felegemetsahft/downloads`) |
+| `app.felegemetsahft.com` | Flutter **web app** static build (`/var/www/felegemetsahft/web`) |
 | `api.felegemetsahft.com` | Django API (`127.0.0.1:8000`) |
 | `files.felegemetsahft.com` | MinIO S3 for presigned book/cover URLs (`127.0.0.1:9000`) |
 
-Server layout: `/opt/felegemetsahft/{django_api,prod}` · compose file `prod/docker-compose.prod.yml`
-· env `prod/.env.prod` (symlinked as `prod/.env`). All release Flutter builds must set
-`--dart-define=API_BASE_URL=https://api.felegemetsahft.com/v1/`.
+Landing lives in `apps/landing/` (Next.js, `output: 'export'`); login/register links point to
+`app.felegemetsahft.com/#/login` (Flutter web uses hash routing). Server layout:
+`/opt/felegemetsahft/{django_api,prod}` · compose file `prod/docker-compose.prod.yml` · env
+`prod/.env.prod` (symlinked as `prod/.env`). All release Flutter builds must set
+`--dart-define=API_BASE_URL=https://api.felegemetsahft.com/v1/`. The Flutter web origin is
+`app.felegemetsahft.com`, so it MUST stay in the API's `CORS_ALLOWED_ORIGINS` / `CSRF_TRUSTED_ORIGINS`.
 
 **Deploy with the script — do not hand-run ad-hoc rsync/ssh:**
 
 ```
-scripts/deploy-prod.sh        # api + web
-scripts/deploy-prod.sh api    # Django only  (rsync → rebuild → restart; migrations auto-run on start)
-scripts/deploy-prod.sh web    # Flutter web only
+scripts/deploy-prod.sh          # api + web + landing
+scripts/deploy-prod.sh api      # Django only  (rsync → rebuild → restart; migrations auto-run on start)
+scripts/deploy-prod.sh web      # Flutter web app only (app.felegemetsahft.com)
+scripts/deploy-prod.sh landing  # Next.js landing only (felegemetsahft.com)
 ```
 
 ### Deployment rules (MUST follow)
