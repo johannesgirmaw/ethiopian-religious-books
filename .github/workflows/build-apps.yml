@@ -47,10 +47,14 @@ jobs:
           $m = Select-String -Path pubspec.yaml -Pattern '^version:\s*([0-9]+\.[0-9]+\.[0-9]+)'
           $ver = if ($m) { $m.Matches.Groups[1].Value } else { '1.0.0' }
           Write-Host "Packaging version $ver"
+          # Inno resolves relative SourceDir/OutputDir against the .iss location
+          # (windows\packaging), not this working dir — so pass absolute paths.
+          $src = Join-Path (Get-Location) "build\windows\x64\runner\Release"
+          $out = Join-Path (Get-Location) "installer_out"
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
             "/DMyAppVersion=$ver" `
-            "/DSourceDir=build\windows\x64\runner\Release" `
-            "/DOutputDir=installer_out" `
+            "/DSourceDir=$src" `
+            "/DOutputDir=$out" `
             "windows\packaging\felege_metsahft.iss"
           if ($LASTEXITCODE -ne 0) { throw "ISCC failed with exit code $LASTEXITCODE" }
           $out = "installer_out\felege-metsahft-setup.exe"
