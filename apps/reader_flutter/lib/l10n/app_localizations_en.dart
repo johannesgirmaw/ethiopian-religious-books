@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Ethiopian Reader';
+  String get appTitle => 'ፈለገ መጻሕፍት';
 
   @override
   String get splashTagline => 'Sacred texts, timeless wisdom';
@@ -131,7 +131,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutAppSectionBody =>
-      'Ethiopian Reader helps you browse, read, and study religious texts with offline support and reading progress.';
+      'Felege Metsahft helps you browse, read, and study religious texts with offline support and reading progress.';
 
   @override
   String get aboutVersionSectionTitle => 'Version';
@@ -623,6 +623,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get passwordFieldLabel => 'Password';
+
+  @override
+  String get passwordFieldHint => 'Enter your password';
+
+  @override
+  String get showPassword => 'Show password';
+
+  @override
+  String get hidePassword => 'Hide password';
 
   @override
   String get passwordMinHelper => 'Minimum 10 characters';
@@ -2192,6 +2201,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get paymentOrderId => 'Order ID';
+
+  @override
+  String get paymentPurchaseDetail => 'Purchase details';
 
   @override
   String get adminOrdersAllStatuses => 'All';

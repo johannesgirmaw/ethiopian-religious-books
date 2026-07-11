@@ -1,6 +1,6 @@
 {
   "@@locale": "en",
-  "appTitle": "Ethiopian Reader",
+  "appTitle": "ፈለገ መጻሕፍት",
   "splashTagline": "Sacred texts, timeless wisdom",
   "cancel": "Cancel",
   "save": "Save",
@@ -62,7 +62,7 @@
   "settingsCacheSection": "Storage & cache",
   "aboutTitle": "About",
   "aboutAppSectionTitle": "About this app",
-  "aboutAppSectionBody": "Ethiopian Reader helps you browse, read, and study religious texts with offline support and reading progress.",
+  "aboutAppSectionBody": "Felege Metsahft helps you browse, read, and study religious texts with offline support and reading progress.",
   "aboutVersionSectionTitle": "Version",
   "aboutVersionValue": "1.0.0",
   "aboutDevelopersSectionTitle": "Developers",
@@ -288,6 +288,9 @@
   "emailRequired": "Email is required",
   "emailInvalid": "Enter a valid email",
   "passwordFieldLabel": "Password",
+  "passwordFieldHint": "Enter your password",
+  "showPassword": "Show password",
+  "hidePassword": "Hide password",
   "passwordMinHelper": "Minimum 10 characters",
   "passwordRequired": "Password is required",
   "signIn": "Sign in",
@@ -969,6 +972,7 @@
   "paymentMethod": "Method",
   "paymentCommission": "Platform commission",
   "paymentOrderId": "Order ID",
+  "paymentPurchaseDetail": "Purchase details",
   "adminOrdersAllStatuses": "All",
   "paymentStatusColumn": "Status"
 }

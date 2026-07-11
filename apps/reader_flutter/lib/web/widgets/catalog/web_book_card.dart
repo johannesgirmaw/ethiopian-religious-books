@@ -36,7 +36,8 @@ class WebBookCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
+            AspectRatio(
+              aspectRatio: 0.82,
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: gradient,

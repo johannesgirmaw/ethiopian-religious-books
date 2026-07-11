@@ -11,7 +11,9 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Ethiopian Reader</string>
+	<string>ፈለገ መጻሕፍት</string>
+	<key>CFBundleDisplayName</key>
+	<string>ፈለገ መጻሕፍት</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

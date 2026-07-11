@@ -1,6 +1,6 @@
 {
   "@@locale": "am",
-  "appTitle": "የኢትዮጵያ አንባቢ",
+  "appTitle": "ፈለገ መጻሕፍት",
   "splashTagline": "ቅዱስ መጻሕፍት፣ የማይጠፉ ጥበብ",
   "cancel": "ሰርዝ",
   "save": "አስቀምጥ",
@@ -72,7 +72,7 @@
   "settingsCacheSection": "ማከማቻ እና ቤተ-መጻሕፍት",
   "aboutTitle": "ስለ መተግበሪያው",
   "aboutAppSectionTitle": "ስለ መተግበሪያው",
-  "aboutAppSectionBody": "የኢትዮጵያ አንባቢ ሃይማኖታዊ መጽሐፍትን ለማሰስ፣ ለንባብ እና ለመማር ከኦፍላይን ድጋፍ ጋር ያግዛል።",
+  "aboutAppSectionBody": "ፈለገ መጻሕፍት ሃይማኖታዊ መጽሐፍትን ለማሰስ፣ ለንባብ እና ለመማር ከኦፍላይን ድጋፍ ጋር ያግዛል።",
   "aboutVersionSectionTitle": "ስሪት",
   "aboutVersionValue": "1.0.0",
   "aboutDevelopersSectionTitle": "አበልጻጊዎች",
@@ -330,6 +330,9 @@
   "emailRequired": "ኢሜይል ያስፈልጋል",
   "emailInvalid": "ትክክለኛ ኢሜይል ያስገቡ",
   "passwordFieldLabel": "የይለፍ ቃል",
+  "passwordFieldHint": "የይለፍ ቃልዎን ያስገቡ",
+  "showPassword": "የይለፍ ቃል አሳይ",
+  "hidePassword": "የይለፍ ቃል ደብቅ",
   "passwordMinHelper": "ቢያንስ 10 ቁምፊዎች",
   "passwordRequired": "የይለፍ ቃል ያስፈልጋል",
   "signIn": "ግባ",
@@ -1087,6 +1090,7 @@
   "paymentMethod": "ዘዴ",
   "paymentCommission": "የመድረክ ኮሚሽን",
   "paymentOrderId": "የትዕዛዝ መለያ",
+  "paymentPurchaseDetail": "የግዢ ዝርዝሮች",
   "adminOrdersAllStatuses": "ሁሉም",
   "paymentStatusColumn": "ሁኔታ"
 }

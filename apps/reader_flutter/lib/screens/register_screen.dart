@@ -9,6 +9,7 @@ import '../l10n/app_localizations.dart';
 import '../providers/auth_api.dart';
 import '../providers/session_notifier.dart';
 import '../utils/api_error_message.dart';
+import '../utils/auth_validators.dart';
 import '../utils/dio_connection_message.dart';
 import '../utils/form_draft_controller.dart';
 import '../utils/form_draft_keys.dart';
@@ -122,21 +123,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
               autocorrect: false,
+              required: true,
+              autofocus: true,
               autofillHints: const [AutofillHints.email],
-              validator: (v) {
-                final s = (v ?? '').trim();
-                if (s.isEmpty) return l10n.emailRequired;
-                if (!s.contains('@') || !s.contains('.')) {
-                  return l10n.emailInvalid;
-                }
-                return null;
-              },
+              validator: (v) => validateEmail(v, l10n),
             ),
             const SizedBox(height: 16),
             AuthPasswordField(
               controller: _password,
               label: l10n.passwordFieldLabel,
+              hint: l10n.passwordFieldHint,
               helper: l10n.passwordMinRegisterHelper,
+              required: true,
+              showLabel: l10n.showPassword,
+              hideLabel: l10n.hidePassword,
               textInputAction: TextInputAction.next,
               autofillHints: const [AutofillHints.newPassword],
               validator: (v) {

@@ -42,6 +42,11 @@ class WebSidebar extends StatelessWidget {
     if (route == '/profile') {
       return currentLocation.startsWith('/profile');
     }
+    if (route == '/settings') {
+      // Downloads now lives under Settings — keep Settings highlighted there.
+      return currentLocation.startsWith('/settings') ||
+          currentLocation.startsWith('/downloads');
+    }
     return currentLocation.startsWith(route);
   }
 
@@ -237,12 +242,6 @@ List<WebSidebarItem> defaultWebSidebarItems(
       label: l10n.navHome,
     ),
     WebSidebarItem(
-      route: '/downloads',
-      icon: Icons.download_outlined,
-      selectedIcon: Icons.download_rounded,
-      label: l10n.downloadsPageTitle,
-    ),
-    WebSidebarItem(
       route: '/purchases',
       icon: Icons.receipt_long_outlined,
       selectedIcon: Icons.receipt_long_rounded,
@@ -263,13 +262,9 @@ List<WebSidebarItem> defaultWebSidebarItems(
     if (isAdmin || canManageBooks)
       WebSidebarItem(
         route: '/admin/books',
-        icon: isAdmin
-            ? Icons.admin_panel_settings_outlined
-            : Icons.menu_book_outlined,
-        selectedIcon: isAdmin
-            ? Icons.admin_panel_settings_rounded
-            : Icons.menu_book_rounded,
-        label: isAdmin ? l10n.adminHomeTitle : l10n.authorMyBooks,
+        icon: Icons.menu_book_outlined,
+        selectedIcon: Icons.menu_book_rounded,
+        label: isAdmin ? l10n.adminBooksMenuTitle : l10n.authorMyBooks,
       ),
     if (isAdmin)
       WebSidebarItem(

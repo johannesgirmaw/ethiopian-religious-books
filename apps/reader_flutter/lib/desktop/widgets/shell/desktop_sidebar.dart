@@ -46,6 +46,11 @@ class DesktopSidebar extends StatelessWidget {
     if (route == '/admin') {
       return currentLocation.startsWith('/admin');
     }
+    if (route == '/settings') {
+      // Downloads now lives under Settings — keep Settings highlighted there.
+      return currentLocation.startsWith('/settings') ||
+          currentLocation.startsWith('/downloads');
+    }
     return currentLocation.startsWith(route);
   }
 
@@ -235,13 +240,6 @@ List<DesktopSidebarItem> defaultDesktopSidebarItems(
       shortcut: '⌘1',
     ),
     DesktopSidebarItem(
-      route: '/downloads',
-      icon: Icons.download_outlined,
-      selectedIcon: Icons.download_rounded,
-      label: l10n.downloadsPageTitle,
-      shortcut: '⌘2',
-    ),
-    DesktopSidebarItem(
       route: '/purchases',
       icon: Icons.receipt_long_outlined,
       selectedIcon: Icons.receipt_long_rounded,
@@ -252,26 +250,21 @@ List<DesktopSidebarItem> defaultDesktopSidebarItems(
       icon: Icons.tune_rounded,
       selectedIcon: Icons.tune_rounded,
       label: l10n.navSettings,
-      shortcut: '⌘3',
+      shortcut: '⌘2',
     ),
     DesktopSidebarItem(
       route: '/profile',
       icon: Icons.account_circle_outlined,
       selectedIcon: Icons.account_circle_rounded,
       label: l10n.navProfile,
-      shortcut: '⌘4',
+      shortcut: '⌘3',
     ),
     if (isAdmin || canManageBooks)
       DesktopSidebarItem(
         route: '/admin/books',
-        icon: isAdmin
-            ? Icons.admin_panel_settings_outlined
-            : Icons.menu_book_outlined,
-        selectedIcon: isAdmin
-            ? Icons.admin_panel_settings_rounded
-            : Icons.menu_book_rounded,
-        label: isAdmin ? l10n.adminHomeTitle : l10n.authorMyBooks,
-        shortcut: '⌘5',
+        icon: Icons.menu_book_outlined,
+        selectedIcon: Icons.menu_book_rounded,
+        label: isAdmin ? l10n.adminBooksMenuTitle : l10n.authorMyBooks,
       ),
     if (isAdmin)
       DesktopSidebarItem(
@@ -300,10 +293,8 @@ class DesktopNavShortcuts extends StatelessWidget {
       LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.digit1):
           const _DesktopNavIntent('/home'),
       LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.digit2):
-          const _DesktopNavIntent('/downloads'),
-      LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.digit3):
           const _DesktopNavIntent('/settings'),
-      LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.digit4):
+      LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.digit3):
           const _DesktopNavIntent('/profile'),
     };
 

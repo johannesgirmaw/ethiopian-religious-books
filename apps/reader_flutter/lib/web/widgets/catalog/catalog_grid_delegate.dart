@@ -16,7 +16,7 @@ SliverGridDelegate catalogGridDelegate(BuildContext context) {
     crossAxisCount: crossAxisCount,
     crossAxisSpacing: 20,
     mainAxisSpacing: 20,
-    childAspectRatio: 0.52,
+    childAspectRatio: 0.56,
   );
 }
 

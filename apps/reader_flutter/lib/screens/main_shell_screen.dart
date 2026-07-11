@@ -82,13 +82,9 @@ class MainShellScreen extends ConsumerWidget {
                 ),
                 if (canManageBooks)
                   LiquidNavItem(
-                    icon: isAdmin
-                        ? Icons.admin_panel_settings_outlined
-                        : Icons.menu_book_outlined,
-                    selectedIcon: isAdmin
-                        ? Icons.admin_panel_settings_rounded
-                        : Icons.menu_book_rounded,
-                    label: isAdmin ? l10n.adminHomeTitle : l10n.authorMyBooks,
+                    icon: Icons.menu_book_outlined,
+                    selectedIcon: Icons.menu_book_rounded,
+                    label: isAdmin ? l10n.adminBooksMenuTitle : l10n.authorMyBooks,
                   ),
               ],
             ),

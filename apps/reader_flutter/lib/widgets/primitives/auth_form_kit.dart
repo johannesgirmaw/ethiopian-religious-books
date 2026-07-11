@@ -30,6 +30,8 @@ class AuthTextField extends StatefulWidget {
     this.onSubmitted,
     this.autovalidateMode,
     this.enabled = true,
+    this.required = false,
+    this.autofocus = false,
   });
 
   final TextEditingController? controller;
@@ -49,6 +51,14 @@ class AuthTextField extends StatefulWidget {
   final ValueChanged<String>? onSubmitted;
   final AutovalidateMode? autovalidateMode;
   final bool enabled;
+
+  /// When true, renders a red asterisk after the label and exposes the field
+  /// as required to assistive technology.
+  final bool required;
+
+  /// Autofocus this field when its screen first mounts (accessibility: puts the
+  /// caret in the primary input so keyboard/screen-reader users start there).
+  final bool autofocus;
 
   @override
   State<AuthTextField> createState() => _AuthTextFieldState();
@@ -82,13 +92,28 @@ class _AuthTextFieldState extends State<AuthTextField> {
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 2, bottom: 7),
-          child: Text(
-            widget.label,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-              letterSpacing: 0.1,
+          child: Semantics(
+            label: widget.required ? '${widget.label}, required' : widget.label,
+            child: ExcludeSemantics(
+              child: RichText(
+                text: TextSpan(
+                  text: widget.label,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                    letterSpacing: 0.1,
+                  ),
+                  children: widget.required
+                      ? const [
+                          TextSpan(
+                            text: ' *',
+                            style: TextStyle(color: AppColors.errorText),
+                          ),
+                        ]
+                      : null,
+                ),
+              ),
             ),
           ),
         ),
@@ -109,6 +134,7 @@ class _AuthTextFieldState extends State<AuthTextField> {
           child: TextFormField(
             controller: widget.controller,
             focusNode: _focus,
+            autofocus: widget.autofocus,
             obscureText: widget.obscureText,
             keyboardType: widget.keyboardType,
             textInputAction: widget.textInputAction,
@@ -119,7 +145,10 @@ class _AuthTextFieldState extends State<AuthTextField> {
             maxLength: widget.maxLength,
             enabled: widget.enabled,
             validator: widget.validator,
-            autovalidateMode: widget.autovalidateMode,
+            autovalidateMode: widget.autovalidateMode ??
+                (widget.validator != null
+                    ? AutovalidateMode.onUserInteraction
+                    : null),
             onFieldSubmitted: widget.onSubmitted,
             style: const TextStyle(
               fontSize: 15,
@@ -198,22 +227,33 @@ class AuthPasswordField extends StatefulWidget {
     super.key,
     this.controller,
     required this.label,
-    this.hint = '••••••••••',
+    this.hint,
     this.helper,
     this.textInputAction,
     this.autofillHints,
     this.validator,
     this.onSubmitted,
+    this.required = false,
+    this.autofocus = false,
+    this.showLabel = 'Show password',
+    this.hideLabel = 'Hide password',
   });
 
   final TextEditingController? controller;
   final String label;
+
+  /// Placeholder text. Never render bullet characters here — dots read as an
+  /// already-filled password and make the empty field look populated.
   final String? hint;
   final String? helper;
   final TextInputAction? textInputAction;
   final Iterable<String>? autofillHints;
   final String? Function(String?)? validator;
   final ValueChanged<String>? onSubmitted;
+  final bool required;
+  final bool autofocus;
+  final String showLabel;
+  final String hideLabel;
 
   @override
   State<AuthPasswordField> createState() => _AuthPasswordFieldState();
@@ -232,6 +272,8 @@ class _AuthPasswordFieldState extends State<AuthPasswordField> {
       icon: Icons.lock_outline_rounded,
       obscureText: !_show,
       autocorrect: false,
+      required: widget.required,
+      autofocus: widget.autofocus,
       keyboardType: TextInputType.visiblePassword,
       textInputAction: widget.textInputAction,
       autofillHints: widget.autofillHints,
@@ -247,7 +289,7 @@ class _AuthPasswordFieldState extends State<AuthPasswordField> {
           color: AppColors.textTertiary,
         ),
         onPressed: () => setState(() => _show = !_show),
-        tooltip: _show ? 'Hide' : 'Show',
+        tooltip: _show ? widget.hideLabel : widget.showLabel,
       ),
     );
   }

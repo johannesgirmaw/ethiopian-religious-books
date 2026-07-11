@@ -1,6 +1,6 @@
 {
-    "name": "ethiopian_reader",
-    "short_name": "ethiopian_reader",
+    "name": "ፈለገ መጻሕፍት",
+    "short_name": "ፈለገ መጻሕፍት",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

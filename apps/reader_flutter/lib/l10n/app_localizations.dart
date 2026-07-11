@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'Ethiopian Reader'**
+  /// **'ፈለገ መጻሕፍት'**
   String get appTitle;
 
   /// No description provided for @splashTagline.
@@ -323,7 +323,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutAppSectionBody.
   ///
   /// In en, this message translates to:
-  /// **'Ethiopian Reader helps you browse, read, and study religious texts with offline support and reading progress.'**
+  /// **'Felege Metsahft helps you browse, read, and study religious texts with offline support and reading progress.'**
   String get aboutAppSectionBody;
 
   /// No description provided for @aboutVersionSectionTitle.
@@ -1213,6 +1213,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Password'**
   String get passwordFieldLabel;
+
+  /// No description provided for @passwordFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password'**
+  String get passwordFieldHint;
+
+  /// No description provided for @showPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get showPassword;
+
+  /// No description provided for @hidePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get hidePassword;
 
   /// No description provided for @passwordMinHelper.
   ///
@@ -4099,6 +4117,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Order ID'**
   String get paymentOrderId;
+
+  /// No description provided for @paymentPurchaseDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase details'**
+  String get paymentPurchaseDetail;
 
   /// No description provided for @adminOrdersAllStatuses.
   ///

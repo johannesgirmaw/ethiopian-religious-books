@@ -177,13 +177,6 @@ class _HomeScreenBodyState extends ConsumerState<HomeScreenBody> {
     final resumeId = (lastOpened != null && lastOpened.bookId.isNotEmpty)
         ? lastOpened.bookId
         : null;
-    final recommended =
-        (ref.watch(recommendedBooksProvider).valueOrNull ?? const [])
-            .where((b) =>
-                !bibleHiddenForGenre(b, _genre) &&
-                (_genre == null || (b.genre ?? '').trim() == _genre))
-            .toList();
-
     final headerChildren = <Widget>[
       header,
       const SizedBox(height: 24),
@@ -202,12 +195,6 @@ class _HomeScreenBodyState extends ConsumerState<HomeScreenBody> {
           HomeSectionHeader(title: l10n.continueReading),
           const SizedBox(height: 12),
           WebContinueReadingStrip(bookId: resumeId),
-        ],
-        if (recommended.length >= 2) ...[
-          const SizedBox(height: 26),
-          HomeSectionHeader(title: l10n.homeRecommended),
-          const SizedBox(height: 12),
-          _RecommendedRail(books: recommended),
         ],
         const SizedBox(height: 26),
         HomeSectionHeader(title: l10n.homeSectionExplore),
@@ -265,24 +252,3 @@ class _HomeScreenBodyState extends ConsumerState<HomeScreenBody> {
   }
 }
 
-class _RecommendedRail extends StatelessWidget {
-  const _RecommendedRail({required this.books});
-
-  final List<BookSummary> books;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 300,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: books.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 18),
-        itemBuilder: (context, i) => SizedBox(
-          width: 188,
-          child: WebBookCard(book: books[i], index: i),
-        ),
-      ),
-    );
-  }
-}

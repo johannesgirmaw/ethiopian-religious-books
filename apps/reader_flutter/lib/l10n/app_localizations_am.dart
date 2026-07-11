@@ -9,7 +9,7 @@ class AppLocalizationsAm extends AppLocalizations {
   AppLocalizationsAm([String locale = 'am']) : super(locale);
 
   @override
-  String get appTitle => 'የኢትዮጵያ አንባቢ';
+  String get appTitle => 'ፈለገ መጻሕፍት';
 
   @override
   String get splashTagline => 'ቅዱስ መጻሕፍት፣ የማይጠፉ ጥበብ';
@@ -131,7 +131,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get aboutAppSectionBody =>
-      'የኢትዮጵያ አንባቢ ሃይማኖታዊ መጽሐፍትን ለማሰስ፣ ለንባብ እና ለመማር ከኦፍላይን ድጋፍ ጋር ያግዛል።';
+      'ፈለገ መጻሕፍት ሃይማኖታዊ መጽሐፍትን ለማሰስ፣ ለንባብ እና ለመማር ከኦፍላይን ድጋፍ ጋር ያግዛል።';
 
   @override
   String get aboutVersionSectionTitle => 'ስሪት';
@@ -612,6 +612,15 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get passwordFieldLabel => 'የይለፍ ቃል';
+
+  @override
+  String get passwordFieldHint => 'የይለፍ ቃልዎን ያስገቡ';
+
+  @override
+  String get showPassword => 'የይለፍ ቃል አሳይ';
+
+  @override
+  String get hidePassword => 'የይለፍ ቃል ደብቅ';
 
   @override
   String get passwordMinHelper => 'ቢያንስ 10 ቁምፊዎች';
@@ -2149,6 +2158,9 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get paymentOrderId => 'የትዕዛዝ መለያ';
+
+  @override
+  String get paymentPurchaseDetail => 'የግዢ ዝርዝሮች';
 
   @override
   String get adminOrdersAllStatuses => 'ሁሉም';

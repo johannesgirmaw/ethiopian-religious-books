@@ -542,6 +542,28 @@ class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
   }
 
   Future<void> _openReview(PaymentTransaction txn) async {
+    // Wide screens (web / desktop) get a centered, horizontally-laid-out dialog;
+    // narrow screens keep the draggable bottom sheet.
+    final wide = MediaQuery.sizeOf(context).width >= 720;
+    if (wide) {
+      await showDialog<void>(
+        context: context,
+        barrierColor: Colors.black.withValues(alpha: 0.45),
+        builder: (_) => Dialog(
+          backgroundColor: AppColors.surfaceCard,
+          clipBehavior: Clip.antiAlias,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.panel),
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 880, maxHeight: 620),
+            child: _ReviewSheet(txn: txn),
+          ),
+        ),
+      );
+      return;
+    }
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -1672,135 +1694,439 @@ class _ReviewSheetState extends ConsumerState<_ReviewSheet> {
     }
   }
 
+  bool get _hasReceipt =>
+      widget.txn.method?.isManual == true ||
+      widget.txn.receiptUrl.isNotEmpty;
+
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final txn = widget.txn;
-    final canAct = !txn.status.isTerminal;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // The dialog gives us room for a side-by-side layout; the bottom sheet
+        // stays a single stacked column.
+        final wide = constraints.maxWidth >= 620;
+        return wide ? _wideLayout(context) : _narrowLayout(context);
+      },
+    );
+  }
+
+  // --- Wide (dialog): header · [details | receipt] · footer -----------------
+  Widget _wideLayout(BuildContext context) {
+    final body = SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+      child: _hasReceipt
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _detailsColumn(context)),
+                const SizedBox(width: 28),
+                SizedBox(
+                  width: 300,
+                  child: _receiptColumn(context, height: 300),
+                ),
+              ],
+            )
+          : _detailsColumn(context),
+    );
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _header(context, showClose: true),
+        const Divider(height: 1, color: AppColors.borderSubtle),
+        Flexible(child: body),
+        const Divider(height: 1, color: AppColors.borderSubtle),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
+          child: _footer(context, wide: true),
+        ),
+      ],
+    );
+  }
+
+  // --- Narrow (bottom sheet): single stacked column -------------------------
+  Widget _narrowLayout(BuildContext context) {
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(
           left: AppSpace.lg,
           right: AppSpace.lg,
-          top: AppSpace.lg,
+          top: AppSpace.md,
           bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpace.lg,
         ),
         child: SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        l10n.adminOrderDetail,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    PaymentStatusChip(status: txn.status),
-                  ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: AppSpace.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
+              ),
+              _header(context, showClose: false),
+              const SizedBox(height: AppSpace.md),
+              _detailsColumn(context),
+              if (_hasReceipt) ...[
                 const SizedBox(height: AppSpace.md),
-                DetailRow(label: l10n.adminBook, value: txn.bookTitle),
-                DetailRow(label: l10n.adminCustomer, value: txn.userEmail),
-                DetailRow(
-                  label: l10n.paymentTotal,
-                  value: formatMoney(txn.amount, txn.currency),
-                ),
-                DetailRow(
-                  label: l10n.paymentCommission,
-                  value: formatMoney(txn.commissionAmount, txn.currency),
-                ),
-                if (txn.method != null)
-                  DetailRow(
-                    label: l10n.paymentMethod,
-                    value: paymentMethodLabel(txn.method!, l10n),
-                  ),
-                if (txn.bank != null)
-                  DetailRow(label: l10n.adminBank, value: txn.bank!.name),
-                if (txn.transactionReference.isNotEmpty)
-                  DetailRow(
-                    label: l10n.paymentTransactionReference,
-                    value: txn.transactionReference,
-                  ),
-                DetailRow(label: l10n.paymentDate, value: _formatDate(txn.createdAt)),
-                const SizedBox(height: AppSpace.md),
-                Text(
-                  l10n.adminReceipt,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: AppSpace.xs),
-                ReceiptPreview(transaction: txn),
-                if (_error != null) ...[
-                  const SizedBox(height: AppSpace.sm),
-                  Text(
-                    _error!,
-                    style: const TextStyle(
-                        color: AppColors.errorText, fontSize: 13),
-                  ),
-                ],
-                if (canAct) ...[
-                  const SizedBox(height: AppSpace.md),
-                  TextField(
-                    controller: _note,
-                    decoration: InputDecoration(
-                      labelText: l10n.adminRejectReason,
-                      border: const OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpace.md),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _busy ? null : () => _act(approve: false),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.errorText,
-                            side: const BorderSide(color: AppColors.errorBorder),
-                            minimumSize: const Size.fromHeight(48),
-                          ),
-                          child: Text(l10n.adminReject),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpace.sm),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: _busy ? null : () => _act(approve: true),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.successText,
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size.fromHeight(48),
-                          ),
-                          child: _busy
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Text(l10n.adminApprove),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                _receiptColumn(context, height: 240),
               ],
+              const SizedBox(height: AppSpace.md),
+              _footer(context, wide: false),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- Header: eyebrow + book title + customer, status chip, close ----------
+  Widget _header(BuildContext context, {required bool showClose}) {
+    final l10n = AppLocalizations.of(context);
+    final txn = widget.txn;
+    final email = txn.userEmail.isEmpty ? '—' : txn.userEmail;
+
+    final title = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          l10n.adminOrderDetail.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1,
+            color: AppColors.textTertiary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          txn.bookTitle.isEmpty ? '—' : txn.bookTitle,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            height: 1.25,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.person_outline,
+                size: 15, color: AppColors.textTertiary),
+            const SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                email,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+
+    final row = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: title),
+        const SizedBox(width: 12),
+        PaymentStatusChip(status: txn.status),
+        if (showClose) ...[
+          const SizedBox(width: 4),
+          IconButton(
+            icon: const Icon(Icons.close_rounded, size: 20),
+            color: AppColors.textTertiary,
+            splashRadius: 18,
+            tooltip: l10n.close,
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ],
+    );
+
+    return showClose
+        ? Padding(padding: const EdgeInsets.fromLTRB(24, 20, 16, 16), child: row)
+        : row;
+  }
+
+  // --- Details column: money breakdown + payment facts ----------------------
+  Widget _detailsColumn(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final txn = widget.txn;
+    final authorShare = txn.amount - txn.commissionAmount;
+
+    final facts = <Widget>[
+      if (txn.method != null)
+        DetailRow(
+          label: l10n.paymentMethod,
+          value: paymentMethodLabel(txn.method!, l10n),
+        ),
+      if (txn.bank != null)
+        DetailRow(label: l10n.adminBank, value: txn.bank!.name),
+      if (txn.transactionReference.isNotEmpty)
+        DetailRow(
+          label: l10n.paymentTransactionReference,
+          value: txn.transactionReference,
+        ),
+      DetailRow(label: l10n.paymentDate, value: _formatDate(txn.createdAt)),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(AppSpace.md),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceSoft,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            children: [
+              _amountRow(
+                l10n.paymentTotal,
+                formatMoney(txn.amount, txn.currency),
+                strong: true,
+              ),
+              const SizedBox(height: 8),
+              _amountRow(
+                l10n.paymentCommission,
+                '− ${formatMoney(txn.commissionAmount, txn.currency)}',
+                muted: true,
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 10),
+                child: Divider(height: 1, color: AppColors.border),
+              ),
+              _amountRow(
+                l10n.adminAuthorRevenue,
+                formatMoney(authorShare, txn.currency),
+                accent: true,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpace.md),
+        ...facts,
+      ],
+    );
+  }
+
+  Widget _amountRow(
+    String label,
+    String value, {
+    bool strong = false,
+    bool muted = false,
+    bool accent = false,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: muted ? 12.5 : 13,
+              fontWeight: accent ? FontWeight.w700 : FontWeight.w600,
+              color: muted ? AppColors.textTertiary : AppColors.textSecondary,
             ),
           ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: (strong || accent) ? 15.5 : 13,
+            fontWeight: (strong || accent) ? FontWeight.w800 : FontWeight.w600,
+            color: accent
+                ? AppColors.primaryDeep
+                : muted
+                    ? AppColors.textTertiary
+                    : AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --- Receipt column -------------------------------------------------------
+  Widget _receiptColumn(BuildContext context, {required double height}) {
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          l10n.adminReceipt.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1,
+            color: AppColors.textTertiary,
+          ),
+        ),
+        const SizedBox(height: AppSpace.xs),
+        ReceiptPreview(transaction: widget.txn, height: height),
+      ],
+    );
+  }
+
+  // --- Footer: error + reason + actions -------------------------------------
+  Widget _footer(BuildContext context, {required bool wide}) {
+    final l10n = AppLocalizations.of(context);
+    final txn = widget.txn;
+    final canAct = !txn.status.isTerminal;
+
+    final children = <Widget>[];
+
+    if (_error != null) {
+      children.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpace.sm),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.error_outline,
+                  size: 16, color: AppColors.errorText),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  _error!,
+                  style: const TextStyle(
+                      color: AppColors.errorText, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (!canAct) {
+      final closeBtn = FilledButton.tonal(
+        onPressed: () => Navigator.of(context).pop(),
+        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(46)),
+        child: Text(l10n.close),
+      );
+      children.add(
+        wide
+            ? Align(
+                alignment: Alignment.centerRight,
+                child: SizedBox(width: 160, child: closeBtn),
+              )
+            : closeBtn,
+      );
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
+      );
+    }
+
+    final reject = OutlinedButton(
+      onPressed: _busy ? null : () => _act(approve: false),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.errorText,
+        side: const BorderSide(color: AppColors.errorBorder),
+        minimumSize: const Size(0, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+      ),
+      child: Text(l10n.adminReject),
+    );
+
+    final approve = FilledButton(
+      onPressed: _busy ? null : () => _act(approve: true),
+      style: FilledButton.styleFrom(
+        backgroundColor: AppColors.successText,
+        foregroundColor: Colors.white,
+        minimumSize: const Size(0, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+      ),
+      child: _busy
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            )
+          : Text(l10n.adminApprove),
+    );
+
+    children.add(_reasonField(l10n));
+    children.add(const SizedBox(height: AppSpace.md));
+    children.add(
+      wide
+          ? Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                reject,
+                const SizedBox(width: AppSpace.sm),
+                approve,
+              ],
+            )
+          : Row(
+              children: [
+                Expanded(child: reject),
+                const SizedBox(width: AppSpace.sm),
+                Expanded(child: approve),
+              ],
+            ),
+    );
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: children,
+    );
+  }
+
+  Widget _reasonField(AppLocalizations l10n) {
+    return TextField(
+      controller: _note,
+      minLines: 1,
+      maxLines: 3,
+      style: const TextStyle(fontSize: 13.5, color: AppColors.textPrimary),
+      decoration: InputDecoration(
+        labelText: l10n.adminRejectReason,
+        labelStyle: const TextStyle(fontSize: 13, color: AppColors.textTertiary),
+        isDense: true,
+        filled: true,
+        fillColor: AppColors.surfaceCard,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
         ),
       ),
     );
