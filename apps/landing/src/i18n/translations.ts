@@ -110,14 +110,14 @@ export const dict: Record<Lang, Dict> = {
         'Tap Install, then open Felege Metsahft.',
       ] },
       macos: { note: 'macOS 11 Big Sur or newer', install: [
-        'Open the downloaded .dmg file.',
-        'Drag Felege Metsahft into your Applications folder.',
-        'First launch: right-click the app → Open to bypass Gatekeeper.',
+        'Open the downloaded .dmg and drag the app into your Applications folder.',
+        'In Applications, right-click the app → Open, then click Open in the dialog (first launch only).',
+        'If macOS says the app is “damaged”, open Terminal and run: xattr -dr com.apple.quarantine /Applications/ethiopian_reader.app',
       ] },
       windows: { note: 'Windows 10/11 (64-bit)', install: [
-        'Download the .zip and extract it.',
-        'Open the folder and run ethiopian_reader.exe.',
+        'Download and run felege-metsahft-setup.exe.',
         'If SmartScreen appears, choose More info → Run anyway.',
+        'Follow the installer, then launch Felege Metsahft.',
       ] },
       linux: { note: '64-bit · GTK 3 desktop', install: [
         'Download and extract: tar -xzf felege-metsahft-linux-x64.tar.gz',
@@ -192,14 +192,14 @@ export const dict: Record<Lang, Dict> = {
         'ጫን የሚለውን ተጭነው ፈለገ መጻሕፍትን ይክፈቱ።',
       ] },
       macos: { note: 'ማክ 11 Big Sur ወይም ከዚያ በላይ', install: [
-        'የወረደውን .dmg ፋይል ይክፈቱ።',
-        'ፈለገ መጻሕፍትን ወደ Applications አቃፊ ይጎትቱ።',
-        'ለመጀመሪያ ጊዜ፦ መተግበሪያውን በቀኝ ተጭነው → Open ይምረጡ።',
+        'የወረደውን .dmg ከፍተው መተግበሪያውን ወደ Applications አቃፊ ይጎትቱ።',
+        'በApplications ውስጥ መተግበሪያውን በቀኝ ተጭነው → Open፣ ከዚያ በሳጥኑ ላይ Open ይምረጡ (ለመጀመሪያ ጊዜ ብቻ)።',
+        'ማክ “damaged” ካለ Terminal ከፍተው ይህን ያስኪዱ፦ xattr -dr com.apple.quarantine /Applications/ethiopian_reader.app',
       ] },
       windows: { note: 'ዊንዶውስ 10/11 (64-ቢት)', install: [
-        'የ.zip ፋይሉን አውርደው ይክፈቱት።',
-        'አቃፊውን ከፍተው ethiopian_reader.exe ን ያስኪዱ።',
+        'felege-metsahft-setup.exe ን አውርደው ያስኪዱ።',
         'SmartScreen ከታየ More info → Run anyway ይምረጡ።',
+        'ጫኚውን ተከትለው ፈለገ መጻሕፍትን ይክፈቱ።',
       ] },
       linux: { note: '64-ቢት · GTK 3 ዴስክቶፕ', install: [
         'አውርደው ይክፈቱ፦ tar -xzf felege-metsahft-linux-x64.tar.gz',
