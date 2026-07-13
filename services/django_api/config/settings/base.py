@@ -333,6 +333,13 @@ UNFOLD = {
                         "link": reverse_lazy("admin:payments_authorprofile_changelist"),
                     },
                     {
+                        "title": _("Author applications"),
+                        "icon": "how_to_reg",
+                        "link": reverse_lazy(
+                            "admin:payments_authorapplication_changelist"
+                        ),
+                    },
+                    {
                         "title": _("Platform settings"),
                         "icon": "tune",
                         "link": reverse_lazy(

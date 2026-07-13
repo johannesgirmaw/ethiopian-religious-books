@@ -20,8 +20,10 @@ from apps.catalog.admin_serializers import (
     AdminBookPatchSerializer,
     AdminBookSerializer,
     AdminPublishSerializer,
+    AdminReviewRejectSerializer,
     AdminRevisionCompleteSerializer,
     AdminRevisionCreateSerializer,
+    BookReviewNoteSerializer,
 )
 from apps.catalog.docx_import import (
     DocxImportError,
@@ -30,6 +32,7 @@ from apps.catalog.docx_import import (
 )
 from apps.catalog.models import Book, BookRevision
 from apps.catalog.permissions import (
+    IsPlatformReviewer,
     IsPublisherOrAuthor,
     can_manage_book,
     is_platform_admin,
@@ -39,6 +42,12 @@ from apps.catalog.publishing import (
     unpublish_book,
     validate_bible_draft,
     validate_draft_warnings,
+)
+from apps.catalog.review import (
+    approve_review,
+    reject_review,
+    submit_for_review,
+    withdraw_review,
 )
 from apps.catalog.search_normalization import normalize_search_text
 from apps.catalog.storage_s3 import head_object, presign_put, put_bytes
@@ -288,11 +297,26 @@ class AdminBookDetailView(APIView):
                 },
                 status=status.HTTP_409_CONFLICT,
             )
+        if book.review_status == Book.ReviewStatus.IN_REVIEW:
+            return Response(
+                {
+                    "error": {
+                        "code": "BOOK_IN_REVIEW",
+                        "message": "Withdraw this book from review before editing.",
+                    }
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
         if not can_manage_book(book, request.user):
             return _not_book_creator_response()
         ser = AdminBookPatchSerializer(book, data=request.data, partial=True)
         ser.is_valid(raise_exception=True)
         ser.save()
+        # Editing an approved book invalidates the approval — it must be
+        # re-submitted and re-reviewed before it can be published again.
+        if book.review_status == Book.ReviewStatus.REVIEWED:
+            book.review_status = Book.ReviewStatus.DRAFT
+            book.save(update_fields=["review_status", "updated_at"])
         return Response(AdminBookSerializer(book).data)
 
 
@@ -489,3 +513,70 @@ class AdminBookUnpublishView(APIView):
             return _not_book_creator_response()
         unpublish_book(book)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AdminBookSubmitReviewView(APIView):
+    """Author sends a draft for editorial review (draft -> in_review)."""
+
+    permission_classes = [IsPublisherOrAuthor]
+
+    def post(self, request, book_id):
+        book = get_object_or_404(Book, pk=book_id)
+        outcome = submit_for_review(book, request.user)
+        if not outcome.ok:
+            return Response(outcome.error, status=outcome.status_code)
+        return Response(AdminBookSerializer(outcome.book).data)
+
+
+class AdminBookWithdrawReviewView(APIView):
+    """Author withdraws a pending submission (in_review -> draft)."""
+
+    permission_classes = [IsPublisherOrAuthor]
+
+    def post(self, request, book_id):
+        book = get_object_or_404(Book, pk=book_id)
+        outcome = withdraw_review(book, request.user)
+        if not outcome.ok:
+            return Response(outcome.error, status=outcome.status_code)
+        return Response(AdminBookSerializer(outcome.book).data)
+
+
+class AdminBookApproveReviewView(APIView):
+    """Reviewer approves a book under review (in_review -> reviewed)."""
+
+    permission_classes = [IsPlatformReviewer]
+
+    def post(self, request, book_id):
+        book = get_object_or_404(Book, pk=book_id)
+        outcome = approve_review(book, request.user)
+        if not outcome.ok:
+            return Response(outcome.error, status=outcome.status_code)
+        return Response(AdminBookSerializer(outcome.book).data)
+
+
+class AdminBookRejectReviewView(APIView):
+    """Reviewer requests changes with a mandatory comment (in_review -> draft)."""
+
+    permission_classes = [IsPlatformReviewer]
+
+    def post(self, request, book_id):
+        book = get_object_or_404(Book, pk=book_id)
+        ser = AdminReviewRejectSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        outcome = reject_review(book, request.user, ser.validated_data["comment"])
+        if not outcome.ok:
+            return Response(outcome.error, status=outcome.status_code)
+        return Response(AdminBookSerializer(outcome.book).data)
+
+
+class AdminBookReviewNotesView(APIView):
+    """Review-round history for a book (author sees only their own book's notes)."""
+
+    permission_classes = [IsPublisherOrAuthor]
+
+    def get(self, request, book_id):
+        book = get_object_or_404(Book, pk=book_id)
+        if not can_manage_book(book, request.user):
+            return _not_book_creator_response()
+        notes = book.review_notes.all()
+        return Response({"items": BookReviewNoteSerializer(notes, many=True).data})

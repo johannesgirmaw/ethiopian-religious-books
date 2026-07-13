@@ -12,10 +12,12 @@ from django.db import transaction as db_transaction
 from django.utils import timezone
 
 from apps.catalog.models import Book
-from apps.payments.enums import TransactionStatus
+from apps.payments.enums import AuthorApplicationStatus, TransactionStatus
 from apps.payments.models import (
     AuditLog,
+    AuthorApplication,
     AuthorCommission,
+    AuthorProfile,
     PaymentTransaction,
     PlatformSettings,
     RevenueLedger,
@@ -150,6 +152,119 @@ def reject_transaction(
         ]
     )
     return txn
+
+
+def notify_user(user, *, title: str, body: str = "") -> None:
+    """Create an in-app notification for ``user`` (best-effort).
+
+    Kept here so the study ``UserNotification`` model has a single writer reused
+    by the API/admin/Celery, mirroring how ``record_audit`` centralises audit rows.
+    """
+    # Imported lazily to avoid a payments -> study import at module load.
+    from apps.study.models import UserNotification
+
+    if user is None or not getattr(user, "pk", None):
+        return
+    UserNotification.objects.create(
+        user=user,
+        kind=UserNotification.Kind.INFO,
+        title=title[:200],
+        body=(body or "")[:500],
+    )
+
+
+@db_transaction.atomic
+def submit_author_application(user, validated_data: dict) -> AuthorApplication:
+    """Create or update the user's pending author application.
+
+    Idempotent on the one-to-one: re-submitting after a rejection resets the
+    application to ``PENDING`` and clears the prior review decision.
+    """
+    defaults = {
+        **validated_data,
+        "status": AuthorApplicationStatus.PENDING,
+        "reviewed_by": None,
+        "reviewed_at": None,
+        "review_note": "",
+    }
+    application, _ = AuthorApplication.objects.update_or_create(
+        user=user, defaults=defaults
+    )
+    return application
+
+
+@db_transaction.atomic
+def approve_author_application(
+    application: AuthorApplication, *, reviewer=None
+) -> AuthorApplication:
+    """Approve an application: promote the applicant and build their profile."""
+    application.status = AuthorApplicationStatus.APPROVED
+    application.review_note = ""
+    if reviewer is not None:
+        application.reviewed_by = reviewer
+        application.reviewed_at = timezone.now()
+    application.save(
+        update_fields=[
+            "status",
+            "review_note",
+            "reviewed_by",
+            "reviewed_at",
+            "updated_at",
+        ]
+    )
+
+    applicant = application.user
+    if getattr(applicant, "role", "") != "author":
+        applicant.role = "author"
+        applicant.save(update_fields=["role"])
+
+    # Materialise a verified publishing profile from the application fields.
+    AuthorProfile.objects.update_or_create(
+        user=applicant,
+        defaults={
+            "pen_name": application.pen_name or application.full_name,
+            "bio": application.bio,
+            "photo_object_key": application.photo_object_key,
+            "phone": application.phone,
+            "country": application.country,
+            "payment_email": application.payment_email,
+            "telebirr_number": application.telebirr_number,
+            "is_verified": True,
+        },
+    )
+
+    notify_user(
+        applicant,
+        title="You're now an author",
+        body="Your author application was approved. You can now publish books.",
+    )
+    return application
+
+
+@db_transaction.atomic
+def reject_author_application(
+    application: AuthorApplication, *, reviewer=None, note: str = ""
+) -> AuthorApplication:
+    application.status = AuthorApplicationStatus.REJECTED
+    application.review_note = note or application.review_note
+    if reviewer is not None:
+        application.reviewed_by = reviewer
+        application.reviewed_at = timezone.now()
+    application.save(
+        update_fields=[
+            "status",
+            "review_note",
+            "reviewed_by",
+            "reviewed_at",
+            "updated_at",
+        ]
+    )
+
+    body = "Your author application was not approved."
+    if application.review_note:
+        body = f"{body} Reason: {application.review_note}"
+    notify_user(application.user, title="Author application update", body=body)
+    return application
 
 
 def record_audit(

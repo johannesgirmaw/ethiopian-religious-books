@@ -148,6 +148,14 @@ class DesktopProfileScreenBody extends ConsumerWidget {
                     subtitle: l10n.aboutAppSectionTitle,
                     onTap: () => context.push('/about'),
                   ),
+                  if (user.canManageBooks != true) ...[
+                    const Divider(height: 1),
+                    _LinkRow(
+                      title: l10n.authorApplyEntryTitle,
+                      subtitle: l10n.authorApplyEntrySubtitle,
+                      onTap: () => context.push('/become-author'),
+                    ),
+                  ],
                   if (user.isSuperuser) ...[
                     const Divider(height: 1),
                     _LinkRow(
@@ -160,6 +168,12 @@ class DesktopProfileScreenBody extends ConsumerWidget {
                       title: l10n.adminManageOrders,
                       subtitle: l10n.adminOrdersSubtitle,
                       onTap: () => context.push('/admin/payments'),
+                    ),
+                    const Divider(height: 1),
+                    _LinkRow(
+                      title: l10n.adminAuthorAppsTitle,
+                      subtitle: l10n.adminAuthorAppsSubtitle,
+                      onTap: () => context.push('/admin/author-applications'),
                     ),
                   ],
                 ],

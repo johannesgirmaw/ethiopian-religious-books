@@ -9,6 +9,7 @@ import '../../providers/admin_providers.dart';
 import '../../providers/session_notifier.dart';
 import '../../screens/admin/admin_book_actions.dart';
 import '../../screens/admin/admin_book_import.dart';
+import '../../widgets/admin_book_status_chip.dart';
 import '../../widgets/app_state_view.dart';
 import '../../widgets/primitives/shell_primitives.dart';
 import '../design/web_tokens.dart';
@@ -255,7 +256,17 @@ class _AdminBookRow extends ConsumerStatefulWidget {
   ConsumerState<_AdminBookRow> createState() => _AdminBookRowState();
 }
 
-enum _AdminBookMenuAction { edit, publish, unpublish, openReader }
+enum _AdminBookMenuAction {
+  edit,
+  submitReview,
+  withdrawReview,
+  approveReview,
+  requestChanges,
+  viewFeedback,
+  publish,
+  unpublish,
+  openReader,
+}
 
 class _AdminBookRowState extends ConsumerState<_AdminBookRow> {
   bool _busy = false;
@@ -272,11 +283,18 @@ class _AdminBookRowState extends ConsumerState<_AdminBookRow> {
     final l10n = AppLocalizations.of(context)!;
     final book = widget.book;
     final isPublished = book.isPublished;
-    final currentUserId =
-        ref.watch(sessionNotifierProvider).valueOrNull?.user?.id;
+    final user = ref.watch(sessionNotifierProvider).valueOrNull?.user;
+    final currentUserId = user?.id;
+    final isReviewer = user?.isPlatformAdmin ?? false;
     final isCreator = book.isCreatedBy(currentUserId);
-    final canEdit = !isPublished && isCreator;
+    final canEdit = !isPublished && !book.isInReview && isCreator;
     final canUnpublish = isPublished && isCreator;
+    final canSubmitReview = isCreator && !isPublished && book.isDraftReview;
+    final canWithdraw = isCreator && book.isInReview;
+    final canReview = isReviewer && book.isInReview;
+    final canPublish = isCreator && !isPublished && book.isReviewed;
+    final (statusLabel, statusKind) =
+        adminBookStatusChip(l10n, book.displayStatus);
     final chapterCount = book.chaptersDraft.length;
     final pageCount =
         book.chaptersDraft.fold<int>(0, (sum, c) => sum + c.pages.length);
@@ -332,10 +350,7 @@ class _AdminBookRowState extends ConsumerState<_AdminBookRow> {
               ),
             ),
             const SizedBox(width: 12),
-            AppStatusChip(
-              label: isPublished ? l10n.publishedStatus : l10n.draftStatus,
-              kind: isPublished ? AppStatusKind.active : AppStatusKind.pending,
-            ),
+            AppStatusChip(label: statusLabel, kind: statusKind),
             if (_busy)
               const Padding(
                 padding: EdgeInsets.all(8),
@@ -354,6 +369,32 @@ class _AdminBookRowState extends ConsumerState<_AdminBookRow> {
                       if (canEdit) {
                         context.push('/admin/books/${book.id}/edit', extra: book);
                       }
+                    case _AdminBookMenuAction.submitReview:
+                      await _run(() => adminSubmitBookForReview(
+                            context: context,
+                            ref: ref,
+                            bookId: book.id,
+                          ));
+                    case _AdminBookMenuAction.withdrawReview:
+                      await _run(() => adminWithdrawBookReview(
+                            context: context,
+                            ref: ref,
+                            bookId: book.id,
+                          ));
+                    case _AdminBookMenuAction.approveReview:
+                      await _run(() => adminApproveBookReview(
+                            context: context,
+                            ref: ref,
+                            bookId: book.id,
+                          ));
+                    case _AdminBookMenuAction.requestChanges:
+                      await _run(() => adminRequestChangesForBook(
+                            context: context,
+                            ref: ref,
+                            bookId: book.id,
+                          ));
+                    case _AdminBookMenuAction.viewFeedback:
+                      context.push('/admin/books/${book.id}/review');
                     case _AdminBookMenuAction.publish:
                       await _run(() => adminPublishBook(
                             context: context,
@@ -376,7 +417,32 @@ class _AdminBookRowState extends ConsumerState<_AdminBookRow> {
                       value: _AdminBookMenuAction.edit,
                       child: Text(l10n.adminEditAction),
                     ),
-                  if (!isPublished)
+                  if (canSubmitReview)
+                    PopupMenuItem(
+                      value: _AdminBookMenuAction.submitReview,
+                      child: Text(l10n.sendForReview),
+                    ),
+                  if (canWithdraw)
+                    PopupMenuItem(
+                      value: _AdminBookMenuAction.withdrawReview,
+                      child: Text(l10n.withdrawFromReview),
+                    ),
+                  if (canReview)
+                    PopupMenuItem(
+                      value: _AdminBookMenuAction.approveReview,
+                      child: Text(l10n.approveReview),
+                    ),
+                  if (canReview)
+                    PopupMenuItem(
+                      value: _AdminBookMenuAction.requestChanges,
+                      child: Text(l10n.requestChanges),
+                    ),
+                  if (book.hasPendingChangeRequest)
+                    PopupMenuItem(
+                      value: _AdminBookMenuAction.viewFeedback,
+                      child: Text(l10n.viewReviewFeedback),
+                    ),
+                  if (canPublish)
                     PopupMenuItem(
                       value: _AdminBookMenuAction.publish,
                       child: Text(l10n.publish),

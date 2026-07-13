@@ -6,7 +6,11 @@ from django.db import models
 
 from apps.catalog.models import Book
 from apps.payments.crypto import decrypt, encrypt
-from apps.payments.enums import PaymentMethod, TransactionStatus
+from apps.payments.enums import (
+    AuthorApplicationStatus,
+    PaymentMethod,
+    TransactionStatus,
+)
 
 
 class PlatformSettings(models.Model):
@@ -144,6 +148,9 @@ class AuthorProfile(models.Model):
     pen_name = models.CharField(max_length=255, blank=True)
     bio = models.TextField(blank=True)
     photo_url = models.URLField(blank=True)
+    # Object key of a managed photo upload (mirrors Book.cover_object_key). Set
+    # when an author application is approved; the API serves a signed URL from it.
+    photo_object_key = models.CharField(max_length=500, blank=True)
     phone = models.CharField(max_length=40, blank=True)
     country = models.CharField(max_length=80, blank=True)
     payment_email = models.EmailField(blank=True)
@@ -158,6 +165,74 @@ class AuthorProfile(models.Model):
 
     def __str__(self):
         return self.pen_name or str(self.user_id)
+
+
+class AuthorApplication(models.Model):
+    """A reader's request to become an author, reviewed and approved by an admin.
+
+    Approval promotes ``user.role`` to ``author`` and materialises a verified
+    :class:`AuthorProfile` from these fields. Kept separate from the profile so
+    the review trail (status/reviewer/note) survives independently and a rejected
+    applicant can edit and re-submit.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="author_application",
+    )
+
+    # Person / identity.
+    full_name = models.CharField(max_length=255)
+    pen_name = models.CharField(max_length=255, blank=True)
+    # Religious / academic title, e.g. "Priest", "Deacon", "Dr.".
+    title = models.CharField(max_length=120, blank=True)
+    bio = models.TextField(blank=True)
+    phone = models.CharField(max_length=40, blank=True)
+    country = models.CharField(max_length=80, blank=True)
+    # Object key of the applicant's uploaded photo; a signed URL is exposed via
+    # the API (mirrors Book.cover_object_key — this is a key, not a URL).
+    photo_object_key = models.CharField(max_length=500, blank=True)
+
+    # Supporting evidence.
+    credentials = models.TextField(blank=True)
+    sample_links = models.TextField(blank=True)
+
+    # Payout details (copied onto the AuthorProfile on approval).
+    payment_email = models.EmailField(blank=True)
+    telebirr_number = models.CharField(max_length=40, blank=True)
+
+    # Review lifecycle (mirrors PaymentTransaction).
+    status = models.CharField(
+        max_length=20,
+        choices=AuthorApplicationStatus.choices,
+        default=AuthorApplicationStatus.PENDING,
+    )
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_author_applications",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_note = models.CharField(max_length=500, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "author_applications"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(
+                fields=["status", "-created_at"], name="idx_authorapp_status"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.full_name or self.user_id} ({self.status})"
 
 
 class Bank(models.Model):

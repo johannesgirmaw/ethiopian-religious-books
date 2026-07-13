@@ -118,6 +118,16 @@ class ProfileScreen extends ConsumerWidget {
             subtitle: l10n.aboutAppSectionTitle,
             onTap: () => context.push('/about'),
           ),
+          // Readers (not yet authors/admins) can apply to become an author.
+          if (user != null && user.canManageBooks != true) ...[
+            const SizedBox(height: AppLayout.itemGap),
+            _ProfileLinkRow(
+              icon: Icons.how_to_reg_outlined,
+              title: l10n.authorApplyEntryTitle,
+              subtitle: l10n.authorApplyEntrySubtitle,
+              onTap: () => context.push('/become-author'),
+            ),
+          ],
           // Authors (who can manage books but aren't superusers) reach Manage
           // Books — and the .docx import — here; superusers use "Admin panel".
           if (user?.canManageBooks == true && user?.isSuperuser != true) ...[
@@ -143,6 +153,13 @@ class ProfileScreen extends ConsumerWidget {
               title: l10n.adminManageOrders,
               subtitle: l10n.adminOrdersSubtitle,
               onTap: () => context.push('/admin/payments'),
+            ),
+            const SizedBox(height: AppLayout.itemGap),
+            _ProfileLinkRow(
+              icon: Icons.how_to_reg_outlined,
+              title: l10n.adminAuthorAppsTitle,
+              subtitle: l10n.adminAuthorAppsSubtitle,
+              onTap: () => context.push('/admin/author-applications'),
             ),
           ],
           if (user != null) ...[

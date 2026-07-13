@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../design/app_tokens.dart';
+import '../../../models/user_profile.dart';
 import '../../../providers/session_notifier.dart';
 import '../../../design/reference_assets.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../utils/sidebar_identity.dart';
 import '../../design/desktop_tokens.dart';
 
 class DesktopSidebarItem {
@@ -26,7 +28,7 @@ class DesktopSidebarItem {
 }
 
 /// Persistent left navigation rail for native desktop shell.
-class DesktopSidebar extends StatelessWidget {
+class DesktopSidebar extends ConsumerWidget {
   const DesktopSidebar({
     super.key,
     required this.currentLocation,
@@ -55,7 +57,10 @@ class DesktopSidebar extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final user = ref.watch(sessionNotifierProvider).valueOrNull?.user;
+
     return DecoratedBox(
       decoration: DesktopTokens.sidebarDecoration(),
       child: SizedBox(
@@ -63,10 +68,11 @@ class DesktopSidebar extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Brand lockup: logo + Latin name over Amharic subtitle.
             SizedBox(
               height: DesktopTokens.titleBarHeight,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: Row(
                   children: [
                     Container(
@@ -74,7 +80,7 @@ class DesktopSidebar extends StatelessWidget {
                       height: 28,
                       decoration: BoxDecoration(
                         gradient: AppGradients.gold,
-                        borderRadius: BorderRadius.circular(7),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       padding: const EdgeInsets.all(5),
                       child: Image.asset(
@@ -86,16 +92,34 @@ class DesktopSidebar extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: Text(
-                        appTitle,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                          letterSpacing: -0.2,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            l10n.brandName,
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary,
+                              letterSpacing: -0.2,
+                              height: 1.1,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            appTitle,
+                            style: const TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textTertiary,
+                              height: 1.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -116,21 +140,89 @@ class DesktopSidebar extends StatelessWidget {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-              child: Text(
-                AppLocalizations.of(context)!.splashTagline,
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: AppColors.textTertiary,
-                  height: 1.35,
-                  fontStyle: FontStyle.italic,
-                ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+            const Divider(height: 1),
+            _DesktopUserCard(user: user),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Footer identity card: avatar + display name + email. Taps through to profile.
+class _DesktopUserCard extends StatelessWidget {
+  const _DesktopUserCard({required this.user});
+
+  final UserProfile? user;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = sidebarUserName(user);
+    final subtitle = sidebarUserSubtitle(user);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: () => context.go('/profile'),
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: DesktopTokens.canvasBg,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: DesktopTokens.borderColor),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    gradient: AppGradients.hero,
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Text(
+                    sidebarInitial(name),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          color: AppColors.textTertiary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -159,19 +251,11 @@ class _SidebarLink extends StatelessWidget {
           behavior: HitTestBehavior.opaque,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 120),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
             decoration: BoxDecoration(
               color:
                   selected ? DesktopTokens.sidebarSelectedBg : Colors.transparent,
-              borderRadius: BorderRadius.circular(6),
-              border: selected
-                  ? Border(
-                      left: BorderSide(
-                        color: AppColors.referencePrimary,
-                        width: 3,
-                      ),
-                    )
-                  : null,
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               children: [
@@ -179,7 +263,7 @@ class _SidebarLink extends StatelessWidget {
                   selected ? item.selectedIcon : item.icon,
                   size: 18,
                   color: selected
-                      ? AppColors.referencePrimary
+                      ? AppColors.primaryDeep
                       : AppColors.textSecondary,
                 ),
                 const SizedBox(width: 10),
@@ -188,9 +272,9 @@ class _SidebarLink extends StatelessWidget {
                     item.label,
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                       color: selected
-                          ? AppColors.referencePrimary
+                          ? AppColors.primaryDeep
                           : AppColors.textPrimary,
                     ),
                   ),
@@ -272,6 +356,13 @@ List<DesktopSidebarItem> defaultDesktopSidebarItems(
         icon: Icons.receipt_long_outlined,
         selectedIcon: Icons.receipt_long_rounded,
         label: l10n.adminPaymentsTitle,
+      ),
+    if (isAdmin)
+      DesktopSidebarItem(
+        route: '/admin/author-applications',
+        icon: Icons.how_to_reg_outlined,
+        selectedIcon: Icons.how_to_reg_rounded,
+        label: l10n.adminAuthorAppsTitle,
       ),
   ];
 }

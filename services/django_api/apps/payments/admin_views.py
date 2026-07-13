@@ -5,8 +5,14 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.payments.enums import TERMINAL_STATUSES, TransactionStatus
+from apps.payments.enums import (
+    AUTHOR_APP_TERMINAL_STATUSES,
+    AuthorApplicationStatus,
+    TERMINAL_STATUSES,
+    TransactionStatus,
+)
 from apps.payments.models import (
+    AuthorApplication,
     AuthorCommission,
     Bank,
     GatewayCredential,
@@ -15,13 +21,20 @@ from apps.payments.models import (
 )
 from apps.payments.permissions import IsPlatformAdmin
 from apps.payments.serializers import (
+    AdminAuthorApplicationSerializer,
     AuthorCommissionSerializer,
     BankSerializer,
     GatewayCredentialSerializer,
     PaymentTransactionSerializer,
     PlatformSettingsSerializer,
 )
-from apps.payments.services import complete_transaction, record_audit, reject_transaction
+from apps.payments.services import (
+    approve_author_application,
+    complete_transaction,
+    record_audit,
+    reject_author_application,
+    reject_transaction,
+)
 
 
 class _AdminView(APIView):
@@ -114,6 +127,82 @@ class AdminRejectTransactionView(_AdminView):
             request=request,
         )
         return Response(PaymentTransactionSerializer(txn, context={"request": request}).data)
+
+
+class AdminAuthorApplicationsView(_AdminView):
+    @extend_schema(responses=AdminAuthorApplicationSerializer(many=True))
+    def get(self, request):
+        qs = AuthorApplication.objects.select_related("user", "reviewed_by")
+        status_filter = request.query_params.get("status")
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        pending = AuthorApplication.objects.filter(
+            status=AuthorApplicationStatus.PENDING
+        ).count()
+        return Response(
+            {
+                "items": AdminAuthorApplicationSerializer(
+                    qs, many=True, context={"request": request}
+                ).data,
+                "pending": pending,
+            }
+        )
+
+
+class AdminAuthorApplicationDetailView(_AdminView):
+    @extend_schema(responses=AdminAuthorApplicationSerializer)
+    def get(self, request, application_id):
+        app = get_object_or_404(AuthorApplication, pk=application_id)
+        return Response(
+            AdminAuthorApplicationSerializer(app, context={"request": request}).data
+        )
+
+
+class AdminApproveAuthorApplicationView(_AdminView):
+    @extend_schema(request=None, responses=AdminAuthorApplicationSerializer)
+    def post(self, request, application_id):
+        app = get_object_or_404(AuthorApplication, pk=application_id)
+        if app.status in AUTHOR_APP_TERMINAL_STATUSES:
+            return Response(
+                {"error": {"code": "LOCKED", "message": "Application already approved."}},
+                status=status.HTTP_409_CONFLICT,
+            )
+        app = approve_author_application(app, reviewer=request.user)
+        record_audit(
+            actor=request.user,
+            action="author_application.approve",
+            target_type="AuthorApplication",
+            target_id=app.id,
+            metadata={"applicant": str(app.user_id)},
+            request=request,
+        )
+        return Response(
+            AdminAuthorApplicationSerializer(app, context={"request": request}).data
+        )
+
+
+class AdminRejectAuthorApplicationView(_AdminView):
+    @extend_schema(request=None, responses=AdminAuthorApplicationSerializer)
+    def post(self, request, application_id):
+        app = get_object_or_404(AuthorApplication, pk=application_id)
+        if app.status in AUTHOR_APP_TERMINAL_STATUSES:
+            return Response(
+                {"error": {"code": "LOCKED", "message": "Application already approved."}},
+                status=status.HTTP_409_CONFLICT,
+            )
+        note = (request.data.get("note") or "").strip()
+        app = reject_author_application(app, reviewer=request.user, note=note)
+        record_audit(
+            actor=request.user,
+            action="author_application.reject",
+            target_type="AuthorApplication",
+            target_id=app.id,
+            metadata={"note": note},
+            request=request,
+        )
+        return Response(
+            AdminAuthorApplicationSerializer(app, context={"request": request}).data
+        )
 
 
 class AdminBanksView(_AdminView):

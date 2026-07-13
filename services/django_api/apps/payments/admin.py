@@ -2,8 +2,10 @@ from django.contrib import admin
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin
 
+from apps.payments.enums import AuthorApplicationStatus
 from apps.payments.models import (
     AuditLog,
+    AuthorApplication,
     AuthorCommission,
     AuthorProfile,
     Bank,
@@ -11,6 +13,10 @@ from apps.payments.models import (
     PaymentTransaction,
     PlatformSettings,
     RevenueLedger,
+)
+from apps.payments.services import (
+    approve_author_application,
+    reject_author_application,
 )
 
 
@@ -64,6 +70,60 @@ class AuthorProfileAdmin(ModelAdmin):
     list_filter = ("is_verified", "country")
     search_fields = ("pen_name", "user__email", "payment_email")
     raw_id_fields = ("user",)
+
+
+@admin.register(AuthorApplication)
+class AuthorApplicationAdmin(ModelAdmin):
+    list_display = (
+        "created_at",
+        "full_name",
+        "user",
+        "title",
+        "country",
+        "status",
+        "reviewed_by",
+        "reviewed_at",
+    )
+    list_filter = ("status", "country")
+    search_fields = ("full_name", "pen_name", "user__email", "payment_email")
+    date_hierarchy = "created_at"
+    raw_id_fields = ("user", "reviewed_by")
+    readonly_fields = ("id", "created_at", "updated_at", "photo_preview")
+
+    @admin.display(description="Photo")
+    def photo_preview(self, obj):
+        if not obj.photo_object_key:
+            return "—"
+        try:
+            from apps.catalog.storage_s3 import presign_get
+
+            url = presign_get(obj.photo_object_key)
+        except Exception:
+            return obj.photo_object_key
+        return format_html('<a href="{}" target="_blank">View photo</a>', url)
+
+    def save_model(self, request, obj, form, change):
+        # Setting status to approved/rejected in the admin runs the same service
+        # the API uses: promote the role, build the profile, notify + (for
+        # rejection) record the note. Guarded so it only fires on a transition.
+        prev_status = None
+        if change and obj.pk:
+            prev_status = (
+                AuthorApplication.objects.filter(pk=obj.pk)
+                .values_list("status", flat=True)
+                .first()
+            )
+        super().save_model(request, obj, form, change)
+        if (
+            obj.status == AuthorApplicationStatus.APPROVED
+            and prev_status != AuthorApplicationStatus.APPROVED
+        ):
+            approve_author_application(obj, reviewer=request.user)
+        elif (
+            obj.status == AuthorApplicationStatus.REJECTED
+            and prev_status != AuthorApplicationStatus.REJECTED
+        ):
+            reject_author_application(obj, reviewer=request.user, note=obj.review_note)
 
 
 @admin.register(PaymentTransaction)

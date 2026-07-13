@@ -110,6 +110,61 @@ class SessionNotifier extends AsyncNotifier<Session?> {
     }
   }
 
+  /// Re-fetches the signed-in user from `/me` and updates the stored profile,
+  /// keeping the current tokens. Used to pick up a server-side role change (e.g.
+  /// an approved author application) without forcing a full re-login. On a 401
+  /// it refreshes the access token once and retries. Best-effort: returns false
+  /// on failure and leaves the session untouched.
+  Future<bool> refreshUser() async {
+    final cur = state.valueOrNull;
+    if (cur == null) return false;
+
+    Future<Map<String, dynamic>?> fetch(String access) async {
+      final dio = Dio(
+        BaseOptions(
+          baseUrl: AppConfig.apiBaseUrl,
+          connectTimeout: const Duration(seconds: 15),
+          headers: {'Authorization': 'Bearer $access'},
+        ),
+      );
+      final res = await dio.get<Map<String, dynamic>>('me');
+      return res.data;
+    }
+
+    try {
+      Map<String, dynamic>? userMap;
+      try {
+        userMap = await fetch(cur.accessToken);
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 401 && await tryRefresh()) {
+          final refreshed = state.valueOrNull;
+          if (refreshed == null) return false;
+          userMap = await fetch(refreshed.accessToken);
+        } else {
+          rethrow;
+        }
+      }
+      if (userMap == null) return false;
+      final latest = state.valueOrNull;
+      if (latest == null) return false;
+      await _storage.saveSession(
+        accessToken: latest.accessToken,
+        refreshToken: latest.refreshToken,
+        userJson: jsonEncode(userMap),
+      );
+      state = AsyncData(
+        Session(
+          accessToken: latest.accessToken,
+          refreshToken: latest.refreshToken,
+          user: UserProfile.fromJson(userMap),
+        ),
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> clear() async {
     await _storage.clear();
     // Drop the encrypted offline library and its device key so a different user

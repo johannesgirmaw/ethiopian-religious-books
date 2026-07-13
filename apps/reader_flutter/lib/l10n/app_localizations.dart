@@ -104,6 +104,12 @@ abstract class AppLocalizations {
   /// **'ፈለገ መጻሕፍት'**
   String get appTitle;
 
+  /// No description provided for @brandName.
+  ///
+  /// In en, this message translates to:
+  /// **'Felege Metsahft'**
+  String get brandName;
+
   /// No description provided for @splashTagline.
   ///
   /// In en, this message translates to:
@@ -247,6 +253,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Purchases'**
   String get navPurchases;
+
+  /// No description provided for @navOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders'**
+  String get navOrders;
 
   /// No description provided for @drawerHome.
   ///
@@ -2354,6 +2366,162 @@ abstract class AppLocalizations {
   /// **'Draft'**
   String get draftStatus;
 
+  /// No description provided for @inReviewStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'In review'**
+  String get inReviewStatus;
+
+  /// No description provided for @reviewedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewed'**
+  String get reviewedStatus;
+
+  /// No description provided for @sendForReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Send for review'**
+  String get sendForReview;
+
+  /// No description provided for @sendForReviewBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Send this book to a reviewer? You won\'t be able to edit it while it\'s under review.'**
+  String get sendForReviewBody;
+
+  /// No description provided for @submitReviewSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent for review.'**
+  String get submitReviewSuccess;
+
+  /// No description provided for @withdrawFromReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw'**
+  String get withdrawFromReview;
+
+  /// No description provided for @withdrawReviewSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawn from review.'**
+  String get withdrawReviewSuccess;
+
+  /// No description provided for @approveReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get approveReview;
+
+  /// No description provided for @approveReviewBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve this book? The author can then publish it.'**
+  String get approveReviewBody;
+
+  /// No description provided for @approveReviewSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Book approved.'**
+  String get approveReviewSuccess;
+
+  /// No description provided for @requestChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Request changes'**
+  String get requestChanges;
+
+  /// No description provided for @requestChangesSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes requested.'**
+  String get requestChangesSuccess;
+
+  /// No description provided for @reviewCommentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the changes needed'**
+  String get reviewCommentLabel;
+
+  /// No description provided for @reviewActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t complete the review action.'**
+  String get reviewActionFailed;
+
+  /// No description provided for @viewReviewFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'View feedback'**
+  String get viewReviewFeedback;
+
+  /// No description provided for @reviewFeedbackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewer feedback'**
+  String get reviewFeedbackTitle;
+
+  /// No description provided for @changesRequestedBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes requested'**
+  String get changesRequestedBannerTitle;
+
+  /// No description provided for @reviewHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review history'**
+  String get reviewHistoryTitle;
+
+  /// No description provided for @reviewHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No review activity yet.'**
+  String get reviewHistoryEmpty;
+
+  /// No description provided for @reviewNoComment.
+  ///
+  /// In en, this message translates to:
+  /// **'No comment.'**
+  String get reviewNoComment;
+
+  /// No description provided for @adminBookInReviewLockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Under review'**
+  String get adminBookInReviewLockedTitle;
+
+  /// No description provided for @adminBookInReviewLockedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This book is being reviewed. Withdraw it from review to make changes.'**
+  String get adminBookInReviewLockedMessage;
+
+  /// No description provided for @reviewDecisionSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted for review'**
+  String get reviewDecisionSubmitted;
+
+  /// No description provided for @reviewDecisionApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get reviewDecisionApproved;
+
+  /// No description provided for @reviewDecisionChangesRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes requested'**
+  String get reviewDecisionChangesRequested;
+
+  /// No description provided for @reviewDecisionWithdrawn.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawn'**
+  String get reviewDecisionWithdrawn;
+
   /// No description provided for @statusChip.
   ///
   /// In en, this message translates to:
@@ -4135,6 +4303,312 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Status'**
   String get paymentStatusColumn;
+
+  /// No description provided for @authorApplyEntryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Become an author'**
+  String get authorApplyEntryTitle;
+
+  /// No description provided for @authorApplyEntrySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply to publish your own books'**
+  String get authorApplyEntrySubtitle;
+
+  /// No description provided for @authorApplyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Author application'**
+  String get authorApplyTitle;
+
+  /// No description provided for @authorApplyIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us about yourself. Our team reviews every application before approving you as an author.'**
+  String get authorApplyIntro;
+
+  /// No description provided for @authorApplyStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Your application is under review.'**
+  String get authorApplyStatusPending;
+
+  /// No description provided for @authorApplyStatusApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re approved as an author!'**
+  String get authorApplyStatusApproved;
+
+  /// No description provided for @authorApplyStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Your application wasn\'t approved. You can update it and resubmit.'**
+  String get authorApplyStatusRejected;
+
+  /// No description provided for @authorApplyReviewNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewer note'**
+  String get authorApplyReviewNoteLabel;
+
+  /// No description provided for @authorApplyAlreadyAuthor.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re already an author.'**
+  String get authorApplyAlreadyAuthor;
+
+  /// No description provided for @authorApplyManageBooks.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage your books'**
+  String get authorApplyManageBooks;
+
+  /// No description provided for @authorApplySubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit application'**
+  String get authorApplySubmit;
+
+  /// No description provided for @authorApplyResubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Update & resubmit'**
+  String get authorApplyResubmit;
+
+  /// No description provided for @authorApplySubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Application submitted'**
+  String get authorApplySubmitted;
+
+  /// No description provided for @authorApplyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not submit your application.'**
+  String get authorApplyFailed;
+
+  /// No description provided for @authorApplySectionIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'About you'**
+  String get authorApplySectionIdentity;
+
+  /// No description provided for @authorApplySectionEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'Supporting information'**
+  String get authorApplySectionEvidence;
+
+  /// No description provided for @authorApplySectionPayout.
+  ///
+  /// In en, this message translates to:
+  /// **'Payout details (optional)'**
+  String get authorApplySectionPayout;
+
+  /// No description provided for @authorFieldFullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name'**
+  String get authorFieldFullName;
+
+  /// No description provided for @authorFieldFullNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your legal name'**
+  String get authorFieldFullNameHint;
+
+  /// No description provided for @authorFieldPenName.
+  ///
+  /// In en, this message translates to:
+  /// **'Pen name'**
+  String get authorFieldPenName;
+
+  /// No description provided for @authorFieldPenNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Name shown on your books'**
+  String get authorFieldPenNameHint;
+
+  /// No description provided for @authorFieldTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get authorFieldTitle;
+
+  /// No description provided for @authorFieldTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Priest, Deacon, Dr.'**
+  String get authorFieldTitleHint;
+
+  /// No description provided for @authorFieldBio.
+  ///
+  /// In en, this message translates to:
+  /// **'Biography'**
+  String get authorFieldBio;
+
+  /// No description provided for @authorFieldBioHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A short introduction'**
+  String get authorFieldBioHint;
+
+  /// No description provided for @authorFieldPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get authorFieldPhone;
+
+  /// No description provided for @authorFieldCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Country'**
+  String get authorFieldCountry;
+
+  /// No description provided for @authorFieldCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Credentials & qualifications'**
+  String get authorFieldCredentials;
+
+  /// No description provided for @authorFieldCredentialsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Education, ordination, certifications'**
+  String get authorFieldCredentialsHint;
+
+  /// No description provided for @authorFieldSampleLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Writing samples / links'**
+  String get authorFieldSampleLinks;
+
+  /// No description provided for @authorFieldSampleLinksHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Links to prior work (one per line)'**
+  String get authorFieldSampleLinksHint;
+
+  /// No description provided for @authorFieldPaymentEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment email'**
+  String get authorFieldPaymentEmail;
+
+  /// No description provided for @authorFieldTelebirr.
+  ///
+  /// In en, this message translates to:
+  /// **'Telebirr number'**
+  String get authorFieldTelebirr;
+
+  /// No description provided for @authorFieldPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal photo'**
+  String get authorFieldPhoto;
+
+  /// No description provided for @authorPhotoPick.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose photo'**
+  String get authorPhotoPick;
+
+  /// No description provided for @authorPhotoChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change photo'**
+  String get authorPhotoChange;
+
+  /// No description provided for @authorPhotoUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading photo…'**
+  String get authorPhotoUploading;
+
+  /// No description provided for @authorFullNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your full name'**
+  String get authorFullNameRequired;
+
+  /// No description provided for @adminAuthorAppsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Author applications'**
+  String get adminAuthorAppsTitle;
+
+  /// No description provided for @adminAuthorAppsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review requests to become an author'**
+  String get adminAuthorAppsSubtitle;
+
+  /// No description provided for @adminAuthorAppsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No author applications yet'**
+  String get adminAuthorAppsEmpty;
+
+  /// No description provided for @adminAuthorAppsNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No applications match this filter'**
+  String get adminAuthorAppsNoMatch;
+
+  /// No description provided for @adminAuthorAppStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get adminAuthorAppStatusPending;
+
+  /// No description provided for @adminAuthorAppStatusApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get adminAuthorAppStatusApproved;
+
+  /// No description provided for @adminAuthorAppStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get adminAuthorAppStatusRejected;
+
+  /// No description provided for @adminAuthorAppReviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Application'**
+  String get adminAuthorAppReviewTitle;
+
+  /// No description provided for @adminAuthorAppApproveConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve this author?'**
+  String get adminAuthorAppApproveConfirm;
+
+  /// No description provided for @adminAuthorAppApproveConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This grants the author role and creates their author profile.'**
+  String get adminAuthorAppApproveConfirmBody;
+
+  /// No description provided for @adminAuthorAppApplicant.
+  ///
+  /// In en, this message translates to:
+  /// **'Applicant'**
+  String get adminAuthorAppApplicant;
+
+  /// No description provided for @adminAuthorAppPendingReviews.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending applications'**
+  String get adminAuthorAppPendingReviews;
+
+  /// No description provided for @adminAuthorAppUnnamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unnamed applicant'**
+  String get adminAuthorAppUnnamed;
 }
 
 class _AppLocalizationsDelegate

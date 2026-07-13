@@ -12,6 +12,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitle => 'ፈለገ መጻሕፍት';
 
   @override
+  String get brandName => 'Felege Metsahft';
+
+  @override
   String get splashTagline => 'Sacred texts, timeless wisdom';
 
   @override
@@ -92,6 +95,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navPurchases => 'Purchases';
+
+  @override
+  String get navOrders => 'Orders';
 
   @override
   String get drawerHome => 'Home';
@@ -1255,6 +1261,87 @@ class AppLocalizationsEn extends AppLocalizations {
   String get draftStatus => 'Draft';
 
   @override
+  String get inReviewStatus => 'In review';
+
+  @override
+  String get reviewedStatus => 'Reviewed';
+
+  @override
+  String get sendForReview => 'Send for review';
+
+  @override
+  String get sendForReviewBody =>
+      'Send this book to a reviewer? You won\'t be able to edit it while it\'s under review.';
+
+  @override
+  String get submitReviewSuccess => 'Sent for review.';
+
+  @override
+  String get withdrawFromReview => 'Withdraw';
+
+  @override
+  String get withdrawReviewSuccess => 'Withdrawn from review.';
+
+  @override
+  String get approveReview => 'Approve';
+
+  @override
+  String get approveReviewBody =>
+      'Approve this book? The author can then publish it.';
+
+  @override
+  String get approveReviewSuccess => 'Book approved.';
+
+  @override
+  String get requestChanges => 'Request changes';
+
+  @override
+  String get requestChangesSuccess => 'Changes requested.';
+
+  @override
+  String get reviewCommentLabel => 'Describe the changes needed';
+
+  @override
+  String get reviewActionFailed => 'Couldn\'t complete the review action.';
+
+  @override
+  String get viewReviewFeedback => 'View feedback';
+
+  @override
+  String get reviewFeedbackTitle => 'Reviewer feedback';
+
+  @override
+  String get changesRequestedBannerTitle => 'Changes requested';
+
+  @override
+  String get reviewHistoryTitle => 'Review history';
+
+  @override
+  String get reviewHistoryEmpty => 'No review activity yet.';
+
+  @override
+  String get reviewNoComment => 'No comment.';
+
+  @override
+  String get adminBookInReviewLockedTitle => 'Under review';
+
+  @override
+  String get adminBookInReviewLockedMessage =>
+      'This book is being reviewed. Withdraw it from review to make changes.';
+
+  @override
+  String get reviewDecisionSubmitted => 'Submitted for review';
+
+  @override
+  String get reviewDecisionApproved => 'Approved';
+
+  @override
+  String get reviewDecisionChangesRequested => 'Changes requested';
+
+  @override
+  String get reviewDecisionWithdrawn => 'Withdrawn';
+
+  @override
   String statusChip(String status, String vis) {
     return '$status · $vis';
   }
@@ -2210,4 +2297,161 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get paymentStatusColumn => 'Status';
+
+  @override
+  String get authorApplyEntryTitle => 'Become an author';
+
+  @override
+  String get authorApplyEntrySubtitle => 'Apply to publish your own books';
+
+  @override
+  String get authorApplyTitle => 'Author application';
+
+  @override
+  String get authorApplyIntro =>
+      'Tell us about yourself. Our team reviews every application before approving you as an author.';
+
+  @override
+  String get authorApplyStatusPending => 'Your application is under review.';
+
+  @override
+  String get authorApplyStatusApproved => 'You\'re approved as an author!';
+
+  @override
+  String get authorApplyStatusRejected =>
+      'Your application wasn\'t approved. You can update it and resubmit.';
+
+  @override
+  String get authorApplyReviewNoteLabel => 'Reviewer note';
+
+  @override
+  String get authorApplyAlreadyAuthor => 'You\'re already an author.';
+
+  @override
+  String get authorApplyManageBooks => 'Manage your books';
+
+  @override
+  String get authorApplySubmit => 'Submit application';
+
+  @override
+  String get authorApplyResubmit => 'Update & resubmit';
+
+  @override
+  String get authorApplySubmitted => 'Application submitted';
+
+  @override
+  String get authorApplyFailed => 'Could not submit your application.';
+
+  @override
+  String get authorApplySectionIdentity => 'About you';
+
+  @override
+  String get authorApplySectionEvidence => 'Supporting information';
+
+  @override
+  String get authorApplySectionPayout => 'Payout details (optional)';
+
+  @override
+  String get authorFieldFullName => 'Full name';
+
+  @override
+  String get authorFieldFullNameHint => 'Your legal name';
+
+  @override
+  String get authorFieldPenName => 'Pen name';
+
+  @override
+  String get authorFieldPenNameHint => 'Name shown on your books';
+
+  @override
+  String get authorFieldTitle => 'Title';
+
+  @override
+  String get authorFieldTitleHint => 'e.g. Priest, Deacon, Dr.';
+
+  @override
+  String get authorFieldBio => 'Biography';
+
+  @override
+  String get authorFieldBioHint => 'A short introduction';
+
+  @override
+  String get authorFieldPhone => 'Phone';
+
+  @override
+  String get authorFieldCountry => 'Country';
+
+  @override
+  String get authorFieldCredentials => 'Credentials & qualifications';
+
+  @override
+  String get authorFieldCredentialsHint =>
+      'Education, ordination, certifications';
+
+  @override
+  String get authorFieldSampleLinks => 'Writing samples / links';
+
+  @override
+  String get authorFieldSampleLinksHint => 'Links to prior work (one per line)';
+
+  @override
+  String get authorFieldPaymentEmail => 'Payment email';
+
+  @override
+  String get authorFieldTelebirr => 'Telebirr number';
+
+  @override
+  String get authorFieldPhoto => 'Personal photo';
+
+  @override
+  String get authorPhotoPick => 'Choose photo';
+
+  @override
+  String get authorPhotoChange => 'Change photo';
+
+  @override
+  String get authorPhotoUploading => 'Uploading photo…';
+
+  @override
+  String get authorFullNameRequired => 'Please enter your full name';
+
+  @override
+  String get adminAuthorAppsTitle => 'Author applications';
+
+  @override
+  String get adminAuthorAppsSubtitle => 'Review requests to become an author';
+
+  @override
+  String get adminAuthorAppsEmpty => 'No author applications yet';
+
+  @override
+  String get adminAuthorAppsNoMatch => 'No applications match this filter';
+
+  @override
+  String get adminAuthorAppStatusPending => 'Pending';
+
+  @override
+  String get adminAuthorAppStatusApproved => 'Approved';
+
+  @override
+  String get adminAuthorAppStatusRejected => 'Rejected';
+
+  @override
+  String get adminAuthorAppReviewTitle => 'Application';
+
+  @override
+  String get adminAuthorAppApproveConfirm => 'Approve this author?';
+
+  @override
+  String get adminAuthorAppApproveConfirmBody =>
+      'This grants the author role and creates their author profile.';
+
+  @override
+  String get adminAuthorAppApplicant => 'Applicant';
+
+  @override
+  String get adminAuthorAppPendingReviews => 'Pending applications';
+
+  @override
+  String get adminAuthorAppUnnamed => 'Unnamed applicant';
 }

@@ -1,3 +1,6 @@
+import logging
+import uuid
+
 from django.conf import settings as dj_settings
 from django.db import IntegrityError
 from django.db.models import Count, Sum
@@ -14,7 +17,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
+from apps.catalog.storage_s3 import (
+    dev_presign_endpoint_from_request,
+    is_object_storage_configured,
+    presign_put,
+)
 from apps.payments.enums import (
+    AuthorApplicationStatus,
     MANUAL_METHODS,
     ONLINE_METHODS,
     PaymentMethod,
@@ -24,6 +33,7 @@ from apps.payments.enums import (
 from apps.payments.gateways.base import GatewayError, GatewayNotConfigured
 from apps.payments.gateways.registry import get_gateway
 from apps.payments.models import (
+    AuthorApplication,
     AuthorProfile,
     Bank,
     PaymentTransaction,
@@ -33,13 +43,26 @@ from apps.payments.models import (
 from apps.payments.permissions import IsAuthor
 from apps.payments.receipts import read_receipt, receipt_content_type, store_receipt
 from apps.payments.serializers import (
+    AuthorApplicationSerializer,
     AuthorProfileSerializer,
     CreateTransactionSerializer,
     PaymentTransactionSerializer,
     PublicBankSerializer,
     SubmitReceiptSerializer,
 )
-from apps.payments.services import compute_amounts, record_audit
+from apps.payments.services import (
+    compute_amounts,
+    record_audit,
+    submit_author_application,
+)
+
+logger = logging.getLogger(__name__)
+
+_ALLOWED_PHOTO_TYPES = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+}
 
 
 def _feature_disabled_response():
@@ -361,6 +384,116 @@ class AuthorProfileView(APIView):
         ser.is_valid(raise_exception=True)
         ser.save()
         return Response(AuthorProfileSerializer(profile).data)
+
+
+# --- Author application (reader -> author request) ----------------------
+
+
+def _is_already_author(user) -> bool:
+    return bool(user.is_superuser or getattr(user, "role", "") in {"author", "admin"})
+
+
+class AuthorApplicationView(APIView):
+    """A reader's own author application: read status, submit, or edit.
+
+    Not gated by ``FEATURE_PAYMENTS`` — becoming an author is independent of the
+    payment flow.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses=AuthorApplicationSerializer)
+    def get(self, request):
+        application = AuthorApplication.objects.filter(user=request.user).first()
+        data = (
+            AuthorApplicationSerializer(application, context={"request": request}).data
+            if application is not None
+            else None
+        )
+        return Response(
+            {"application": data, "is_author": _is_already_author(request.user)}
+        )
+
+    @extend_schema(
+        request=AuthorApplicationSerializer, responses=AuthorApplicationSerializer
+    )
+    def post(self, request):
+        return self._upsert(request, partial=False)
+
+    @extend_schema(
+        request=AuthorApplicationSerializer, responses=AuthorApplicationSerializer
+    )
+    def patch(self, request):
+        return self._upsert(request, partial=True)
+
+    def _upsert(self, request, *, partial: bool):
+        if _is_already_author(request.user):
+            return Response(
+                {"error": {"code": "ALREADY_AUTHOR", "message": "You are already an author."}},
+                status=status.HTTP_409_CONFLICT,
+            )
+        existing = AuthorApplication.objects.filter(user=request.user).first()
+        if existing is not None and existing.status == AuthorApplicationStatus.APPROVED:
+            return Response(
+                {"error": {"code": "LOCKED", "message": "This application was already approved."}},
+                status=status.HTTP_409_CONFLICT,
+            )
+        ser = AuthorApplicationSerializer(
+            existing, data=request.data, partial=partial, context={"request": request}
+        )
+        ser.is_valid(raise_exception=True)
+        application = submit_author_application(request.user, ser.validated_data)
+        record_audit(
+            actor=request.user,
+            action="author_application.submit",
+            target_type="AuthorApplication",
+            target_id=application.id,
+            metadata={"status": application.status},
+            request=request,
+        )
+        return Response(
+            AuthorApplicationSerializer(application, context={"request": request}).data,
+            status=status.HTTP_201_CREATED if existing is None else status.HTTP_200_OK,
+        )
+
+
+class AuthorApplicationPhotoPresignView(APIView):
+    """Presigned PUT URL for the applicant's own photo (mirrors book covers)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if _is_already_author(request.user):
+            return Response(
+                {"error": {"code": "ALREADY_AUTHOR", "message": "You are already an author."}},
+                status=status.HTTP_409_CONFLICT,
+            )
+        if not is_object_storage_configured():
+            return Response(
+                {"error": {"code": "STORAGE_UNAVAILABLE", "message": "Uploads are unavailable."}},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        content_type = (request.data.get("content_type") or "image/jpeg").strip().lower()
+        if content_type not in _ALLOWED_PHOTO_TYPES:
+            return Response(
+                {"error": {"code": "INVALID_CONTENT_TYPE", "message": "Use image/jpeg, image/png, or image/webp."}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        ext = _ALLOWED_PHOTO_TYPES[content_type]
+        object_key = f"author-applications/{request.user.id}/photo/{uuid.uuid4()}.{ext}"
+        try:
+            put_url = presign_put(
+                object_key,
+                content_type=content_type,
+                presign_endpoint_url=dev_presign_endpoint_from_request(request),
+            )
+        except Exception as exc:
+            logger.exception("author photo presign failed: %s", exc)
+            return Response(
+                {"error": {"code": "PRESIGN_FAILED", "message": "Could not create upload URL."}},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        return Response({"object_key": object_key, "put_url": put_url})
 
 
 # --- Webhooks (gateway -> us). CSRF-exempt, no auth; verified by signature. --

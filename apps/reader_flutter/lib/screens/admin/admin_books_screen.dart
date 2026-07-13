@@ -13,6 +13,7 @@ import '../../desktop/widgets/shell/desktop_page_scaffold.dart';
 import '../../web/layout/app_layout_scope.dart';
 import '../../web/screens/admin_books_screen_body.dart';
 import '../../web/widgets/shell/web_page_scaffold.dart';
+import '../../widgets/admin_book_status_chip.dart';
 import '../../widgets/app_state_view.dart';
 import '../../widgets/primitives/shell_primitives.dart';
 import 'admin_book_actions.dart';
@@ -213,7 +214,17 @@ class _AdminBookCard extends ConsumerStatefulWidget {
   ConsumerState<_AdminBookCard> createState() => _AdminBookCardState();
 }
 
-enum _AdminBookMenuAction { edit, publish, unpublish, openReader }
+enum _AdminBookMenuAction {
+  edit,
+  submitReview,
+  withdrawReview,
+  approveReview,
+  requestChanges,
+  viewFeedback,
+  publish,
+  unpublish,
+  openReader,
+}
 
 class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
   bool _busy = false;
@@ -226,7 +237,11 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
   }
 
   bool _canEditBook(AdminBook book, String? currentUserId) =>
-      !book.isPublished && book.isCreatedBy(currentUserId);
+      !book.isPublished && !book.isInReview && book.isCreatedBy(currentUserId);
+
+  void _openReview() {
+    context.push('/admin/books/${widget.book.id}/review');
+  }
 
   void _openEdit() {
     final currentUserId =
@@ -244,6 +259,32 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
     switch (action) {
       case _AdminBookMenuAction.edit:
         _openEdit();
+      case _AdminBookMenuAction.submitReview:
+        await _run(() => adminSubmitBookForReview(
+              context: context,
+              ref: ref,
+              bookId: book.id,
+            ));
+      case _AdminBookMenuAction.withdrawReview:
+        await _run(() => adminWithdrawBookReview(
+              context: context,
+              ref: ref,
+              bookId: book.id,
+            ));
+      case _AdminBookMenuAction.approveReview:
+        await _run(() => adminApproveBookReview(
+              context: context,
+              ref: ref,
+              bookId: book.id,
+            ));
+      case _AdminBookMenuAction.requestChanges:
+        await _run(() => adminRequestChangesForBook(
+              context: context,
+              ref: ref,
+              bookId: book.id,
+            ));
+      case _AdminBookMenuAction.viewFeedback:
+        _openReview();
       case _AdminBookMenuAction.publish:
         await _run(() => adminPublishBook(
               context: context,
@@ -267,19 +308,23 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
     final book = widget.book;
     final theme = Theme.of(context);
     final isPublished = book.isPublished;
-    final currentUserId =
-        ref.watch(sessionNotifierProvider).valueOrNull?.user?.id;
+    final user = ref.watch(sessionNotifierProvider).valueOrNull?.user;
+    final currentUserId = user?.id;
+    final isReviewer = user?.isPlatformAdmin ?? false;
     final isCreator = book.isCreatedBy(currentUserId);
-    final canEdit = !isPublished && isCreator;
+    final canEdit = !isPublished && !book.isInReview && isCreator;
     final canUnpublish = isPublished && isCreator;
+    final canSubmitReview = isCreator && !isPublished && book.isDraftReview;
+    final canWithdraw = isCreator && book.isInReview;
+    final canReview = isReviewer && book.isInReview;
+    final canPublish = isCreator && !isPublished && book.isReviewed;
     final chapterCount = book.chaptersDraft.length;
     final pageCount = book.chaptersDraft.fold<int>(
       0,
       (sum, c) => sum + c.pages.length,
     );
 
-    final statusLabel =
-        isPublished ? l10n.publishedStatus : l10n.draftStatus;
+    final (statusLabel, statusKind) = adminBookStatusChip(l10n, book.displayStatus);
 
     return Material(
       color: Colors.transparent,
@@ -328,12 +373,7 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  AppStatusChip(
-                    label: statusLabel,
-                    kind: isPublished
-                        ? AppStatusKind.active
-                        : AppStatusKind.pending,
-                  ),
+                  AppStatusChip(label: statusLabel, kind: statusKind),
                   _busy
                       ? const Padding(
                           padding: EdgeInsets.all(10),
@@ -355,7 +395,37 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
                                 icon: Icons.edit_outlined,
                                 label: l10n.adminEditAction,
                               ),
-                            if (!isPublished)
+                            if (canSubmitReview)
+                              _menuItem(
+                                value: _AdminBookMenuAction.submitReview,
+                                icon: Icons.reviews_outlined,
+                                label: l10n.sendForReview,
+                              ),
+                            if (canWithdraw)
+                              _menuItem(
+                                value: _AdminBookMenuAction.withdrawReview,
+                                icon: Icons.undo_outlined,
+                                label: l10n.withdrawFromReview,
+                              ),
+                            if (canReview)
+                              _menuItem(
+                                value: _AdminBookMenuAction.approveReview,
+                                icon: Icons.check_circle_outline,
+                                label: l10n.approveReview,
+                              ),
+                            if (canReview)
+                              _menuItem(
+                                value: _AdminBookMenuAction.requestChanges,
+                                icon: Icons.rate_review_outlined,
+                                label: l10n.requestChanges,
+                              ),
+                            if (book.hasPendingChangeRequest)
+                              _menuItem(
+                                value: _AdminBookMenuAction.viewFeedback,
+                                icon: Icons.feedback_outlined,
+                                label: l10n.viewReviewFeedback,
+                              ),
+                            if (canPublish)
                               _menuItem(
                                 value: _AdminBookMenuAction.publish,
                                 icon: Icons.publish_outlined,

@@ -36,6 +36,19 @@ class IsPublisherOrAuthor(BasePermission):
         )
 
 
+class IsPlatformReviewer(BasePermission):
+    """Editorial review actions (approve / request-changes): platform admins.
+
+    Reviewers are platform admins (superuser or ``role=='admin'``) — NOT
+    ``IsPublisherAdmin`` (superuser-only), which would exclude admin-role users.
+    """
+
+    message = "Reviewer access required."
+
+    def has_permission(self, request, view):
+        return is_platform_admin(request.user)
+
+
 def can_manage_book(book, user) -> bool:
     """True if ``user`` may edit/manage ``book``: a platform admin, the creator,
     or the attributed author."""

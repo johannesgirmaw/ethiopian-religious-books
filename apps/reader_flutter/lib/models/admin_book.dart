@@ -36,6 +36,8 @@ class AdminBook {
     this.tagSlugs = const [],
     required this.chaptersDraft,
     required this.catalogVisibility,
+    this.reviewStatus = 'draft',
+    this.latestReviewNote,
     this.genre,
     this.isBible = false,
     this.testamentType,
@@ -66,6 +68,13 @@ class AdminBook {
   final List<String> tagSlugs;
   final List<AdminDraftChapter> chaptersDraft;
   final String catalogVisibility;
+
+  /// Editorial review state: 'draft' | 'in_review' | 'reviewed'. Orthogonal to
+  /// [catalogVisibility] — a book is published separately, only once reviewed.
+  final String reviewStatus;
+
+  /// Most recent review-round note (e.g. the reviewer's change request), if any.
+  final BookReviewNote? latestReviewNote;
   final String? genre;
 
   /// Bible books hold verse content (managed via the Bible chapter editor),
@@ -120,6 +129,11 @@ class AdminBook {
       tagSlugs: tagSlugs,
       chaptersDraft: chapters,
       catalogVisibility: j['catalog_visibility'] as String? ?? 'hidden',
+      reviewStatus: j['review_status'] as String? ?? 'draft',
+      latestReviewNote: j['latest_review_note'] is Map
+          ? BookReviewNote.fromJson(
+              Map<String, dynamic>.from(j['latest_review_note'] as Map))
+          : null,
       genre: j['genre'] as String?,
       isBible: j['is_bible'] as bool? ?? false,
       testamentType: j['testament_type'] as String?,
@@ -148,8 +162,77 @@ class AdminBook {
 
   bool get isPublished => catalogVisibility == 'published';
 
+  bool get isDraftReview => reviewStatus == 'draft';
+  bool get isInReview => reviewStatus == 'in_review';
+  bool get isReviewed => reviewStatus == 'reviewed';
+
+  /// Single status shown to book managers. Published visibility takes
+  /// precedence over the editorial [reviewStatus].
+  AdminBookDisplayStatus get displayStatus {
+    if (isPublished) return AdminBookDisplayStatus.published;
+    switch (reviewStatus) {
+      case 'in_review':
+        return AdminBookDisplayStatus.inReview;
+      case 'reviewed':
+        return AdminBookDisplayStatus.reviewed;
+      default:
+        return AdminBookDisplayStatus.draft;
+    }
+  }
+
+  /// True when the author is looking at a draft that was sent back with a
+  /// change request they still need to address.
+  bool get hasPendingChangeRequest =>
+      isDraftReview && (latestReviewNote?.isChangesRequested ?? false);
+
   bool isCreatedBy(String? userId) =>
       userId != null && createdById != null && createdById == userId;
+}
+
+/// The status a book manager sees for a book, merging catalog visibility with
+/// the editorial review lifecycle.
+enum AdminBookDisplayStatus { draft, inReview, reviewed, published }
+
+/// One entry in a book's editorial review history.
+class BookReviewNote {
+  BookReviewNote({
+    required this.id,
+    required this.decision,
+    required this.comment,
+    required this.commentPlain,
+    this.reviewerId,
+    this.reviewerEmail,
+    this.createdAt,
+  });
+
+  final String id;
+
+  /// 'submitted' | 'approved' | 'changes_requested' | 'withdrawn'.
+  final String decision;
+
+  /// Rich-text (Quill delta JSON) comment; non-empty for change requests.
+  final String comment;
+  final String commentPlain;
+  final String? reviewerId;
+  final String? reviewerEmail;
+  final String? createdAt;
+
+  bool get isChangesRequested => decision == 'changes_requested';
+  bool get isApproved => decision == 'approved';
+  bool get isSubmitted => decision == 'submitted';
+  bool get isWithdrawn => decision == 'withdrawn';
+
+  factory BookReviewNote.fromJson(Map<String, dynamic> j) {
+    return BookReviewNote(
+      id: j['id'] as String? ?? '',
+      decision: j['decision'] as String? ?? '',
+      comment: j['comment'] as String? ?? '',
+      commentPlain: j['comment_plain'] as String? ?? '',
+      reviewerId: j['reviewer_id'] as String?,
+      reviewerEmail: j['reviewer_email'] as String?,
+      createdAt: j['created_at'] as String?,
+    );
+  }
 }
 
 class AdminDraftChapter {

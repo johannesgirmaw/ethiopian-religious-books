@@ -12,14 +12,19 @@ from apps.accounts.views import (
     ResetPasswordView,
 )
 from apps.catalog.admin_views import (
+    AdminBookApproveReviewView,
     AdminBookCoverPresignView,
     AdminBookDraftValidationView,
     AdminBookDetailView,
     AdminBookImportDocxPreviewView,
     AdminBookImportDocxView,
     AdminBookPublishView,
+    AdminBookRejectReviewView,
+    AdminBookReviewNotesView,
     AdminBooksRootView,
+    AdminBookSubmitReviewView,
     AdminBookUnpublishView,
+    AdminBookWithdrawReviewView,
     AdminRevisionCompleteView,
     AdminRevisionCreateView,
 )
@@ -49,7 +54,10 @@ from apps.catalog.views import (
 )
 from apps.legal.views import LegalAcceptanceView, LegalDocumentListView
 from apps.payments.admin_views import (
+    AdminApproveAuthorApplicationView,
     AdminApproveTransactionView,
+    AdminAuthorApplicationDetailView,
+    AdminAuthorApplicationsView,
     AdminAuthorCommissionDetailView,
     AdminAuthorCommissionsView,
     AdminBankDetailView,
@@ -58,11 +66,14 @@ from apps.payments.admin_views import (
     AdminGatewayCredentialsView,
     AdminPaymentDashboardView,
     AdminPlatformSettingsView,
+    AdminRejectAuthorApplicationView,
     AdminRejectTransactionView,
     AdminTransactionDetailView,
     AdminTransactionsView,
 )
 from apps.payments.views import (
+    AuthorApplicationPhotoPresignView,
+    AuthorApplicationView,
     AuthorDashboardView,
     AuthorProfileView,
     BankListView,
@@ -146,6 +157,11 @@ urlpatterns = [
     path("admin/books/<uuid:book_id>/cover/presign", AdminBookCoverPresignView.as_view()),
     path("admin/books/<uuid:book_id>/publish", AdminBookPublishView.as_view()),
     path("admin/books/<uuid:book_id>/unpublish", AdminBookUnpublishView.as_view()),
+    path("admin/books/<uuid:book_id>/submit-review", AdminBookSubmitReviewView.as_view()),
+    path("admin/books/<uuid:book_id>/withdraw-review", AdminBookWithdrawReviewView.as_view()),
+    path("admin/books/<uuid:book_id>/review/approve", AdminBookApproveReviewView.as_view()),
+    path("admin/books/<uuid:book_id>/review/reject", AdminBookRejectReviewView.as_view()),
+    path("admin/books/<uuid:book_id>/review-notes", AdminBookReviewNotesView.as_view()),
     path("admin/books/<uuid:book_id>/revisions", AdminRevisionCreateView.as_view()),
     path(
         "admin/books/<uuid:book_id>/revisions/<uuid:revision_id>/complete",
@@ -186,6 +202,9 @@ urlpatterns = [
     path("payments/webhooks/telebirr", TelebirrWebhookView.as_view()),
     path("author/dashboard", AuthorDashboardView.as_view()),
     path("author/profile", AuthorProfileView.as_view()),
+    # --- Author application (reader -> author request) ---
+    path("author/application", AuthorApplicationView.as_view()),
+    path("author/application/photo/presign", AuthorApplicationPhotoPresignView.as_view()),
     # --- Payments admin ---
     path("admin/payments/dashboard", AdminPaymentDashboardView.as_view()),
     path("admin/payments/transactions", AdminTransactionsView.as_view()),
@@ -199,4 +218,9 @@ urlpatterns = [
     path("admin/payments/credentials/<str:provider>", AdminGatewayCredentialDetailView.as_view()),
     path("admin/payments/author-commissions", AdminAuthorCommissionsView.as_view()),
     path("admin/payments/author-commissions/<uuid:commission_id>", AdminAuthorCommissionDetailView.as_view()),
+    # --- Author applications admin ---
+    path("admin/author-applications", AdminAuthorApplicationsView.as_view()),
+    path("admin/author-applications/<uuid:application_id>", AdminAuthorApplicationDetailView.as_view()),
+    path("admin/author-applications/<uuid:application_id>/approve", AdminApproveAuthorApplicationView.as_view()),
+    path("admin/author-applications/<uuid:application_id>/reject", AdminRejectAuthorApplicationView.as_view()),
 ]

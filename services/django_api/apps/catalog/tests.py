@@ -242,6 +242,197 @@ class AuthorBookManagementTests(TestCase):
         )
 
 
+class BookReviewWorkflowTests(TestCase):
+    """Editorial review lifecycle: submit -> approve / request-changes -> publish gate."""
+
+    VALID_DRAFT = [
+        {
+            "chapter_key": "ch1",
+            "title": "Chapter One",
+            "pages": [{"page_number": 1, "title": "Page 1", "body": "Hello reader"}],
+        }
+    ]
+
+    def setUp(self):
+        user_model = get_user_model()
+        self.author = user_model.objects.create_user(
+            email="author@example.com", password="pw123456", role="author"
+        )
+        self.other = user_model.objects.create_user(
+            email="other@example.com", password="pw123456", role="author"
+        )
+        self.admin = user_model.objects.create_user(
+            email="admin@example.com", password="pw123456", role="admin"
+        )
+        self.reader = user_model.objects.create_user(
+            email="reader@example.com", password="pw123456"
+        )
+        self.client = APIClient()
+
+    def _make_book(self, **kwargs):
+        defaults = dict(
+            title="Mine",
+            created_by=self.author,
+            author=self.author,
+            chapters_draft=self.VALID_DRAFT,
+        )
+        defaults.update(kwargs)
+        return Book.objects.create(**defaults)
+
+    def _submit(self, book):
+        return self.client.post(f"/v1/admin/books/{book.id}/submit-review")
+
+    # --- submit ---------------------------------------------------------
+    def test_author_submits_valid_draft(self):
+        book = self._make_book()
+        self.client.force_authenticate(self.author)
+        res = self._submit(book)
+        self.assertEqual(res.status_code, 200, res.data)
+        book.refresh_from_db()
+        self.assertEqual(book.review_status, Book.ReviewStatus.IN_REVIEW)
+        self.assertEqual(book.review_notes.first().decision, "submitted")
+
+    def test_submit_empty_draft_rejected(self):
+        book = self._make_book(chapters_draft=[])
+        self.client.force_authenticate(self.author)
+        res = self._submit(book)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.data["error"]["code"], "INVALID_DRAFT")
+
+    def test_submit_requires_draft_state(self):
+        book = self._make_book(review_status=Book.ReviewStatus.IN_REVIEW)
+        self.client.force_authenticate(self.author)
+        res = self._submit(book)
+        self.assertEqual(res.status_code, 409)
+        self.assertEqual(res.data["error"]["code"], "INVALID_REVIEW_STATE")
+
+    def test_non_owner_cannot_submit(self):
+        book = self._make_book()
+        self.client.force_authenticate(self.other)
+        res = self._submit(book)
+        self.assertEqual(res.status_code, 403)
+
+    # --- approve --------------------------------------------------------
+    def test_admin_approves(self):
+        book = self._make_book(review_status=Book.ReviewStatus.IN_REVIEW)
+        self.client.force_authenticate(self.admin)
+        res = self.client.post(f"/v1/admin/books/{book.id}/review/approve")
+        self.assertEqual(res.status_code, 200, res.data)
+        book.refresh_from_db()
+        self.assertEqual(book.review_status, Book.ReviewStatus.REVIEWED)
+        self.assertEqual(book.review_notes.first().decision, "approved")
+
+    def test_author_cannot_approve(self):
+        book = self._make_book(review_status=Book.ReviewStatus.IN_REVIEW)
+        self.client.force_authenticate(self.author)
+        res = self.client.post(f"/v1/admin/books/{book.id}/review/approve")
+        self.assertEqual(res.status_code, 403)
+
+    # --- request changes (reject) --------------------------------------
+    def test_reject_requires_comment(self):
+        book = self._make_book(review_status=Book.ReviewStatus.IN_REVIEW)
+        self.client.force_authenticate(self.admin)
+        res = self.client.post(
+            f"/v1/admin/books/{book.id}/review/reject", {"comment": ""}, format="json"
+        )
+        self.assertEqual(res.status_code, 400)
+
+    def test_reject_empty_delta_rejected(self):
+        book = self._make_book(review_status=Book.ReviewStatus.IN_REVIEW)
+        self.client.force_authenticate(self.admin)
+        res = self.client.post(
+            f"/v1/admin/books/{book.id}/review/reject",
+            {"comment": '[{"insert":"\\n"}]'},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 400)
+
+    def test_reject_with_comment_sends_back_to_draft(self):
+        book = self._make_book(review_status=Book.ReviewStatus.IN_REVIEW)
+        self.client.force_authenticate(self.admin)
+        res = self.client.post(
+            f"/v1/admin/books/{book.id}/review/reject",
+            {"comment": "Please expand chapter one."},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 200, res.data)
+        book.refresh_from_db()
+        self.assertEqual(book.review_status, Book.ReviewStatus.DRAFT)
+        note = book.review_notes.first()
+        self.assertEqual(note.decision, "changes_requested")
+        self.assertEqual(note.comment_plain, "Please expand chapter one.")
+        self.assertEqual(res.data["latest_review_note"]["decision"], "changes_requested")
+
+    # --- withdraw -------------------------------------------------------
+    def test_author_withdraws(self):
+        book = self._make_book(review_status=Book.ReviewStatus.IN_REVIEW)
+        self.client.force_authenticate(self.author)
+        res = self.client.post(f"/v1/admin/books/{book.id}/withdraw-review")
+        self.assertEqual(res.status_code, 200, res.data)
+        book.refresh_from_db()
+        self.assertEqual(book.review_status, Book.ReviewStatus.DRAFT)
+        self.assertEqual(book.review_notes.first().decision, "withdrawn")
+
+    # --- publish gate ---------------------------------------------------
+    def test_publish_blocked_until_reviewed(self):
+        book = self._make_book()
+        self.client.force_authenticate(self.author)
+        res = self.client.post(f"/v1/admin/books/{book.id}/publish")
+        self.assertEqual(res.status_code, 409)
+        self.assertEqual(res.data["error"]["code"], "NOT_REVIEWED")
+
+    def test_publish_succeeds_when_reviewed(self):
+        book = self._make_book(review_status=Book.ReviewStatus.REVIEWED)
+        self.client.force_authenticate(self.author)
+        res = self.client.post(f"/v1/admin/books/{book.id}/publish")
+        self.assertEqual(res.status_code, 200, res.data)
+        book.refresh_from_db()
+        self.assertEqual(book.catalog_visibility, Book.Visibility.PUBLISHED)
+
+    # --- edit rules -----------------------------------------------------
+    def test_patch_blocked_while_in_review(self):
+        book = self._make_book(review_status=Book.ReviewStatus.IN_REVIEW)
+        self.client.force_authenticate(self.author)
+        res = self.client.patch(
+            f"/v1/admin/books/{book.id}", {"title": "New"}, format="json"
+        )
+        self.assertEqual(res.status_code, 409)
+        self.assertEqual(res.data["error"]["code"], "BOOK_IN_REVIEW")
+
+    def test_patch_reviewed_resets_to_draft(self):
+        book = self._make_book(review_status=Book.ReviewStatus.REVIEWED)
+        self.client.force_authenticate(self.author)
+        res = self.client.patch(
+            f"/v1/admin/books/{book.id}", {"title": "New"}, format="json"
+        )
+        self.assertEqual(res.status_code, 200, res.data)
+        book.refresh_from_db()
+        self.assertEqual(book.review_status, Book.ReviewStatus.DRAFT)
+
+    # --- history --------------------------------------------------------
+    def test_review_notes_history_newest_first(self):
+        book = self._make_book()
+        self.client.force_authenticate(self.author)
+        self._submit(book)
+        self.client.force_authenticate(self.admin)
+        self.client.post(
+            f"/v1/admin/books/{book.id}/review/reject",
+            {"comment": "Fix it."},
+            format="json",
+        )
+        self.client.force_authenticate(self.author)
+        res = self.client.get(f"/v1/admin/books/{book.id}/review-notes")
+        self.assertEqual(res.status_code, 200)
+        decisions = [n["decision"] for n in res.data["items"]]
+        self.assertEqual(decisions, ["changes_requested", "submitted"])
+
+    def test_reader_cannot_access_review_notes(self):
+        book = self._make_book()
+        self.client.force_authenticate(self.reader)
+        res = self.client.get(f"/v1/admin/books/{book.id}/review-notes")
+        self.assertEqual(res.status_code, 403)
+
+
 class NormalizeChaptersDraftTests(TestCase):
     def test_assigns_chapter_keys_and_global_page_numbers(self):
         normalized = normalize_chapters_draft(
@@ -303,7 +494,14 @@ class PublishBibleBookTests(TestCase):
 
     def _bible_book(self, *, with_verse: bool) -> Book:
         # Bible books carry no chapters_draft — content lives in BibleVerse rows.
-        book = Book.objects.create(title="Bible Book", is_bible=True, chapters_draft=[])
+        book = Book.objects.create(
+            title="Bible Book",
+            is_bible=True,
+            chapters_draft=[],
+            # These tests exercise publish_book's draft validation, which now
+            # sits behind the review gate — mark the book approved first.
+            review_status=Book.ReviewStatus.REVIEWED,
+        )
         rev = BookRevision.objects.create(
             book=book, revision_number=1, status=BookRevision.Status.DRAFT
         )
@@ -344,7 +542,11 @@ class PublishBibleBookTests(TestCase):
 
     def test_publish_non_bible_book_without_pages_still_rejected(self):
         # Regression: page-based books keep the chapters/pages requirement.
-        book = Book.objects.create(title="Empty Book", chapters_draft=[])
+        book = Book.objects.create(
+            title="Empty Book",
+            chapters_draft=[],
+            review_status=Book.ReviewStatus.REVIEWED,
+        )
         outcome = publish_book(book, self.user)
         self.assertFalse(outcome.ok)
         self.assertEqual(outcome.error["error"]["code"], "INVALID_DRAFT")

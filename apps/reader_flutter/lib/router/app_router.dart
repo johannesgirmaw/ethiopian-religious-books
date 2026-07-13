@@ -10,9 +10,12 @@ import '../screens/bible_screen.dart';
 import '../screens/bible_reader_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/settings_screen.dart';
+import '../screens/admin/admin_author_applications_screen.dart';
 import '../screens/admin/admin_book_edit_screen.dart';
+import '../screens/admin/admin_book_review_screen.dart';
 import '../screens/admin/admin_books_screen.dart';
 import '../screens/admin/admin_purchases_screen.dart';
+import '../screens/author_apply_screen.dart';
 import '../screens/book_detail_screen.dart';
 import '../screens/downloads_screen.dart';
 import '../screens/author_books_screen.dart';
@@ -165,6 +168,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const SettingsScreen(),
           ),
           GoRoute(
+            path: '/become-author',
+            builder: (context, state) => const AuthorApplyScreen(),
+          ),
+          GoRoute(
             path: '/account',
             redirect: (context, state) => '/profile',
           ),
@@ -180,6 +187,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) => NoTransitionPage<void>(
               key: state.pageKey,
               child: const AdminPurchasesScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/admin/author-applications',
+            pageBuilder: (context, state) => NoTransitionPage<void>(
+              key: state.pageKey,
+              child: const AdminAuthorApplicationsScreen(),
             ),
           ),
           GoRoute(
@@ -320,6 +334,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final extra =
               state.extra is AdminBook ? state.extra as AdminBook : null;
           return AdminBookEditScreen(bookId: id, initialBook: extra);
+        },
+      ),
+      GoRoute(
+        path: '/admin/books/:id/review',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          final extra =
+              state.extra is AdminBook ? state.extra as AdminBook : null;
+          return AdminBookReviewScreen(bookId: id, initialBook: extra);
         },
       ),
       GoRoute(

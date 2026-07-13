@@ -15,6 +15,7 @@ import '../../design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/app_state_view.dart';
 import '../../widgets/primitives/shell_primitives.dart';
+import '../../widgets/stored_rich_text_view.dart';
 import '../../models/admin_book.dart';
 import '../../providers/admin_providers.dart';
 import '../../providers/api_client.dart';
@@ -63,6 +64,8 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   List<String> _selectedTags = [];
   List<AdminDraftChapter> _chaptersDraft = const [];
   String _visibility = 'hidden';
+  String _reviewStatus = 'draft';
+  BookReviewNote? _latestReviewNote;
   String? _genre;
   bool _isBible = false;
   // What the backend has persisted — content management needs the book saved as
@@ -234,6 +237,8 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
         b.commissionPercent != null ? _trimNum(b.commissionPercent!) : '';
     _chaptersDraft = _withConsecutivePageNumbers(b.chaptersDraft);
     _visibility = b.catalogVisibility;
+    _reviewStatus = b.reviewStatus;
+    _latestReviewNote = b.latestReviewNote;
     _createdById = b.createdById;
     _serverCoverGetUrl = b.coverGetUrl;
     _pendingCoverBytes = null;
@@ -1253,6 +1258,14 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                   actionLabel: l10n.goBack,
                   onAction: () => context.pop(),
                 )
+              : (!isNew && _reviewStatus == 'in_review')
+              ? AppStateView(
+                  title: l10n.adminBookInReviewLockedTitle,
+                  message: l10n.adminBookInReviewLockedMessage,
+                  icon: Icons.rate_review_outlined,
+                  actionLabel: l10n.goBack,
+                  onAction: () => context.pop(),
+                )
               : (!isNew && !isCreator)
                   ? AppStateView(
                       title: l10n.adminNotBookCreatorTitle,
@@ -1299,6 +1312,15 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.stretch,
                                     children: [
+                if (_latestReviewNote?.isChangesRequested == true &&
+                    _reviewStatus == 'draft') ...[
+                  _ChangesRequestedBanner(
+                    note: _latestReviewNote!,
+                    onViewHistory: () =>
+                        context.push('/admin/books/${widget.bookId}/review'),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 AppSectionHeader(title: l10n.metadataSection),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -2131,6 +2153,60 @@ class _UnsupportedEmbedBuilder extends EmbedBuilder {
           const Icon(Icons.image_not_supported_outlined, size: 16),
           const SizedBox(width: 8),
           Text(l10n.unsupportedEmbeddedContent),
+        ],
+      ),
+    );
+  }
+}
+
+/// Banner shown atop the editor when a reviewer has sent the book back with a
+/// change request. Renders the reviewer's rich-text comment and links to the
+/// full review history.
+class _ChangesRequestedBanner extends StatelessWidget {
+  const _ChangesRequestedBanner({
+    required this.note,
+    required this.onViewHistory,
+  });
+
+  final BookReviewNote note;
+  final VoidCallback onViewHistory;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(AppSpace.md),
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AppRadius.cardV2),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.rate_review_outlined,
+                  size: 18, color: AppColors.accent),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l10n.changesRequestedBannerTitle,
+                  style: theme.textTheme.titleSmall
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              TextButton(
+                onPressed: onViewHistory,
+                child: Text(l10n.reviewHistoryTitle),
+              ),
+            ],
+          ),
+          if (note.comment.trim().isNotEmpty) ...[
+            const SizedBox(height: AppSpace.xs),
+            StoredRichTextView(raw: note.comment),
+          ],
         ],
       ),
     );

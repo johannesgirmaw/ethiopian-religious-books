@@ -32,6 +32,7 @@ class AuthTextField extends StatefulWidget {
     this.enabled = true,
     this.required = false,
     this.autofocus = false,
+    this.maxLines = 1,
   });
 
   final TextEditingController? controller;
@@ -39,6 +40,10 @@ class AuthTextField extends StatefulWidget {
   final String? hint;
   final IconData? icon;
   final bool obscureText;
+
+  /// Number of visible lines. Values > 1 make this a multi-line text area
+  /// (used for bios/credentials); the prefix icon is aligned to the top.
+  final int maxLines;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
   final bool autocorrect;
@@ -136,13 +141,15 @@ class _AuthTextFieldState extends State<AuthTextField> {
             focusNode: _focus,
             autofocus: widget.autofocus,
             obscureText: widget.obscureText,
-            keyboardType: widget.keyboardType,
+            keyboardType: widget.keyboardType ??
+                (widget.maxLines > 1 ? TextInputType.multiline : null),
             textInputAction: widget.textInputAction,
             autocorrect: widget.autocorrect,
             enableSuggestions: !widget.obscureText,
             autofillHints: widget.autofillHints,
             inputFormatters: widget.inputFormatters,
             maxLength: widget.maxLength,
+            maxLines: widget.obscureText ? 1 : widget.maxLines,
             enabled: widget.enabled,
             validator: widget.validator,
             autovalidateMode: widget.autovalidateMode ??

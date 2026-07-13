@@ -30,6 +30,15 @@ class Book(models.Model):
         PUBLISHED = "published", "published"
         HIDDEN = "hidden", "hidden"
 
+    class ReviewStatus(models.TextChoices):
+        # Editorial lifecycle, orthogonal to ``catalog_visibility``. A book is
+        # authored as ``draft``, sent for review (``in_review``), then either
+        # approved (``reviewed``) or sent back to ``draft`` with comments.
+        # Publishing (making it catalog-visible) is gated on ``reviewed``.
+        DRAFT = "draft", "draft"
+        IN_REVIEW = "in_review", "in review"
+        REVIEWED = "reviewed", "reviewed"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=500)
     subtitle = models.CharField(max_length=500, blank=True)
@@ -107,6 +116,12 @@ class Book(models.Model):
         max_length=20,
         choices=Visibility.choices,
         default=Visibility.HIDDEN,
+    )
+    review_status = models.CharField(
+        max_length=20,
+        choices=ReviewStatus.choices,
+        default=ReviewStatus.DRAFT,
+        db_index=True,
     )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -309,6 +324,47 @@ class OfflineDownload(models.Model):
 
     def __str__(self):
         return f"{self.user_id} · {self.book_id} · {self.device_id[:8]}"
+
+
+class BookReviewNote(models.Model):
+    """One entry in a book's editorial review history.
+
+    Records each transition an author/reviewer makes in the review workflow: the
+    author submitting or withdrawing, and a reviewer approving or requesting
+    changes. ``changes_requested`` notes carry the reviewer's rich-text comment
+    (Quill delta JSON in ``comment``, flattened plain text in ``comment_plain``).
+    The most recent note is ``book.review_notes.first()`` (newest-first ordering).
+    """
+
+    class Decision(models.TextChoices):
+        SUBMITTED = "submitted", "submitted for review"
+        APPROVED = "approved", "approved"
+        CHANGES_REQUESTED = "changes_requested", "changes requested"
+        WITHDRAWN = "withdrawn", "withdrawn"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="review_notes")
+    decision = models.CharField(max_length=20, choices=Decision.choices)
+    comment = models.TextField(blank=True, default="")  # Quill delta JSON
+    comment_plain = models.TextField(blank=True, default="")
+    reviewer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="book_reviews_made",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "book_review_notes"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["book", "-created_at"], name="idx_review_note_book"),
+        ]
+
+    def __str__(self):
+        return f"{self.book_id} · {self.decision}"
 
 
 class BibleSection(models.Model):

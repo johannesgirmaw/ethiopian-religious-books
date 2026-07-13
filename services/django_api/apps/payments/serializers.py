@@ -1,8 +1,10 @@
 from rest_framework import serializers
 
 from apps.catalog.models import Book
+from apps.catalog.storage_s3 import is_object_storage_configured, presign_get
 from apps.payments.enums import PaymentMethod
 from apps.payments.models import (
+    AuthorApplication,
     AuthorCommission,
     AuthorProfile,
     Bank,
@@ -145,6 +147,85 @@ class AuthorProfileSerializer(serializers.ModelSerializer):
         )
         # ``is_verified`` is admin-controlled, not self-settable.
         read_only_fields = ("id", "user", "is_verified", "created_at", "updated_at")
+
+
+class AuthorApplicationSerializer(serializers.ModelSerializer):
+    """Applicant-facing read/write serializer.
+
+    Review fields (``status``/``reviewed_*``) are admin-controlled and read-only,
+    mirroring ``AuthorProfileSerializer.is_verified``. ``photo_object_key`` is
+    writable (the client attaches it after a presigned upload) while ``photo_url``
+    is a short-lived signed URL derived from it.
+    """
+
+    photo_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AuthorApplication
+        fields = (
+            "id",
+            "full_name",
+            "pen_name",
+            "title",
+            "bio",
+            "phone",
+            "country",
+            "photo_object_key",
+            "photo_url",
+            "credentials",
+            "sample_links",
+            "payment_email",
+            "telebirr_number",
+            "status",
+            "review_note",
+            "reviewed_at",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = (
+            "id",
+            "photo_url",
+            "status",
+            "review_note",
+            "reviewed_at",
+            "created_at",
+            "updated_at",
+        )
+
+    def get_photo_url(self, obj: AuthorApplication) -> str:
+        if not obj.photo_object_key or not is_object_storage_configured():
+            return ""
+        request = self.context.get("request")
+        presign_endpoint = None
+        if request is not None:
+            from apps.catalog.storage_s3 import dev_presign_endpoint_from_request
+
+            presign_endpoint = dev_presign_endpoint_from_request(request)
+        try:
+            return presign_get(
+                obj.photo_object_key, presign_endpoint_url=presign_endpoint
+            )
+        except Exception:
+            return ""
+
+
+class AdminAuthorApplicationSerializer(AuthorApplicationSerializer):
+    """Adds applicant identity + reviewer for the admin review queue."""
+
+    user = serializers.UUIDField(source="user_id", read_only=True)
+    user_email = serializers.EmailField(source="user.email", read_only=True)
+    user_display_name = serializers.CharField(
+        source="user.display_name", read_only=True
+    )
+    reviewed_by = serializers.UUIDField(source="reviewed_by_id", read_only=True)
+
+    class Meta(AuthorApplicationSerializer.Meta):
+        fields = AuthorApplicationSerializer.Meta.fields + (
+            "user",
+            "user_email",
+            "user_display_name",
+            "reviewed_by",
+        )
 
 
 class PaymentTransactionSerializer(serializers.ModelSerializer):

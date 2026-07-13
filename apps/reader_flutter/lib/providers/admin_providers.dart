@@ -19,6 +19,29 @@ final adminBooksProvider = FutureProvider.autoDispose<AdminBooksPage>((ref) asyn
   }
 });
 
+/// Editorial review-round history for a book (newest first). Tolerates backend
+/// errors by returning an empty list so the admin UI stays usable.
+final reviewNotesProvider = FutureProvider.autoDispose
+    .family<List<BookReviewNote>, String>((ref, bookId) async {
+  final dio = ref.watch(apiDioProvider);
+  try {
+    final res =
+        await dio.get<Map<String, dynamic>>('admin/books/$bookId/review-notes');
+    final raw = res.data?['items'];
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((e) => BookReviewNote.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  } on DioException catch (e) {
+    final status = e.response?.statusCode;
+    if (status == 403 || status == 404 || status == 500 || status == 503) {
+      return const [];
+    }
+    rethrow;
+  }
+});
+
 Future<AdminBook?> fetchAdminBookByDio(Dio dio, String id) async {
   try {
     final res = await dio.get<Map<String, dynamic>>('admin/books/$id');

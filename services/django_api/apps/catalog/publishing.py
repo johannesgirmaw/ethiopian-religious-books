@@ -50,6 +50,35 @@ def plain_text_from_stored_summary(raw: str | None) -> str:
     return text.replace("\uFFFC", "").strip()
 
 
+def review_comment_plain(raw: str | None) -> str:
+    """Plain text of a review comment, returning "" when a Quill delta contains
+    no real text.
+
+    Unlike ``plain_text_from_stored_summary`` (which falls back to the raw JSON
+    when a delta flattens to empty), an empty delta such as
+    ``[{"insert": "\\n"}]`` yields "" here — so "comment required" checks work.
+    """
+    if not raw:
+        return ""
+    text = raw.strip()
+    if not text:
+        return ""
+    try:
+        parsed = json.loads(text)
+    except Exception:
+        return text.replace("\uFFFC", "").strip()
+    if isinstance(parsed, list):
+        chunks: list[str] = []
+        for op in parsed:
+            if isinstance(op, dict):
+                insert = op.get("insert")
+                if isinstance(insert, str):
+                    chunks.append(insert)
+        return "".join(chunks).replace("\uFFFC", "").strip()
+    # Parsed JSON that isn't a delta list — treat the original as plain text.
+    return text.replace("\uFFFC", "").strip()
+
+
 def slugify_chapter_key(value: str, fallback_index: int) -> str:
     raw = (value or "").strip().lower()
     slug = []
@@ -471,6 +500,19 @@ def _revision_blocks_publish_without_blob_refresh(rev: BookRevision) -> bool:
 
 def publish_book(book: Book, user, revision_id: UUID | None = None) -> PublishBookOutcome:
     """Validate draft, resolve revision, publish book, rebuild chapter/page index."""
+    # Editorial gate: a book must be approved (``reviewed``) before it can go
+    # live. Orthogonal to catalog_visibility — see apps/catalog/review.py.
+    if book.review_status != Book.ReviewStatus.REVIEWED:
+        return PublishBookOutcome(
+            ok=False,
+            error={
+                "error": {
+                    "code": "NOT_REVIEWED",
+                    "message": "This book must be approved by a reviewer before publishing.",
+                }
+            },
+            status_code=409,
+        )
     # Bible books are verse-served (see bible_views): their content lives in the
     # BibleVerse/BibleSection tables, not in page revisions. None of the
     # page-package machinery below applies — we only require verse content and

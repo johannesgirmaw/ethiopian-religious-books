@@ -4,8 +4,8 @@ import re
 from rest_framework import serializers
 
 from apps.catalog.docx_import import ALL_MODES
-from apps.catalog.models import Book, BookRevision, BookTag, Tag
-from apps.catalog.publishing import normalize_chapters_draft
+from apps.catalog.models import Book, BookReviewNote, BookRevision, BookTag, Tag
+from apps.catalog.publishing import normalize_chapters_draft, review_comment_plain
 from apps.catalog.storage_s3 import presign_get
 
 logger = logging.getLogger(__name__)
@@ -77,11 +77,50 @@ class AdminBookCreateSerializer(serializers.ModelSerializer):
         return book
 
 
+class BookReviewNoteSerializer(serializers.ModelSerializer):
+    reviewer_email = serializers.SerializerMethodField()
+
+    def get_reviewer_email(self, obj: BookReviewNote) -> str | None:
+        reviewer = getattr(obj, "reviewer", None)
+        return getattr(reviewer, "email", None) if reviewer else None
+
+    class Meta:
+        model = BookReviewNote
+        fields = (
+            "id",
+            "decision",
+            "comment",
+            "comment_plain",
+            "reviewer_id",
+            "reviewer_email",
+            "created_at",
+        )
+        read_only_fields = fields
+
+
+class AdminReviewRejectSerializer(serializers.Serializer):
+    """Request-changes payload: a mandatory, non-empty rich-text comment."""
+
+    comment = serializers.CharField(allow_blank=False)
+
+    def validate_comment(self, value: str) -> str:
+        if not review_comment_plain(value):
+            raise serializers.ValidationError(
+                "Write a comment describing the changes needed."
+            )
+        return value
+
+
 class AdminBookSerializer(serializers.ModelSerializer):
     published_revision_number = serializers.SerializerMethodField()
     cover_get_url = serializers.SerializerMethodField()
     tag_slugs = serializers.SerializerMethodField()
     final_price = serializers.SerializerMethodField()
+    latest_review_note = serializers.SerializerMethodField()
+
+    def get_latest_review_note(self, obj: Book):
+        note = obj.review_notes.first()
+        return BookReviewNoteSerializer(note).data if note is not None else None
 
     def get_final_price(self, obj: Book) -> str:
         value = obj.sale_price if obj.sale_price is not None else obj.price
@@ -135,6 +174,8 @@ class AdminBookSerializer(serializers.ModelSerializer):
             "final_price",
             "chapters_draft",
             "catalog_visibility",
+            "review_status",
+            "latest_review_note",
             "cover_object_key",
             "cover_get_url",
             "published_revision_id",
@@ -149,6 +190,8 @@ class AdminBookSerializer(serializers.ModelSerializer):
             "created_by_id",
             "created_at",
             "updated_at",
+            "review_status",
+            "latest_review_note",
             "published_revision_id",
             "cover_object_key",
             "cover_get_url",

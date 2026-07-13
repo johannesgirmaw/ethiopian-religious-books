@@ -12,6 +12,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get appTitle => 'ፈለገ መጻሕፍት';
 
   @override
+  String get brandName => 'Felege Metsahft';
+
+  @override
   String get splashTagline => 'ቅዱስ መጻሕፍት፣ የማይጠፉ ጥበብ';
 
   @override
@@ -92,6 +95,9 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get navPurchases => 'ግዢዎች';
+
+  @override
+  String get navOrders => 'ትዕዛዞች';
 
   @override
   String get drawerHome => 'መነሻ';
@@ -1231,6 +1237,86 @@ class AppLocalizationsAm extends AppLocalizations {
   String get draftStatus => 'ረቂቅ';
 
   @override
+  String get inReviewStatus => 'በግምገማ ላይ';
+
+  @override
+  String get reviewedStatus => 'ተገምግሟል';
+
+  @override
+  String get sendForReview => 'ለግምገማ ላክ';
+
+  @override
+  String get sendForReviewBody =>
+      'ይህን መጽሐፍ ለገምጋሚ ይላኩ? በግምገማ ላይ እያለ ማስተካከል አይችሉም።';
+
+  @override
+  String get submitReviewSuccess => 'ለግምገማ ተልኳል።';
+
+  @override
+  String get withdrawFromReview => 'አንሳ';
+
+  @override
+  String get withdrawReviewSuccess => 'ከግምገማ ተነስቷል።';
+
+  @override
+  String get approveReview => 'አጽድቅ';
+
+  @override
+  String get approveReviewBody => 'ይህን መጽሐፍ ያጽድቁ? ደራሲው ከዚያ ማተም ይችላል።';
+
+  @override
+  String get approveReviewSuccess => 'መጽሐፉ ጸድቋል።';
+
+  @override
+  String get requestChanges => 'ለውጦችን ጠይቅ';
+
+  @override
+  String get requestChangesSuccess => 'ለውጦች ተጠይቀዋል።';
+
+  @override
+  String get reviewCommentLabel => 'የሚያስፈልጉትን ለውጦች ይግለጹ';
+
+  @override
+  String get reviewActionFailed => 'የግምገማ እርምጃውን ማጠናቀቅ አልተቻለም።';
+
+  @override
+  String get viewReviewFeedback => 'አስተያየት ይመልከቱ';
+
+  @override
+  String get reviewFeedbackTitle => 'የገምጋሚ አስተያየት';
+
+  @override
+  String get changesRequestedBannerTitle => 'ለውጦች ተጠይቀዋል';
+
+  @override
+  String get reviewHistoryTitle => 'የግምገማ ታሪክ';
+
+  @override
+  String get reviewHistoryEmpty => 'እስካሁን የግምገማ እንቅስቃሴ የለም።';
+
+  @override
+  String get reviewNoComment => 'አስተያየት የለም።';
+
+  @override
+  String get adminBookInReviewLockedTitle => 'በግምገማ ላይ';
+
+  @override
+  String get adminBookInReviewLockedMessage =>
+      'ይህ መጽሐፍ በግምገማ ላይ ነው። ለውጥ ለማድረግ ከግምገማ ያንሱት።';
+
+  @override
+  String get reviewDecisionSubmitted => 'ለግምገማ ቀርቧል';
+
+  @override
+  String get reviewDecisionApproved => 'ጸድቋል';
+
+  @override
+  String get reviewDecisionChangesRequested => 'ለውጦች ተጠይቀዋል';
+
+  @override
+  String get reviewDecisionWithdrawn => 'ተነስቷል';
+
+  @override
   String statusChip(String status, String vis) {
     return '$status · $vis';
   }
@@ -2167,4 +2253,160 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get paymentStatusColumn => 'ሁኔታ';
+
+  @override
+  String get authorApplyEntryTitle => 'ደራሲ ይሁኑ';
+
+  @override
+  String get authorApplyEntrySubtitle => 'የራስዎን መጻሕፍት ለማሳተም ያመልክቱ';
+
+  @override
+  String get authorApplyTitle => 'የደራሲ ማመልከቻ';
+
+  @override
+  String get authorApplyIntro =>
+      'ስለ ራስዎ ይንገሩን። ቡድናችን እያንዳንዱን ማመልከቻ ደራሲ ከማድረግ በፊት ይገመግማል።';
+
+  @override
+  String get authorApplyStatusPending => 'ማመልከቻዎ በግምገማ ላይ ነው።';
+
+  @override
+  String get authorApplyStatusApproved => 'እንደ ደራሲ ጸድቀዋል!';
+
+  @override
+  String get authorApplyStatusRejected =>
+      'ማመልከቻዎ አልጸደቀም። አስተካክለው እንደገና ማስገባት ይችላሉ።';
+
+  @override
+  String get authorApplyReviewNoteLabel => 'የገምጋሚ ማስታወሻ';
+
+  @override
+  String get authorApplyAlreadyAuthor => 'እርስዎ ቀድሞውኑ ደራሲ ነዎት።';
+
+  @override
+  String get authorApplyManageBooks => 'መጻሕፍትዎን ያስተዳድሩ';
+
+  @override
+  String get authorApplySubmit => 'ማመልከቻ አስገባ';
+
+  @override
+  String get authorApplyResubmit => 'አዘምን እና እንደገና አስገባ';
+
+  @override
+  String get authorApplySubmitted => 'ማመልከቻ ገብቷል';
+
+  @override
+  String get authorApplyFailed => 'ማመልከቻዎን ማስገባት አልተቻለም።';
+
+  @override
+  String get authorApplySectionIdentity => 'ስለ እርስዎ';
+
+  @override
+  String get authorApplySectionEvidence => 'ተጨማሪ መረጃ';
+
+  @override
+  String get authorApplySectionPayout => 'የክፍያ ዝርዝሮች (አማራጭ)';
+
+  @override
+  String get authorFieldFullName => 'ሙሉ ስም';
+
+  @override
+  String get authorFieldFullNameHint => 'የሕጋዊ ስምዎ';
+
+  @override
+  String get authorFieldPenName => 'የብዕር ስም';
+
+  @override
+  String get authorFieldPenNameHint => 'በመጻሕፍትዎ ላይ የሚታየው ስም';
+
+  @override
+  String get authorFieldTitle => 'ማዕረግ';
+
+  @override
+  String get authorFieldTitleHint => 'ለምሳሌ ቄስ፣ ዲያቆን፣ ዶ/ር';
+
+  @override
+  String get authorFieldBio => 'የሕይወት ታሪክ';
+
+  @override
+  String get authorFieldBioHint => 'አጭር መግቢያ';
+
+  @override
+  String get authorFieldPhone => 'ስልክ';
+
+  @override
+  String get authorFieldCountry => 'አገር';
+
+  @override
+  String get authorFieldCredentials => 'ማስረጃዎች እና ብቃቶች';
+
+  @override
+  String get authorFieldCredentialsHint => 'ትምህርት፣ ሹመት፣ የምስክር ወረቀቶች';
+
+  @override
+  String get authorFieldSampleLinks => 'የጽሑፍ ናሙናዎች / አገናኞች';
+
+  @override
+  String get authorFieldSampleLinksHint => 'የቀድሞ ሥራዎች አገናኞች (በአንድ መስመር አንድ)';
+
+  @override
+  String get authorFieldPaymentEmail => 'የክፍያ ኢሜይል';
+
+  @override
+  String get authorFieldTelebirr => 'የቴሌብር ቁጥር';
+
+  @override
+  String get authorFieldPhoto => 'የግል ፎቶ';
+
+  @override
+  String get authorPhotoPick => 'ፎቶ ይምረጡ';
+
+  @override
+  String get authorPhotoChange => 'ፎቶ ይቀይሩ';
+
+  @override
+  String get authorPhotoUploading => 'ፎቶ በመጫን ላይ…';
+
+  @override
+  String get authorFullNameRequired => 'እባክዎ ሙሉ ስምዎን ያስገቡ';
+
+  @override
+  String get adminAuthorAppsTitle => 'የደራሲ ማመልከቻዎች';
+
+  @override
+  String get adminAuthorAppsSubtitle => 'ደራሲ የመሆን ጥያቄዎችን ይገምግሙ';
+
+  @override
+  String get adminAuthorAppsEmpty => 'እስካሁን የደራሲ ማመልከቻ የለም';
+
+  @override
+  String get adminAuthorAppsNoMatch => 'ከዚህ ማጣሪያ ጋር የሚዛመድ ማመልከቻ የለም';
+
+  @override
+  String get adminAuthorAppStatusPending => 'በመጠባበቅ ላይ';
+
+  @override
+  String get adminAuthorAppStatusApproved => 'ጸድቋል';
+
+  @override
+  String get adminAuthorAppStatusRejected => 'ተቀባይነት አላገኘም';
+
+  @override
+  String get adminAuthorAppReviewTitle => 'ማመልከቻ';
+
+  @override
+  String get adminAuthorAppApproveConfirm => 'ይህን ደራሲ ያጽድቁ?';
+
+  @override
+  String get adminAuthorAppApproveConfirmBody =>
+      'ይህ የደራሲ ሚና ይሰጣል እና የደራሲ መገለጫ ይፈጥራል።';
+
+  @override
+  String get adminAuthorAppApplicant => 'አመልካች';
+
+  @override
+  String get adminAuthorAppPendingReviews => 'በመጠባበቅ ላይ ያሉ ማመልከቻዎች';
+
+  @override
+  String get adminAuthorAppUnnamed => 'ስም የሌለው አመልካች';
 }

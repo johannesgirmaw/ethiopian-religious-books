@@ -39,3 +39,14 @@ TERMINAL_STATUSES = frozenset(
         TransactionStatus.REJECTED,
     }
 )
+
+
+class AuthorApplicationStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    APPROVED = "approved", "Approved"
+    REJECTED = "rejected", "Rejected"
+
+
+# An approved application is final (the user is already an author); a rejected
+# one stays re-submittable so the applicant can fix and try again.
+AUTHOR_APP_TERMINAL_STATUSES = frozenset({AuthorApplicationStatus.APPROVED})
