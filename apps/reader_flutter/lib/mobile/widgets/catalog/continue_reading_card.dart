@@ -57,8 +57,10 @@ class ContinueReadingCard extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.10),
                       borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -76,7 +78,7 @@ class ContinueReadingCard extends ConsumerWidget {
                   const SizedBox(height: 6),
                   Text(
                     book.title,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 14,
@@ -104,8 +106,9 @@ class ContinueReadingCard extends ConsumerWidget {
                           child: LinearProgressIndicator(
                             value: progress == 0 ? null : progress,
                             minHeight: 5,
-                            backgroundColor:
-                                AppColors.primary.withValues(alpha: 0.12),
+                            backgroundColor: AppColors.primary.withValues(
+                              alpha: 0.12,
+                            ),
                             color: AppColors.primary,
                           ),
                         ),

@@ -20,34 +20,35 @@ class DesktopPageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasActions = actions != null && actions!.isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: DesktopTokens.toolbarTitleStyle),
-                  if (subtitle != null && subtitle!.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(subtitle!, style: DesktopTokens.toolbarSubtitleStyle),
-                  ],
-                ],
-              ),
+            Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: DesktopTokens.toolbarTitleStyle,
             ),
-            if (actions != null && actions!.isNotEmpty) ...[
-              const SizedBox(width: 16),
-              Row(mainAxisSize: MainAxisSize.min, children: actions!),
+            if (subtitle != null && subtitle!.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                subtitle!,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: DesktopTokens.toolbarSubtitleStyle,
+              ),
             ],
           ],
         ),
-        if (bottom != null) ...[
-          const SizedBox(height: 16),
-          bottom!,
+        if (hasActions) ...[
+          const SizedBox(height: 12),
+          Wrap(spacing: 10, runSpacing: 10, children: actions!),
         ],
+        if (bottom != null) ...[const SizedBox(height: 16), bottom!],
       ],
     );
   }
@@ -92,11 +93,11 @@ class DesktopSearchField extends StatelessWidget {
             contentPadding: const EdgeInsets.symmetric(vertical: 10),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(6),
-              borderSide: BorderSide(color: DesktopTokens.borderColor),
+              borderSide: const BorderSide(color: DesktopTokens.borderColor),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(6),
-              borderSide: BorderSide(color: DesktopTokens.borderColor),
+              borderSide: const BorderSide(color: DesktopTokens.borderColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(6),
