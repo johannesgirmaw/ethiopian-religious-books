@@ -107,7 +107,7 @@ abstract class AppLocalizations {
   /// No description provided for @brandName.
   ///
   /// In en, this message translates to:
-  /// **'Felege Metsahft'**
+  /// **'ፈለገ መጻሕፍት'**
   String get brandName;
 
   /// No description provided for @splashTagline.

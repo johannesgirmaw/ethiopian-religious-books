@@ -12,7 +12,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get appTitle => 'ፈለገ መጻሕፍት';
 
   @override
-  String get brandName => 'Felege Metsahft';
+  String get brandName => 'ፈለገ መጻሕፍት';
 
   @override
   String get splashTagline => 'ቅዱስ መጻሕፍት፣ የማይጠፉ ጥበብ';

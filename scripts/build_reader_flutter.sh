@@ -115,7 +115,7 @@ build_macos() {
 
 build_web() {
   echo "==> Release web → ${API_URL}"
-  flutter build web --release "${DART_DEFINE}"
+  flutter build web --release --pwa-strategy=none "${DART_DEFINE}"
 }
 
 build_linux() {

@@ -32,7 +32,7 @@ deploy_api() {
 deploy_web() {
   echo "==> Building Flutter web (API_BASE_URL=$API_BASE_URL)"
   ( cd "$REPO_ROOT/apps/reader_flutter" && \
-    flutter build web --release --dart-define=API_BASE_URL="$API_BASE_URL" )
+    flutter build web --release --pwa-strategy=none --dart-define=API_BASE_URL="$API_BASE_URL" )
 
   echo "==> Syncing web build"
   rsync -az --delete "$REPO_ROOT/apps/reader_flutter/build/web/" "$SSH_HOST:/var/www/felegemetsahft/web/"

@@ -33,7 +33,7 @@ def send_password_reset_email(*, email: str, code: str, display_name: str = "") 
         f"The code expires in {ttl_minutes} minutes and can be used once.\n"
         f"If you didn't request a password reset, you can safely ignore this email — "
         f"your password will not change.\n\n"
-        f"— Ethiopian Reader"
+        f"— ፈለገ መጻሕፍት"
     )
 
     html_body = f"""\
@@ -42,7 +42,7 @@ def send_password_reset_email(*, email: str, code: str, display_name: str = "") 
   <p style="margin:0 0 16px;color:#5A6169">Hi {name}, use the code below to reset your password.</p>
   <div style="font-size:32px;font-weight:700;letter-spacing:8px;background:#F4F8FB;border:1px solid #E2E8EF;border-radius:12px;padding:16px;text-align:center;color:#14708F">{code}</div>
   <p style="margin:16px 0 0;font-size:13px;color:#8A9199">This code expires in {ttl_minutes} minutes and can be used once. If you didn't request a password reset, you can safely ignore this email.</p>
-  <p style="margin:16px 0 0;font-size:13px;color:#8A9199">— Ethiopian Reader</p>
+  <p style="margin:16px 0 0;font-size:13px;color:#8A9199">— ፈለገ መጻሕፍት</p>
 </div>"""
 
     message = EmailMultiAlternatives(

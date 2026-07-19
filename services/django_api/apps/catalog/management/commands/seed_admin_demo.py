@@ -174,7 +174,7 @@ def _upload_revision_assets(book: Book, rev: BookRevision, stderr_writer, ok_sty
             html_body = (
                 f"<html><body><h1>{book.title}</h1>"
                 f"<section><p>{book.summary}</p>"
-                "<p>Seeded excerpt for Ethiopian Reader admin/catalog demos.</p></section>"
+                "<p>Seeded excerpt for ፈለገ መጻሕፍት admin/catalog demos.</p></section>"
                 "</body></html>"
             ).encode("utf-8")
             mkey = f"{prefix}/manifest.json"

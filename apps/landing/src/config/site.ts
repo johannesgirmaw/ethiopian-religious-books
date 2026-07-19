@@ -77,7 +77,7 @@ export const platforms: Platform[] = [
     install: [
       'Download and run felege-metsahft-setup.exe.',
       'If SmartScreen appears, choose More info → Run anyway.',
-      'Follow the installer, then launch Ethiopian Reader from the Start Menu.',
+      'Follow the installer, then launch ፈለገ መጻሕፍት from the Start Menu.',
     ],
   },
 ];

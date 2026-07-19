@@ -143,7 +143,7 @@ EMAIL_PORT = env.int("EMAIL_PORT", default=1025)
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=False)
 DEFAULT_FROM_EMAIL = env(
     "DEFAULT_FROM_EMAIL",
-    default="Ethiopian Reader <no-reply@ethiopianreader.app>",
+    default="ፈለገ መጻሕፍት <no-reply@ethiopianreader.app>",
 )
 
 AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID", default="")
