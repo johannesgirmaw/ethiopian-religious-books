@@ -48,7 +48,10 @@ CustomTransitionPage<T> _fadeSlide<T>({
     transitionDuration: const Duration(milliseconds: 280),
     reverseTransitionDuration: const Duration(milliseconds: 220),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      final curve = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+      final curve = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+      );
       return FadeTransition(
         opacity: curve,
         child: SlideTransition(
@@ -64,6 +67,10 @@ CustomTransitionPage<T> _fadeSlide<T>({
 }
 
 final goRouterProvider = Provider<GoRouter>((ref) {
+  // Keep browser URL in sync with imperative navigation (context.push/pop)
+  // so overlay/detail pages get dedicated, reload-safe routes on web.
+  GoRouter.optionURLReflectsImperativeAPIs = true;
+
   final refresh = ValueNotifier<int>(0);
   ref.listen(sessionNotifierProvider, (_, __) {
     refresh.value++;
@@ -192,10 +199,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             path: '/become-author',
             builder: (context, state) => const AuthorApplyScreen(),
           ),
-          GoRoute(
-            path: '/account',
-            redirect: (context, state) => '/profile',
-          ),
+          GoRoute(path: '/account', redirect: (context, state) => '/profile'),
           GoRoute(
             path: '/admin/books',
             pageBuilder: (context, state) => NoTransitionPage<void>(
@@ -217,19 +221,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               child: const AdminAuthorApplicationsScreen(),
             ),
           ),
-          GoRoute(
-            path: '/admin',
-            redirect: (context, state) => '/admin/books',
-          ),
+          GoRoute(path: '/admin', redirect: (context, state) => '/admin/books'),
         ],
       ),
       GoRoute(
         path: '/about',
         parentNavigatorKey: rootNavigatorKey,
-        pageBuilder: (context, state) => _fadeSlide(
-          key: state.pageKey,
-          child: const AboutScreen(),
-        ),
+        pageBuilder: (context, state) =>
+            _fadeSlide(key: state.pageKey, child: const AboutScreen()),
       ),
       GoRoute(
         path: '/change-password',
@@ -238,10 +237,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final session = ref.read(sessionNotifierProvider).valueOrNull;
           return session == null ? '/login' : null;
         },
-        pageBuilder: (context, state) => _fadeSlide(
-          key: state.pageKey,
-          child: const ChangePasswordScreen(),
-        ),
+        pageBuilder: (context, state) =>
+            _fadeSlide(key: state.pageKey, child: const ChangePasswordScreen()),
       ),
       GoRoute(
         path: '/bible/book/:bookId',
@@ -290,18 +287,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/favourites',
         parentNavigatorKey: rootNavigatorKey,
-        pageBuilder: (context, state) => _fadeSlide(
-          key: state.pageKey,
-          child: const FavouritesScreen(),
-        ),
+        pageBuilder: (context, state) =>
+            _fadeSlide(key: state.pageKey, child: const FavouritesScreen()),
       ),
       GoRoute(
         path: '/notifications',
         parentNavigatorKey: rootNavigatorKey,
-        pageBuilder: (context, state) => _fadeSlide(
-          key: state.pageKey,
-          child: const NotificationsScreen(),
-        ),
+        pageBuilder: (context, state) =>
+            _fadeSlide(key: state.pageKey, child: const NotificationsScreen()),
       ),
       GoRoute(
         path: '/author/:name',
@@ -352,8 +345,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/admin/books/:id/edit',
         builder: (context, state) {
           final id = state.pathParameters['id']!;
-          final extra =
-              state.extra is AdminBook ? state.extra as AdminBook : null;
+          final extra = state.extra is AdminBook
+              ? state.extra as AdminBook
+              : null;
           return AdminBookEditScreen(bookId: id, initialBook: extra);
         },
       ),
@@ -361,8 +355,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/admin/books/:id/review',
         builder: (context, state) {
           final id = state.pathParameters['id']!;
-          final extra =
-              state.extra is AdminBook ? state.extra as AdminBook : null;
+          final extra = state.extra is AdminBook
+              ? state.extra as AdminBook
+              : null;
           return AdminBookReviewScreen(bookId: id, initialBook: extra);
         },
       ),
