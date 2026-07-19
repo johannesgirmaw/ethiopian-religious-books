@@ -8,11 +8,7 @@ import 'book_cover_poster.dart';
 
 /// The "Popular" featured banner at the top of the home screen.
 class FeaturedBookCard extends StatelessWidget {
-  const FeaturedBookCard({
-    super.key,
-    required this.book,
-    required this.index,
-  });
+  const FeaturedBookCard({super.key, required this.book, required this.index});
 
   final BookSummary book;
   final int index;
@@ -23,7 +19,9 @@ class FeaturedBookCard extends StatelessWidget {
     final author = book.authorCompiler?.trim();
 
     return GestureDetector(
-      onTap: () => context.push('/book/${book.id}'),
+      onTap: () => context.push(
+        book.isBible ? '/bible/book/${book.id}' : '/book/${book.id}',
+      ),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surfaceSoft,
@@ -39,8 +37,10 @@ class FeaturedBookCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceCard,
                       borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -97,8 +97,11 @@ class FeaturedBookCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        const Icon(Icons.star_rounded,
-                            size: 15, color: AppColors.accent),
+                        const Icon(
+                          Icons.star_rounded,
+                          size: 15,
+                          color: AppColors.accent,
+                        ),
                         const SizedBox(width: 3),
                         Text(
                           '${book.ratingAverage.toStringAsFixed(1)} · ${book.ratingCount}',

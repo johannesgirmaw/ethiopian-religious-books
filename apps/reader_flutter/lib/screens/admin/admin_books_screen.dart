@@ -53,7 +53,7 @@ class _AdminBooksScreenState extends ConsumerState<AdminBooksScreen> {
     final async = ref.watch(adminBooksProvider);
     final isAdmin =
         ref.watch(sessionNotifierProvider).valueOrNull?.user?.isPlatformAdmin ??
-            false;
+        false;
 
     return Scaffold(
       backgroundColor: AppColors.referencePageBg,
@@ -72,8 +72,7 @@ class _AdminBooksScreenState extends ConsumerState<AdminBooksScreen> {
             ),
           IconButton(
             tooltip: l10n.importFromWord,
-            onPressed: () =>
-                importBookFromDocxFlow(context: context, ref: ref),
+            onPressed: () => importBookFromDocxFlow(context: context, ref: ref),
             icon: const Icon(Icons.upload_file_rounded),
           ),
           IconButton(
@@ -153,8 +152,8 @@ class _AdminBooksScreenState extends ConsumerState<AdminBooksScreen> {
                 Text(
                   l10n.adminBooksCount(filtered.length, page.items.length),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 if (filtered.isEmpty)
@@ -198,9 +197,7 @@ class _AdminBooksScreenState extends ConsumerState<AdminBooksScreen> {
       ].join(' ').toLowerCase();
       return haystack.contains(_query);
     }).toList();
-    filtered.sort(
-      (a, b) => (b.updatedAt ?? '').compareTo(a.updatedAt ?? ''),
-    );
+    filtered.sort((a, b) => (b.updatedAt ?? '').compareTo(a.updatedAt ?? ''));
     return filtered;
   }
 }
@@ -244,14 +241,21 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
   }
 
   void _openEdit() {
-    final currentUserId =
-        ref.read(sessionNotifierProvider).valueOrNull?.user?.id;
+    final currentUserId = ref
+        .read(sessionNotifierProvider)
+        .valueOrNull
+        ?.user
+        ?.id;
     if (!_canEditBook(widget.book, currentUserId)) return;
     context.push('/admin/books/${widget.book.id}/edit', extra: widget.book);
   }
 
   void _openDetail() {
-    context.push('/book/${widget.book.id}');
+    context.push(
+      widget.book.isBible
+          ? '/bible/book/${widget.book.id}'
+          : '/book/${widget.book.id}',
+    );
   }
 
   Future<void> _onMenuAction(_AdminBookMenuAction action) async {
@@ -260,45 +264,51 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
       case _AdminBookMenuAction.edit:
         _openEdit();
       case _AdminBookMenuAction.submitReview:
-        await _run(() => adminSubmitBookForReview(
-              context: context,
-              ref: ref,
-              bookId: book.id,
-            ));
+        await _run(
+          () => adminSubmitBookForReview(
+            context: context,
+            ref: ref,
+            bookId: book.id,
+          ),
+        );
       case _AdminBookMenuAction.withdrawReview:
-        await _run(() => adminWithdrawBookReview(
-              context: context,
-              ref: ref,
-              bookId: book.id,
-            ));
+        await _run(
+          () => adminWithdrawBookReview(
+            context: context,
+            ref: ref,
+            bookId: book.id,
+          ),
+        );
       case _AdminBookMenuAction.approveReview:
-        await _run(() => adminApproveBookReview(
-              context: context,
-              ref: ref,
-              bookId: book.id,
-            ));
+        await _run(
+          () => adminApproveBookReview(
+            context: context,
+            ref: ref,
+            bookId: book.id,
+          ),
+        );
       case _AdminBookMenuAction.requestChanges:
-        await _run(() => adminRequestChangesForBook(
-              context: context,
-              ref: ref,
-              bookId: book.id,
-            ));
+        await _run(
+          () => adminRequestChangesForBook(
+            context: context,
+            ref: ref,
+            bookId: book.id,
+          ),
+        );
       case _AdminBookMenuAction.viewFeedback:
         _openReview();
       case _AdminBookMenuAction.publish:
-        await _run(() => adminPublishBook(
-              context: context,
-              ref: ref,
-              bookId: book.id,
-            ));
+        await _run(
+          () => adminPublishBook(context: context, ref: ref, bookId: book.id),
+        );
       case _AdminBookMenuAction.unpublish:
-        await _run(() => adminUnpublishBook(
-              context: context,
-              ref: ref,
-              bookId: book.id,
-            ));
+        await _run(
+          () => adminUnpublishBook(context: context, ref: ref, bookId: book.id),
+        );
       case _AdminBookMenuAction.openReader:
-        context.push('/book/${book.id}');
+        context.push(
+          book.isBible ? '/bible/book/${book.id}' : '/book/${book.id}',
+        );
     }
   }
 
@@ -324,7 +334,10 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
       (sum, c) => sum + c.pages.length,
     );
 
-    final (statusLabel, statusKind) = adminBookStatusChip(l10n, book.displayStatus);
+    final (statusLabel, statusKind) = adminBookStatusChip(
+      l10n,
+      book.displayStatus,
+    );
 
     return Material(
       color: Colors.transparent,
@@ -333,10 +346,10 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
         onTap: _busy
             ? null
             : canEdit
-                ? _openEdit
-                : isPublished
-                    ? _openDetail
-                    : null,
+            ? _openEdit
+            : isPublished
+            ? _openDetail
+            : null,
         child: AppPanel(
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
           child: Column(

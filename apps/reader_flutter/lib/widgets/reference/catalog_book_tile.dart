@@ -29,7 +29,9 @@ class CatalogBookGridTile extends ConsumerWidget {
     final secondaryOnCard = book.subtitle?.trim();
 
     return GestureDetector(
-      onTap: () => context.push('/book/${book.id}'),
+      onTap: () => context.push(
+        book.isBible ? '/bible/book/${book.id}' : '/book/${book.id}',
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -154,7 +156,9 @@ class CatalogBookListTile extends ConsumerWidget {
     final showProgress = progress > 0;
 
     return GestureDetector(
-      onTap: () => context.push('/book/${book.id}'),
+      onTap: () => context.push(
+        book.isBible ? '/bible/book/${book.id}' : '/book/${book.id}',
+      ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

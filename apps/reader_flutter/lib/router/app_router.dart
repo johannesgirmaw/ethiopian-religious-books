@@ -74,19 +74,39 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     navigatorKey: rootNavigatorKey,
     refreshListenable: refresh,
     initialLocation: '/splash',
+    errorBuilder: (context, state) => const SplashScreen(),
     redirect: (context, state) {
       final loc = state.matchedLocation;
       final asyncSession = ref.read(sessionNotifierProvider);
-      if (asyncSession.isLoading && loc.startsWith('/admin')) {
-        return null;
-      }
       final session = asyncSession.valueOrNull;
       final user = session?.user;
       final isAdmin = user?.isPlatformAdmin == true;
       final canManageBooks = user?.canManageBooks == true;
+      final isAuthRoute =
+          loc == '/login' ||
+          loc == '/register' ||
+          loc == '/forgot-password' ||
+          loc == '/reset-password';
+      final isPublicRoute = loc == '/splash' || isAuthRoute;
+      final isProtectedRoute = !isPublicRoute;
+
+      if (loc == '/') {
+        return session == null ? '/login' : '/home';
+      }
+
+      if (asyncSession.isLoading) {
+        return null;
+      }
+
+      if (session == null && isProtectedRoute) {
+        return '/login';
+      }
+
+      if (session != null && isAuthRoute) {
+        return '/home';
+      }
 
       if (loc.startsWith('/admin')) {
-        if (session == null) return '/login';
         // Book management is open to authors (their own books); everything
         // else under /admin is platform-admin only.
         if (loc.startsWith('/admin/books')) {
@@ -98,6 +118,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(path: '/', redirect: (context, state) => '/splash'),
       GoRoute(
         path: '/splash',
         builder: (context, state) => const SplashScreen(),

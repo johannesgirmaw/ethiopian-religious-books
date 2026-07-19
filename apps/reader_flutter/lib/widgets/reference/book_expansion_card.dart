@@ -7,11 +7,7 @@ import '../primitives/shell_primitives.dart';
 
 /// Tappable book card for the browse list.
 class BookExpansionCard extends StatelessWidget {
-  const BookExpansionCard({
-    super.key,
-    required this.book,
-    this.index,
-  });
+  const BookExpansionCard({super.key, required this.book, this.index});
 
   final BookSummary book;
   final int? index;
@@ -29,7 +25,9 @@ class BookExpansionCard extends StatelessWidget {
     final accent = _accents[idx % _accents.length];
 
     return GestureDetector(
-      onTap: () => context.push('/book/${book.id}'),
+      onTap: () => context.push(
+        book.isBible ? '/bible/book/${book.id}' : '/book/${book.id}',
+      ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

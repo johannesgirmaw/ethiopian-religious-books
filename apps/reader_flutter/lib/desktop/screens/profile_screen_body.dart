@@ -22,8 +22,9 @@ class DesktopProfileScreenBody extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final session = ref.watch(sessionNotifierProvider).valueOrNull;
     final user = session?.user;
-    final padding =
-        DesktopTokens.pagePadding(DesktopLayoutScope.tierOf(context));
+    final padding = DesktopTokens.pagePadding(
+      DesktopLayoutScope.tierOf(context),
+    );
 
     return DesktopScrollBody(
       padding: padding,
@@ -39,8 +40,9 @@ class DesktopProfileScreenBody extends ConsumerWidget {
               children: [
                 CircleAvatar(
                   radius: 28,
-                  backgroundColor:
-                      AppColors.referencePrimary.withValues(alpha: 0.12),
+                  backgroundColor: AppColors.referencePrimary.withValues(
+                    alpha: 0.12,
+                  ),
                   child: Text(
                     _initials(user),
                     style: const TextStyle(
@@ -161,7 +163,7 @@ class DesktopProfileScreenBody extends ConsumerWidget {
                     _LinkRow(
                       title: l10n.adminPanel,
                       subtitle: l10n.adminPanelSubtitle,
-                      onTap: () => context.push('/admin'),
+                      onTap: () => context.push('/admin/books'),
                     ),
                     const Divider(height: 1),
                     _LinkRow(
@@ -227,8 +229,10 @@ class DesktopProfileScreenBody extends ConsumerWidget {
   String _initials(UserProfile user) {
     final name = user.displayName?.trim();
     if (name != null && name.isNotEmpty) {
-      final parts =
-          name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+      final parts = name
+          .split(RegExp(r'\s+'))
+          .where((p) => p.isNotEmpty)
+          .toList();
       if (parts.length >= 2) {
         return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
       }

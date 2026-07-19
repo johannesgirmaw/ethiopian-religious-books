@@ -1925,7 +1925,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             _selectedChapterKey != null &&
             _pageViewSections.isNotEmpty;
         const showChromeUi = true;
-        final showFindPanel = false;
+        final showFindPanel = showChromeUi && _showFindBar;
         final showToolbarPanel =
             showChromeUi && !keyboardOpen;
         final findBottom = showChromeUi ? 8.0 : -(findPanelH + 24);
@@ -1941,7 +1941,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             ? _readerBottomChromeInset(
                 true,
                 hasChapter: _hasSelectedChapter,
-                findBar: false,
+                findBar: _showFindBar,
                 keyboardOpen: keyboardOpen,
                 footerExpanded: _footerExpanded,
               )
@@ -2325,99 +2325,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  ConstrainedBox(
-                                    constraints: const BoxConstraints(
-                                      maxWidth: 340,
-                                      minWidth: 170,
-                                    ),
-                                    child: Container(
-                                      height: 40,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: text.withValues(alpha: 0.08),
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(
-                                          color: text.withValues(alpha: 0.18),
-                                        ),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.search_rounded,
-                                            size: 18,
-                                            color: text.withValues(alpha: 0.7),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: TextField(
-                                              focusNode: _findFocusNode,
-                                              controller: _findController,
-                                              textInputAction:
-                                                  TextInputAction.search,
-                                              style: TextStyle(
-                                                color: text,
-                                                fontSize: 14,
-                                              ),
-                                              decoration: InputDecoration(
-                                                isCollapsed: true,
-                                                hintText: l10n.findInBookHint,
-                                                hintStyle: TextStyle(
-                                                  color: text.withValues(
-                                                    alpha: 0.45,
-                                                  ),
-                                                  fontSize: 13.5,
-                                                ),
-                                                border: InputBorder.none,
-                                              ),
-                                              onChanged: (v) =>
-                                                  _updateFindMatches(
-                                                    v,
-                                                    allChapters: true,
-                                                  ),
-                                              onSubmitted: (_) {
-                                                setState(
-                                                  () => _searchAllChapters = true,
-                                                );
-                                                _submitFind();
-                                              },
-                                            ),
-                                          ),
-                                          ValueListenableBuilder<
-                                            TextEditingValue
-                                          >(
-                                            valueListenable: _findController,
-                                            builder: (context, value, _) {
-                                              if (value.text.trim().isEmpty) {
-                                                return const SizedBox.shrink();
-                                              }
-                                              return IconButton(
-                                                tooltip: l10n.clearSearchTooltip,
-                                                visualDensity:
-                                                    VisualDensity.compact,
-                                                onPressed: () {
-                                                  _findController.clear();
-                                                  _updateFindMatches(
-                                                    '',
-                                                    allChapters: true,
-                                                  );
-                                                },
-                                                icon: Icon(
-                                                  Icons.close_rounded,
-                                                  size: 16,
-                                                  color: text.withValues(
-                                                    alpha: 0.75,
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
                                 ],
                               ),
                             ),
@@ -2644,6 +2551,14 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                       color: text,
                                     ),
                                     _ReaderChromeIcon(
+                                      tooltip: l10n.findInBookLabel,
+                                      onPressed: _toggleFindBar,
+                                      icon: _showFindBar
+                                          ? Icons.search_off_rounded
+                                          : Icons.search_rounded,
+                                      color: text,
+                                    ),
+                                    _ReaderChromeIcon(
                                       onPressed: _toggleBookmark,
                                       icon: Icons.bookmark_add_outlined,
                                       color: text,
@@ -2739,6 +2654,14 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                                           context,
                                                         ).colorScheme.primary
                                                       : text,
+                                                ),
+                                                _ReaderChromeIcon(
+                                                  tooltip: l10n.findInBookLabel,
+                                                  onPressed: _toggleFindBar,
+                                                  icon: _showFindBar
+                                                      ? Icons.search_off_rounded
+                                                      : Icons.search_rounded,
+                                                  color: text,
                                                 ),
                                                 const SizedBox(
                                                   width: double.infinity,

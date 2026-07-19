@@ -67,7 +67,10 @@ class _AdminBooksScreenBodyState extends ConsumerState<AdminBooksScreenBody> {
           children: [
             WebPageHeader(
               title: l10n.adminBooksListTitle,
-              subtitle: l10n.adminBooksCount(filtered.length, page.items.length),
+              subtitle: l10n.adminBooksCount(
+                filtered.length,
+                page.items.length,
+              ),
               actions: [
                 // minimumSize: Size.zero overrides the app's full-width button
                 // theme (Size.fromHeight(50)); WebPageHeader measures its actions
@@ -79,8 +82,10 @@ class _AdminBooksScreenBodyState extends ConsumerState<AdminBooksScreenBody> {
                   style: OutlinedButton.styleFrom(
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                   ),
                   icon: const Icon(Icons.upload_file_rounded, size: 18),
                   label: Text(l10n.importFromWord),
@@ -90,8 +95,10 @@ class _AdminBooksScreenBodyState extends ConsumerState<AdminBooksScreenBody> {
                   style: FilledButton.styleFrom(
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                   ),
                   icon: const Icon(Icons.add_rounded, size: 18),
                   label: Text(l10n.createFirstBook),
@@ -230,7 +237,9 @@ class _FilterChip extends StatelessWidget {
             color: selected ? AppColors.referencePrimary : WebTokens.surfaceBg,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: selected ? AppColors.referencePrimary : WebTokens.borderColor,
+              color: selected
+                  ? AppColors.referencePrimary
+                  : WebTokens.borderColor,
             ),
           ),
           child: Text(
@@ -293,20 +302,26 @@ class _AdminBookRowState extends ConsumerState<_AdminBookRow> {
     final canWithdraw = isCreator && book.isInReview;
     final canReview = isReviewer && book.isInReview;
     final canPublish = isCreator && !isPublished && book.isReviewed;
-    final (statusLabel, statusKind) =
-        adminBookStatusChip(l10n, book.displayStatus);
+    final (statusLabel, statusKind) = adminBookStatusChip(
+      l10n,
+      book.displayStatus,
+    );
     final chapterCount = book.chaptersDraft.length;
-    final pageCount =
-        book.chaptersDraft.fold<int>(0, (sum, c) => sum + c.pages.length);
+    final pageCount = book.chaptersDraft.fold<int>(
+      0,
+      (sum, c) => sum + c.pages.length,
+    );
 
     return InkWell(
       onTap: _busy
           ? null
           : canEdit
-              ? () => context.push('/admin/books/${book.id}/edit', extra: book)
-              : isPublished
-                  ? () => context.push('/book/${book.id}')
-                  : null,
+          ? () => context.push('/admin/books/${book.id}/edit', extra: book)
+          : isPublished
+          ? () => context.push(
+              book.isBible ? '/bible/book/${book.id}' : '/book/${book.id}',
+            )
+          : null,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         child: Row(
@@ -367,48 +382,67 @@ class _AdminBookRowState extends ConsumerState<_AdminBookRow> {
                   switch (action) {
                     case _AdminBookMenuAction.edit:
                       if (canEdit) {
-                        context.push('/admin/books/${book.id}/edit', extra: book);
+                        context.push(
+                          '/admin/books/${book.id}/edit',
+                          extra: book,
+                        );
                       }
                     case _AdminBookMenuAction.submitReview:
-                      await _run(() => adminSubmitBookForReview(
-                            context: context,
-                            ref: ref,
-                            bookId: book.id,
-                          ));
+                      await _run(
+                        () => adminSubmitBookForReview(
+                          context: context,
+                          ref: ref,
+                          bookId: book.id,
+                        ),
+                      );
                     case _AdminBookMenuAction.withdrawReview:
-                      await _run(() => adminWithdrawBookReview(
-                            context: context,
-                            ref: ref,
-                            bookId: book.id,
-                          ));
+                      await _run(
+                        () => adminWithdrawBookReview(
+                          context: context,
+                          ref: ref,
+                          bookId: book.id,
+                        ),
+                      );
                     case _AdminBookMenuAction.approveReview:
-                      await _run(() => adminApproveBookReview(
-                            context: context,
-                            ref: ref,
-                            bookId: book.id,
-                          ));
+                      await _run(
+                        () => adminApproveBookReview(
+                          context: context,
+                          ref: ref,
+                          bookId: book.id,
+                        ),
+                      );
                     case _AdminBookMenuAction.requestChanges:
-                      await _run(() => adminRequestChangesForBook(
-                            context: context,
-                            ref: ref,
-                            bookId: book.id,
-                          ));
+                      await _run(
+                        () => adminRequestChangesForBook(
+                          context: context,
+                          ref: ref,
+                          bookId: book.id,
+                        ),
+                      );
                     case _AdminBookMenuAction.viewFeedback:
                       context.push('/admin/books/${book.id}/review');
                     case _AdminBookMenuAction.publish:
-                      await _run(() => adminPublishBook(
-                            context: context,
-                            ref: ref,
-                            bookId: book.id,
-                          ));
+                      await _run(
+                        () => adminPublishBook(
+                          context: context,
+                          ref: ref,
+                          bookId: book.id,
+                        ),
+                      );
                     case _AdminBookMenuAction.unpublish:
-                      await _run(() => adminUnpublishBook(
-                            context: context,
-                            ref: ref,
-                            bookId: book.id,
-                          ));
+                      await _run(
+                        () => adminUnpublishBook(
+                          context: context,
+                          ref: ref,
+                          bookId: book.id,
+                        ),
+                      );
                     case _AdminBookMenuAction.openReader:
-                      context.push('/book/${book.id}');
+                      context.push(
+                        book.isBible
+                            ? '/bible/book/${book.id}'
+                            : '/book/${book.id}',
+                      );
                   }
                 },
                 itemBuilder: (context) => [

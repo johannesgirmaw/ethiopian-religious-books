@@ -85,7 +85,9 @@ class BookListTile extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: OutlinedButton(
-                onPressed: () => context.push('/book/${book.id}'),
+                onPressed: () => context.push(
+                  book.isBible ? '/bible/book/${book.id}' : '/book/${book.id}',
+                ),
                 child: Text(l10n.actionInfo),
               ),
             ),

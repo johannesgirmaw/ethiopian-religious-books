@@ -120,7 +120,9 @@ class MobileBookCard extends ConsumerWidget {
     );
 
     final tappable = GestureDetector(
-      onTap: () => context.push('/book/${book.id}'),
+      onTap: () => context.push(
+        book.isBible ? '/bible/book/${book.id}' : '/book/${book.id}',
+      ),
       behavior: HitTestBehavior.opaque,
       child: card,
     );

@@ -145,7 +145,7 @@ class ProfileScreen extends ConsumerWidget {
               icon: Icons.admin_panel_settings_outlined,
               title: l10n.adminPanel,
               subtitle: l10n.adminPanelSubtitle,
-              onTap: () => context.push('/admin'),
+              onTap: () => context.push('/admin/books'),
             ),
             const SizedBox(height: AppLayout.itemGap),
             _ProfileLinkRow(

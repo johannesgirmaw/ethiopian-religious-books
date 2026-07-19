@@ -59,8 +59,9 @@ class _DesktopAdminBooksScreenBodyState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final async = ref.watch(adminBooksProvider);
-    final padding =
-        DesktopTokens.pagePadding(DesktopLayoutScope.tierOf(context));
+    final padding = DesktopTokens.pagePadding(
+      DesktopLayoutScope.tierOf(context),
+    );
 
     Widget searchAndFilters() {
       return Column(
@@ -106,8 +107,10 @@ class _DesktopAdminBooksScreenBodyState
           children: [
             DesktopPageHeader(
               title: l10n.adminBooksListTitle,
-              subtitle:
-                  l10n.adminBooksCount(filtered.length, page.items.length),
+              subtitle: l10n.adminBooksCount(
+                filtered.length,
+                page.items.length,
+              ),
               actions: [
                 OutlinedButton.icon(
                   onPressed: () =>
@@ -241,8 +244,8 @@ class _FilterChipState extends State<_FilterChip> {
               color: widget.selected
                   ? AppColors.referencePrimary
                   : _hovered
-                      ? AppColors.surfaceStrong
-                      : Colors.white,
+                  ? AppColors.surfaceStrong
+                  : Colors.white,
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
                 color: widget.selected
@@ -311,20 +314,26 @@ class _AdminBookRowState extends ConsumerState<_AdminBookRow> {
     final canWithdraw = isCreator && book.isInReview;
     final canReview = isReviewer && book.isInReview;
     final canPublish = isCreator && !isPublished && book.isReviewed;
-    final (statusLabel, statusKind) =
-        adminBookStatusChip(l10n, book.displayStatus);
+    final (statusLabel, statusKind) = adminBookStatusChip(
+      l10n,
+      book.displayStatus,
+    );
     final chapterCount = book.chaptersDraft.length;
-    final pageCount =
-        book.chaptersDraft.fold<int>(0, (sum, c) => sum + c.pages.length);
+    final pageCount = book.chaptersDraft.fold<int>(
+      0,
+      (sum, c) => sum + c.pages.length,
+    );
 
     return InkWell(
       onTap: _busy
           ? null
           : canEdit
-              ? () => context.push('/admin/books/${book.id}/edit', extra: book)
-              : isPublished
-                  ? () => context.push('/book/${book.id}')
-                  : null,
+          ? () => context.push('/admin/books/${book.id}/edit', extra: book)
+          : isPublished
+          ? () => context.push(
+              book.isBible ? '/bible/book/${book.id}' : '/book/${book.id}',
+            )
+          : null,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
@@ -385,48 +394,67 @@ class _AdminBookRowState extends ConsumerState<_AdminBookRow> {
                   switch (action) {
                     case _AdminBookMenuAction.edit:
                       if (canEdit) {
-                        context.push('/admin/books/${book.id}/edit', extra: book);
+                        context.push(
+                          '/admin/books/${book.id}/edit',
+                          extra: book,
+                        );
                       }
                     case _AdminBookMenuAction.submitReview:
-                      await _run(() => adminSubmitBookForReview(
-                            context: context,
-                            ref: ref,
-                            bookId: book.id,
-                          ));
+                      await _run(
+                        () => adminSubmitBookForReview(
+                          context: context,
+                          ref: ref,
+                          bookId: book.id,
+                        ),
+                      );
                     case _AdminBookMenuAction.withdrawReview:
-                      await _run(() => adminWithdrawBookReview(
-                            context: context,
-                            ref: ref,
-                            bookId: book.id,
-                          ));
+                      await _run(
+                        () => adminWithdrawBookReview(
+                          context: context,
+                          ref: ref,
+                          bookId: book.id,
+                        ),
+                      );
                     case _AdminBookMenuAction.approveReview:
-                      await _run(() => adminApproveBookReview(
-                            context: context,
-                            ref: ref,
-                            bookId: book.id,
-                          ));
+                      await _run(
+                        () => adminApproveBookReview(
+                          context: context,
+                          ref: ref,
+                          bookId: book.id,
+                        ),
+                      );
                     case _AdminBookMenuAction.requestChanges:
-                      await _run(() => adminRequestChangesForBook(
-                            context: context,
-                            ref: ref,
-                            bookId: book.id,
-                          ));
+                      await _run(
+                        () => adminRequestChangesForBook(
+                          context: context,
+                          ref: ref,
+                          bookId: book.id,
+                        ),
+                      );
                     case _AdminBookMenuAction.viewFeedback:
                       context.push('/admin/books/${book.id}/review');
                     case _AdminBookMenuAction.publish:
-                      await _run(() => adminPublishBook(
-                            context: context,
-                            ref: ref,
-                            bookId: book.id,
-                          ));
+                      await _run(
+                        () => adminPublishBook(
+                          context: context,
+                          ref: ref,
+                          bookId: book.id,
+                        ),
+                      );
                     case _AdminBookMenuAction.unpublish:
-                      await _run(() => adminUnpublishBook(
-                            context: context,
-                            ref: ref,
-                            bookId: book.id,
-                          ));
+                      await _run(
+                        () => adminUnpublishBook(
+                          context: context,
+                          ref: ref,
+                          bookId: book.id,
+                        ),
+                      );
                     case _AdminBookMenuAction.openReader:
-                      context.push('/book/${book.id}');
+                      context.push(
+                        book.isBible
+                            ? '/bible/book/${book.id}'
+                            : '/book/${book.id}',
+                      );
                   }
                 },
                 itemBuilder: (context) => [

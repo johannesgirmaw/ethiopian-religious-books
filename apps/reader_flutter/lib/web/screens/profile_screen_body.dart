@@ -37,8 +37,9 @@ class ProfileScreenBody extends ConsumerWidget {
               children: [
                 CircleAvatar(
                   radius: 32,
-                  backgroundColor:
-                      AppColors.referencePrimary.withValues(alpha: 0.12),
+                  backgroundColor: AppColors.referencePrimary.withValues(
+                    alpha: 0.12,
+                  ),
                   child: Text(
                     _initials(user),
                     style: const TextStyle(
@@ -65,9 +66,7 @@ class ProfileScreenBody extends ConsumerWidget {
                       const SizedBox(height: 4),
                       Text(
                         user.email,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                        ),
+                        style: const TextStyle(color: AppColors.textSecondary),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -158,7 +157,7 @@ class ProfileScreenBody extends ConsumerWidget {
                     _LinkRow(
                       title: l10n.adminPanel,
                       subtitle: l10n.adminPanelSubtitle,
-                      onTap: () => context.push('/admin'),
+                      onTap: () => context.push('/admin/books'),
                     ),
                     const Divider(height: 1),
                     _LinkRow(
@@ -203,7 +202,10 @@ class ProfileScreenBody extends ConsumerWidget {
           WebPanel(
             child: Column(
               children: [
-                Text(l10n.noProfileCached, style: const TextStyle(fontWeight: FontWeight.w700)),
+                Text(
+                  l10n.noProfileCached,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
                 const SizedBox(height: 8),
                 Text(l10n.signInSubtitle, textAlign: TextAlign.center),
                 const SizedBox(height: 16),
@@ -221,8 +223,12 @@ class ProfileScreenBody extends ConsumerWidget {
   String _initials(UserProfile user) {
     final name = user.displayName?.trim();
     if (name != null && name.isNotEmpty) {
-      final parts = name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-      if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+      final parts = name
+          .split(RegExp(r'\s+'))
+          .where((p) => p.isNotEmpty)
+          .toList();
+      if (parts.length >= 2)
+        return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
       return parts[0][0].toUpperCase();
     }
     return user.email.isNotEmpty ? user.email[0].toUpperCase() : '?';
@@ -233,7 +239,10 @@ class ProfileScreenBody extends ConsumerWidget {
     if (s == null) return;
     try {
       final dio = ref.read(apiDioProvider);
-      await dio.post<void>('auth/logout', data: {'refresh_token': s.refreshToken});
+      await dio.post<void>(
+        'auth/logout',
+        data: {'refresh_token': s.refreshToken},
+      );
     } catch (_) {}
     await ref.read(sessionNotifierProvider.notifier).clear();
     if (context.mounted) context.go('/login');
@@ -316,12 +325,24 @@ class _LinkRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                  Text(subtitle, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: AppColors.textTertiary),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textTertiary,
+            ),
           ],
         ),
       ),

@@ -84,9 +84,9 @@ class DownloadsScreen extends ConsumerWidget {
             ref.invalidate(offlineDownloadsListProvider);
             ref.invalidate(offlineBookCountProvider);
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.offlineCacheCleared)),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(l10n.offlineCacheCleared)));
             }
           },
         ),
@@ -97,8 +97,7 @@ class DownloadsScreen extends ConsumerWidget {
           final activeJobs = jobs
               .where((j) => j.state == 'in_progress' || j.state == 'pending')
               .toList();
-          final failedJobs =
-              jobs.where((j) => j.state == 'failed').toList();
+          final failedJobs = jobs.where((j) => j.state == 'failed').toList();
 
           if (offlineBooks.isEmpty &&
               activeJobs.isEmpty &&
@@ -126,8 +125,8 @@ class DownloadsScreen extends ConsumerWidget {
                 Text(
                   l10n.offlineBooksSaved(offlineBooks.length),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 if (activeJobs.isNotEmpty) ...[
@@ -161,8 +160,8 @@ class DownloadsScreen extends ConsumerWidget {
                     child: Text(
                       l10n.downloadsNoSavedYet,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ),
               ],
@@ -207,9 +206,9 @@ class _OfflineBookCardState extends ConsumerState<_OfflineBookCard> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$e')));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -241,9 +240,9 @@ class _OfflineBookCardState extends ConsumerState<_OfflineBookCard> {
     ref.invalidate(offlineBookCountProvider);
     ref.invalidate(offlineBookCachedProvider(widget.entry.id));
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.offlineCopyRemoved)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.offlineCopyRemoved)));
     }
   }
 
@@ -262,9 +261,9 @@ class _OfflineBookCardState extends ConsumerState<_OfflineBookCard> {
             children: [
               Text(
                 e.title,
-                style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                style: Theme.of(
+                  ctx,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
               ),
               if (e.authorCompiler?.isNotEmpty == true) ...[
                 const SizedBox(height: 8),
@@ -301,157 +300,161 @@ class _OfflineBookCardState extends ConsumerState<_OfflineBookCard> {
 
     return AppPanel(
       padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      e.title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (e.authorCompiler?.isNotEmpty == true) ...[
+                      const SizedBox(height: 4),
                       Text(
-                        e.title,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
+                        e.authorCompiler!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
                         ),
-                        maxLines: 3,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (e.authorCompiler?.isNotEmpty == true) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          e.authorCompiler!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                      const SizedBox(height: 6),
-                      Text(
-                        [
-                          if (e.primaryLanguage?.isNotEmpty == true)
-                            e.primaryLanguage!,
-                          l10n.draftChapterPageCounts(
-                            e.chapterCount,
-                            e.pageCount,
-                          ),
-                          if (!e.hasReadableContent) l10n.downloadsCacheInvalid,
-                        ].join(' · '),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: e.hasReadableContent
-                              ? AppColors.textSecondary
-                              : theme.colorScheme.error,
-                        ),
-                      ),
                     ],
-                  ),
-                ),
-                if (_busy)
-                  const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                    const SizedBox(height: 6),
+                    Text(
+                      [
+                        if (e.primaryLanguage?.isNotEmpty == true)
+                          e.primaryLanguage!,
+                        l10n.draftChapterPageCounts(
+                          e.chapterCount,
+                          e.pageCount,
+                        ),
+                        if (!e.hasReadableContent) l10n.downloadsCacheInvalid,
+                      ].join(' · '),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: e.hasReadableContent
+                            ? AppColors.textSecondary
+                            : theme.colorScheme.error,
+                      ),
                     ),
-                  )
-                else
-                  PopupMenuButton<String>(
-                    tooltip: l10n.adminBookActionsTooltip,
-                    icon: const Icon(Icons.more_vert_rounded),
-                    onSelected: (action) async {
-                      switch (action) {
-                        case 'read':
-                          if (e.hasReadableContent) {
-                            context.push('/reader/${e.id}');
-                          }
-                        case 'info':
-                          if (e.inCatalog) {
-                            context.push('/book/${e.id}');
-                          } else {
-                            _showOfflineInfo();
-                          }
-                        case 'sync':
-                          await _sync();
-                        case 'clear':
-                          await _clear();
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'read',
-                        enabled: e.hasReadableContent,
-                        child: ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.menu_book_outlined, size: 22),
-                          title: Text(l10n.actionRead),
-                          subtitle: e.hasReadableContent
-                              ? null
-                              : Text(l10n.downloadsCacheInvalid),
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'info',
-                        child: ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.info_outline_rounded, size: 22),
-                          title: Text(l10n.actionInfo),
-                        ),
-                      ),
-                      const PopupMenuDivider(),
-                      PopupMenuItem(
-                        value: 'sync',
-                        child: ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.sync_rounded, size: 22),
-                          title: Text(l10n.downloadsSyncCache),
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'clear',
-                        child: ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.delete_outline_rounded,
-                            size: 22,
-                            color: theme.colorScheme.error,
-                          ),
-                          title: Text(
-                            l10n.downloadsClearBookCache,
-                            style: TextStyle(color: theme.colorScheme.error),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
-            if (e.hasReadableContent) ...[
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: _busy ? null : () => context.push('/reader/${e.id}'),
-                  icon: const Icon(Icons.menu_book_outlined, size: 18),
-                  label: Text(l10n.actionRead),
+                  ],
                 ),
               ),
+              if (_busy)
+                const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              else
+                PopupMenuButton<String>(
+                  tooltip: l10n.adminBookActionsTooltip,
+                  icon: const Icon(Icons.more_vert_rounded),
+                  onSelected: (action) async {
+                    switch (action) {
+                      case 'read':
+                        if (e.hasReadableContent) {
+                          context.push('/reader/${e.id}');
+                        }
+                      case 'info':
+                        if (e.inCatalog) {
+                          context.push(
+                            e.catalogBook?.isBible == true
+                                ? '/bible/book/${e.id}'
+                                : '/book/${e.id}',
+                          );
+                        } else {
+                          _showOfflineInfo();
+                        }
+                      case 'sync':
+                        await _sync();
+                      case 'clear':
+                        await _clear();
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'read',
+                      enabled: e.hasReadableContent,
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.menu_book_outlined, size: 22),
+                        title: Text(l10n.actionRead),
+                        subtitle: e.hasReadableContent
+                            ? null
+                            : Text(l10n.downloadsCacheInvalid),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'info',
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(
+                          Icons.info_outline_rounded,
+                          size: 22,
+                        ),
+                        title: Text(l10n.actionInfo),
+                      ),
+                    ),
+                    const PopupMenuDivider(),
+                    PopupMenuItem(
+                      value: 'sync',
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.sync_rounded, size: 22),
+                        title: Text(l10n.downloadsSyncCache),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'clear',
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(
+                          Icons.delete_outline_rounded,
+                          size: 22,
+                          color: theme.colorScheme.error,
+                        ),
+                        title: Text(
+                          l10n.downloadsClearBookCache,
+                          style: TextStyle(color: theme.colorScheme.error),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
             ],
+          ),
+          if (e.hasReadableContent) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _busy ? null : () => context.push('/reader/${e.id}'),
+                icon: const Icon(Icons.menu_book_outlined, size: 18),
+                label: Text(l10n.actionRead),
+              ),
+            ),
           ],
-        ),
+        ],
+      ),
     );
   }
 }
 
 class _DownloadJobTile extends ConsumerWidget {
-  const _DownloadJobTile({
-    required this.job,
-    required this.isFailed,
-  });
+  const _DownloadJobTile({required this.job, required this.isFailed});
 
   final DownloadJob job;
   final bool isFailed;
@@ -459,7 +462,8 @@ class _DownloadJobTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final offline = ref.watch(offlineDownloadsListProvider).valueOrNull ?? const [];
+    final offline =
+        ref.watch(offlineDownloadsListProvider).valueOrNull ?? const [];
     final cached = offline.where((e) => e.id == job.bookId).toList();
     // Prefer catalog title for jobs
     final catalog = ref.watch(catalogProvider).valueOrNull;
@@ -474,53 +478,62 @@ class _DownloadJobTile extends ConsumerWidget {
       child: AppPanel(
         padding: EdgeInsets.zero,
         child: ListTile(
-        leading: Icon(
-          isFailed ? Icons.error_outline_rounded : Icons.downloading_rounded,
-          color: isFailed ? Theme.of(context).colorScheme.error : null,
-        ),
-        title: Text(displayTitle, maxLines: 2, overflow: TextOverflow.ellipsis),
-        subtitle: Text(
-          isFailed
-              ? displayDownloadJobError(job.errorMessage, l10n)
-              : l10n.downloadInProgress,
-        ),
-        trailing: isFailed
-            ? TextButton(
-                onPressed: () async {
-                  final messenger = ScaffoldMessenger.of(context);
-                  messenger.showSnackBar(
-                    SnackBar(content: Text(l10n.preparingDownload)),
-                  );
-                  final error = await runOfflineBookDownload(
-                    ref,
-                    job.bookId,
-                    l10n: l10n,
-                  );
-                  if (!context.mounted) return;
-                  ref.invalidate(downloadJobsProvider);
-                  ref.invalidate(offlineDownloadsListProvider);
-                  if (error == null) {
+          leading: Icon(
+            isFailed ? Icons.error_outline_rounded : Icons.downloading_rounded,
+            color: isFailed ? Theme.of(context).colorScheme.error : null,
+          ),
+          title: Text(
+            displayTitle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Text(
+            isFailed
+                ? displayDownloadJobError(job.errorMessage, l10n)
+                : l10n.downloadInProgress,
+          ),
+          trailing: isFailed
+              ? TextButton(
+                  onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
                     messenger.showSnackBar(
-                      SnackBar(content: Text(l10n.savedOfflineReading)),
+                      SnackBar(content: Text(l10n.preparingDownload)),
                     );
-                  } else {
-                    messenger.showSnackBar(SnackBar(content: Text(error)));
-                  }
-                },
-                child: Text(l10n.retry),
-              )
-            : const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-        onTap: () {
-          if (cached.isNotEmpty && cached.first.hasReadableContent) {
-            context.push('/reader/${job.bookId}');
-          } else if (catalogMatches.isNotEmpty) {
-            context.push('/book/${job.bookId}');
-          }
-        },
+                    final error = await runOfflineBookDownload(
+                      ref,
+                      job.bookId,
+                      l10n: l10n,
+                    );
+                    if (!context.mounted) return;
+                    ref.invalidate(downloadJobsProvider);
+                    ref.invalidate(offlineDownloadsListProvider);
+                    if (error == null) {
+                      messenger.showSnackBar(
+                        SnackBar(content: Text(l10n.savedOfflineReading)),
+                      );
+                    } else {
+                      messenger.showSnackBar(SnackBar(content: Text(error)));
+                    }
+                  },
+                  child: Text(l10n.retry),
+                )
+              : const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+          onTap: () {
+            if (cached.isNotEmpty && cached.first.hasReadableContent) {
+              context.push('/reader/${job.bookId}');
+            } else if (catalogMatches.isNotEmpty) {
+              final match = catalogMatches.first;
+              context.push(
+                match.isBible
+                    ? '/bible/book/${job.bookId}'
+                    : '/book/${job.bookId}',
+              );
+            }
+          },
         ),
       ),
     );
