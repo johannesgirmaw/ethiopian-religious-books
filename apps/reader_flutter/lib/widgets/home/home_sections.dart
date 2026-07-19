@@ -23,6 +23,11 @@ class HomeTopBar extends StatelessWidget {
     this.onFavourites,
     this.onNotifications,
     this.avatarSize = 46,
+    this.searchHint,
+    this.searchController,
+    this.onSearchChanged,
+    this.onSearchFilterTap,
+    this.searchWidth = 360,
   });
 
   final String name;
@@ -32,6 +37,11 @@ class HomeTopBar extends StatelessWidget {
   final VoidCallback? onFavourites;
   final VoidCallback? onNotifications;
   final double avatarSize;
+  final String? searchHint;
+  final TextEditingController? searchController;
+  final ValueChanged<String>? onSearchChanged;
+  final VoidCallback? onSearchFilterTap;
+  final double searchWidth;
 
   String get _initials {
     final parts = name.trim().split(RegExp(r'\s+'));
@@ -43,6 +53,11 @@ class HomeTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasSearch =
+        searchHint != null &&
+        searchHint!.isNotEmpty &&
+        searchController != null &&
+        onSearchChanged != null;
     return Row(
       children: [
         Container(
@@ -85,8 +100,11 @@ class HomeTopBar extends StatelessWidget {
                   ),
                   if (verified) ...[
                     const SizedBox(width: 4),
-                    const Icon(Icons.verified_rounded,
-                        size: 16, color: AppColors.primary),
+                    const Icon(
+                      Icons.verified_rounded,
+                      size: 16,
+                      color: AppColors.primary,
+                    ),
                   ],
                 ],
               ),
@@ -105,8 +123,22 @@ class HomeTopBar extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
+        if (hasSearch) ...[
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: searchWidth, minWidth: 220),
+            child: _TopRightSearchField(
+              hint: searchHint!,
+              controller: searchController!,
+              onChanged: onSearchChanged!,
+              onFilterTap: onSearchFilterTap,
+            ),
+          ),
+          const SizedBox(width: 10),
+        ],
         _CircleIconButton(
-            icon: Icons.favorite_border_rounded, onTap: onFavourites),
+          icon: Icons.favorite_border_rounded,
+          onTap: onFavourites,
+        ),
         const SizedBox(width: 8),
         _CircleIconButton(
           icon: Icons.notifications_none_rounded,
@@ -119,7 +151,11 @@ class HomeTopBar extends StatelessWidget {
 }
 
 class _CircleIconButton extends StatelessWidget {
-  const _CircleIconButton({required this.icon, this.onTap, this.badgeCount = 0});
+  const _CircleIconButton({
+    required this.icon,
+    this.onTap,
+    this.badgeCount = 0,
+  });
 
   final IconData icon;
   final VoidCallback? onTap;
@@ -151,14 +187,18 @@ class _CircleIconButton extends StatelessWidget {
                 top: -2,
                 right: -2,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 1,
+                  ),
                   constraints: const BoxConstraints(minWidth: 18),
                   decoration: BoxDecoration(
                     color: AppColors.accent,
                     borderRadius: BorderRadius.circular(AppRadius.pill),
-                    border:
-                        Border.all(color: AppColors.surfaceCard, width: 1.5),
+                    border: Border.all(
+                      color: AppColors.surfaceCard,
+                      width: 1.5,
+                    ),
                   ),
                   alignment: Alignment.center,
                   child: Text(
@@ -174,6 +214,99 @@ class _CircleIconButton extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _TopRightSearchField extends StatelessWidget {
+  const _TopRightSearchField({
+    required this.hint,
+    required this.controller,
+    required this.onChanged,
+    this.onFilterTap,
+  });
+
+  final String hint;
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final VoidCallback? onFilterTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 42,
+      padding: const EdgeInsets.only(left: 12, right: 6),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceCard,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.line),
+        boxShadow: AppShadows.listRow,
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.search_rounded,
+            size: 19,
+            color: AppColors.textTertiary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              onChanged: onChanged,
+              textInputAction: TextInputAction.search,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+              decoration: InputDecoration(
+                isCollapsed: true,
+                hintText: hint,
+                hintStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textTertiary,
+                ),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: controller,
+            builder: (context, value, _) {
+              if (value.text.isNotEmpty) {
+                return IconButton(
+                  onPressed: () {
+                    controller.clear();
+                    onChanged('');
+                  },
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    size: 18,
+                    color: AppColors.textTertiary,
+                  ),
+                  visualDensity: VisualDensity.compact,
+                  tooltip: AppLocalizations.of(context).clearSearchTooltip,
+                );
+              }
+              return IconButton(
+                onPressed: onFilterTap,
+                icon: const Icon(
+                  Icons.tune_rounded,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
+                visualDensity: VisualDensity.compact,
+                tooltip: AppLocalizations.of(context).filterTooltip,
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -245,10 +378,11 @@ class _HomeSearchBarState extends State<HomeSearchBar> {
             ),
             child: Row(
               children: [
-                Icon(Icons.search_rounded,
-                    size: 22,
-                    color:
-                        _focused ? AppColors.primary : AppColors.textTertiary),
+                Icon(
+                  Icons.search_rounded,
+                  size: 22,
+                  color: _focused ? AppColors.primary : AppColors.textTertiary,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: TextField(
@@ -291,8 +425,11 @@ class _HomeSearchBarState extends State<HomeSearchBar> {
                       behavior: HitTestBehavior.opaque,
                       child: const Padding(
                         padding: EdgeInsets.only(left: 6),
-                        child: Icon(Icons.close_rounded,
-                            size: 18, color: AppColors.textTertiary),
+                        child: Icon(
+                          Icons.close_rounded,
+                          size: 18,
+                          color: AppColors.textTertiary,
+                        ),
                       ),
                     );
                   },
@@ -314,7 +451,11 @@ class _HomeSearchBarState extends State<HomeSearchBar> {
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 boxShadow: AppShadows.floatingBtn,
               ),
-              child: const Icon(Icons.tune_rounded, color: Colors.white, size: 23),
+              child: const Icon(
+                Icons.tune_rounded,
+                color: Colors.white,
+                size: 23,
+              ),
             ),
           ),
         ),
@@ -386,8 +527,9 @@ class _Pill extends StatelessWidget {
           decoration: BoxDecoration(
             color: active ? AppColors.primary : AppColors.surfaceCard,
             borderRadius: BorderRadius.circular(AppRadius.pill),
-            border:
-                Border.all(color: active ? AppColors.primary : AppColors.line),
+            border: Border.all(
+              color: active ? AppColors.primary : AppColors.line,
+            ),
             boxShadow: active ? AppShadows.floatingBtn : null,
           ),
           child: Text(

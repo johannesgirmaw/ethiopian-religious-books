@@ -60,12 +60,12 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
   }
 
   String _sortLabel(AppLocalizations l10n, _SortMode m) => switch (m) {
-        _SortMode.titleAz => l10n.sortTitleAz,
-        _SortMode.newest => l10n.sortNewest,
-        _SortMode.oldest => l10n.sortOldest,
-        _SortMode.popular => l10n.sortPopular,
-        _SortMode.topRated => l10n.sortTopRated,
-      };
+    _SortMode.titleAz => l10n.sortTitleAz,
+    _SortMode.newest => l10n.sortNewest,
+    _SortMode.oldest => l10n.sortOldest,
+    _SortMode.popular => l10n.sortPopular,
+    _SortMode.topRated => l10n.sortTopRated,
+  };
 
   void _applySort(List<BookSummary> list) {
     int byDate(BookSummary a, BookSummary b) =>
@@ -74,8 +74,9 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
         b.readersCount + b.ratingAverage * b.ratingCount * 2;
     switch (_sort) {
       case _SortMode.titleAz:
-        list.sort((a, b) =>
-            a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+        list.sort(
+          (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+        );
       case _SortMode.newest:
         list.sort((a, b) => byDate(b, a));
       case _SortMode.oldest:
@@ -99,8 +100,7 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
         () => catalogLanguageFilterLabel(b.primaryLanguage, l10n),
       );
     }
-    final list =
-        seen.entries.map((e) => (key: e.key, label: e.value)).toList();
+    final list = seen.entries.map((e) => (key: e.key, label: e.value)).toList();
     list.sort((a, b) => a.label.compareTo(b.label));
     return list;
   }
@@ -158,8 +158,10 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                       dense: true,
                       title: Text(_sortLabel(l10n, m)),
                       trailing: _sort == m
-                          ? const Icon(Icons.check_rounded,
-                              color: AppColors.primary)
+                          ? const Icon(
+                              Icons.check_rounded,
+                              color: AppColors.primary,
+                            )
                           : null,
                       onTap: () => update(() => _sort = m),
                     ),
@@ -172,15 +174,65 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
     );
   }
 
-  Widget _sheetHeader(String text) => Text(
-        text,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w800,
-          color: AppColors.textTertiary,
-          letterSpacing: 0.3,
+  Future<void> _openSearchSheet(AppLocalizations l10n) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surfaceCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      builder: (sheetContext) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          MediaQuery.of(sheetContext).viewInsets.bottom + 16,
         ),
-      );
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            MobileSearchBar(
+              hint: l10n.homeSearchHint,
+              controller: _searchCtrl,
+              onChanged: _onSearchChanged,
+              onFilterTap: () {
+                Navigator.of(sheetContext).pop();
+                _openFilterSheet(l10n);
+              },
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                TextButton(
+                  onPressed: () {
+                    _searchCtrl.clear();
+                    _onSearchChanged('');
+                  },
+                  child: Text(l10n.clear),
+                ),
+                const Spacer(),
+                FilledButton(
+                  onPressed: () => Navigator.of(sheetContext).pop(),
+                  child: Text(l10n.close),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sheetHeader(String text) => Text(
+    text,
+    style: const TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w800,
+      color: AppColors.textTertiary,
+      letterSpacing: 0.3,
+    ),
+  );
 
   Future<void> _refresh() async {
     ref.invalidate(catalogProvider);
@@ -214,10 +266,10 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
   /// Genre filter chips: the dynamic genres lookup, limited to genres actually
   /// present in the catalog, plus any legacy slugs not in the lookup.
   List<GenreOption> _genreOptions(List<BookSummary> books) {
-    final lookup = ref.watch(genresProvider).valueOrNull ?? const <GenreOption>[];
-    final present = <String>{
-      for (final b in books) (b.genre ?? '').trim(),
-    }..removeWhere((s) => s.isEmpty);
+    final lookup =
+        ref.watch(genresProvider).valueOrNull ?? const <GenreOption>[];
+    final present = <String>{for (final b in books) (b.genre ?? '').trim()}
+      ..removeWhere((s) => s.isEmpty);
     final bySlug = {for (final g in lookup) g.slug: g};
     final options = <GenreOption>[
       for (final g in lookup)
@@ -293,17 +345,12 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
             name: name,
             email: user?.email,
             verified: user != null,
+            searchActive: _query.trim().isNotEmpty,
+            onSearch: () => _openSearchSheet(l10n),
             notificationCount:
                 ref.watch(unreadNotificationCountProvider).valueOrNull ?? 0,
             onFavourites: () => context.push('/favourites'),
             onNotifications: () => context.push('/notifications'),
-          ),
-          const SizedBox(height: 16),
-          MobileSearchBar(
-            hint: l10n.homeSearchHint,
-            controller: _searchCtrl,
-            onChanged: _onSearchChanged,
-            onFilterTap: () => _openFilterSheet(l10n),
           ),
         ],
       ),
@@ -336,8 +383,7 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
       final match = books.where((b) => b.id == lastOpened.bookId);
       if (match.isNotEmpty) resumeBook = match.first;
     }
-    final resumeIndex =
-        resumeBook == null ? 0 : books.indexOf(resumeBook);
+    final resumeIndex = resumeBook == null ? 0 : books.indexOf(resumeBook);
 
     return _Frame(
       header: _header(l10n),
@@ -346,8 +392,8 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
         if (!searching) ...[
           const SizedBox(height: 14),
           FeaturedCarousel(
-            books: ref.watch(featuredBooksProvider).valueOrNull ??
-                [books.first],
+            books:
+                ref.watch(featuredBooksProvider).valueOrNull ?? [books.first],
           ),
           const SizedBox(height: 18),
           GenreChipRow(
@@ -438,9 +484,7 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppLayout.pageHorizontal,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppLayout.pageHorizontal),
       child: Row(
         children: [
           Expanded(

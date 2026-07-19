@@ -99,7 +99,8 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
       bibleChapterProvider((bookId: widget.bookId, chapter: _chapter)),
     );
 
-    final bookTitle = chapterAsync.valueOrNull?.book.title ??
+    final bookTitle =
+        chapterAsync.valueOrNull?.book.title ??
         indexAsync.valueOrNull?.book.title ??
         l10n.bibleTitle;
 
@@ -186,7 +187,8 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
                           current: _chapter,
                           geez: geez,
                           onSelect: _goChapter,
-                          onCollapse: () => setState(() => _sidebarOpen = false),
+                          onCollapse: () =>
+                              setState(() => _sidebarOpen = false),
                         )
                       : const SizedBox(width: 0, height: double.infinity),
                 ),
@@ -231,18 +233,23 @@ class _ChapterView extends StatelessWidget {
             ? null
             : chapter.headingForSeq(v.sectionOrdinal!);
         if (heading != null && heading.isNotEmpty) {
-          children.add(Padding(
-            padding: EdgeInsets.only(top: children.isEmpty ? 0 : 20, bottom: 8),
-            child: Text(
-              heading,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primaryDeep,
-                height: 1.3,
+          children.add(
+            Padding(
+              padding: EdgeInsets.only(
+                top: children.isEmpty ? 0 : 20,
+                bottom: 8,
+              ),
+              child: Text(
+                heading,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primaryDeep,
+                  height: 1.3,
+                ),
               ),
             ),
-          ));
+          );
         }
       }
       children.add(
@@ -255,7 +262,10 @@ class _ChapterView extends StatelessWidget {
       children: [
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: children,
+          ),
         ),
       ],
     );
@@ -449,7 +459,9 @@ class _ChapterSidebar extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: selected ? Colors.white : AppColors.textPrimary,
+                          color: selected
+                              ? Colors.white
+                              : AppColors.textPrimary,
                         ),
                       ),
                     ),

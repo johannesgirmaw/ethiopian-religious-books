@@ -66,10 +66,12 @@ class _DesktopHomeScreenBodyState extends ConsumerState<DesktopHomeScreenBody> {
       if (_genre != null && (b.genre ?? '').trim() != _genre) return false;
       if (!bookMatchesLanguage(b, _language, l10n)) return false;
       if (q.isEmpty) return true;
-      return [b.title, b.authorCompiler ?? '', b.subtitle ?? '', b.summary ?? '']
-          .join(' ')
-          .toLowerCase()
-          .contains(q);
+      return [
+        b.title,
+        b.authorCompiler ?? '',
+        b.subtitle ?? '',
+        b.summary ?? '',
+      ].join(' ').toLowerCase().contains(q);
     }).toList();
     applyHomeSort(result, _sort);
     return result;
@@ -84,6 +86,22 @@ class _DesktopHomeScreenBodyState extends ConsumerState<DesktopHomeScreenBody> {
       name: name,
       email: user?.email,
       verified: user != null,
+      searchHint: l10n.homeSearchHint,
+      searchController: _searchCtrl,
+      onSearchChanged: _onSearch,
+      onSearchFilterTap: () => showHomeFilterSheet(
+        context: context,
+        l10n: l10n,
+        languages: languageOptionsFor(
+          ref.read(catalogProvider).valueOrNull?.items ?? const [],
+          l10n,
+        ),
+        selectedLanguage: _language,
+        selectedSort: _sort,
+        onLanguage: (v) => setState(() => _language = v),
+        onSort: (v) => setState(() => _sort = v),
+      ),
+      searchWidth: 360,
       notificationCount:
           ref.watch(unreadNotificationCountProvider).valueOrNull ?? 0,
       onFavourites: () => context.push('/favourites'),
@@ -93,16 +111,21 @@ class _DesktopHomeScreenBodyState extends ConsumerState<DesktopHomeScreenBody> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final async = ref.watch(catalogProvider);
     final tier = DesktopLayoutScope.tierOf(context);
-    final insets = DesktopTokens.pagePadding(tier)
-        .resolve(Directionality.of(context));
+    final insets = DesktopTokens.pagePadding(
+      tier,
+    ).resolve(Directionality.of(context));
 
     return async.when(
       loading: () => ListView(
         padding: EdgeInsets.fromLTRB(insets.left, insets.top, insets.right, 0),
-        children: [_topBar(l10n), const SizedBox(height: 24), const SkeletonCardGroup(count: 6)],
+        children: [
+          _topBar(l10n),
+          const SizedBox(height: 24),
+          const SkeletonCardGroup(count: 6),
+        ],
       ),
       error: (e, _) => ListView(
         padding: EdgeInsets.fromLTRB(insets.left, insets.top, insets.right, 0),
@@ -130,25 +153,7 @@ class _DesktopHomeScreenBodyState extends ConsumerState<DesktopHomeScreenBody> {
   ) {
     final header = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: 4),
-        _topBar(l10n),
-        const SizedBox(height: 20),
-        HomeSearchBar(
-          hint: l10n.homeSearchHint,
-          controller: _searchCtrl,
-          onChanged: _onSearch,
-          onFilterTap: () => showHomeFilterSheet(
-            context: context,
-            l10n: l10n,
-            languages: languageOptionsFor(books, l10n),
-            selectedLanguage: _language,
-            selectedSort: _sort,
-            onLanguage: (v) => setState(() => _language = v),
-            onSort: (v) => setState(() => _sort = v),
-          ),
-        ),
-      ],
+      children: [const SizedBox(height: 4), _topBar(l10n)],
     );
 
     if (books.isEmpty) {
@@ -167,8 +172,10 @@ class _DesktopHomeScreenBodyState extends ConsumerState<DesktopHomeScreenBody> {
     }
 
     final searching = _query.trim().isNotEmpty;
-    final genreOptions =
-        genreOptionsFor(books, ref.watch(genresProvider).valueOrNull ?? const []);
+    final genreOptions = genreOptionsFor(
+      books,
+      ref.watch(genresProvider).valueOrNull ?? const [],
+    );
     final filtered = _filtered(books, l10n);
 
     final lastOpened = ref.watch(lastOpenedBookProvider).valueOrNull;
@@ -214,8 +221,12 @@ class _DesktopHomeScreenBodyState extends ConsumerState<DesktopHomeScreenBody> {
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverPadding(
-            padding:
-                EdgeInsets.fromLTRB(insets.left, insets.top, insets.right, 0),
+            padding: EdgeInsets.fromLTRB(
+              insets.left,
+              insets.top,
+              insets.right,
+              0,
+            ),
             sliver: SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -235,12 +246,15 @@ class _DesktopHomeScreenBodyState extends ConsumerState<DesktopHomeScreenBody> {
           else
             SliverPadding(
               padding: EdgeInsets.fromLTRB(
-                  insets.left, 0, insets.right, insets.bottom),
+                insets.left,
+                0,
+                insets.right,
+                insets.bottom,
+              ),
               sliver: SliverGrid(
                 gridDelegate: desktopCatalogGridDelegate(context),
                 delegate: SliverChildBuilderDelegate(
-                  (context, i) =>
-                      DesktopBookCard(book: filtered[i], index: i),
+                  (context, i) => DesktopBookCard(book: filtered[i], index: i),
                   childCount: filtered.length,
                 ),
               ),
@@ -250,4 +264,3 @@ class _DesktopHomeScreenBodyState extends ConsumerState<DesktopHomeScreenBody> {
     );
   }
 }
-

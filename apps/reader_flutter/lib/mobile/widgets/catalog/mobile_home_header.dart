@@ -13,6 +13,8 @@ class MobileHomeTopBar extends StatelessWidget {
     this.notificationCount = 0,
     this.onFavourites,
     this.onNotifications,
+    this.onSearch,
+    this.searchActive = false,
   });
 
   final String name;
@@ -21,6 +23,8 @@ class MobileHomeTopBar extends StatelessWidget {
   final int notificationCount;
   final VoidCallback? onFavourites;
   final VoidCallback? onNotifications;
+  final VoidCallback? onSearch;
+  final bool searchActive;
 
   String get _initials {
     final parts = name.trim().split(RegExp(r'\s+'));
@@ -98,6 +102,12 @@ class MobileHomeTopBar extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         _CircleIconButton(
+          icon: Icons.search_rounded,
+          onTap: onSearch,
+          highlighted: searchActive,
+        ),
+        const SizedBox(width: 8),
+        _CircleIconButton(
           icon: Icons.favorite_border_rounded,
           onTap: onFavourites,
         ),
@@ -117,11 +127,13 @@ class _CircleIconButton extends StatelessWidget {
     required this.icon,
     this.onTap,
     this.badgeCount = 0,
+    this.highlighted = false,
   });
 
   final IconData icon;
   final VoidCallback? onTap;
   final int badgeCount;
+  final bool highlighted;
 
   @override
   Widget build(BuildContext context) {
@@ -135,12 +147,20 @@ class _CircleIconButton extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppColors.surfaceCard,
+              color: highlighted
+                  ? AppColors.primary.withValues(alpha: 0.12)
+                  : AppColors.surfaceCard,
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.line),
+              border: Border.all(
+                color: highlighted ? AppColors.primary : AppColors.line,
+              ),
               boxShadow: AppShadows.listRow,
             ),
-            child: Icon(icon, size: 20, color: AppColors.textSecondary),
+            child: Icon(
+              icon,
+              size: 20,
+              color: highlighted ? AppColors.primary : AppColors.textSecondary,
+            ),
           ),
           if (badgeCount > 0)
             Positioned(
