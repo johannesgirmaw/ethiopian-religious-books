@@ -360,8 +360,8 @@ List<WebSidebarItem> defaultWebSidebarItems(
     if (isAdmin)
       WebSidebarItem(
         route: '/admin/author-applications',
-        icon: Icons.assignment_ind_outlined,
-        selectedIcon: Icons.assignment_ind_rounded,
+        icon: Icons.group_outlined,
+        selectedIcon: Icons.group,
         label: l10n.adminAuthorAppsTitle,
       ),
   ];
