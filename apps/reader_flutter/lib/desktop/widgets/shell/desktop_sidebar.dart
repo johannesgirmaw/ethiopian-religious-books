@@ -253,8 +253,9 @@ class _SidebarLink extends StatelessWidget {
             duration: const Duration(milliseconds: 120),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
             decoration: BoxDecoration(
-              color:
-                  selected ? DesktopTokens.sidebarSelectedBg : Colors.transparent,
+              color: selected
+                  ? DesktopTokens.sidebarSelectedBg
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -360,8 +361,8 @@ List<DesktopSidebarItem> defaultDesktopSidebarItems(
     if (isAdmin)
       DesktopSidebarItem(
         route: '/admin/author-applications',
-        icon: Icons.how_to_reg_outlined,
-        selectedIcon: Icons.how_to_reg_rounded,
+        icon: Icons.assignment_ind_outlined,
+        selectedIcon: Icons.assignment_ind_rounded,
         label: l10n.adminAuthorAppsTitle,
       ),
   ];

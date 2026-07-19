@@ -164,8 +164,7 @@ class _SidebarLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        selected ? AppColors.primaryDeep : AppColors.textSecondary;
+    final color = selected ? AppColors.primaryDeep : AppColors.textSecondary;
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: MouseRegion(
@@ -177,7 +176,9 @@ class _SidebarLink extends StatelessWidget {
             duration: const Duration(milliseconds: 150),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
             decoration: BoxDecoration(
-              color: selected ? WebTokens.sidebarSelectedBg : Colors.transparent,
+              color: selected
+                  ? WebTokens.sidebarSelectedBg
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
@@ -194,7 +195,9 @@ class _SidebarLink extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                      color: selected ? AppColors.primaryDeep : AppColors.textPrimary,
+                      color: selected
+                          ? AppColors.primaryDeep
+                          : AppColors.textPrimary,
                     ),
                   ),
                 ),
@@ -301,10 +304,7 @@ class _SidebarAvatar extends StatelessWidget {
 }
 
 /// Sidebar items for the current session — use on every web shell/overlay page.
-List<WebSidebarItem> webSidebarItemsFor(
-  WidgetRef ref,
-  AppLocalizations l10n,
-) {
+List<WebSidebarItem> webSidebarItemsFor(WidgetRef ref, AppLocalizations l10n) {
   final user = ref.watch(sessionNotifierProvider).valueOrNull?.user;
   return defaultWebSidebarItems(
     l10n,
@@ -360,8 +360,8 @@ List<WebSidebarItem> defaultWebSidebarItems(
     if (isAdmin)
       WebSidebarItem(
         route: '/admin/author-applications',
-        icon: Icons.how_to_reg_outlined,
-        selectedIcon: Icons.how_to_reg_rounded,
+        icon: Icons.assignment_ind_outlined,
+        selectedIcon: Icons.assignment_ind_rounded,
         label: l10n.adminAuthorAppsTitle,
       ),
   ];
