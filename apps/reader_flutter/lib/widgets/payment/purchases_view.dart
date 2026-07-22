@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/payment_models.dart';
+import '../../providers/nav_visibility_providers.dart';
 import '../../providers/payment_providers.dart';
 import '../../utils/money_format.dart';
 import '../app_state_view.dart';
@@ -27,7 +28,10 @@ class PurchasesView extends ConsumerWidget {
     final async = ref.watch(myTransactionsProvider);
 
     final content = RefreshIndicator(
-      onRefresh: () async => ref.invalidate(myTransactionsProvider),
+      onRefresh: () async {
+        ref.invalidate(myTransactionsProvider);
+        ref.invalidate(hasPurchasesProvider);
+      },
       child: async.when(
         loading: () => const Padding(
           padding: EdgeInsets.all(16),

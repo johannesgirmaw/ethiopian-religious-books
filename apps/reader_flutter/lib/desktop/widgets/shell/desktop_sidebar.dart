@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../design/app_tokens.dart';
 import '../../../models/user_profile.dart';
+import '../../../providers/nav_visibility_providers.dart';
 import '../../../providers/session_notifier.dart';
 import '../../../design/reference_assets.dart';
 import '../../../l10n/app_localizations.dart';
@@ -308,6 +309,8 @@ List<DesktopSidebarItem> desktopSidebarItemsFor(
     l10n,
     isAdmin: user?.isPlatformAdmin ?? false,
     canManageBooks: user?.canManageBooks ?? false,
+    hasBibleContent: ref.watch(hasBibleContentProvider).valueOrNull ?? false,
+    hasPurchases: ref.watch(hasPurchasesProvider).valueOrNull ?? false,
   );
 }
 
@@ -315,6 +318,8 @@ List<DesktopSidebarItem> defaultDesktopSidebarItems(
   AppLocalizations l10n, {
   bool isAdmin = false,
   bool canManageBooks = false,
+  bool hasBibleContent = false,
+  bool hasPurchases = false,
 }) {
   return [
     DesktopSidebarItem(
@@ -324,12 +329,21 @@ List<DesktopSidebarItem> defaultDesktopSidebarItems(
       label: l10n.navHome,
       shortcut: '⌘1',
     ),
-    DesktopSidebarItem(
-      route: '/purchases',
-      icon: Icons.receipt_long_outlined,
-      selectedIcon: Icons.receipt_long_rounded,
-      label: l10n.paymentMyPurchases,
-    ),
+    // Bible / Purchases only appear once they have something to show.
+    if (hasBibleContent)
+      DesktopSidebarItem(
+        route: '/bible',
+        icon: Icons.menu_book_outlined,
+        selectedIcon: Icons.menu_book_rounded,
+        label: l10n.bibleTitle,
+      ),
+    if (hasPurchases)
+      DesktopSidebarItem(
+        route: '/purchases',
+        icon: Icons.receipt_long_outlined,
+        selectedIcon: Icons.receipt_long_rounded,
+        label: l10n.paymentMyPurchases,
+      ),
     DesktopSidebarItem(
       route: '/settings',
       icon: Icons.tune_rounded,
@@ -387,6 +401,12 @@ class DesktopNavShortcuts extends StatelessWidget {
       LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.digit2):
           const _DesktopNavIntent('/settings'),
       LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.digit3):
+          const _DesktopNavIntent('/profile'),
+      LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.digit1):
+          const _DesktopNavIntent('/home'),
+      LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.digit2):
+          const _DesktopNavIntent('/settings'),
+      LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.digit3):
           const _DesktopNavIntent('/profile'),
     };
 

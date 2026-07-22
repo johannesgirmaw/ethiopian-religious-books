@@ -10,11 +10,12 @@ import '../../models/book_models.dart';
 import '../../providers/catalog_providers.dart';
 import '../../providers/continue_reading_provider.dart';
 import '../../providers/engagement_providers.dart';
+import '../../providers/nav_visibility_providers.dart';
 import '../../providers/session_notifier.dart';
 import '../../utils/catalog_categories.dart';
 import '../../utils/catalog_language_label.dart';
 import '../../widgets/app_state_view.dart';
-import '../../widgets/liquid_glass_nav_bar.dart';
+import '../widgets/shell/liquid_glass_nav_bar.dart';
 import '../../widgets/skeleton_loader.dart';
 import '../widgets/catalog/catalog_filter_tabs.dart';
 import '../widgets/catalog/continue_reading_card.dart';
@@ -351,6 +352,10 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                 ref.watch(unreadNotificationCountProvider).valueOrNull ?? 0,
             onFavourites: () => context.push('/favourites'),
             onNotifications: () => context.push('/notifications'),
+            // Bible shortcut stays hidden until the Bible catalogue has books.
+            onBible: (ref.watch(hasBibleContentProvider).valueOrNull ?? false)
+                ? () => context.go('/bible')
+                : null,
           ),
         ],
       ),

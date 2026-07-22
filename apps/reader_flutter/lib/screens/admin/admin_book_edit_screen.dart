@@ -12,6 +12,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../common/platform/platform_shell.dart';
 
 import '../../design/app_tokens.dart';
+import '../../desktop/widgets/shell/desktop_overlay_scaffold.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/app_state_view.dart';
 import '../../widgets/primitives/shell_primitives.dart';
@@ -28,6 +29,8 @@ import '../../utils/form_draft_keys.dart';
 import '../../providers/bible_providers.dart';
 import '../../providers/number_system_provider.dart';
 import '../../utils/geez_numerals.dart';
+import '../../web/layout/app_layout_scope.dart';
+import '../../web/widgets/shell/web_overlay_scaffold.dart';
 import 'bible_content_editor_screen.dart';
 import '../../utils/rich_text_codec.dart' show documentFromStoredSummary, plainTextFromStoredSummary;
 
@@ -1196,122 +1199,75 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     final appBarTitle = isNew
         ? (trimmedTitle.isEmpty ? l10n.newBookAppBar : trimmedTitle)
         : (trimmedTitle.isEmpty ? l10n.editBookAppBar : trimmedTitle);
-    return PopScope(
-      canPop: !_dirty || _busy,
-      onPopInvokedWithResult: (didPop, _) async {
-        if (didPop || !_dirty || _busy) return;
-        final leave = await showDialog<String>(
-          context: context,
-          builder: (ctx) {
-            final d = AppLocalizations.of(ctx)!;
-            return AlertDialog(
-              title: Text(d.discardUnsavedTitle),
-              content: Text(d.discardUnsavedBodyEditor),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop('stay'),
-                  child: Text(d.stay),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop('discard_draft'),
-                  child: Text(d.formDraftDiscardAction),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.of(ctx).pop('save_draft'),
-                  child: Text(d.formDraftLeaveAndSave),
-                ),
-              ],
-            );
-          },
-        );
-        if (leave == 'save_draft') {
-          await _bookDraft.persistNow();
-          if (!context.mounted) return;
-          showFormDraftSavedSnackBar(context);
-          Navigator.of(context).pop();
-        } else if (leave == 'discard_draft') {
-          await _bookDraft.clear();
-          if (!context.mounted) return;
-          Navigator.of(context).pop();
-        }
-      },
-      child: Scaffold(
-      backgroundColor: AppColors.referencePageBg,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(
-          appBarTitle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-      body: (!isNew && !_loaded)
-          ? const Center(child: CircularProgressIndicator())
-          : (!isNew && _visibility == 'published')
-              ? AppStateView(
-                  title: l10n.adminPublishedBookLockedTitle,
-                  message: l10n.adminPublishedBookLockedMessage,
-                  icon: Icons.lock_outline_rounded,
-                  actionLabel: l10n.goBack,
-                  onAction: () => context.pop(),
-                )
-              : (!isNew && _reviewStatus == 'in_review')
-              ? AppStateView(
-                  title: l10n.adminBookInReviewLockedTitle,
-                  message: l10n.adminBookInReviewLockedMessage,
-                  icon: Icons.rate_review_outlined,
-                  actionLabel: l10n.goBack,
-                  onAction: () => context.pop(),
-                )
-              : (!isNew && !isCreator)
-                  ? AppStateView(
-                      title: l10n.adminNotBookCreatorTitle,
-                      message: l10n.adminNotBookCreatorMessage,
-                      icon: Icons.lock_outline_rounded,
-                      actionLabel: l10n.goBack,
-                      onAction: () => context.pop(),
-                    )
-                  : LayoutBuilder(
-                      builder: (context, constraints) {
-                        final wide = constraints.maxWidth >= 760;
-                        // Two-pane on desktop: details left, content right. Treat
-                        // unbounded width (which the shell can hand us) as wide;
-                        // the two-pane branch bounds the size explicitly.
-                        final twoPane = !constraints.maxWidth.isFinite ||
-                            constraints.maxWidth >= 1040;
-                        Widget pair(Widget a, Widget b) => (wide && !twoPane)
-                            ? Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(child: a),
-                                  const SizedBox(width: 16),
-                                  Expanded(child: b),
-                                ],
-                              )
-                            : Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [a, const SizedBox(height: 12), b],
-                              );
-                        final formContent = Form(
-                          key: _formKey,
-                          child: ListView(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: wide ? 32 : 16,
-                              vertical: 24,
-                            ),
-                            children: [
-                              Center(
-                                child: ConstrainedBox(
-                                  constraints:
-                                      const BoxConstraints(maxWidth: 880),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
+    final editBody = (!isNew && !_loaded)
+        ? const Center(child: CircularProgressIndicator())
+        : (!isNew && _visibility == 'published')
+            ? AppStateView(
+                title: l10n.adminPublishedBookLockedTitle,
+                message: l10n.adminPublishedBookLockedMessage,
+                icon: Icons.lock_outline_rounded,
+                actionLabel: l10n.goBack,
+                onAction: () => context.pop(),
+              )
+            : (!isNew && _reviewStatus == 'in_review')
+                ? AppStateView(
+                    title: l10n.adminBookInReviewLockedTitle,
+                    message: l10n.adminBookInReviewLockedMessage,
+                    icon: Icons.rate_review_outlined,
+                    actionLabel: l10n.goBack,
+                    onAction: () => context.pop(),
+                  )
+                : (!isNew && !isCreator)
+                    ? AppStateView(
+                        title: l10n.adminNotBookCreatorTitle,
+                        message: l10n.adminNotBookCreatorMessage,
+                        icon: Icons.lock_outline_rounded,
+                        actionLabel: l10n.goBack,
+                        onAction: () => context.pop(),
+                      )
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          final wide = constraints.maxWidth >= 760;
+                          // Two-pane on desktop: details left, content right. Treat
+                          // unbounded width (which the shell can hand us) as wide;
+                          // the two-pane branch bounds the size explicitly.
+                          final twoPane = !constraints.maxWidth.isFinite ||
+                              constraints.maxWidth >= 1040;
+                          Widget pair(Widget a, Widget b) => (wide && !twoPane)
+                              ? Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(child: a),
+                                    const SizedBox(width: 16),
+                                    Expanded(child: b),
+                                  ],
+                                )
+                              : Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    a,
+                                    const SizedBox(height: 12),
+                                    b,
+                                  ],
+                                );
+                          final formContent = Form(
+                            key: _formKey,
+                            child: ListView(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: wide ? 32 : 16,
+                                vertical: 24,
+                              ),
+                              children: [
+                                Center(
+                                  child: ConstrainedBox(
+                                    constraints:
+                                        const BoxConstraints(maxWidth: 880),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
                 if (_latestReviewNote?.isChangesRequested == true &&
                     _reviewStatus == 'draft') ...[
                   _ChangesRequestedBanner(
@@ -1585,8 +1541,91 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                         }
                         return formContent;
                       },
-                    ),
-      ),
+                    );
+
+    void handleBack() => Navigator.of(context).maybePop();
+
+    late final Widget chrome;
+    if (useWebShell(context)) {
+      chrome = WebOverlayScaffold(
+        title: appBarTitle,
+        currentLocation: GoRouterState.of(context).matchedLocation,
+        appTitle: l10n.appTitle,
+        onBack: handleBack,
+        body: ColoredBox(
+          color: AppColors.referencePageBg,
+          child: editBody,
+        ),
+      );
+    } else if (useDesktopShell(context)) {
+      chrome = DesktopOverlayScaffold(
+        title: appBarTitle,
+        currentLocation: GoRouterState.of(context).matchedLocation,
+        appTitle: l10n.appTitle,
+        onBack: handleBack,
+        body: ColoredBox(
+          color: AppColors.referencePageBg,
+          child: editBody,
+        ),
+      );
+    } else {
+      chrome = Scaffold(
+        backgroundColor: AppColors.referencePageBg,
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: handleBack,
+          ),
+          title: Text(
+            appBarTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        body: editBody,
+      );
+    }
+
+    return PopScope(
+      canPop: !_dirty || _busy,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop || !_dirty || _busy) return;
+        final leave = await showDialog<String>(
+          context: context,
+          builder: (ctx) {
+            final d = AppLocalizations.of(ctx)!;
+            return AlertDialog(
+              title: Text(d.discardUnsavedTitle),
+              content: Text(d.discardUnsavedBodyEditor),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop('stay'),
+                  child: Text(d.stay),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop('discard_draft'),
+                  child: Text(d.formDraftDiscardAction),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(ctx).pop('save_draft'),
+                  child: Text(d.formDraftLeaveAndSave),
+                ),
+              ],
+            );
+          },
+        );
+        if (leave == 'save_draft') {
+          await _bookDraft.persistNow();
+          if (!context.mounted) return;
+          showFormDraftSavedSnackBar(context);
+          Navigator.of(context).pop();
+        } else if (leave == 'discard_draft') {
+          await _bookDraft.clear();
+          if (!context.mounted) return;
+          Navigator.of(context).pop();
+        }
+      },
+      child: chrome,
     );
   }
 }

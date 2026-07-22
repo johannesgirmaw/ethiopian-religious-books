@@ -11,6 +11,7 @@ class MobileHomeTopBar extends StatelessWidget {
     this.email,
     this.verified = false,
     this.notificationCount = 0,
+    this.onBible,
     this.onFavourites,
     this.onNotifications,
     this.onSearch,
@@ -21,6 +22,7 @@ class MobileHomeTopBar extends StatelessWidget {
   final String? email;
   final bool verified;
   final int notificationCount;
+  final VoidCallback? onBible;
   final VoidCallback? onFavourites;
   final VoidCallback? onNotifications;
   final VoidCallback? onSearch;
@@ -106,6 +108,14 @@ class MobileHomeTopBar extends StatelessWidget {
           onTap: onSearch,
           highlighted: searchActive,
         ),
+        // No [onBible] means the Bible has no content — drop the shortcut.
+        if (onBible != null) ...[
+          const SizedBox(width: 8),
+          _CircleIconButton(
+            icon: Icons.menu_book_outlined,
+            onTap: onBible,
+          ),
+        ],
         const SizedBox(width: 8),
         _CircleIconButton(
           icon: Icons.favorite_border_rounded,

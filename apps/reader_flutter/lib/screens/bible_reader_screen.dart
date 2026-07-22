@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../common/platform/platform_shell.dart';
 import '../design/app_tokens.dart';
+import '../desktop/widgets/shell/desktop_overlay_scaffold.dart';
 import '../l10n/app_localizations.dart';
 import '../models/bible_models.dart';
 import '../providers/bible_providers.dart';
 import '../providers/number_system_provider.dart';
 import '../utils/geez_numerals.dart';
+import '../web/layout/app_layout_scope.dart';
+import '../web/widgets/shell/web_overlay_scaffold.dart';
 import '../widgets/app_state_view.dart';
 import '../widgets/bible/bible_search.dart';
 
@@ -139,6 +143,84 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
       onPressed: () => setState(() => _sidebarOpen = !_sidebarOpen),
     );
     final showRailToggle = wide && hasChapters;
+
+    final readerBody = Column(
+      children: [
+        Expanded(
+          child: wide
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AnimatedSize(
+                      duration: AppMotion.short,
+                      curve: Curves.easeInOut,
+                      child: (_sidebarOpen && hasChapters)
+                          ? _ChapterSidebar(
+                              count: chapterCount,
+                              current: _chapter,
+                              geez: geez,
+                              onSelect: _goChapter,
+                              onCollapse: () =>
+                                  setState(() => _sidebarOpen = false),
+                            )
+                          : const SizedBox(width: 0, height: double.infinity),
+                    ),
+                    Expanded(child: content),
+                  ],
+                )
+              : content,
+        ),
+        _ChapterNavBar(
+          chapter: _chapter,
+          chapterCount: chapterCount,
+          geez: geez,
+          onPrev: _chapter > 1 ? () => _goChapter(_chapter - 1) : null,
+          onNext: (chapterCount == 0 || _chapter < chapterCount)
+              ? () => _goChapter(_chapter + 1)
+              : null,
+        ),
+      ],
+    );
+
+    final overlayActions = <Widget>[
+      if (showRailToggle) railToggle,
+      IconButton(
+        tooltip: l10n.bibleSearch,
+        icon: const Icon(Icons.search),
+        onPressed: _openSearch,
+      ),
+      if (!showRailToggle)
+        IconButton(
+          tooltip: l10n.bibleChapters,
+          icon: const Icon(Icons.grid_view_rounded),
+          onPressed: hasChapters ? () => _pickChapter(chapterCount) : null,
+        ),
+    ];
+
+    final overlayTitle =
+        '$bookTitle · ${l10n.bibleChapter} ${formatNumber(_chapter, geez: geez)}';
+
+    if (useWebShell(context)) {
+      return WebOverlayScaffold(
+        title: overlayTitle,
+        currentLocation: GoRouterState.of(context).matchedLocation,
+        appTitle: l10n.appTitle,
+        onBack: _exit,
+        actions: overlayActions,
+        body: readerBody,
+      );
+    }
+
+    if (useDesktopShell(context)) {
+      return DesktopOverlayScaffold(
+        title: overlayTitle,
+        currentLocation: GoRouterState.of(context).matchedLocation,
+        appTitle: l10n.appTitle,
+        onBack: _exit,
+        actions: overlayActions,
+        body: readerBody,
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(

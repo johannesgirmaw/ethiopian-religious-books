@@ -6,6 +6,7 @@ import '../../design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/bible_models.dart';
 import '../../providers/bible_providers.dart';
+import '../../providers/nav_visibility_providers.dart';
 import '../../providers/number_system_provider.dart';
 import '../../utils/api_error_message.dart';
 import '../../utils/geez_numerals.dart';
@@ -386,6 +387,8 @@ class _ChapterEditorBodyState extends ConsumerState<_ChapterEditorBody> {
       ref.invalidate(
         adminBibleChapterProvider((bookId: widget.bookId, chapter: widget.chapter)),
       );
+      // Chapters just landed — re-check whether the Bible nav entry can show.
+      ref.invalidate(hasBibleContentProvider);
       _dirty = false;
       widget.onDirtyChanged?.call(false);
       if (!mounted) return;

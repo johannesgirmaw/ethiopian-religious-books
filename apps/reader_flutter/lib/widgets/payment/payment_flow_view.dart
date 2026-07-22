@@ -9,6 +9,7 @@ import '../../design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/book_models.dart';
 import '../../models/payment_models.dart';
+import '../../providers/nav_visibility_providers.dart';
 import '../../providers/payment_providers.dart';
 import '../../providers/session_notifier.dart';
 import '../../utils/form_draft_controller.dart';
@@ -175,6 +176,8 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
         method: method,
       );
       if (!mounted) return;
+      // A transaction now exists — let the Purchases nav entry show up.
+      ref.invalidate(hasPurchasesProvider);
       if (method.isManual) {
         final banks = await ref.read(banksProvider.future);
         if (!mounted) return;

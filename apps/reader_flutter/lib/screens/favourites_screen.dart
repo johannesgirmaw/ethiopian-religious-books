@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../design/app_tokens.dart';
 import '../l10n/app_localizations.dart';
@@ -7,6 +8,12 @@ import '../mobile/widgets/catalog/mobile_book_card.dart';
 import '../providers/catalog_providers.dart';
 import '../providers/engagement_providers.dart';
 import '../router/app_navigation.dart';
+import '../common/platform/platform_shell.dart';
+import '../desktop/screens/favourites_screen_body.dart';
+import '../desktop/widgets/shell/desktop_overlay_scaffold.dart';
+import '../web/layout/app_layout_scope.dart';
+import '../web/screens/favourites_screen_body.dart';
+import '../web/widgets/shell/web_overlay_scaffold.dart';
 import '../widgets/app_state_view.dart';
 
 class FavouritesScreen extends ConsumerWidget {
@@ -14,7 +21,26 @@ class FavouritesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    if (useWebShell(context)) {
+      return WebOverlayScaffold(
+        title: l10n.favouritesTitle,
+        currentLocation: GoRouterState.of(context).matchedLocation,
+        appTitle: l10n.appTitle,
+        body: const FavouritesScreenBody(),
+      );
+    }
+
+    if (useDesktopShell(context)) {
+      return DesktopOverlayScaffold(
+        title: l10n.favouritesTitle,
+        currentLocation: GoRouterState.of(context).matchedLocation,
+        appTitle: l10n.appTitle,
+        body: const DesktopFavouritesScreenBody(),
+      );
+    }
+
     final catalog = ref.watch(catalogProvider).valueOrNull;
     final favIds = ref.watch(favouriteIdsProvider);
 
@@ -38,9 +64,8 @@ class FavouritesScreen extends ConsumerWidget {
           icon: Icons.favorite_border_rounded,
         ),
         data: (ids) {
-          final books = (catalog?.items ?? [])
-              .where((b) => ids.contains(b.id))
-              .toList();
+          final books =
+              (catalog?.items ?? []).where((b) => ids.contains(b.id)).toList();
           if (books.isEmpty) {
             return AppStateView(
               title: l10n.favouritesEmptyTitle,

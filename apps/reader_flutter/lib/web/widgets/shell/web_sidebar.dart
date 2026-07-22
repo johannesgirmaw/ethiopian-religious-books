@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../design/app_tokens.dart';
 import '../../../models/user_profile.dart';
+import '../../../providers/nav_visibility_providers.dart';
 import '../../../providers/session_notifier.dart';
 import '../../../design/reference_assets.dart';
 import '../../../l10n/app_localizations.dart';
@@ -310,6 +311,8 @@ List<WebSidebarItem> webSidebarItemsFor(WidgetRef ref, AppLocalizations l10n) {
     l10n,
     isAdmin: user?.isPlatformAdmin ?? false,
     canManageBooks: user?.canManageBooks ?? false,
+    hasBibleContent: ref.watch(hasBibleContentProvider).valueOrNull ?? false,
+    hasPurchases: ref.watch(hasPurchasesProvider).valueOrNull ?? false,
   );
 }
 
@@ -317,6 +320,8 @@ List<WebSidebarItem> defaultWebSidebarItems(
   AppLocalizations l10n, {
   bool isAdmin = false,
   bool canManageBooks = false,
+  bool hasBibleContent = false,
+  bool hasPurchases = false,
 }) {
   return [
     WebSidebarItem(
@@ -325,12 +330,21 @@ List<WebSidebarItem> defaultWebSidebarItems(
       selectedIcon: Icons.local_library_rounded,
       label: l10n.navHome,
     ),
-    WebSidebarItem(
-      route: '/purchases',
-      icon: Icons.receipt_long_outlined,
-      selectedIcon: Icons.receipt_long_rounded,
-      label: l10n.paymentMyPurchases,
-    ),
+    // Bible / Purchases only appear once they have something to show.
+    if (hasBibleContent)
+      WebSidebarItem(
+        route: '/bible',
+        icon: Icons.menu_book_outlined,
+        selectedIcon: Icons.menu_book_rounded,
+        label: l10n.bibleTitle,
+      ),
+    if (hasPurchases)
+      WebSidebarItem(
+        route: '/purchases',
+        icon: Icons.receipt_long_outlined,
+        selectedIcon: Icons.receipt_long_rounded,
+        label: l10n.paymentMyPurchases,
+      ),
     WebSidebarItem(
       route: '/settings',
       icon: Icons.tune_rounded,

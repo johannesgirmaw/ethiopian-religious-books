@@ -5,10 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../common/platform/platform_shell.dart';
 import '../desktop/widgets/shell/desktop_shell_scaffold.dart';
 import '../l10n/app_localizations.dart';
+import '../providers/nav_visibility_providers.dart';
 import '../providers/session_notifier.dart';
 import '../web/layout/app_layout_scope.dart';
 import '../web/widgets/shell/web_shell_scaffold.dart';
-import '../widgets/liquid_glass_nav_bar.dart';
+import '../mobile/widgets/shell/liquid_glass_nav_bar.dart';
 
 class MainShellScreen extends ConsumerWidget {
   const MainShellScreen({super.key, required this.child});
@@ -37,9 +38,11 @@ class MainShellScreen extends ConsumerWidget {
       );
     }
 
+    // Purchases tab only appears once the user has a transaction to look at.
+    final hasPurchases = ref.watch(hasPurchasesProvider).valueOrNull ?? false;
     final tabs = <String>[
       '/home',
-      '/purchases',
+      if (hasPurchases) '/purchases',
       '/profile',
       if (canManageBooks) '/admin/books',
     ];
@@ -70,11 +73,12 @@ class MainShellScreen extends ConsumerWidget {
                   selectedIcon: Icons.explore_rounded,
                   label: l10n.navHome,
                 ),
-                LiquidNavItem(
-                  icon: Icons.receipt_long_outlined,
-                  selectedIcon: Icons.receipt_long_rounded,
-                  label: l10n.navPurchases,
-                ),
+                if (hasPurchases)
+                  LiquidNavItem(
+                    icon: Icons.receipt_long_outlined,
+                    selectedIcon: Icons.receipt_long_rounded,
+                    label: l10n.navPurchases,
+                  ),
                 LiquidNavItem(
                   icon: Icons.person_outline_rounded,
                   selectedIcon: Icons.person_rounded,
@@ -106,7 +110,10 @@ class MainShellScreen extends ConsumerWidget {
     if (location.startsWith('/profile') || location.startsWith('/settings')) {
       return find('/profile');
     }
-    // /home and /downloads both map to the Home tab.
+    // /home, /downloads, and /bible map to the Home tab.
+    if (location.startsWith('/bible') || location.startsWith('/downloads')) {
+      return find('/home');
+    }
     return find('/home');
   }
 }
