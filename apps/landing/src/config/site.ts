@@ -1,7 +1,9 @@
 // Central config for the landing site. Override download URLs via env at build time.
 export const site = {
-  name: 'Felege Metsahft',
-  nameAm: 'ፈለገ መጻሕፍት',
+  /** Canonical product name — Amharic everywhere on the platform. */
+  name: 'ፈለገ መጻሕፍት',
+  /** Latin transliteration for SEO / schema alternateName only. */
+  nameLatin: 'Felege Metsahft',
   tagline: 'Ethiopian Orthodox books, Scripture & study tools',
   description:
     'Read Ethiopian Orthodox Tewahedo books and the Holy Bible with powerful study tools — offline reading, highlights, notes, and reading plans. Available on the web, Android, macOS, Windows and Linux.',
@@ -38,7 +40,7 @@ export const platforms: Platform[] = [
     install: [
       'Tap the download button to get the .apk file.',
       'Open the file and, if asked, allow installs from this source.',
-      'Tap Install, then open Felege Metsahft.',
+      'Tap Install, then open ፈለገ መጻሕፍት.',
     ],
   },
   {
@@ -50,7 +52,7 @@ export const platforms: Platform[] = [
     note: 'macOS 11 Big Sur or newer',
     install: [
       'Open the downloaded .dmg file.',
-      'Drag Felege Metsahft into your Applications folder.',
+      'Drag ፈለገ መጻሕፍት into your Applications folder.',
       'First launch: right-click the app → Open to bypass Gatekeeper.',
     ],
   },

@@ -21,7 +21,6 @@ class AboutScreen extends StatelessWidget {
       return WebOverlayScaffold(
         title: l10n.aboutTitle,
         currentLocation: GoRouterState.of(context).matchedLocation,
-        appTitle: l10n.appTitle,
         body: const AboutScreenBody(),
       );
     }
@@ -30,7 +29,6 @@ class AboutScreen extends StatelessWidget {
       return DesktopOverlayScaffold(
         title: l10n.aboutTitle,
         currentLocation: GoRouterState.of(context).matchedLocation,
-        appTitle: l10n.appTitle,
         body: const DesktopAboutScreenBody(),
       );
     }

@@ -35,7 +35,6 @@ class AdminBookReviewScreen extends ConsumerWidget {
       return WebOverlayScaffold(
         title: l10n.reviewHistoryTitle,
         currentLocation: GoRouterState.of(context).matchedLocation,
-        appTitle: l10n.appTitle,
         onBack: () => popOverlayRoute(context),
         body: body,
       );
@@ -45,7 +44,6 @@ class AdminBookReviewScreen extends ConsumerWidget {
       return DesktopOverlayScaffold(
         title: l10n.reviewHistoryTitle,
         currentLocation: GoRouterState.of(context).matchedLocation,
-        appTitle: l10n.appTitle,
         onBack: () => popOverlayRoute(context),
         body: body,
       );

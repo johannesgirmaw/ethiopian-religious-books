@@ -27,7 +27,6 @@ class FavouritesScreen extends ConsumerWidget {
       return WebOverlayScaffold(
         title: l10n.favouritesTitle,
         currentLocation: GoRouterState.of(context).matchedLocation,
-        appTitle: l10n.appTitle,
         body: const FavouritesScreenBody(),
       );
     }
@@ -36,7 +35,6 @@ class FavouritesScreen extends ConsumerWidget {
       return DesktopOverlayScaffold(
         title: l10n.favouritesTitle,
         currentLocation: GoRouterState.of(context).matchedLocation,
-        appTitle: l10n.appTitle,
         body: const DesktopFavouritesScreenBody(),
       );
     }

@@ -11,7 +11,6 @@ class DesktopAppShell extends StatelessWidget {
     super.key,
     required this.currentLocation,
     required this.sidebarItems,
-    required this.appTitle,
     required this.child,
     this.breadcrumb,
     this.actions,
@@ -20,7 +19,6 @@ class DesktopAppShell extends StatelessWidget {
 
   final String currentLocation;
   final List<DesktopSidebarItem> sidebarItems;
-  final String appTitle;
   final Widget child;
   final String? breadcrumb;
   final List<Widget>? actions;
@@ -39,7 +37,6 @@ class DesktopAppShell extends StatelessWidget {
               DesktopSidebar(
                 currentLocation: currentLocation,
                 items: sidebarItems,
-                appTitle: appTitle,
               ),
               Expanded(
                 child: Column(

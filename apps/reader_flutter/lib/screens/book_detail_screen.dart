@@ -55,7 +55,6 @@ class BookDetailScreen extends ConsumerWidget {
               return WebOverlayScaffold(
                 title: l10n.bookDetailsTitle,
                 currentLocation: GoRouterState.of(context).matchedLocation,
-                appTitle: l10n.appTitle,
                 actions: [
                   asyncBook.maybeWhen(
                     data: (book) => IconButton(
@@ -77,7 +76,6 @@ class BookDetailScreen extends ConsumerWidget {
               return DesktopOverlayScaffold(
                 title: l10n.bookDetailsTitle,
                 currentLocation: GoRouterState.of(context).matchedLocation,
-                appTitle: l10n.appTitle,
                 actions: [
                   asyncBook.maybeWhen(
                     data: (book) => IconButton(

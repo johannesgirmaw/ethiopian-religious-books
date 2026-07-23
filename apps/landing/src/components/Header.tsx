@@ -57,9 +57,8 @@ export default function Header() {
       <div className="container-px flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
           <Logo className="h-8 w-8" />
-          <span className="flex flex-col leading-none">
-            <span className="text-sm font-semibold tracking-tight text-white">{site.name}</span>
-            <span className="text-[11px] text-brand-300/80">{site.nameAm}</span>
+          <span className="text-sm font-semibold tracking-tight text-white">
+            {site.name}
           </span>
         </Link>
 

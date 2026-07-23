@@ -58,7 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
     name: site.name,
-    alternateName: site.nameAm,
+    alternateName: site.nameLatin,
     applicationCategory: 'BookApplication',
     operatingSystem: 'Android, macOS, Windows, Linux, Web',
     description: site.description,

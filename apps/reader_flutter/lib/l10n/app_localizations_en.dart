@@ -137,7 +137,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutAppSectionBody =>
-      'Felege Metsahft helps you browse, read, and study religious texts with offline support and reading progress.';
+      'ፈለገ መጻሕፍት helps you browse, read, and study religious texts with offline support and reading progress.';
 
   @override
   String get aboutVersionSectionTitle => 'Version';

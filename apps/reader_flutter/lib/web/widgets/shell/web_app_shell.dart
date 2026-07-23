@@ -11,7 +11,6 @@ class WebAppShell extends StatelessWidget {
     super.key,
     required this.currentLocation,
     required this.sidebarItems,
-    required this.appTitle,
     required this.child,
     this.breadcrumb,
     this.actions,
@@ -20,7 +19,6 @@ class WebAppShell extends StatelessWidget {
 
   final String currentLocation;
   final List<WebSidebarItem> sidebarItems;
-  final String appTitle;
   final Widget child;
   final String? breadcrumb;
   final List<Widget>? actions;
@@ -37,7 +35,6 @@ class WebAppShell extends StatelessWidget {
             WebSidebar(
               currentLocation: currentLocation,
               items: sidebarItems,
-              appTitle: appTitle,
             ),
             Expanded(
               child: Column(

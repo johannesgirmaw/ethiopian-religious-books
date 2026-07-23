@@ -1,4 +1,4 @@
-# Ethiopian Reader (Flutter)
+# Felege metsahft (Flutter)
 
 **Android-first** reader against the Django API in `services/django_api`. **iOS** is supported by the same codebase but **not** the v1 local-dev focus (no CocoaPods in default setup).
 

@@ -10,11 +10,9 @@ import 'desktop_sidebar.dart';
 class DesktopShellScaffold extends ConsumerWidget {
   const DesktopShellScaffold({
     super.key,
-    required this.appTitle,
     required this.child,
   });
 
-  final String appTitle;
   final Widget child;
 
   @override
@@ -28,7 +26,6 @@ class DesktopShellScaffold extends ConsumerWidget {
     return DesktopAppShell(
       currentLocation: location,
       sidebarItems: desktopSidebarItemsFor(ref, l10n),
-      appTitle: appTitle,
       breadcrumb: isAdminList ? l10n.adminBooksListTitle : null,
       onBack: isAdminList
           ? () {

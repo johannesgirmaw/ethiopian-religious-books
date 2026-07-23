@@ -56,7 +56,6 @@ class PaymentScreen extends ConsumerWidget {
               return WebOverlayScaffold(
                 title: l10n.paymentTitle,
                 currentLocation: GoRouterState.of(context).matchedLocation,
-                appTitle: l10n.appTitle,
                 onBack: () => popOverlayRoute(context),
                 body: body(),
               );
@@ -65,7 +64,6 @@ class PaymentScreen extends ConsumerWidget {
               return DesktopOverlayScaffold(
                 title: l10n.paymentTitle,
                 currentLocation: GoRouterState.of(context).matchedLocation,
-                appTitle: l10n.appTitle,
                 onBack: () => popOverlayRoute(context),
                 body: body(),
               );

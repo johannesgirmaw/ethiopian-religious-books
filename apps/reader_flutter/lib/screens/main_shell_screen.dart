@@ -26,14 +26,12 @@ class MainShellScreen extends ConsumerWidget {
 
     if (useWebShell(context)) {
       return WebShellScaffold(
-        appTitle: l10n.appTitle,
         child: child,
       );
     }
 
     if (useDesktopShell(context)) {
       return DesktopShellScaffold(
-        appTitle: l10n.appTitle,
         child: child,
       );
     }

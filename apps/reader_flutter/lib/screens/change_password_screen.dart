@@ -30,7 +30,6 @@ class ChangePasswordScreen extends ConsumerWidget {
       return WebOverlayScaffold(
         title: l10n.changePasswordTitle,
         currentLocation: GoRouterState.of(context).matchedLocation,
-        appTitle: l10n.appTitle,
         body: body,
       );
     }
@@ -38,7 +37,6 @@ class ChangePasswordScreen extends ConsumerWidget {
       return DesktopOverlayScaffold(
         title: l10n.changePasswordTitle,
         currentLocation: GoRouterState.of(context).matchedLocation,
-        appTitle: l10n.appTitle,
         body: body,
       );
     }

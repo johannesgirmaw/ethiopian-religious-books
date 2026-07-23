@@ -34,12 +34,10 @@ class DesktopSidebar extends ConsumerWidget {
     super.key,
     required this.currentLocation,
     required this.items,
-    required this.appTitle,
   });
 
   final String currentLocation;
   final List<DesktopSidebarItem> items;
-  final String appTitle;
 
   bool _isSelected(String route) {
     if (route == '/home') return currentLocation.startsWith('/home');
@@ -69,7 +67,7 @@ class DesktopSidebar extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Brand lockup: logo + Latin name over Amharic subtitle.
+            // Brand lockup: Amharic name over localized tagline.
             SizedBox(
               height: DesktopTokens.titleBarHeight,
               child: Padding(
@@ -110,7 +108,7 @@ class DesktopSidebar extends ConsumerWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            appTitle,
+                            l10n.splashTagline,
                             style: const TextStyle(
                               fontSize: 9.5,
                               fontWeight: FontWeight.w500,

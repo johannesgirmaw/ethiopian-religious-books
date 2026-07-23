@@ -31,12 +31,10 @@ class WebSidebar extends ConsumerWidget {
     super.key,
     required this.currentLocation,
     required this.items,
-    required this.appTitle,
   });
 
   final String currentLocation;
   final List<WebSidebarItem> items;
-  final String appTitle;
 
   bool _isSelected(String route) {
     if (route == '/home') {
@@ -67,7 +65,7 @@ class WebSidebar extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Brand lockup: logo + Latin name over Amharic subtitle.
+              // Brand lockup: Amharic name over localized tagline.
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
                 child: InkWell(
@@ -111,7 +109,7 @@ class WebSidebar extends ConsumerWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              appTitle,
+                              l10n.splashTagline,
                               style: const TextStyle(
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w500,

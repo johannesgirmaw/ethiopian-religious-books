@@ -204,7 +204,6 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
       return WebOverlayScaffold(
         title: overlayTitle,
         currentLocation: GoRouterState.of(context).matchedLocation,
-        appTitle: l10n.appTitle,
         onBack: _exit,
         actions: overlayActions,
         body: readerBody,
@@ -215,7 +214,6 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
       return DesktopOverlayScaffold(
         title: overlayTitle,
         currentLocation: GoRouterState.of(context).matchedLocation,
-        appTitle: l10n.appTitle,
         onBack: _exit,
         actions: overlayActions,
         body: readerBody,

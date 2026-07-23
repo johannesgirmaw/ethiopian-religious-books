@@ -10,11 +10,9 @@ import 'web_sidebar.dart';
 class WebShellScaffold extends ConsumerWidget {
   const WebShellScaffold({
     super.key,
-    required this.appTitle,
     required this.child,
   });
 
-  final String appTitle;
   final Widget child;
 
   @override
@@ -28,7 +26,6 @@ class WebShellScaffold extends ConsumerWidget {
     return WebAppShell(
       currentLocation: location,
       sidebarItems: webSidebarItemsFor(ref, l10n),
-      appTitle: appTitle,
       breadcrumb: isAdminList ? l10n.adminBooksListTitle : null,
       onBack: isAdminList
           ? () {

@@ -12,7 +12,6 @@ class WebOverlayScaffold extends ConsumerWidget {
     required this.title,
     required this.body,
     required this.currentLocation,
-    required this.appTitle,
     this.actions,
     this.onBack,
   });
@@ -20,7 +19,6 @@ class WebOverlayScaffold extends ConsumerWidget {
   final String title;
   final Widget body;
   final String currentLocation;
-  final String appTitle;
   final List<Widget>? actions;
   final VoidCallback? onBack;
 
@@ -30,7 +28,6 @@ class WebOverlayScaffold extends ConsumerWidget {
     return WebAppShell(
       currentLocation: currentLocation,
       sidebarItems: webSidebarItemsFor(ref, l10n),
-      appTitle: appTitle,
       breadcrumb: title,
       actions: actions,
       onBack: onBack,

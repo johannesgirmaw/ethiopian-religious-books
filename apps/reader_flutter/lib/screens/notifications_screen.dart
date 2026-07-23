@@ -31,7 +31,6 @@ class NotificationsScreen extends ConsumerWidget {
       return WebOverlayScaffold(
         title: l10n.notificationsTitle,
         currentLocation: GoRouterState.of(context).matchedLocation,
-        appTitle: l10n.appTitle,
         body: const NotificationsScreenBody(),
       );
     }
@@ -40,7 +39,6 @@ class NotificationsScreen extends ConsumerWidget {
       return DesktopOverlayScaffold(
         title: l10n.notificationsTitle,
         currentLocation: GoRouterState.of(context).matchedLocation,
-        appTitle: l10n.appTitle,
         body: const DesktopNotificationsScreenBody(),
       );
     }

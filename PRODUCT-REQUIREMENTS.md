@@ -1,4 +1,4 @@
-# Ethiopian Reader Product Requirements
+# Felege metsahft Product Requirements
 
 This document consolidates the product, UX, and implementation requirements into one execution-focused spec for the reader app.
 

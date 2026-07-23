@@ -28,7 +28,6 @@ class AuthorBooksScreen extends ConsumerWidget {
       return WebOverlayScaffold(
         title: author,
         currentLocation: GoRouterState.of(context).matchedLocation,
-        appTitle: l10n.appTitle,
         body: AuthorBooksScreenBody(author: author),
       );
     }
@@ -37,7 +36,6 @@ class AuthorBooksScreen extends ConsumerWidget {
       return DesktopOverlayScaffold(
         title: author,
         currentLocation: GoRouterState.of(context).matchedLocation,
-        appTitle: l10n.appTitle,
         body: DesktopAuthorBooksScreenBody(author: author),
       );
     }

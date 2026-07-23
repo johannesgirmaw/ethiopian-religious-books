@@ -62,7 +62,7 @@ export const dict: Record<Lang, Dict> = {
       cards: { bible: 'Holy Bible · 81 books', praise: 'Praise of St. Mary', synax: 'Synaxarium · daily' },
     },
     features: {
-      eyebrow: 'Why Felege Metsahft',
+      eyebrow: 'Why ፈለገ መጻሕፍት',
       heading: 'A reverent reading experience, thoughtfully modern',
       sub: 'Everything you need to read, study and treasure the books of the Church.',
       items: [
@@ -107,7 +107,7 @@ export const dict: Record<Lang, Dict> = {
       android: { note: 'Android 8.0 or newer', install: [
         'Tap the download button to get the .apk file.',
         'Open the file and, if asked, allow installs from this source.',
-        'Tap Install, then open Felege Metsahft.',
+        'Tap Install, then open ፈለገ መጻሕፍት.',
       ] },
       macos: { note: 'macOS 11 Big Sur or newer', install: [
         'Open the downloaded .dmg and drag the app into your Applications folder.',
@@ -117,7 +117,7 @@ export const dict: Record<Lang, Dict> = {
       windows: { note: 'Windows 10/11 (64-bit)', install: [
         'Download and run felege-metsahft-setup.exe.',
         'If SmartScreen appears, choose More info → Run anyway.',
-        'Follow the installer, then launch Felege Metsahft.',
+        'Follow the installer, then launch ፈለገ መጻሕፍት.',
       ] },
       linux: { note: '64-bit · GTK 3 desktop', install: [
         'Download and extract: tar -xzf felege-metsahft-linux-x64.tar.gz',

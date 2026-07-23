@@ -8,7 +8,7 @@
 ;   OutputDir     — where to write the setup .exe
 
 #define MyAppName "ፈለገ መጻሕፍት"
-#define MyAppPublisher "Felege Metsahft"
+#define MyAppPublisher "ፈለገ መጻሕፍት"
 #define MyAppURL "https://felegemetsahft.com"
 #define MyAppExeName "ethiopian_reader.exe"
 

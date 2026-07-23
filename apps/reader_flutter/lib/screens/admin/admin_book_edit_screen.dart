@@ -1550,7 +1550,6 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
       chrome = WebOverlayScaffold(
         title: appBarTitle,
         currentLocation: GoRouterState.of(context).matchedLocation,
-        appTitle: l10n.appTitle,
         onBack: handleBack,
         body: ColoredBox(
           color: AppColors.referencePageBg,
@@ -1561,7 +1560,6 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
       chrome = DesktopOverlayScaffold(
         title: appBarTitle,
         currentLocation: GoRouterState.of(context).matchedLocation,
-        appTitle: l10n.appTitle,
         onBack: handleBack,
         body: ColoredBox(
           color: AppColors.referencePageBg,

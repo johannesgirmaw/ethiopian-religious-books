@@ -121,7 +121,7 @@ jobs:
             -derivedDataPath build/macos_adhoc CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
           APP="build/macos_adhoc/Build/Products/Release/ethiopian_reader.app"
           codesign --force --deep --sign - --entitlements macos/Runner/Release.entitlements "$APP"
-          hdiutil create -volname "Felege Metsahft" -srcfolder "$APP" -ov -format UDZO felege-metsahft-macos.dmg
+          hdiutil create -volname "ፈለገ መጻሕፍት" -srcfolder "$APP" -ov -format UDZO felege-metsahft-macos.dmg
       - uses: actions/upload-artifact@v4
         with:
           name: felege-metsahft-macos

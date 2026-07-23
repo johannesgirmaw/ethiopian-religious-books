@@ -1,4 +1,4 @@
-# Ethiopian Reader — Design System
+# Felege metsahft — Design System
 
 Visual system aligned with the v2 mobile kit in `Mobileapp ui design/ui_kits/mobile/components-v2.jsx`, using Ethiopian brand tokens.
 

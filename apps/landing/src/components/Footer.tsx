@@ -12,10 +12,7 @@ export default function Footer() {
       <div className="container-px flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3">
           <Logo className="h-9 w-9" />
-          <div>
-            <div className="font-semibold text-white">{site.name}</div>
-            <div className="text-sm text-brand-300/80">{site.nameAm}</div>
-          </div>
+          <div className="font-semibold text-white">{site.name}</div>
         </div>
 
         <nav className="flex flex-wrap gap-x-7 gap-y-3 text-sm text-slate-300">
@@ -27,7 +24,7 @@ export default function Footer() {
         </nav>
       </div>
       <div className="container-px mt-8 flex flex-col gap-2 border-t border-white/5 pt-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-        <p>© {new Date().getFullYear()} {site.name} · {site.nameAm}. {t.footer.rights}</p>
+        <p>© {new Date().getFullYear()} {site.name}. {t.footer.rights}</p>
         <p>{t.footer.builtFor}</p>
       </div>
     </footer>

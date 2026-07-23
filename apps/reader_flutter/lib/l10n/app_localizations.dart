@@ -335,7 +335,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutAppSectionBody.
   ///
   /// In en, this message translates to:
-  /// **'Felege Metsahft helps you browse, read, and study religious texts with offline support and reading progress.'**
+  /// **'ፈለገ መጻሕፍት helps you browse, read, and study religious texts with offline support and reading progress.'**
   String get aboutAppSectionBody;
 
   /// No description provided for @aboutVersionSectionTitle.

@@ -89,7 +89,7 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "Felege Metsahft" "\0"
+            VALUE "CompanyName", "ፈለገ መጻሕፍት" "\0"
             VALUE "FileDescription", "ፈለገ መጻሕፍት" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "ethiopian_reader" "\0"
