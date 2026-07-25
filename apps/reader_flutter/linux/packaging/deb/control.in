@@ -1,0 +1,13 @@
+Package: felege-metsahft
+Version: @VERSION@
+Section: education
+Priority: optional
+Architecture: amd64
+Maintainer: Felege Metsahft <support@felegemetsahft.com>
+Homepage: https://felegemetsahft.com
+Depends: libgtk-3-0t64 | libgtk-3-0, libsecret-1-0, libepoxy0, libglib2.0-0t64 | libglib2.0-0, libstdc++6, libc6
+Installed-Size: @INSTALLED_SIZE@
+Description: Ethiopian religious books reader
+ Felege Metsahft is a reader for Ethiopian religious books, with offline
+ access to a personal encrypted library, bookmarks, highlights, notes and
+ reading plans. Supports Amharic and English interfaces.

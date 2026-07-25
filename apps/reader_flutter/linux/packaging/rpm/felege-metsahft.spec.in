@@ -1,0 +1,38 @@
+Name:           felege-metsahft
+Version:        @VERSION@
+Release:        1%{?dist}
+Summary:        Ethiopian religious books reader
+
+License:        Proprietary
+URL:            https://felegemetsahft.com
+BuildArch:      x86_64
+
+Requires:       gtk3
+Requires:       libsecret
+Requires:       libepoxy
+
+# The payload is a prebuilt Flutter bundle; nothing is compiled here and the
+# bundled .so files are private to the app.
+AutoReqProv:    no
+%define _build_id_links none
+%global __os_install_post %{nil}
+
+%description
+Felege Metsahft is a reader for Ethiopian religious books, with offline
+access to a personal encrypted library, bookmarks, highlights, notes and
+reading plans. Supports Amharic and English interfaces.
+
+%install
+rm -rf %{buildroot}
+mkdir -p %{buildroot}
+cp -a @STAGEDIR@/. %{buildroot}/
+
+%files
+/usr/lib/felege-metsahft
+/usr/bin/felege-metsahft
+/usr/share/applications/com.felegemetsahft.Reader.desktop
+/usr/share/icons/hicolor/512x512/apps/com.felegemetsahft.Reader.png
+
+%changelog
+* Sat Jul 25 2026 Felege Metsahft <support@felegemetsahft.com> - @VERSION@-1
+- Automated build from the monorepo packaging script.
