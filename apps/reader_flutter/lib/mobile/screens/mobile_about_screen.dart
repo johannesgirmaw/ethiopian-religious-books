@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../design/reference_assets.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/about_section_card.dart';
 import '../../widgets/primitives/shared_widgets.dart';
@@ -19,13 +18,13 @@ class MobileAboutScreen extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            Center(
-              child: Image.asset(
-                ReferenceAssets.appLogo,
-                width: 100,
-                height: 88,
-                fit: BoxFit.contain,
-              ),
+            const Center(
+              child: AppLogoTile(size: 96),
+            ),
+            const SizedBox(height: 16),
+            const AppBrandWordmark(
+              fontSize: 22,
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
             AboutSectionCard(

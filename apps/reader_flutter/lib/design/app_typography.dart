@@ -99,4 +99,21 @@ class AppTypography {
         color: AppColors.textPrimary,
         letterSpacing: -0.2,
       );
+
+  /// Amharic brand wordmark — used as the logo mark across shells.
+  static TextStyle brandWordmark({
+    required double fontSize,
+    required Color color,
+    FontWeight fontWeight = FontWeight.w700,
+    double height = 1.1,
+    double letterSpacing = -0.3,
+  }) {
+    return GoogleFonts.notoSerifEthiopic(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color,
+      height: height,
+      letterSpacing: letterSpacing,
+    );
+  }
 }

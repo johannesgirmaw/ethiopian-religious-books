@@ -34,5 +34,7 @@ target 'Runner' do
 end
 
 post_install do |installer|
-  flutter_install_ios_pod_post_install(installer, File.dirname(File.realpath(__FILE__)))
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+  end
 end

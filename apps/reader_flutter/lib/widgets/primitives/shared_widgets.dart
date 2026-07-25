@@ -3,7 +3,6 @@ import '../../router/app_navigation.dart';
 import '../../design/app_decorations.dart';
 import '../../design/app_tokens.dart';
 import '../../design/app_typography.dart';
-import '../../design/reference_assets.dart';
 import '../../l10n/app_localizations.dart';
 
 String greetingForL10n(AppLocalizations l10n) {
@@ -168,8 +167,9 @@ class AppErrorBanner extends StatelessWidget {
   }
 }
 
-// ─── Logo tile (auth / splash) ───────────────────────────────────────────────
+// ─── Amharic wordmark logo ───────────────────────────────────────────────────
 
+/// Typographic logo: stacked Amharic brand name in a gold mark tile.
 class AppLogoTile extends StatelessWidget {
   const AppLogoTile({super.key, this.size = 76});
 
@@ -177,6 +177,11 @@ class AppLogoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final name = AppLocalizations.of(context).brandName;
+    final parts = name.split(RegExp(r'\s+'));
+    final line1 = parts.isNotEmpty ? parts.first : name;
+    final line2 = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+
     return Container(
       width: size,
       height: size,
@@ -185,14 +190,70 @@ class AppLogoTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(size * 0.29),
         boxShadow: AppShadows.goldGlow,
       ),
-      child: Padding(
-        padding: EdgeInsets.all(size * 0.18),
-        child: Image.asset(
-          ReferenceAssets.appLogo,
-          fit: BoxFit.contain,
-          color: AppColors.primaryDeep,
-          colorBlendMode: BlendMode.srcIn,
-        ),
+      padding: EdgeInsets.symmetric(
+        horizontal: size * 0.06,
+        vertical: size * 0.1,
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            line1,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.brandWordmark(
+              fontSize: size * (line2.isEmpty ? 0.28 : 0.24),
+              color: AppColors.primaryDeep,
+              height: 1.05,
+            ),
+          ),
+          if (line2.isNotEmpty) ...[
+            SizedBox(height: size * 0.02),
+            Text(
+              line2,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.brandWordmark(
+                fontSize: size * 0.175,
+                color: AppColors.primaryDeep,
+                height: 1.05,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Inline Amharic wordmark for nav / sidebar / about lockups.
+class AppBrandWordmark extends StatelessWidget {
+  const AppBrandWordmark({
+    super.key,
+    this.fontSize = 16,
+    this.color = AppColors.textPrimary,
+    this.maxLines = 1,
+    this.textAlign = TextAlign.start,
+  });
+
+  final double fontSize;
+  final Color color;
+  final int maxLines;
+  final TextAlign textAlign;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = AppLocalizations.of(context).brandName;
+    return Text(
+      name,
+      textAlign: textAlign,
+      maxLines: maxLines,
+      overflow: TextOverflow.ellipsis,
+      style: AppTypography.brandWordmark(
+        fontSize: fontSize,
+        color: color,
       ),
     );
   }

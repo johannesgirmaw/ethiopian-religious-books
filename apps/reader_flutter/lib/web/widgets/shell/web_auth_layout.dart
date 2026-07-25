@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../design/app_tokens.dart';
-import '../../../design/reference_assets.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../providers/app_locale_provider.dart';
+import '../../../widgets/primitives/shared_widgets.dart';
 import '../../design/web_tokens.dart';
 import '../../layout/app_layout_scope.dart';
 import '../common/web_section.dart';
@@ -91,32 +91,11 @@ class WebAuthBrandPanel extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    gradient: AppGradients.gold,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: AppShadows.goldGlow,
-                  ),
-                  padding: const EdgeInsets.all(14),
-                  child: Image.asset(
-                    ReferenceAssets.appLogo,
-                    fit: BoxFit.contain,
-                    color: AppColors.primaryDeep,
-                    colorBlendMode: BlendMode.srcIn,
-                  ),
-                ),
+                const AppLogoTile(size: 72),
                 const SizedBox(height: 28),
-                Text(
-                  l10n.appTitle,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 34,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
-                    height: 1.1,
-                  ),
+                const AppBrandWordmark(
+                  fontSize: 34,
+                  color: Colors.white,
                 ),
                 const SizedBox(height: 12),
                 Text(

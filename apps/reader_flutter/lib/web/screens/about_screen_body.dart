@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../design/app_tokens.dart';
-import '../../design/reference_assets.dart';
-import '../design/web_tokens.dart';
 import '../../l10n/app_localizations.dart';
+import '../../widgets/primitives/shared_widgets.dart';
+import '../design/web_tokens.dart';
 import '../layout/app_layout_scope.dart';
 import '../widgets/common/web_page_header.dart';
 import '../widgets/common/web_section.dart';
@@ -49,24 +49,13 @@ class AboutScreenBody extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Image.asset(
-                  ReferenceAssets.appLogo,
-                  width: 72,
-                  height: 64,
-                  fit: BoxFit.contain,
-                ),
+                const AppLogoTile(size: 72),
                 const SizedBox(width: 24),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        l10n.appTitle,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                      const AppBrandWordmark(fontSize: 18),
                       const SizedBox(height: 8),
                       Text(
                         l10n.splashTagline,

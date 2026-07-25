@@ -7,9 +7,9 @@ import '../../../design/app_tokens.dart';
 import '../../../models/user_profile.dart';
 import '../../../providers/nav_visibility_providers.dart';
 import '../../../providers/session_notifier.dart';
-import '../../../design/reference_assets.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../utils/sidebar_identity.dart';
+import '../../../widgets/primitives/shared_widgets.dart';
 import '../../design/desktop_tokens.dart';
 
 class DesktopSidebarItem {
@@ -72,54 +72,22 @@ class DesktopSidebar extends ConsumerWidget {
               height: DesktopTokens.titleBarHeight,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        gradient: AppGradients.gold,
-                        borderRadius: BorderRadius.circular(8),
+                    const AppBrandWordmark(fontSize: 13.5),
+                    Text(
+                      l10n.splashTagline,
+                      style: const TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textTertiary,
+                        height: 1.2,
                       ),
-                      padding: const EdgeInsets.all(5),
-                      child: Image.asset(
-                        ReferenceAssets.appLogo,
-                        fit: BoxFit.contain,
-                        color: AppColors.primaryDeep,
-                        colorBlendMode: BlendMode.srcIn,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            l10n.brandName,
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
-                              letterSpacing: -0.2,
-                              height: 1.1,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            l10n.splashTagline,
-                            style: const TextStyle(
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textTertiary,
-                              height: 1.2,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),

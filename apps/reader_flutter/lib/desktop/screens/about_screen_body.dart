@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../design/app_tokens.dart';
-import '../../design/reference_assets.dart';
 import '../../l10n/app_localizations.dart';
+import '../../widgets/primitives/shared_widgets.dart';
 import '../design/desktop_tokens.dart';
 import '../layout/desktop_layout_scope.dart';
 import '../widgets/common/desktop_page_header.dart';
@@ -50,24 +50,13 @@ class DesktopAboutScreenBody extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Image.asset(
-                  ReferenceAssets.appLogo,
-                  width: 64,
-                  height: 56,
-                  fit: BoxFit.contain,
-                ),
+                const AppLogoTile(size: 64),
                 const SizedBox(width: 20),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        l10n.appTitle,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                      const AppBrandWordmark(fontSize: 17),
                       const SizedBox(height: 6),
                       Text(
                         l10n.splashTagline,

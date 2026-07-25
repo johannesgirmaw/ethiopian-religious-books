@@ -3,25 +3,22 @@ import type { SVGProps } from 'react';
 type P = SVGProps<SVGSVGElement>;
 
 export const Logo = (p: P) => (
-  <svg viewBox="0 0 32 32" fill="none" {...p}>
-    <rect width="32" height="32" rx="9" fill="url(#lg)" />
-    <path
-      d="M9 8.5h9.5c2.2 0 4 1.8 4 4v11c0-1.2-1-2.2-2.2-2.2H9V8.5Z"
-      fill="#041820"
-      opacity=".55"
-    />
-    <path
-      d="M9 8.5h8.2c2.2 0 4 1.8 4 4v11c0-1.2-1-2.2-2.2-2.2H9V8.5Z"
-      stroke="#eefdf7"
-      strokeWidth="1.4"
-      strokeLinejoin="round"
-      fill="none"
-    />
-    <path d="M15 5.5v4M13 7.5h4" stroke="#f5a623" strokeWidth="1.4" strokeLinecap="round" />
+  <svg viewBox="0 0 32 32" fill="none" {...p} aria-hidden>
+    <text
+      x="16"
+      y="20"
+      textAnchor="middle"
+      fill="url(#lg)"
+      fontSize="11"
+      fontWeight="700"
+      fontFamily="var(--font-ethiopic), system-ui, sans-serif"
+    >
+      ፈለገ
+    </text>
     <defs>
       <linearGradient id="lg" x1="0" y1="0" x2="32" y2="32">
-        <stop stopColor="#29b6e0" />
-        <stop offset="1" stopColor="#14708f" />
+        <stop stopColor="#f7b74d" />
+        <stop offset="1" stopColor="#f5a623" />
       </linearGradient>
     </defs>
   </svg>

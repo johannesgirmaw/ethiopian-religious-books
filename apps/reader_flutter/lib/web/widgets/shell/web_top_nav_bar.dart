@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../design/app_tokens.dart';
+import '../../../design/app_typography.dart';
 import '../../design/web_tokens.dart';
 
 class WebNavItem {
@@ -32,8 +33,6 @@ class WebTopNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return DecoratedBox(
       decoration: BoxDecoration(
         color: AppColors.referencePageBg,
@@ -50,26 +49,10 @@ class WebTopNavBar extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        gradient: AppGradients.gold,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: AppShadows.listRow,
-                      ),
-                      child: const Icon(
-                        Icons.menu_book_rounded,
-                        color: AppColors.primaryDeep,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
                     Text(
                       appTitle,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.3,
+                      style: AppTypography.brandWordmark(
+                        fontSize: 17,
                         color: AppColors.textPrimary,
                       ),
                     ),

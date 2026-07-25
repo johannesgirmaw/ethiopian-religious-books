@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../design/app_tokens.dart';
-import '../design/reference_assets.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/session_notifier.dart';
+import '../widgets/primitives/shared_widgets.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -112,31 +112,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       ),
                     ),
                   ),
-                  // Gold-framed logo tile
+                  // Amharic wordmark logo
                   ScaleTransition(
                     scale: _scale,
-                    child: Container(
-                      width: 92,
-                      height: 92,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Color(0xFFF5A623), Color(0xFFE08E00)],
-                        ),
-                        borderRadius: BorderRadius.circular(26),
-                        boxShadow: AppShadows.goldGlow,
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Image.asset(
-                          ReferenceAssets.appLogo,
-                          fit: BoxFit.contain,
-                          color: const Color(0xFF041820),
-                          colorBlendMode: BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
+                    child: const AppLogoTile(size: 108),
                   ),
                 ],
               ),
@@ -154,18 +133,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 opacity: _fadeIn,
                 child: Column(
                   children: [
-                    Text(
-                      l10n.appTitle,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 30,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.4,
-                        height: 1.1,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
                     Text(
                       l10n.splashTagline,
                       style: const TextStyle(

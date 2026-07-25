@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { site } from '@/config/site';
 import { useLang } from '@/i18n/LanguageProvider';
-import { Logo, ArrowRight } from './icons';
+import { ArrowRight } from './icons';
 
 function LangToggle({ className = '' }: { className?: string }) {
   const { lang, setLang } = useLang();
@@ -55,11 +55,8 @@ export default function Header() {
       }`}
     >
       <div className="container-px flex h-16 items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5">
-          <Logo className="h-8 w-8" />
-          <span className="text-sm font-semibold tracking-tight text-white">
-            {site.name}
-          </span>
+        <Link href="/" className="brand-mark" aria-label={site.name}>
+          {site.name}
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">

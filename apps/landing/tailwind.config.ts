@@ -37,6 +37,7 @@ const config: Config = {
       fontFamily: {
         sans: ['var(--font-sans)', 'var(--font-ethiopic)', 'system-ui', 'sans-serif'],
         display: ['var(--font-display)', 'var(--font-ethiopic)', 'Georgia', 'serif'],
+        ethiopic: ['var(--font-ethiopic)', 'system-ui', 'sans-serif'],
       },
       keyframes: {
         'fade-up': {

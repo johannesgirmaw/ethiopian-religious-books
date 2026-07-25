@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../design/app_tokens.dart';
-import '../../../design/reference_assets.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../providers/app_locale_provider.dart';
+import '../../../widgets/primitives/shared_widgets.dart';
 import '../../design/desktop_tokens.dart';
 import '../common/desktop_section.dart';
 
@@ -68,32 +68,11 @@ class DesktopAuthBrandPanel extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    gradient: AppGradients.gold,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: AppShadows.goldGlow,
-                  ),
-                  padding: const EdgeInsets.all(12),
-                  child: Image.asset(
-                    ReferenceAssets.appLogo,
-                    fit: BoxFit.contain,
-                    color: AppColors.primaryDeep,
-                    colorBlendMode: BlendMode.srcIn,
-                  ),
-                ),
+                const AppLogoTile(size: 64),
                 const SizedBox(height: 24),
-                Text(
-                  l10n.appTitle,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
-                    height: 1.1,
-                  ),
+                const AppBrandWordmark(
+                  fontSize: 32,
+                  color: Colors.white,
                 ),
                 const SizedBox(height: 10),
                 Text(

@@ -48,4 +48,8 @@ body {
   .gold-text {
     @apply bg-gradient-to-r from-gold-400 via-gold-500 to-gold-400 bg-clip-text text-transparent;
   }
+
+  .brand-mark {
+    @apply font-ethiopic text-lg font-bold leading-none tracking-tight gold-text;
+  }
 }
