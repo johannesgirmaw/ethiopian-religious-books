@@ -78,7 +78,7 @@ class WebSidebar extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const AppBrandWordmark(fontSize: 16),
+                            const AppBrandWordmark(fontSize: 17),
                             const SizedBox(height: 2),
                             Text(
                               l10n.splashTagline,

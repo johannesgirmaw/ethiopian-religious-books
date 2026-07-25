@@ -3,14 +3,15 @@
 import Link from 'next/link';
 import { site } from '@/config/site';
 import { useLang } from '@/i18n/LanguageProvider';
+import BrandMark from './BrandMark';
 
 export default function Footer() {
   const { t } = useLang();
   return (
     <footer className="border-t border-white/10 py-12">
       <div className="container-px flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
-        <Link href="/" className="brand-mark text-xl" aria-label={site.name}>
-          {site.name}
+        <Link href="/" className="shrink-0" aria-label={site.name}>
+          <BrandMark size="lg" />
         </Link>
 
         <nav className="flex flex-wrap gap-x-7 gap-y-3 text-sm text-slate-300">

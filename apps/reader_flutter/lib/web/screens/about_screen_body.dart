@@ -47,25 +47,18 @@ class AboutScreenBody extends StatelessWidget {
           const SizedBox(height: 28),
           WebPanel(
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const AppLogoTile(size: 72),
+                const AppBrandWordmark(fontSize: 22, stacked: true),
                 const SizedBox(width: 24),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const AppBrandWordmark(fontSize: 18),
-                      const SizedBox(height: 8),
-                      Text(
-                        l10n.splashTagline,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          color: AppColors.textSecondary,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    l10n.splashTagline,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: AppColors.textSecondary,
+                      height: 1.5,
+                    ),
                   ),
                 ),
               ],

@@ -19,14 +19,13 @@ class MobileAboutScreen extends StatelessWidget {
         child: Column(
           children: [
             const Center(
-              child: AppLogoTile(size: 96),
+              child: AppBrandWordmark(
+                fontSize: 28,
+                textAlign: TextAlign.center,
+                stacked: true,
+              ),
             ),
-            const SizedBox(height: 16),
-            const AppBrandWordmark(
-              fontSize: 22,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             AboutSectionCard(
               title: l10n.aboutAppSectionTitle,
               content: l10n.aboutAppSectionBody,

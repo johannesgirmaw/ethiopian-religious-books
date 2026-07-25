@@ -77,7 +77,7 @@ class DesktopSidebar extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const AppBrandWordmark(fontSize: 13.5),
+                    const AppBrandWordmark(fontSize: 14.5),
                     Text(
                       l10n.splashTagline,
                       style: const TextStyle(

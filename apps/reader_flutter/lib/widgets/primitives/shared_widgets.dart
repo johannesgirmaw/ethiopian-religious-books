@@ -169,7 +169,71 @@ class AppErrorBanner extends StatelessWidget {
 
 // ─── Amharic wordmark logo ───────────────────────────────────────────────────
 
-/// Typographic logo: stacked Amharic brand name in a gold mark tile.
+(String, String) _brandLines(String name) {
+  final parts = name.split(RegExp(r'\s+'));
+  final line1 = parts.isNotEmpty ? parts.first : name;
+  final line2 = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+  return (line1, line2);
+}
+
+/// Gold gradient fill for elegant wordmark glyphs.
+class _GoldText extends StatelessWidget {
+  const _GoldText({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ShaderMask(
+      blendMode: BlendMode.srcIn,
+      shaderCallback: (bounds) => const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color(0xFFF7D48A),
+          Color(0xFFF5A623),
+          Color(0xFFE08E00),
+        ],
+        stops: [0.0, 0.45, 1.0],
+      ).createShader(bounds),
+      child: child,
+    );
+  }
+}
+
+/// Thin gold accent rule used between brand lines.
+class _BrandHairline extends StatelessWidget {
+  const _BrandHairline({
+    required this.width,
+    this.color,
+  });
+
+  final double width;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: 1,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(1),
+        gradient: color == null
+            ? const LinearGradient(
+                colors: [
+                  Color(0x00F5A623),
+                  Color(0xFFF5A623),
+                  Color(0x00F5A623),
+                ],
+              )
+            : null,
+        color: color,
+      ),
+    );
+  }
+}
+
+/// Framed mark: deep ink tile with gold Amharic lockup (splash / auth / about).
 class AppLogoTile extends StatelessWidget {
   const AppLogoTile({super.key, this.size = 76});
 
@@ -178,57 +242,78 @@ class AppLogoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = AppLocalizations.of(context).brandName;
-    final parts = name.split(RegExp(r'\s+'));
-    final line1 = parts.isNotEmpty ? parts.first : name;
-    final line2 = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+    final (line1, line2) = _brandLines(name);
+    final primarySize = size * (line2.isEmpty ? 0.26 : 0.22);
+    final captionSize = size * 0.13;
 
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        gradient: AppGradients.gold,
-        borderRadius: BorderRadius.circular(size * 0.29),
-        boxShadow: AppShadows.goldGlow,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF0A3A4A),
+            Color(0xFF041820),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(size * 0.26),
+        border: Border.all(
+          color: const Color(0xFFF5A623).withValues(alpha: 0.35),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFF5A623).withValues(alpha: 0.18),
+            blurRadius: size * 0.22,
+            offset: Offset(0, size * 0.06),
+          ),
+        ],
       ),
       padding: EdgeInsets.symmetric(
-        horizontal: size * 0.06,
-        vertical: size * 0.1,
+        horizontal: size * 0.08,
+        vertical: size * 0.12,
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            line1,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.brandWordmark(
-              fontSize: size * (line2.isEmpty ? 0.28 : 0.24),
-              color: AppColors.primaryDeep,
-              height: 1.05,
-            ),
-          ),
-          if (line2.isNotEmpty) ...[
-            SizedBox(height: size * 0.02),
+      child: _GoldText(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
             Text(
-              line2,
+              line1,
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTypography.brandWordmark(
-                fontSize: size * 0.175,
-                color: AppColors.primaryDeep,
-                height: 1.05,
+                fontSize: primarySize,
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.8,
               ),
             ),
+            if (line2.isNotEmpty) ...[
+              SizedBox(height: size * 0.06),
+              _BrandHairline(width: size * 0.28, color: Colors.white),
+              SizedBox(height: size * 0.06),
+              Text(
+                line2,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.brandWordmarkCaption(
+                  fontSize: captionSize,
+                  color: Colors.white,
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
 }
 
-/// Inline Amharic wordmark for nav / sidebar / about lockups.
+/// Inline / stacked Amharic wordmark for nav, sidebars, and hero lockups.
 class AppBrandWordmark extends StatelessWidget {
   const AppBrandWordmark({
     super.key,
@@ -236,6 +321,8 @@ class AppBrandWordmark extends StatelessWidget {
     this.color = AppColors.textPrimary,
     this.maxLines = 1,
     this.textAlign = TextAlign.start,
+    this.stacked = false,
+    this.gold = false,
   });
 
   final double fontSize;
@@ -243,19 +330,75 @@ class AppBrandWordmark extends StatelessWidget {
   final int maxLines;
   final TextAlign textAlign;
 
+  /// Two-line lockup with a gold hairline between words.
+  final bool stacked;
+
+  /// Soft gold gradient fill (best on dark surfaces).
+  final bool gold;
+
   @override
   Widget build(BuildContext context) {
     final name = AppLocalizations.of(context).brandName;
-    return Text(
-      name,
-      textAlign: textAlign,
-      maxLines: maxLines,
-      overflow: TextOverflow.ellipsis,
-      style: AppTypography.brandWordmark(
-        fontSize: fontSize,
-        color: color,
-      ),
+    final (line1, line2) = _brandLines(name);
+
+    if (!stacked || line2.isEmpty) {
+      final text = Text(
+        name,
+        textAlign: textAlign,
+        maxLines: maxLines,
+        overflow: TextOverflow.ellipsis,
+        style: AppTypography.brandWordmark(
+          fontSize: fontSize,
+          color: color,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.7,
+        ),
+      );
+      return gold ? _GoldText(child: text) : text;
+    }
+
+    final cross = switch (textAlign) {
+      TextAlign.center => CrossAxisAlignment.center,
+      TextAlign.end || TextAlign.right => CrossAxisAlignment.end,
+      _ => CrossAxisAlignment.start,
+    };
+
+    final column = Column(
+      crossAxisAlignment: cross,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          line1,
+          textAlign: textAlign,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.brandWordmark(
+            fontSize: fontSize,
+            color: color,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.9,
+          ),
+        ),
+        SizedBox(height: fontSize * 0.28),
+        _BrandHairline(
+          width: fontSize * 1.35,
+          color: gold ? Colors.white70 : color.withValues(alpha: 0.35),
+        ),
+        SizedBox(height: fontSize * 0.28),
+        Text(
+          line2,
+          textAlign: textAlign,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.brandWordmarkCaption(
+            fontSize: fontSize * 0.58,
+            color: gold ? color : color.withValues(alpha: 0.78),
+          ),
+        ),
+      ],
     );
+
+    return gold ? _GoldText(child: column) : column;
   }
 }
 

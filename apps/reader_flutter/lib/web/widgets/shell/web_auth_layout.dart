@@ -91,13 +91,13 @@ class WebAuthBrandPanel extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const AppLogoTile(size: 72),
-                const SizedBox(height: 28),
                 const AppBrandWordmark(
-                  fontSize: 34,
+                  fontSize: 40,
                   color: Colors.white,
+                  stacked: true,
+                  gold: true,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 Text(
                   l10n.splashTagline,
                   style: TextStyle(

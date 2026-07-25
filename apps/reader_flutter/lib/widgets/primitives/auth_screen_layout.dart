@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../design/app_tokens.dart';
-import '../../l10n/app_localizations.dart';
 import '../../providers/app_locale_provider.dart';
-import 'shared_widgets.dart';
 import 'shell_primitives.dart';
 
 /// Shared auth layout: inset greeting card + white form panel.
@@ -24,7 +22,6 @@ class AuthScreenLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppColors.referencePageBg,
       body: SafeArea(
@@ -41,14 +38,13 @@ class AuthScreenLayout extends StatelessWidget {
                     alignment: Alignment.centerRight,
                     child: _LangToggle(),
                   ),
-                  // const SizedBox(height: 12),
-                  // AppGreetingCard(
-                  //   greetingLine: greetingForL10n(l10n),
-                  //   title: headline,
-                  //   subtitle: subtitle,
-                  // ),
-                  // const SizedBox(height: 20),
-                  const Center(child: AppLogoTile(size: 72)),
+                  const Center(
+                    child: AppBrandWordmark(
+                      fontSize: 28,
+                      textAlign: TextAlign.center,
+                      stacked: true,
+                    ),
+                  ),
                   const SizedBox(height: 24),
                   AppPanel(
                     padding: const EdgeInsets.all(24),

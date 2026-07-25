@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { site } from '@/config/site';
 import { useLang } from '@/i18n/LanguageProvider';
 import { ArrowRight } from './icons';
+import BrandMark from './BrandMark';
 
 function LangToggle({ className = '' }: { className?: string }) {
   const { lang, setLang } = useLang();
@@ -55,8 +56,8 @@ export default function Header() {
       }`}
     >
       <div className="container-px flex h-16 items-center justify-between">
-        <Link href="/" className="brand-mark" aria-label={site.name}>
-          {site.name}
+        <Link href="/" className="shrink-0" aria-label={site.name}>
+          <BrandMark />
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">

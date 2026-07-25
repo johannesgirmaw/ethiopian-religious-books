@@ -50,6 +50,30 @@ body {
   }
 
   .brand-mark {
-    @apply font-ethiopic text-lg font-bold leading-none tracking-tight gold-text;
+    @apply inline-flex flex-col items-start gap-1.5 font-ethiopic;
+  }
+
+  .brand-mark__primary {
+    @apply text-[1.125rem] font-semibold leading-none tracking-[0.06em] gold-text;
+  }
+
+  .brand-mark__rule {
+    @apply h-px w-5 bg-gradient-to-r from-transparent via-gold-500 to-transparent;
+  }
+
+  .brand-mark__secondary {
+    @apply text-[0.65rem] font-medium leading-none tracking-[0.18em] text-gold-400/80;
+  }
+
+  .brand-mark--lg .brand-mark__primary {
+    @apply text-xl tracking-[0.08em];
+  }
+
+  .brand-mark--lg .brand-mark__rule {
+    @apply w-7;
+  }
+
+  .brand-mark--lg .brand-mark__secondary {
+    @apply text-[0.7rem] tracking-[0.2em];
   }
 }

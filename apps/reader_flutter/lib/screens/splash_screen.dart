@@ -98,15 +98,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       ),
                     ),
                   ),
-                  // Inner ambient glow
+                  // Soft ambient field behind the wordmark
                   Container(
-                    width: 150,
-                    height: 150,
+                    width: 280,
+                    height: 200,
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
+                      shape: BoxShape.rectangle,
+                      borderRadius: BorderRadius.circular(100),
                       gradient: RadialGradient(
                         colors: [
-                          AppColors.primary.withValues(alpha: 0.55),
+                          AppColors.primary.withValues(alpha: 0.35),
                           AppColors.primary.withValues(alpha: 0.0),
                         ],
                       ),
@@ -115,7 +116,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   // Amharic wordmark logo
                   ScaleTransition(
                     scale: _scale,
-                    child: const AppLogoTile(size: 108),
+                    child: const AppBrandWordmark(
+                      fontSize: 44,
+                      color: Colors.white,
+                      textAlign: TextAlign.center,
+                      stacked: true,
+                      gold: true,
+                    ),
                   ),
                 ],
               ),

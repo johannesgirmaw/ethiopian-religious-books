@@ -68,13 +68,13 @@ class DesktopAuthBrandPanel extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const AppLogoTile(size: 64),
-                const SizedBox(height: 24),
                 const AppBrandWordmark(
-                  fontSize: 32,
+                  fontSize: 38,
                   color: Colors.white,
+                  stacked: true,
+                  gold: true,
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 14),
                 Text(
                   l10n.splashTagline,
                   style: TextStyle(

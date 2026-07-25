@@ -48,25 +48,18 @@ class DesktopAboutScreenBody extends StatelessWidget {
           const SizedBox(height: 24),
           DesktopPanel(
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const AppLogoTile(size: 64),
+                const AppBrandWordmark(fontSize: 20, stacked: true),
                 const SizedBox(width: 20),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const AppBrandWordmark(fontSize: 17),
-                      const SizedBox(height: 6),
-                      Text(
-                        l10n.splashTagline,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    l10n.splashTagline,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                      height: 1.5,
+                    ),
                   ),
                 ),
               ],

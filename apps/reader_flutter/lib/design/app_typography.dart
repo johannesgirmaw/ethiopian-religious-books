@@ -100,20 +100,34 @@ class AppTypography {
         letterSpacing: -0.2,
       );
 
-  /// Amharic brand wordmark — used as the logo mark across shells.
+  /// Modern Amharic wordmark — clean sans, open tracking, medium weight.
   static TextStyle brandWordmark({
     required double fontSize,
     required Color color,
-    FontWeight fontWeight = FontWeight.w700,
-    double height = 1.1,
-    double letterSpacing = -0.3,
+    FontWeight fontWeight = FontWeight.w600,
+    double height = 1.05,
+    double letterSpacing = 0.6,
   }) {
-    return GoogleFonts.notoSerifEthiopic(
+    return GoogleFonts.notoSansEthiopic(
       fontSize: fontSize,
       fontWeight: fontWeight,
       color: color,
       height: height,
       letterSpacing: letterSpacing,
+    );
+  }
+
+  /// Smaller secondary line under the primary brand word.
+  static TextStyle brandWordmarkCaption({
+    required double fontSize,
+    required Color color,
+  }) {
+    return GoogleFonts.notoSansEthiopic(
+      fontSize: fontSize,
+      fontWeight: FontWeight.w500,
+      color: color,
+      height: 1.1,
+      letterSpacing: 1.4,
     );
   }
 }
