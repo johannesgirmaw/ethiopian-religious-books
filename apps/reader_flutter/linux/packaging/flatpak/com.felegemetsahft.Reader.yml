@@ -1,0 +1,43 @@
+# Flatpak manifest — packages the prebuilt Flutter Linux bundle.
+#
+# Build (requires flatpak-builder + the Freedesktop runtime/SDK):
+#   flatpak install -y flathub org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08
+#   scripts/package_reader_linux.sh flatpak
+#
+# The bundle is staged next to this manifest by the packaging script, so the
+# `bundle` source path is relative to the staged build context.
+app-id: com.felegemetsahft.Reader
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+command: felege-metsahft
+separate-locales: false
+
+finish-args:
+  # Wayland with X11 fallback.
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=ipc
+  - --device=dri
+  # The reader fetches the catalog and book content over HTTPS.
+  - --share=network
+  # Secure storage for the device master key / tokens goes through libsecret.
+  - --talk-name=org.freedesktop.secrets
+  # Saving exported notes / picking cover images.
+  - --filesystem=xdg-download
+
+modules:
+  - name: felege-metsahft
+    buildsystem: simple
+    build-commands:
+      - mkdir -p /app/lib/felege-metsahft
+      - cp -a bundle/. /app/lib/felege-metsahft/
+      - mkdir -p /app/bin
+      - ln -sf /app/lib/felege-metsahft/ethiopian_reader /app/bin/felege-metsahft
+      - install -Dm644 com.felegemetsahft.Reader.desktop
+        /app/share/applications/com.felegemetsahft.Reader.desktop
+      - install -Dm644 com.felegemetsahft.Reader.png
+        /app/share/icons/hicolor/512x512/apps/com.felegemetsahft.Reader.png
+    sources:
+      - type: dir
+        path: .

@@ -4,6 +4,7 @@
 	reader-run-web reader-run-linux reader-run-windows \
 	reader-build reader-build-apk-release reader-build-android reader-build-ios \
 	reader-build-macos reader-build-web reader-build-linux reader-build-windows \
+	reader-package-linux \
 	reader-pubget reader-test pre-commit
 
 help:
@@ -36,6 +37,7 @@ help:
 	@echo "  make reader-build-web       - static web build"
 	@echo "  make reader-build-linux     - Linux desktop release"
 	@echo "  make reader-build-windows   - Windows desktop release"
+	@echo "  make reader-package-linux   - .deb (FORMATS=\"all\" adds rpm/flatpak; appimage is opt-in)"
 	@echo "  make reader-test        - flutter test"
 	@echo "  make pre-commit   - run all pre-commit hooks on repo"
 
@@ -142,6 +144,10 @@ reader-build-linux:
 reader-build-windows:
 	@chmod +x scripts/build_reader_windows.sh 2>/dev/null || true
 	@./scripts/build_reader_windows.sh
+
+reader-package-linux:
+	@chmod +x scripts/package_reader_linux.sh 2>/dev/null || true
+	@./scripts/package_reader_linux.sh $(FORMATS)
 
 reader-pubget:
 	cd apps/reader_flutter && flutter pub get
