@@ -100,7 +100,7 @@ class AppTypography {
         letterSpacing: -0.2,
       );
 
-  /// Modern Amharic wordmark — clean sans, open tracking, medium weight.
+  /// Modern Amharic wordmark — bundled Ethiopic sans (no network fetch).
   static TextStyle brandWordmark({
     required double fontSize,
     required Color color,
@@ -108,7 +108,8 @@ class AppTypography {
     double height = 1.05,
     double letterSpacing = 0.6,
   }) {
-    return GoogleFonts.notoSansEthiopic(
+    return TextStyle(
+      fontFamily: 'NotoSansEthiopic',
       fontSize: fontSize,
       fontWeight: fontWeight,
       color: color,
@@ -122,7 +123,8 @@ class AppTypography {
     required double fontSize,
     required Color color,
   }) {
-    return GoogleFonts.notoSansEthiopic(
+    return TextStyle(
+      fontFamily: 'NotoSansEthiopic',
       fontSize: fontSize,
       fontWeight: FontWeight.w500,
       color: color,

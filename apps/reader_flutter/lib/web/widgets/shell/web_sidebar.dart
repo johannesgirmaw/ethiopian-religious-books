@@ -53,7 +53,6 @@ class WebSidebar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
     final user = ref.watch(sessionNotifierProvider).valueOrNull?.user;
 
     return DecoratedBox(
@@ -65,36 +64,18 @@ class WebSidebar extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Brand lockup: Amharic name over localized tagline.
+              // Brand lockup: stacked Amharic wordmark logo.
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
+                padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
                 child: InkWell(
                   onTap: () => context.go('/home'),
                   borderRadius: BorderRadius.circular(12),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const AppBrandWordmark(fontSize: 17),
-                            const SizedBox(height: 2),
-                            Text(
-                              l10n.splashTagline,
-                              style: const TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.textTertiary,
-                                height: 1.2,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 4),
+                    child: AppBrandWordmark(
+                      fontSize: 22,
+                      stacked: true,
+                    ),
                   ),
                 ),
               ),

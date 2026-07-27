@@ -139,36 +139,39 @@ class WebAuthFormPane extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Align(
-            alignment: Alignment.centerRight,
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.surfaceCard,
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                border: Border.all(color: AppColors.line),
-              ),
-              child: SegmentedButton<String>(
-                style: SegmentedButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          Row(
+            children: [
+              const AppBrandWordmark(fontSize: 20, stacked: true),
+              const Spacer(),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceCard,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  border: Border.all(color: AppColors.line),
                 ),
-                segments: const [
-                  ButtonSegment(
-                    value: 'en',
-                    label: Text('EN', style: TextStyle(fontSize: 12)),
+                child: SegmentedButton<String>(
+                  style: SegmentedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  ButtonSegment(
-                    value: 'am',
-                    label: Text('አማ', style: TextStyle(fontSize: 12)),
-                  ),
-                ],
-                selected: {code},
-                onSelectionChanged: (s) async =>
-                    ref.setAppLocale(Locale(s.first)),
+                  segments: const [
+                    ButtonSegment(
+                      value: 'en',
+                      label: Text('EN', style: TextStyle(fontSize: 12)),
+                    ),
+                    ButtonSegment(
+                      value: 'am',
+                      label: Text('አማ', style: TextStyle(fontSize: 12)),
+                    ),
+                  ],
+                  selected: {code},
+                  onSelectionChanged: (s) async =>
+                      ref.setAppLocale(Locale(s.first)),
+                ),
               ),
-            ),
+            ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 28),
           Text(
             headline,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(

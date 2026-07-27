@@ -176,30 +176,9 @@ class AppErrorBanner extends StatelessWidget {
   return (line1, line2);
 }
 
-/// Gold gradient fill for elegant wordmark glyphs.
-class _GoldText extends StatelessWidget {
-  const _GoldText({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return ShaderMask(
-      blendMode: BlendMode.srcIn,
-      shaderCallback: (bounds) => const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFFF7D48A),
-          Color(0xFFF5A623),
-          Color(0xFFE08E00),
-        ],
-        stops: [0.0, 0.45, 1.0],
-      ).createShader(bounds),
-      child: child,
-    );
-  }
-}
+/// Elegant gold tone for wordmarks on dark surfaces (reliable on Flutter web).
+const Color _brandGold = Color(0xFFF5A623);
+const Color _brandGoldSoft = Color(0xFFF7D48A);
 
 /// Thin gold accent rule used between brand lines.
 class _BrandHairline extends StatelessWidget {
@@ -215,14 +194,15 @@ class _BrandHairline extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: width,
-      height: 1,
+      height: 1.25,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(1),
         gradient: color == null
             ? const LinearGradient(
                 colors: [
                   Color(0x00F5A623),
-                  Color(0xFFF5A623),
+                  _brandGoldSoft,
+                  _brandGold,
                   Color(0x00F5A623),
                 ],
               )
@@ -233,7 +213,7 @@ class _BrandHairline extends StatelessWidget {
   }
 }
 
-/// Framed mark: deep ink tile with gold Amharic lockup (splash / auth / about).
+/// Framed mark: deep ink tile with gold Amharic lockup.
 class AppLogoTile extends StatelessWidget {
   const AppLogoTile({super.key, this.size = 76});
 
@@ -260,12 +240,12 @@ class AppLogoTile extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(size * 0.26),
         border: Border.all(
-          color: const Color(0xFFF5A623).withValues(alpha: 0.35),
+          color: _brandGold.withValues(alpha: 0.4),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFF5A623).withValues(alpha: 0.18),
+            color: _brandGold.withValues(alpha: 0.18),
             blurRadius: size * 0.22,
             offset: Offset(0, size * 0.06),
           ),
@@ -275,39 +255,37 @@ class AppLogoTile extends StatelessWidget {
         horizontal: size * 0.08,
         vertical: size * 0.12,
       ),
-      child: _GoldText(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            line1,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.brandWordmark(
+              fontSize: primarySize,
+              color: _brandGoldSoft,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.8,
+            ),
+          ),
+          if (line2.isNotEmpty) ...[
+            SizedBox(height: size * 0.06),
+            _BrandHairline(width: size * 0.28),
+            SizedBox(height: size * 0.06),
             Text(
-              line1,
+              line2,
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTypography.brandWordmark(
-                fontSize: primarySize,
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.8,
+              style: AppTypography.brandWordmarkCaption(
+                fontSize: captionSize,
+                color: _brandGold.withValues(alpha: 0.9),
               ),
             ),
-            if (line2.isNotEmpty) ...[
-              SizedBox(height: size * 0.06),
-              _BrandHairline(width: size * 0.28, color: Colors.white),
-              SizedBox(height: size * 0.06),
-              Text(
-                line2,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.brandWordmarkCaption(
-                  fontSize: captionSize,
-                  color: Colors.white,
-                ),
-              ),
-            ],
           ],
-        ),
+        ],
       ),
     );
   }
@@ -333,28 +311,31 @@ class AppBrandWordmark extends StatelessWidget {
   /// Two-line lockup with a gold hairline between words.
   final bool stacked;
 
-  /// Soft gold gradient fill (best on dark surfaces).
+  /// Soft gold fill (best on dark surfaces).
   final bool gold;
 
   @override
   Widget build(BuildContext context) {
     final name = AppLocalizations.of(context).brandName;
     final (line1, line2) = _brandLines(name);
+    final primaryColor = gold ? _brandGoldSoft : color;
+    final secondaryColor = gold
+        ? _brandGold.withValues(alpha: 0.92)
+        : color.withValues(alpha: 0.78);
 
     if (!stacked || line2.isEmpty) {
-      final text = Text(
+      return Text(
         name,
         textAlign: textAlign,
         maxLines: maxLines,
         overflow: TextOverflow.ellipsis,
         style: AppTypography.brandWordmark(
           fontSize: fontSize,
-          color: color,
+          color: primaryColor,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.7,
         ),
       );
-      return gold ? _GoldText(child: text) : text;
     }
 
     final cross = switch (textAlign) {
@@ -363,7 +344,7 @@ class AppBrandWordmark extends StatelessWidget {
       _ => CrossAxisAlignment.start,
     };
 
-    final column = Column(
+    return Column(
       crossAxisAlignment: cross,
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -374,7 +355,7 @@ class AppBrandWordmark extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: AppTypography.brandWordmark(
             fontSize: fontSize,
-            color: color,
+            color: primaryColor,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.9,
           ),
@@ -382,7 +363,7 @@ class AppBrandWordmark extends StatelessWidget {
         SizedBox(height: fontSize * 0.28),
         _BrandHairline(
           width: fontSize * 1.35,
-          color: gold ? Colors.white70 : color.withValues(alpha: 0.35),
+          color: gold ? null : color.withValues(alpha: 0.35),
         ),
         SizedBox(height: fontSize * 0.28),
         Text(
@@ -392,13 +373,11 @@ class AppBrandWordmark extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: AppTypography.brandWordmarkCaption(
             fontSize: fontSize * 0.58,
-            color: gold ? color : color.withValues(alpha: 0.78),
+            color: secondaryColor,
           ),
         ),
       ],
     );
-
-    return gold ? _GoldText(child: column) : column;
   }
 }
 

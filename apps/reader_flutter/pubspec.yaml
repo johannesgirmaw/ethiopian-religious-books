@@ -40,5 +40,8 @@ flutter:
   assets:
     - assets/images/bg1.png
     - assets/images/slice.png
-    - assets/images/mobile-logo.png
     - assets/images/drawer-bg.png
+  fonts:
+    - family: NotoSansEthiopic
+      fonts:
+        - asset: assets/fonts/NotoSansEthiopic.ttf

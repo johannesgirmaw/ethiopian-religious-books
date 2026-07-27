@@ -57,7 +57,6 @@ class DesktopSidebar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
     final user = ref.watch(sessionNotifierProvider).valueOrNull?.user;
 
     return DecoratedBox(
@@ -67,29 +66,17 @@ class DesktopSidebar extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Brand lockup: Amharic name over localized tagline.
-            SizedBox(
-              height: DesktopTokens.titleBarHeight,
+            // Brand lockup: stacked Amharic wordmark logo.
+            const SizedBox(
+              height: DesktopTokens.titleBarHeight + 12,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const AppBrandWordmark(fontSize: 14.5),
-                    Text(
-                      l10n.splashTagline,
-                      style: const TextStyle(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textTertiary,
-                        height: 1.2,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                padding: EdgeInsets.symmetric(horizontal: 14),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: AppBrandWordmark(
+                    fontSize: 16,
+                    stacked: true,
+                  ),
                 ),
               ),
             ),

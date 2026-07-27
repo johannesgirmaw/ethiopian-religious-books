@@ -119,29 +119,32 @@ class DesktopAuthFormPane extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: SegmentedButton<String>(
-                  style: SegmentedButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              Row(
+                children: [
+                  const AppBrandWordmark(fontSize: 18, stacked: true),
+                  const Spacer(),
+                  SegmentedButton<String>(
+                    style: SegmentedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    segments: const [
+                      ButtonSegment(
+                        value: 'en',
+                        label: Text('EN', style: TextStyle(fontSize: 12)),
+                      ),
+                      ButtonSegment(
+                        value: 'am',
+                        label: Text('አማ', style: TextStyle(fontSize: 12)),
+                      ),
+                    ],
+                    selected: {code},
+                    onSelectionChanged: (s) async =>
+                        ref.setAppLocale(Locale(s.first)),
                   ),
-                  segments: const [
-                    ButtonSegment(
-                      value: 'en',
-                      label: Text('EN', style: TextStyle(fontSize: 12)),
-                    ),
-                    ButtonSegment(
-                      value: 'am',
-                      label: Text('አማ', style: TextStyle(fontSize: 12)),
-                    ),
-                  ],
-                  selected: {code},
-                  onSelectionChanged: (s) async =>
-                      ref.setAppLocale(Locale(s.first)),
-                ),
+                ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
               Text(
                 headline,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(

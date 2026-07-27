@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../design/app_tokens.dart';
-import '../../../design/app_typography.dart';
-import '../../design/web_tokens.dart';
+import '../../../widgets/primitives/shared_widgets.dart';
 
 class WebNavItem {
   const WebNavItem({
@@ -41,23 +40,12 @@ class WebTopNavBar extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: SizedBox(
-          height: WebTokens.navHeight,
+          height: 72,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(
               children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      appTitle,
-                      style: AppTypography.brandWordmark(
-                        fontSize: 17,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
+                const AppBrandWordmark(fontSize: 18, stacked: true),
                 const Spacer(),
                 Row(
                   mainAxisSize: MainAxisSize.min,
