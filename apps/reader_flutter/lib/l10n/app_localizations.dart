@@ -2576,6 +2576,42 @@ abstract class AppLocalizations {
   /// **'Publish failed'**
   String get publishFailed;
 
+  /// No description provided for @deleteBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete book'**
+  String get deleteBook;
+
+  /// No description provided for @deleteBookTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this draft?'**
+  String get deleteBookTitle;
+
+  /// No description provided for @deleteBookBody.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{title}\" and all of its draft chapters will be permanently deleted. This cannot be undone.'**
+  String deleteBookBody(String title);
+
+  /// No description provided for @deleteBookConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get deleteBookConfirm;
+
+  /// No description provided for @deleteBookSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft book deleted'**
+  String get deleteBookSuccess;
+
+  /// No description provided for @deleteBookFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete failed'**
+  String get deleteBookFailed;
+
   /// No description provided for @bookFallbackTitle.
   ///
   /// In en, this message translates to:

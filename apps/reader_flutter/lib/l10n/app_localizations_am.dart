@@ -1348,6 +1348,26 @@ class AppLocalizationsAm extends AppLocalizations {
   String get publishFailed => 'ህትመት አልተሳካም';
 
   @override
+  String get deleteBook => 'መጽሐፍ ሰርዝ';
+
+  @override
+  String get deleteBookTitle => 'ይህን ረቂቅ ይሰረዝ?';
+
+  @override
+  String deleteBookBody(String title) {
+    return '\"$title\" እና ሁሉም ረቂቅ ምዕራፎቹ በቋሚነት ይሰረዛሉ። ይህ መልሶ አይመለስም።';
+  }
+
+  @override
+  String get deleteBookConfirm => 'ሰርዝ';
+
+  @override
+  String get deleteBookSuccess => 'ረቂቅ መጽሐፍ ተሰርዟል';
+
+  @override
+  String get deleteBookFailed => 'መሰረዝ አልተሳካም';
+
+  @override
   String get bookFallbackTitle => 'መጽሐፍ';
 
   @override

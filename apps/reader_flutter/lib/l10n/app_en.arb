@@ -631,6 +631,17 @@
   },
   "publishedLatestRevision": "Published latest revision",
   "publishFailed": "Publish failed",
+  "deleteBook": "Delete book",
+  "deleteBookTitle": "Delete this draft?",
+  "deleteBookBody": "\"{title}\" and all of its draft chapters will be permanently deleted. This cannot be undone.",
+  "@deleteBookBody": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "deleteBookConfirm": "Delete",
+  "deleteBookSuccess": "Draft book deleted",
+  "deleteBookFailed": "Delete failed",
   "bookFallbackTitle": "Book",
   "editMetadataTooltip": "Edit metadata",
   "publishedVisibleBanner": "Published and visible in reader",

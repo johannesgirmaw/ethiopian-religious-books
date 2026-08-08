@@ -36,3 +36,4 @@ apps/reader_flutter/android/*.jks
 apps/reader_flutter/android/*.keystore
 # ...but DO keep the deliberate backup copies:
 !apps/reader_flutter/android/keystore/
+FelegeMetsahift/

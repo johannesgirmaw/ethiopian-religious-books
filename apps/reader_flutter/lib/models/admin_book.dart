@@ -180,6 +180,13 @@ class AdminBook {
     }
   }
 
+  /// True when this book is still a pure draft and so may be deleted: never
+  /// published, not sitting in the editorial review queue. The server applies
+  /// the same rule plus ownership and purchase-history checks, so a delete can
+  /// still be refused with a 409.
+  bool get isDeletableDraft =>
+      !isPublished && isDraftReview && publishedRevisionId == null;
+
   /// True when the author is looking at a draft that was sent back with a
   /// change request they still need to address.
   bool get hasPendingChangeRequest =>

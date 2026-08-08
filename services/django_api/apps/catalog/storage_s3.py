@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import ipaddress
 import logging
+from collections.abc import Iterable
 from typing import Any
 from urllib.parse import urlparse
 
@@ -147,6 +148,24 @@ def presign_put(
 def head_object(object_key: str) -> dict[str, Any]:
     client = get_s3_client(for_presign=False)
     return client.head_object(Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key=object_key)
+
+
+def delete_objects(object_keys: Iterable[str]) -> None:
+    """Best-effort removal of stored blobs (covers, manifests, content packages).
+
+    Used when a draft book is deleted so its objects don't linger in the bucket.
+    Storage failures are logged and swallowed: the DB rows are already gone and a
+    stray object is harmless, so a bucket hiccup must not fail the request.
+    """
+    keys = [k for k in object_keys if k]
+    if not keys or not is_object_storage_configured():
+        return
+    client = get_s3_client(for_presign=False)
+    for key in keys:
+        try:
+            client.delete_object(Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key=key)
+        except Exception:  # pragma: no cover - storage best effort
+            logger.warning("could not delete object %s", key, exc_info=True)
 
 
 def get_object_bytes(object_key: str) -> bytes:

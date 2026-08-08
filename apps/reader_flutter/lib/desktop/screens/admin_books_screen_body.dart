@@ -287,6 +287,7 @@ enum _AdminBookMenuAction {
   publish,
   unpublish,
   openReader,
+  delete,
 }
 
 class _AdminBookRowState extends ConsumerState<_AdminBookRow> {
@@ -314,6 +315,7 @@ class _AdminBookRowState extends ConsumerState<_AdminBookRow> {
     final canWithdraw = isCreator && book.isInReview;
     final canReview = isReviewer && book.isInReview;
     final canPublish = isCreator && !isPublished && book.isReviewed;
+    final canDelete = (isCreator || isReviewer) && book.isDeletableDraft;
     final (statusLabel, statusKind) = adminBookStatusChip(
       l10n,
       book.displayStatus,
@@ -455,6 +457,15 @@ class _AdminBookRowState extends ConsumerState<_AdminBookRow> {
                             ? '/bible/book/${book.id}'
                             : '/book/${book.id}',
                       );
+                    case _AdminBookMenuAction.delete:
+                      await _run(
+                        () => adminDeleteBook(
+                          context: context,
+                          ref: ref,
+                          bookId: book.id,
+                          bookTitle: book.title,
+                        ),
+                      );
                   }
                 },
                 itemBuilder: (context) => [
@@ -502,6 +513,14 @@ class _AdminBookRowState extends ConsumerState<_AdminBookRow> {
                     PopupMenuItem(
                       value: _AdminBookMenuAction.openReader,
                       child: Text(l10n.openInReader),
+                    ),
+                  if (canDelete)
+                    PopupMenuItem(
+                      value: _AdminBookMenuAction.delete,
+                      child: Text(
+                        l10n.deleteBook,
+                        style: const TextStyle(color: AppColors.errorText),
+                      ),
                     ),
                 ],
               ),

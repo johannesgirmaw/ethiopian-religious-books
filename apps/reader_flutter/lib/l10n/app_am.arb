@@ -715,6 +715,17 @@
   },
   "publishedLatestRevision": "የኋለኛው ማሻሻያ ተታትሟል",
   "publishFailed": "ህትመት አልተሳካም",
+  "deleteBook": "መጽሐፍ ሰርዝ",
+  "deleteBookTitle": "ይህን ረቂቅ ይሰረዝ?",
+  "deleteBookBody": "\"{title}\" እና ሁሉም ረቂቅ ምዕራፎቹ በቋሚነት ይሰረዛሉ። ይህ መልሶ አይመለስም።",
+  "@deleteBookBody": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "deleteBookConfirm": "ሰርዝ",
+  "deleteBookSuccess": "ረቂቅ መጽሐፍ ተሰርዟል",
+  "deleteBookFailed": "መሰረዝ አልተሳካም",
   "bookFallbackTitle": "መጽሐፍ",
   "editMetadataTooltip": "መረጃ አርትዖት",
   "publishedVisibleBanner": "ተታትሞ በአንባቢ ይታያል",

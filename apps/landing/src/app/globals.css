@@ -49,6 +49,18 @@ body {
     @apply bg-gradient-to-r from-gold-400 via-gold-500 to-gold-400 bg-clip-text text-transparent;
   }
 
+  .brand-lockup {
+    @apply inline-flex items-center gap-2.5;
+  }
+
+  .brand-lockup__mark {
+    @apply h-8 w-8 shrink-0 select-none object-contain;
+  }
+
+  .brand-lockup--lg .brand-lockup__mark {
+    @apply h-10 w-10;
+  }
+
   .brand-mark {
     @apply inline-flex flex-col items-start gap-1.5 font-ethiopic;
   }

@@ -45,7 +45,9 @@ class WebTopNavBar extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(
               children: [
-                const AppBrandWordmark(fontSize: 18, stacked: true),
+                // Inline (not stacked): the bar is a fixed 72px, and a stacked
+                // lockup with the mark above it does not fit that height.
+                const AppBrandWordmark(fontSize: 18),
                 const Spacer(),
                 Row(
                   mainAxisSize: MainAxisSize.min,

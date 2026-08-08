@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/admin_providers.dart';
 import '../../providers/api_client.dart';
@@ -315,6 +316,72 @@ class _ReviewCommentDialogState extends State<_ReviewCommentDialog> {
         ),
       ],
     );
+  }
+}
+
+/// Permanently deletes a draft book after a destructive confirmation.
+///
+/// Only offered for books still in the draft stage — the server re-checks that
+/// (`catalog/deletion.py`) and answers 409 for anything published, in review, or
+/// already sold, which surfaces here as a snackbar.
+Future<bool> adminDeleteBook({
+  required BuildContext context,
+  required WidgetRef ref,
+  required String bookId,
+  required String bookTitle,
+}) async {
+  final l10n = AppLocalizations.of(context)!;
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) {
+      final d = AppLocalizations.of(ctx)!;
+      return AlertDialog(
+        title: Text(d.deleteBookTitle),
+        content: Text(
+          d.deleteBookBody(bookTitle),
+          style: Theme.of(ctx).textTheme.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(d.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.errorText,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(d.deleteBookConfirm),
+          ),
+        ],
+      );
+    },
+  );
+  if (ok != true || !context.mounted) return false;
+
+  try {
+    final dio = ref.read(apiDioProvider);
+    await dio.delete<void>('admin/books/$bookId');
+    ref.invalidate(adminBooksProvider);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.deleteBookSuccess)),
+      );
+    }
+    return true;
+  } on DioException catch (e) {
+    if (!context.mounted) return false;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          messageFromDioResponse(e.response?.data) ??
+              e.message ??
+              l10n.deleteBookFailed,
+        ),
+      ),
+    );
+    return false;
   }
 }
 

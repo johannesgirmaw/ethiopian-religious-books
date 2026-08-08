@@ -1374,6 +1374,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get publishFailed => 'Publish failed';
 
   @override
+  String get deleteBook => 'Delete book';
+
+  @override
+  String get deleteBookTitle => 'Delete this draft?';
+
+  @override
+  String deleteBookBody(String title) {
+    return '\"$title\" and all of its draft chapters will be permanently deleted. This cannot be undone.';
+  }
+
+  @override
+  String get deleteBookConfirm => 'Delete';
+
+  @override
+  String get deleteBookSuccess => 'Draft book deleted';
+
+  @override
+  String get deleteBookFailed => 'Delete failed';
+
+  @override
   String get bookFallbackTitle => 'Book';
 
   @override

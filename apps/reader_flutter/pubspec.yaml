@@ -40,6 +40,10 @@ flutter:
   # NOTE: assets/images/{bg1,slice,drawer-bg}.png are intentionally NOT bundled --
   # nothing references AppReferenceAssets, and they cost 1.3 MB in the web build.
   # Re-add the entry here if a screen starts using one.
+  # logo-mark.png IS bundled (84 KB): AppLogoMark renders it in every brand lockup.
+  # List it file-by-file rather than bundling assets/images/ wholesale.
+  assets:
+    - assets/images/logo-mark.png
   fonts:
     - family: NotoSansEthiopic
       fonts:

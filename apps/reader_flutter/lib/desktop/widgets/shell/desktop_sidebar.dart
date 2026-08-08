@@ -66,17 +66,16 @@ class DesktopSidebar extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Brand lockup: stacked Amharic wordmark logo.
+            // Brand lockup: mark + Amharic wordmark, inline. Not stacked --
+            // this row is pinned to the title-bar height (60px) so the sidebar
+            // header lines up with it, and a stacked lockup overflows that.
             const SizedBox(
               height: DesktopTokens.titleBarHeight + 12,
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 14),
                 child: Align(
                   alignment: Alignment.centerLeft,
-                  child: AppBrandWordmark(
-                    fontSize: 16,
-                    stacked: true,
-                  ),
+                  child: AppBrandWordmark(fontSize: 16),
                 ),
               ),
             ),

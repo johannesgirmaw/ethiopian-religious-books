@@ -291,7 +291,50 @@ class AppLogoTile extends StatelessWidget {
   }
 }
 
+/// The Felege Metsahift figurative mark (Ethiopian cross over an open book).
+///
+/// Bundled from the brand kit as a transparent PNG, so it sits correctly on
+/// both the light app surfaces and the dark splash/auth panels.
+class AppLogoMark extends StatelessWidget {
+  const AppLogoMark({
+    super.key,
+    this.size = 28,
+    this.semanticLabel,
+    this.light = false,
+  });
+
+  final double size;
+  final String? semanticLabel;
+
+  /// Knock the mark out in white. The full-colour mark is brand blue, which
+  /// has too little contrast on the blue hero panels and the dark splash.
+  final bool light;
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget image = Image.asset(
+      'assets/images/logo-mark.png',
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.medium,
+      semanticLabel: semanticLabel ?? AppLocalizations.of(context).brandName,
+      // The mark is decorative next to the wordmark; never block the lockup on
+      // a missing asset (web can serve a stale bundle mid-deploy).
+      errorBuilder: (_, __, ___) => SizedBox(width: size, height: size),
+    );
+    if (!light) return image;
+    return ColorFiltered(
+      colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+      child: image,
+    );
+  }
+}
+
 /// Inline / stacked Amharic wordmark for nav, sidebars, and hero lockups.
+///
+/// Renders the figurative mark alongside the wordmark by default — inline
+/// layouts put it to the left, stacked layouts put it above.
 class AppBrandWordmark extends StatelessWidget {
   const AppBrandWordmark({
     super.key,
@@ -301,6 +344,7 @@ class AppBrandWordmark extends StatelessWidget {
     this.textAlign = TextAlign.start,
     this.stacked = false,
     this.gold = false,
+    this.showMark = true,
   });
 
   final double fontSize;
@@ -314,6 +358,9 @@ class AppBrandWordmark extends StatelessWidget {
   /// Soft gold fill (best on dark surfaces).
   final bool gold;
 
+  /// Show the figurative mark beside/above the wordmark.
+  final bool showMark;
+
   @override
   Widget build(BuildContext context) {
     final name = AppLocalizations.of(context).brandName;
@@ -324,7 +371,7 @@ class AppBrandWordmark extends StatelessWidget {
         : color.withValues(alpha: 0.78);
 
     if (!stacked || line2.isEmpty) {
-      return Text(
+      final text = Text(
         name,
         textAlign: textAlign,
         maxLines: maxLines,
@@ -335,6 +382,17 @@ class AppBrandWordmark extends StatelessWidget {
           fontWeight: FontWeight.w600,
           letterSpacing: 0.7,
         ),
+      );
+      if (!showMark) return text;
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppLogoMark(size: fontSize * 1.7, light: gold),
+          SizedBox(width: fontSize * 0.5),
+          // Flexible so a narrow nav/sidebar ellipsises the text instead of
+          // overflowing the row.
+          Flexible(child: text),
+        ],
       );
     }
 
@@ -348,6 +406,10 @@ class AppBrandWordmark extends StatelessWidget {
       crossAxisAlignment: cross,
       mainAxisSize: MainAxisSize.min,
       children: [
+        if (showMark) ...[
+          AppLogoMark(size: fontSize * 2.0, light: gold),
+          SizedBox(height: fontSize * 0.34),
+        ],
         Text(
           line1,
           textAlign: textAlign,

@@ -208,6 +208,7 @@ enum _AdminBookMenuAction {
   publish,
   unpublish,
   openReader,
+  delete,
 }
 
 class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
@@ -296,6 +297,15 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
         context.push(
           book.isBible ? '/bible/book/${book.id}' : '/book/${book.id}',
         );
+      case _AdminBookMenuAction.delete:
+        await _run(
+          () => adminDeleteBook(
+            context: context,
+            ref: ref,
+            bookId: book.id,
+            bookTitle: book.title,
+          ),
+        );
     }
   }
 
@@ -315,6 +325,7 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
     final canWithdraw = isCreator && book.isInReview;
     final canReview = isReviewer && book.isInReview;
     final canPublish = isCreator && !isPublished && book.isReviewed;
+    final canDelete = (isCreator || isReviewer) && book.isDeletableDraft;
     final chapterCount = book.chaptersDraft.length;
     final pageCount = book.chaptersDraft.fold<int>(
       0,
@@ -443,6 +454,13 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
                                 icon: Icons.menu_book_outlined,
                                 label: l10n.openInReader,
                               ),
+                            if (canDelete)
+                              _menuItem(
+                                value: _AdminBookMenuAction.delete,
+                                icon: Icons.delete_outline,
+                                label: l10n.deleteBook,
+                                color: AppColors.errorText,
+                              ),
                           ],
                         ),
                 ],
@@ -470,14 +488,15 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
     required _AdminBookMenuAction value,
     required IconData icon,
     required String label,
+    Color? color,
   }) {
     return PopupMenuItem(
       value: value,
       child: Row(
         children: [
-          Icon(icon, size: 20),
+          Icon(icon, size: 20, color: color),
           const SizedBox(width: 12),
-          Expanded(child: Text(label)),
+          Expanded(child: Text(label, style: TextStyle(color: color))),
         ],
       ),
     );

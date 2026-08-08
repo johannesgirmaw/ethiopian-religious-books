@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.contrib.auth import get_user_model
 from django.test import RequestFactory, TestCase, override_settings
 from rest_framework.test import APIClient
@@ -19,6 +21,8 @@ from apps.catalog.publishing import (
 from apps.catalog.search_index import rebuild_revision_index
 from apps.catalog.search_normalization import normalize_search_text
 from apps.catalog.storage_s3 import dev_presign_endpoint_from_request
+from apps.payments.enums import PaymentMethod
+from apps.payments.models import PaymentTransaction
 
 
 class DevPresignOriginTests(TestCase):
@@ -550,3 +554,104 @@ class PublishBibleBookTests(TestCase):
         outcome = publish_book(book, self.user)
         self.assertFalse(outcome.ok)
         self.assertEqual(outcome.error["error"]["code"], "INVALID_DRAFT")
+
+
+class DraftBookDeletionTests(TestCase):
+    """DELETE /v1/admin/books/<id> — draft-only, owner-only, never sold."""
+
+    def setUp(self):
+        user_model = get_user_model()
+        self.author = user_model.objects.create_user(
+            email="del-author@example.com", password="pw123456", role="author"
+        )
+        self.other = user_model.objects.create_user(
+            email="del-other@example.com", password="pw123456", role="author"
+        )
+        self.admin = user_model.objects.create_user(
+            email="del-admin@example.com", password="pw123456", role="admin"
+        )
+        self.client = APIClient()
+
+    def _draft(self, **kwargs):
+        return Book.objects.create(
+            title="Draft",
+            created_by=self.author,
+            author=self.author,
+            **kwargs,
+        )
+
+    def test_author_deletes_own_draft(self):
+        book = self._draft()
+        self.client.force_authenticate(self.author)
+        res = self.client.delete(f"/v1/admin/books/{book.id}")
+        self.assertEqual(res.status_code, 204)
+        self.assertFalse(Book.objects.filter(pk=book.id).exists())
+
+    def test_delete_cascades_revisions(self):
+        book = self._draft()
+        BookRevision.objects.create(book=book, revision_number=1)
+        self.client.force_authenticate(self.author)
+        self.assertEqual(
+            self.client.delete(f"/v1/admin/books/{book.id}").status_code, 204
+        )
+        self.assertEqual(BookRevision.objects.filter(book_id=book.id).count(), 0)
+
+    def test_admin_deletes_any_draft(self):
+        book = self._draft()
+        self.client.force_authenticate(self.admin)
+        self.assertEqual(
+            self.client.delete(f"/v1/admin/books/{book.id}").status_code, 204
+        )
+
+    def test_other_author_cannot_delete(self):
+        book = self._draft()
+        self.client.force_authenticate(self.other)
+        res = self.client.delete(f"/v1/admin/books/{book.id}")
+        self.assertEqual(res.status_code, 403)
+        self.assertEqual(res.data["error"]["code"], "NOT_BOOK_CREATOR")
+        self.assertTrue(Book.objects.filter(pk=book.id).exists())
+
+    def test_published_book_cannot_be_deleted(self):
+        book = self._draft(catalog_visibility=Book.Visibility.PUBLISHED)
+        self.client.force_authenticate(self.author)
+        res = self.client.delete(f"/v1/admin/books/{book.id}")
+        self.assertEqual(res.status_code, 409)
+        self.assertEqual(res.data["error"]["code"], "BOOK_PUBLISHED")
+
+    def test_in_review_book_cannot_be_deleted(self):
+        book = self._draft(review_status=Book.ReviewStatus.IN_REVIEW)
+        self.client.force_authenticate(self.author)
+        res = self.client.delete(f"/v1/admin/books/{book.id}")
+        self.assertEqual(res.status_code, 409)
+        self.assertEqual(res.data["error"]["code"], "BOOK_NOT_DRAFT")
+
+    def test_approved_book_cannot_be_deleted(self):
+        book = self._draft(review_status=Book.ReviewStatus.REVIEWED)
+        self.client.force_authenticate(self.author)
+        res = self.client.delete(f"/v1/admin/books/{book.id}")
+        self.assertEqual(res.status_code, 409)
+        self.assertEqual(res.data["error"]["code"], "BOOK_NOT_DRAFT")
+
+    def test_previously_published_revision_blocks_delete(self):
+        book = self._draft()
+        rev = BookRevision.objects.create(book=book, revision_number=1)
+        book.published_revision = rev
+        book.save()
+        self.client.force_authenticate(self.author)
+        res = self.client.delete(f"/v1/admin/books/{book.id}")
+        self.assertEqual(res.status_code, 409)
+        self.assertEqual(res.data["error"]["code"], "BOOK_PREVIOUSLY_PUBLISHED")
+
+    def test_purchased_book_cannot_be_deleted(self):
+        book = self._draft()
+        PaymentTransaction.objects.create(
+            user=self.other,
+            book=book,
+            amount=Decimal("10.00"),
+            payment_method=PaymentMethod.STRIPE,
+        )
+        self.client.force_authenticate(self.author)
+        res = self.client.delete(f"/v1/admin/books/{book.id}")
+        self.assertEqual(res.status_code, 409)
+        self.assertEqual(res.data["error"]["code"], "BOOK_HAS_PURCHASES")
+        self.assertTrue(Book.objects.filter(pk=book.id).exists())

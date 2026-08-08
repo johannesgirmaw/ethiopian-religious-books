@@ -25,6 +25,7 @@ from apps.catalog.admin_serializers import (
     AdminRevisionCreateSerializer,
     BookReviewNoteSerializer,
 )
+from apps.catalog.deletion import delete_book
 from apps.catalog.docx_import import (
     DocxImportError,
     build_chapters_draft_from_docx,
@@ -318,6 +319,14 @@ class AdminBookDetailView(APIView):
             book.review_status = Book.ReviewStatus.DRAFT
             book.save(update_fields=["review_status", "updated_at"])
         return Response(AdminBookSerializer(book).data)
+
+    def delete(self, request, book_id):
+        """Permanently delete a draft book (see ``catalog/deletion.py`` guards)."""
+        book = get_object_or_404(Book, pk=book_id)
+        outcome = delete_book(book, request.user)
+        if not outcome.ok:
+            return Response(outcome.error, status=outcome.status_code)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 _ALLOWED_COVER_TYPES = {
