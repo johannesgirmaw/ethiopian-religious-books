@@ -37,10 +37,9 @@ dev_dependencies:
 flutter:
   generate: true
   uses-material-design: true
-  assets:
-    - assets/images/bg1.png
-    - assets/images/slice.png
-    - assets/images/drawer-bg.png
+  # NOTE: assets/images/{bg1,slice,drawer-bg}.png are intentionally NOT bundled --
+  # nothing references AppReferenceAssets, and they cost 1.3 MB in the web build.
+  # Re-add the entry here if a screen starts using one.
   fonts:
     - family: NotoSansEthiopic
       fonts:

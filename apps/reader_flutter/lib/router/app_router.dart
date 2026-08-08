@@ -10,11 +10,6 @@ import '../screens/bible_screen.dart';
 import '../screens/bible_reader_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/settings_screen.dart';
-import '../screens/admin/admin_author_applications_screen.dart';
-import '../screens/admin/admin_book_edit_screen.dart';
-import '../screens/admin/admin_book_review_screen.dart';
-import '../screens/admin/admin_books_screen.dart';
-import '../screens/admin/admin_purchases_screen.dart';
 import '../screens/author_apply_screen.dart';
 import '../screens/book_detail_screen.dart';
 import '../screens/downloads_screen.dart';
@@ -29,10 +24,34 @@ import '../screens/change_password_screen.dart';
 import '../screens/forgot_password_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/main_shell_screen.dart';
-import '../screens/reader_screen.dart';
 import '../screens/register_screen.dart';
 import '../screens/reset_password_screen.dart';
 import '../screens/splash_screen.dart';
+import 'deferred_screen.dart';
+
+// --- Deferred route targets -------------------------------------------------
+// These are the two heaviest branches of the app and neither is on the startup
+// path: the reader opens only after a book is picked, and /admin is gated to
+// authors and platform admins. `deferred as` makes dart2js emit them as
+// separate `main.dart.js_N.part.js` chunks that are fetched on first
+// navigation, keeping them out of the initial web download.
+//
+// IMPORTANT: these libraries must not be imported eagerly anywhere else in the
+// app, or dart2js silently folds the chunk back into the main output. Their
+// transitive deps (admin_book_actions, admin_book_import, the platform admin
+// bodies, the reader widgets) are only reachable through these entry points --
+// keep it that way. Verify with:
+//   flutter build web --release --dart2js-optimization=O3 && ls build/web/*.part.js
+import '../screens/admin/admin_author_applications_screen.dart'
+    deferred as admin_author_applications;
+import '../screens/admin/admin_book_edit_screen.dart'
+    deferred as admin_book_edit;
+import '../screens/admin/admin_book_review_screen.dart'
+    deferred as admin_book_review;
+import '../screens/admin/admin_books_screen.dart' deferred as admin_books;
+import '../screens/admin/admin_purchases_screen.dart'
+    deferred as admin_purchases;
+import '../screens/reader_screen.dart' deferred as reader;
 
 final rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
@@ -204,21 +223,34 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             path: '/admin/books',
             pageBuilder: (context, state) => NoTransitionPage<void>(
               key: state.pageKey,
-              child: const AdminBooksScreen(),
+              child: DeferredScreen(
+                libraryKey: 'admin_books',
+                loader: admin_books.loadLibrary,
+                builder: (_) => admin_books.AdminBooksScreen(),
+              ),
             ),
           ),
           GoRoute(
             path: '/admin/payments',
             pageBuilder: (context, state) => NoTransitionPage<void>(
               key: state.pageKey,
-              child: const AdminPurchasesScreen(),
+              child: DeferredScreen(
+                libraryKey: 'admin_purchases',
+                loader: admin_purchases.loadLibrary,
+                builder: (_) => admin_purchases.AdminPurchasesScreen(),
+              ),
             ),
           ),
           GoRoute(
             path: '/admin/author-applications',
             pageBuilder: (context, state) => NoTransitionPage<void>(
               key: state.pageKey,
-              child: const AdminAuthorApplicationsScreen(),
+              child: DeferredScreen(
+                libraryKey: 'admin_author_applications',
+                loader: admin_author_applications.loadLibrary,
+                builder: (_) =>
+                    admin_author_applications.AdminAuthorApplicationsScreen(),
+              ),
             ),
           ),
           GoRoute(path: '/admin', redirect: (context, state) => '/admin/books'),
@@ -328,18 +360,26 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               state.uri.queryParameters['pickChapter'] == '1';
           return _fadeSlide(
             key: state.pageKey,
-            child: ReaderScreen(
-              bookId: id,
-              initialChapterKey: chapter,
-              initialPageNumber: page,
-              showChapterPicker: showChapterPicker,
+            child: DeferredScreen(
+              libraryKey: 'reader',
+              loader: reader.loadLibrary,
+              builder: (_) => reader.ReaderScreen(
+                bookId: id,
+                initialChapterKey: chapter,
+                initialPageNumber: page,
+                showChapterPicker: showChapterPicker,
+              ),
             ),
           );
         },
       ),
       GoRoute(
         path: '/admin/books/new',
-        builder: (context, state) => const AdminBookEditScreen(),
+        builder: (context, state) => DeferredScreen(
+          libraryKey: 'admin_book_edit',
+          loader: admin_book_edit.loadLibrary,
+          builder: (_) => admin_book_edit.AdminBookEditScreen(),
+        ),
       ),
       GoRoute(
         path: '/admin/books/:id/edit',
@@ -348,7 +388,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final extra = state.extra is AdminBook
               ? state.extra as AdminBook
               : null;
-          return AdminBookEditScreen(bookId: id, initialBook: extra);
+          return DeferredScreen(
+            libraryKey: 'admin_book_edit',
+            loader: admin_book_edit.loadLibrary,
+            builder: (_) => admin_book_edit.AdminBookEditScreen(
+              bookId: id,
+              initialBook: extra,
+            ),
+          );
         },
       ),
       GoRoute(
@@ -358,7 +405,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final extra = state.extra is AdminBook
               ? state.extra as AdminBook
               : null;
-          return AdminBookReviewScreen(bookId: id, initialBook: extra);
+          return DeferredScreen(
+            libraryKey: 'admin_book_review',
+            loader: admin_book_review.loadLibrary,
+            builder: (_) => admin_book_review.AdminBookReviewScreen(
+              bookId: id,
+              initialBook: extra,
+            ),
+          );
         },
       ),
       GoRoute(
