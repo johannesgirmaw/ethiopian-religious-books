@@ -283,6 +283,41 @@ class _OfflineRow extends ConsumerWidget {
 
   final OfflineCachedBook entry;
 
+  /// Drops just this book's offline copy, leaving the rest of the cache intact.
+  Future<void> _clearBook(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+  ) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.downloadsClearBookTitle(entry.title)),
+        content: Text(l10n.downloadsClearBookBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.clear),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await BookContentCacheStorage.removeBookContent(entry.id);
+    ref.invalidate(offlineDownloadsListProvider);
+    ref.invalidate(offlineBookCountProvider);
+    ref.invalidate(offlineBookCachedProvider(entry.id));
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.offlineCopyRemoved)));
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
@@ -322,6 +357,11 @@ class _OfflineRow extends ConsumerWidget {
           TextButton(
             onPressed: () => _syncOfflineBookCache(ref, entry.id),
             child: Text(l10n.downloadsSyncCache),
+          ),
+          IconButton(
+            tooltip: l10n.downloadsClearBookCache,
+            icon: const Icon(Icons.delete_outline_rounded, size: 18),
+            onPressed: () => _clearBook(context, ref, l10n),
           ),
         ],
       ),

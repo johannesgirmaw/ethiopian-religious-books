@@ -95,11 +95,14 @@ class BookDetailBody extends ConsumerWidget {
           children: [
             WebPageHeader(
               title: book.title,
-              subtitle: [
-                if (book.authorCompiler?.isNotEmpty == true) book.authorCompiler!,
-                if (book.subtitle?.isNotEmpty == true) book.subtitle!,
-              ].join(' · '),
+              subtitle: book.subtitle?.isNotEmpty == true
+                  ? book.subtitle
+                  : null,
             ),
+            if (book.authorCompiler?.isNotEmpty == true) ...[
+              const SizedBox(height: 10),
+              _AuthorLink(name: book.authorCompiler!),
+            ],
             if (book.requiresPurchase) ...[
               const SizedBox(height: 12),
               BookPriceLabel(book: book),
@@ -173,6 +176,13 @@ class BookDetailBody extends ConsumerWidget {
                         ),
                       ),
               ),
+            ),
+            const SizedBox(height: 28),
+            _ContentsSection(
+              tree: tree,
+              loading: contentAsync.isLoading,
+              l10n: l10n,
+              onChapter: (key) => context.push('/reader/$bookId?chapter=$key'),
             ),
             if (currentJob != null) ...[
               const SizedBox(height: 16),
@@ -417,6 +427,174 @@ class _DownloadStatusCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Table of contents — jump straight into any chapter from the detail page.
+class _ContentsSection extends StatelessWidget {
+  const _ContentsSection({
+    required this.tree,
+    required this.loading,
+    required this.l10n,
+    required this.onChapter,
+  });
+
+  final BookContentTree? tree;
+  final bool loading;
+  final AppLocalizations l10n;
+  final void Function(String chapterKey) onChapter;
+
+  @override
+  Widget build(BuildContext context) {
+    final chapters = tree?.chapters ?? const <BookContentChapter>[];
+    return WebSection(
+      title: l10n.chaptersHeading.toUpperCase(),
+      trailing: chapters.isEmpty
+          ? null
+          : Text(
+              '${chapters.length}',
+              style: WebTokens.sectionLabelStyle,
+            ),
+      child: WebPanel(
+        padding: EdgeInsets.zero,
+        child: loading && chapters.isEmpty
+            ? const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            : chapters.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      l10n.noChapterContentYet,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        height: 1.5,
+                      ),
+                    ),
+                  )
+                : Column(
+                    children: [
+                      for (var i = 0; i < chapters.length; i++) ...[
+                        if (i > 0) const Divider(height: 1),
+                        _TocRow(
+                          index: i + 1,
+                          chapter: chapters[i],
+                          pageLabel: l10n.pageCount(chapters[i].pages.length),
+                          onTap: () => onChapter(chapters[i].chapterKey),
+                        ),
+                      ],
+                    ],
+                  ),
+      ),
+    );
+  }
+}
+
+class _TocRow extends StatelessWidget {
+  const _TocRow({
+    required this.index,
+    required this.chapter,
+    required this.pageLabel,
+    required this.onTap,
+  });
+
+  final int index;
+  final BookContentChapter chapter;
+  final String pageLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 32,
+              child: Text(
+                '$index',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textTertiary,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                chapter.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              pageLabel,
+              style: WebTokens.sectionLabelStyle.copyWith(fontSize: 11),
+            ),
+            const SizedBox(width: 10),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: AppColors.textTertiary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Tappable author name that opens the author's other books.
+class _AuthorLink extends StatelessWidget {
+  const _AuthorLink({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: InkWell(
+        onTap: () =>
+            context.push('/author/${Uri.encodeComponent(name.trim())}'),
+        borderRadius: BorderRadius.circular(6),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.edit_note_rounded,
+                size: 18,
+                color: AppColors.primary,
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

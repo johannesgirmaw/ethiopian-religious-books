@@ -8,6 +8,7 @@ import '../../../providers/catalog_providers.dart';
 import '../../../utils/catalog_book_visuals.dart';
 import '../../../utils/catalog_categories.dart';
 import '../../../widgets/cover_badges.dart';
+import '../../../widgets/favourite_heart_button.dart';
 import '../../design/desktop_tokens.dart';
 import 'book_tile_hover.dart';
 
@@ -74,18 +75,27 @@ class DesktopBookCard extends ConsumerWidget {
                       ),
                     Positioned(
                       top: 10,
-                      right: 10,
-                      child: ReadNowBadge(label: l10n.readNow, compact: true),
-                    ),
-                    if (book.hasRating)
-                      Positioned(
-                        top: 10,
-                        left: 10,
-                        child: RatingBadge(
-                          average: book.ratingAverage,
-                          compact: true,
-                        ),
+                      left: 10,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (book.hasRating) ...[
+                            RatingBadge(
+                              average: book.ratingAverage,
+                              compact: true,
+                            ),
+                            const SizedBox(height: 5),
+                          ],
+                          ReadNowBadge(label: l10n.readNow, compact: true),
+                        ],
                       ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: FavouriteHeartButton(bookId: book.id, size: 26),
+                    ),
                     if (book.isPremium)
                       const Positioned(
                         bottom: 8,
@@ -240,6 +250,8 @@ class DesktopBookListRow extends ConsumerWidget {
                     ),
                   ),
                 ),
+              FavouriteHeartButton(bookId: book.id, size: 24),
+              const SizedBox(width: 10),
               const Icon(
                 Icons.chevron_right_rounded,
                 size: 18,

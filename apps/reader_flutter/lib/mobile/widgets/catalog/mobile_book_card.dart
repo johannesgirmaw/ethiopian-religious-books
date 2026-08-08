@@ -131,3 +131,90 @@ class MobileBookCard extends ConsumerWidget {
     return SizedBox(width: width, child: tappable);
   }
 }
+
+/// Row-style book entry for the mobile catalog list view.
+class MobileBookListRow extends ConsumerWidget {
+  const MobileBookListRow({
+    super.key,
+    required this.book,
+    required this.index,
+  });
+
+  final BookSummary book;
+  final int index;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final meta = ref.watch(catalogBookMetaProvider(book.id)).valueOrNull;
+    final progress = (meta?.progress ?? 0).clamp(0.0, 1.0);
+    final author = book.authorCompiler?.trim();
+
+    return GestureDetector(
+      onTap: () => context.push(
+        book.isBible ? '/bible/book/${book.id}' : '/book/${book.id}',
+      ),
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 54,
+              height: 72,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                child: BookCoverPoster(book: book, index: index),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    book.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  if (author != null && author.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      'by $author',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                  ],
+                  if (progress > 0) ...[
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 3,
+                        backgroundColor: AppColors.line,
+                        color: AppColors.accent,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            FavouriteHeartButton(bookId: book.id, size: 28),
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -243,6 +243,18 @@ class MobileBookDetailScreen extends ConsumerWidget {
                               ),
                             ),
                     ),
+                    const SizedBox(height: 22),
+                    AppSectionAccent(
+                      label: l10n.chaptersHeading.toUpperCase(),
+                    ),
+                    const SizedBox(height: 10),
+                    _ContentsPanel(
+                      tree: tree,
+                      loading: contentAsync.isLoading,
+                      l10n: l10n,
+                      onChapter: (key) =>
+                          context.push('/reader/$bookId?chapter=$key'),
+                    ),
                     if (currentJob != null) ...[
                       const SizedBox(height: 16),
                       _DownloadStatusCard(job: currentJob),
@@ -488,6 +500,125 @@ class _DownloadStatusCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Table of contents — jump straight into any chapter from the detail page.
+class _ContentsPanel extends StatelessWidget {
+  const _ContentsPanel({
+    required this.tree,
+    required this.loading,
+    required this.l10n,
+    required this.onChapter,
+  });
+
+  final BookContentTree? tree;
+  final bool loading;
+  final AppLocalizations l10n;
+  final void Function(String chapterKey) onChapter;
+
+  @override
+  Widget build(BuildContext context) {
+    final chapters = tree?.chapters ?? const <BookContentChapter>[];
+    if (loading && chapters.isEmpty) {
+      return const AppPanel(
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.all(12),
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      );
+    }
+    if (chapters.isEmpty) {
+      return AppPanel(
+        child: Text(
+          l10n.noChapterContentYet,
+          style: const TextStyle(color: AppColors.textSecondary, height: 1.5),
+        ),
+      );
+    }
+    return AppPanel(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          for (var i = 0; i < chapters.length; i++) ...[
+            if (i > 0) const Divider(height: 1),
+            _TocRow(
+              index: i + 1,
+              chapter: chapters[i],
+              pageLabel: l10n.pageCount(chapters[i].pages.length),
+              onTap: () => onChapter(chapters[i].chapterKey),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _TocRow extends StatelessWidget {
+  const _TocRow({
+    required this.index,
+    required this.chapter,
+    required this.pageLabel,
+    required this.onTap,
+  });
+
+  final int index;
+  final BookContentChapter chapter;
+  final String pageLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 28,
+              child: Text(
+                '$index',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textTertiary,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                chapter.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              pageLabel,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.textTertiary,
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: AppColors.textTertiary,
+            ),
+          ],
+        ),
       ),
     );
   }

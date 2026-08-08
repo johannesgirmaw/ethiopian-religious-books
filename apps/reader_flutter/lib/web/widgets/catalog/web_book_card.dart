@@ -8,6 +8,7 @@ import '../../../providers/catalog_providers.dart';
 import '../../../utils/catalog_book_visuals.dart';
 import '../../../utils/catalog_categories.dart';
 import '../../../widgets/cover_badges.dart';
+import '../../../widgets/favourite_heart_button.dart';
 import '../../design/web_tokens.dart';
 import 'book_tile_hover.dart';
 
@@ -75,15 +76,24 @@ class WebBookCard extends ConsumerWidget {
                       ),
                     Positioned(
                       top: 12,
-                      right: 12,
-                      child: ReadNowBadge(label: l10n.readNow),
-                    ),
-                    if (book.hasRating)
-                      Positioned(
-                        top: 12,
-                        left: 12,
-                        child: RatingBadge(average: book.ratingAverage),
+                      left: 12,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (book.hasRating) ...[
+                            RatingBadge(average: book.ratingAverage),
+                            const SizedBox(height: 6),
+                          ],
+                          ReadNowBadge(label: l10n.readNow),
+                        ],
                       ),
+                    ),
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: FavouriteHeartButton(bookId: book.id),
+                    ),
                     if (book.isPremium)
                       const Positioned(
                         bottom: 10,
@@ -228,6 +238,8 @@ class WebBookListRow extends ConsumerWidget {
                     style: WebTokens.sectionLabelStyle.copyWith(fontSize: 10),
                   ),
                 ),
+              FavouriteHeartButton(bookId: book.id, size: 26),
+              const SizedBox(width: 12),
               const Icon(Icons.arrow_forward_rounded, size: 18, color: AppColors.textTertiary),
             ],
           ),

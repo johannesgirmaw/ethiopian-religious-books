@@ -6,7 +6,10 @@
 #   scripts/deploy-prod.sh api        # only the Django API (rsync + rebuild + restart)
 #   scripts/deploy-prod.sh web        # only the Flutter web app (app.felegemetsahft.com)
 #   scripts/deploy-prod.sh landing    # only the Next.js landing (felegemetsahft.com)
+#   scripts/deploy-prod.sh nginx      # only the nginx gzip/MIME config (+ test + reload)
 #   scripts/deploy-prod.sh downloads  # upload installers in dist/downloads/ -> /downloads/
+#
+# `web` implies `nginx` (the bundle is served with those compression settings).
 #
 # Prereqs: SSH alias `felegemetsahft` (see ~/.ssh/config), flutter, node/npm, rsync.
 set -euo pipefail
@@ -48,6 +51,45 @@ deploy_landing() {
   ssh "$SSH_HOST" "chown -R www-data:www-data /var/www/felegemetsahft/landing"
 }
 
+deploy_nginx() {
+  echo "==> Uploading nginx compression config"
+  ssh "$SSH_HOST" "mkdir -p /etc/nginx/conf.d /etc/nginx/snippets"
+  rsync -az "$REPO_ROOT/infra/prod/nginx/conf.d/felegemetsahft-gzip.conf" \
+    "$SSH_HOST:/etc/nginx/conf.d/felegemetsahft-gzip.conf"
+  rsync -az "$REPO_ROOT/infra/prod/nginx/snippets/felegemetsahft-app-static.conf" \
+    "$SSH_HOST:/etc/nginx/snippets/felegemetsahft-app-static.conf"
+
+  # The live site file is rewritten in place by `certbot --nginx`, so we never
+  # overwrite it — we only ensure it `include`s the snippet, then test + reload.
+  # Any failure restores the previous site file before exiting non-zero.
+  echo "==> Wiring snippet into app vhost + reloading nginx"
+  ssh "$SSH_HOST" 'bash -euo pipefail -s' <<'REMOTE'
+SITE=/etc/nginx/sites-available/felegemetsahft.conf
+SNIPPET=/etc/nginx/snippets/felegemetsahft-app-static.conf
+BACKUP="$SITE.deploy-bak"
+
+cp -a "$SITE" "$BACKUP"
+
+if grep -qF "$SNIPPET" "$SITE"; then
+  echo "   include already present"
+else
+  perl -0pi -e "s{(server_name app\.felegemetsahft\.com;\n)}{\$1    include $SNIPPET;\n}" "$SITE"
+  grep -qF "$SNIPPET" "$SITE" || { echo "!! could not find app vhost to patch"; cp -a "$BACKUP" "$SITE"; exit 1; }
+  echo "   include inserted into app.felegemetsahft.com server block"
+fi
+
+if nginx -t; then
+  systemctl reload nginx
+  echo "   nginx reloaded"
+else
+  echo "!! nginx -t failed — restoring previous site config"
+  cp -a "$BACKUP" "$SITE"
+  nginx -t
+  exit 1
+fi
+REMOTE
+}
+
 deploy_downloads() {
   local dist="$REPO_ROOT/dist/downloads"
   if [ ! -d "$dist" ] || [ -z "$(ls -A "$dist" 2>/dev/null)" ]; then
@@ -65,11 +107,12 @@ deploy_downloads() {
 
 case "$target" in
   api) deploy_api ;;
-  web) deploy_web ;;
+  web) deploy_nginx; deploy_web ;;
   landing) deploy_landing ;;
+  nginx) deploy_nginx ;;
   downloads) deploy_downloads ;;
-  all) deploy_api; deploy_web; deploy_landing ;;
-  *) echo "Unknown target: $target (use: api | web | landing | downloads | all)"; exit 1 ;;
+  all) deploy_api; deploy_nginx; deploy_web; deploy_landing ;;
+  *) echo "Unknown target: $target (use: api | web | landing | nginx | downloads | all)"; exit 1 ;;
 esac
 
 echo "==> Post-deploy health checks"

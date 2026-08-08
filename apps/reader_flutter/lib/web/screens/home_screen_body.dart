@@ -195,7 +195,11 @@ class _HomeScreenBodyState extends ConsumerState<HomeScreenBody> {
         ),
         if (resumeId != null) ...[
           const SizedBox(height: 26),
-          HomeSectionHeader(title: l10n.continueReading),
+          HomeSectionHeader(
+            title: l10n.continueReading,
+            actionLabel: l10n.viewAll,
+            onAction: () => context.push('/downloads'),
+          ),
           const SizedBox(height: 12),
           WebContinueReadingStrip(bookId: resumeId),
         ],

@@ -42,6 +42,7 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
   String? _genre;
   String? _language;
   _SortMode _sort = _SortMode.titleAz;
+  bool _gridView = true;
   Timer? _searchDebounce;
 
   @override
@@ -425,7 +426,13 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
             ),
           ],
           const SizedBox(height: 20),
-          _SectionHeader(title: l10n.homeSectionExplore),
+          _SectionHeader(
+            title: l10n.homeSectionExplore,
+            trailing: _ViewModeToggle(
+              gridView: _gridView,
+              onChanged: (v) => setState(() => _gridView = v),
+            ),
+          ),
           const SizedBox(height: 4),
         ] else ...[
           const SizedBox(height: 14),
@@ -436,7 +443,7 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
           ),
           const SizedBox(height: 14),
         ],
-        _BookGrid(books: filtered, allBooks: books),
+        _BookGrid(books: filtered, allBooks: books, gridView: _gridView),
       ],
     );
   }
@@ -480,11 +487,17 @@ class _Frame extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, this.actionLabel, this.onAction});
+  const _SectionHeader({
+    required this.title,
+    this.actionLabel,
+    this.onAction,
+    this.trailing,
+  });
 
   final String title;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -514,7 +527,79 @@ class _SectionHeader extends StatelessWidget {
                 ),
               ),
             ),
+          if (trailing != null) trailing!,
         ],
+      ),
+    );
+  }
+}
+
+/// Grid/list switch for the catalog, matching the web and desktop toggle.
+class _ViewModeToggle extends StatelessWidget {
+  const _ViewModeToggle({required this.gridView, required this.onChanged});
+
+  final bool gridView;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _ViewModeButton(
+          icon: Icons.view_list_rounded,
+          tooltip: l10n.libraryViewList,
+          active: !gridView,
+          onTap: () => onChanged(false),
+        ),
+        const SizedBox(width: 4),
+        _ViewModeButton(
+          icon: Icons.grid_view_rounded,
+          tooltip: l10n.libraryViewGrid,
+          active: gridView,
+          onTap: () => onChanged(true),
+        ),
+      ],
+    );
+  }
+}
+
+class _ViewModeButton extends StatelessWidget {
+  const _ViewModeButton({
+    required this.icon,
+    required this.tooltip,
+    required this.active,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.all(7),
+          decoration: BoxDecoration(
+            color: active ? AppColors.primary : AppColors.surfaceSoft,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            border: Border.all(
+              color: active ? AppColors.primary : AppColors.line,
+            ),
+          ),
+          child: Icon(
+            icon,
+            size: 17,
+            color: active ? Colors.white : AppColors.textSecondary,
+          ),
+        ),
       ),
     );
   }
@@ -559,10 +644,21 @@ class _SheetChip extends StatelessWidget {
 }
 
 class _BookGrid extends StatelessWidget {
-  const _BookGrid({required this.books, required this.allBooks});
+  const _BookGrid({
+    required this.books,
+    required this.allBooks,
+    this.gridView = true,
+  });
 
   final List<BookSummary> books;
   final List<BookSummary> allBooks;
+  final bool gridView;
+
+  /// Stable index into the full list keeps gradient assignment consistent.
+  int _globalIndex(int i) {
+    final g = allBooks.indexOf(books[i]);
+    return g < 0 ? i : g;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -574,6 +670,24 @@ class _BookGrid extends StatelessWidget {
           title: l10n.noMatchingBooksTitle,
           message: l10n.noMatchingBooksMessage,
           icon: Icons.search_off_rounded,
+        ),
+      );
+    }
+    if (!gridView) {
+      return ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(
+          AppLayout.pageHorizontal,
+          10,
+          AppLayout.pageHorizontal,
+          8,
+        ),
+        itemCount: books.length,
+        separatorBuilder: (_, _) => const Divider(height: 1),
+        itemBuilder: (context, i) => MobileBookListRow(
+          book: books[i],
+          index: _globalIndex(i),
         ),
       );
     }
