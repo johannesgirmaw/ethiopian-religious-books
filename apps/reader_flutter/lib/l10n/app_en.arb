@@ -10,6 +10,28 @@
   "clear": "Clear",
   "search": "Search",
   "goBack": "Go back",
+  "pdfReaderTitle": "PDF reader",
+  "pdfLoadingLabel": "Loading PDF…",
+  "pdfOpenFailed": "Could not open PDF",
+  "pdfNotAPdfBook": "This book is not a PDF document.",
+  "pdfDocumentSection": "PDF document",
+  "pdfPickFile": "Choose PDF",
+  "pdfReplaceFile": "Replace PDF",
+  "pdfUploadHint": "Upload a PDF (max 100 MB). Save the book first, then attach the file.",
+  "pdfReadyLabel": "PDF ready: {filename} ({size})",
+  "@pdfReadyLabel": {
+    "placeholders": {
+      "filename": {"type": "String"},
+      "size": {"type": "String"}
+    }
+  },
+  "pdfPendingUpload": "PDF selected — will upload when you save.",
+  "pdfUploadFailed": "Could not upload the PDF.",
+  "pdfUploadSuccess": "PDF uploaded.",
+  "pdfBookTypeLabel": "PDF document book",
+  "pdfBookTypeHelp": "Readers open this book in the PDF viewer instead of the chapter reader.",
+  "openPdfBook": "Open PDF",
+  "pdfNoChaptersHint": "This book is a PDF document. Open it to read.",
   "generalCategory": "General",
   "loginFailed": "Login failed",
   "registrationFailed": "Registration failed",

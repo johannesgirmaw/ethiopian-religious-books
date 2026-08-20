@@ -158,6 +158,102 @@ abstract class AppLocalizations {
   /// **'Go back'**
   String get goBack;
 
+  /// No description provided for @pdfReaderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF reader'**
+  String get pdfReaderTitle;
+
+  /// No description provided for @pdfLoadingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading PDF…'**
+  String get pdfLoadingLabel;
+
+  /// No description provided for @pdfOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open PDF'**
+  String get pdfOpenFailed;
+
+  /// No description provided for @pdfNotAPdfBook.
+  ///
+  /// In en, this message translates to:
+  /// **'This book is not a PDF document.'**
+  String get pdfNotAPdfBook;
+
+  /// No description provided for @pdfDocumentSection.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF document'**
+  String get pdfDocumentSection;
+
+  /// No description provided for @pdfPickFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose PDF'**
+  String get pdfPickFile;
+
+  /// No description provided for @pdfReplaceFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace PDF'**
+  String get pdfReplaceFile;
+
+  /// No description provided for @pdfUploadHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload a PDF (max 100 MB). Save the book first, then attach the file.'**
+  String get pdfUploadHint;
+
+  /// No description provided for @pdfReadyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF ready: {filename} ({size})'**
+  String pdfReadyLabel(String filename, String size);
+
+  /// No description provided for @pdfPendingUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF selected — will upload when you save.'**
+  String get pdfPendingUpload;
+
+  /// No description provided for @pdfUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not upload the PDF.'**
+  String get pdfUploadFailed;
+
+  /// No description provided for @pdfUploadSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF uploaded.'**
+  String get pdfUploadSuccess;
+
+  /// No description provided for @pdfBookTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF document book'**
+  String get pdfBookTypeLabel;
+
+  /// No description provided for @pdfBookTypeHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Readers open this book in the PDF viewer instead of the chapter reader.'**
+  String get pdfBookTypeHelp;
+
+  /// No description provided for @openPdfBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Open PDF'**
+  String get openPdfBook;
+
+  /// No description provided for @pdfNoChaptersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This book is a PDF document. Open it to read.'**
+  String get pdfNoChaptersHint;
+
   /// No description provided for @generalCategory.
   ///
   /// In en, this message translates to:

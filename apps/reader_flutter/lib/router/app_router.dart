@@ -17,6 +17,7 @@ import '../screens/author_books_screen.dart';
 import '../screens/favourites_screen.dart';
 import '../screens/notifications_screen.dart';
 import '../screens/payment_screen.dart';
+import '../screens/pdf_reader_screen.dart';
 import '../screens/purchases_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/auth_route_shell.dart';
@@ -303,7 +304,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           if (items == null) return null;
           for (final b in items) {
             if (b.id == id) {
-              return b.isBible ? '/bible/book/$id' : null;
+              if (b.isBible) return '/bible/book/$id';
+              if (b.isPdf) return null; // detail still useful; reader opens via /pdf
+              return null;
             }
           }
           return null;
@@ -352,6 +355,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/reader/:id',
         parentNavigatorKey: rootNavigatorKey,
+        redirect: (context, state) {
+          final id = state.pathParameters['id'];
+          if (id == null) return null;
+          final items = ref.read(catalogProvider).valueOrNull?.items;
+          if (items == null) return null;
+          for (final b in items) {
+            if (b.id == id && b.isPdf) return '/pdf/$id';
+          }
+          return null;
+        },
         pageBuilder: (context, state) {
           final id = state.pathParameters['id']!;
           final chapter = state.uri.queryParameters['chapter'];
@@ -370,6 +383,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                 showChapterPicker: showChapterPicker,
               ),
             ),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/pdf/:id',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return _fadeSlide(
+            key: state.pageKey,
+            child: PdfReaderScreen(bookId: id),
           );
         },
       ),

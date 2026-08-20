@@ -39,6 +39,58 @@ class AppLocalizationsAm extends AppLocalizations {
   String get goBack => 'ተመለስ';
 
   @override
+  String get pdfReaderTitle => 'የ PDF አንባቢ';
+
+  @override
+  String get pdfLoadingLabel => 'PDF በመጫን ላይ…';
+
+  @override
+  String get pdfOpenFailed => 'PDF መክፈት አልተቻለም';
+
+  @override
+  String get pdfNotAPdfBook => 'ይህ መጽሐፍ PDF አይደለም።';
+
+  @override
+  String get pdfDocumentSection => 'PDF ሰነድ';
+
+  @override
+  String get pdfPickFile => 'PDF ምረጥ';
+
+  @override
+  String get pdfReplaceFile => 'PDF ቀይር';
+
+  @override
+  String get pdfUploadHint =>
+      'PDF ስቀል (ከፍተኛ 100 ሜባ)። መጀመሪያ መጽሐፉን አስቀምጥ፣ ከዚያ ፋይሉን አያይዝ።';
+
+  @override
+  String pdfReadyLabel(String filename, String size) {
+    return 'PDF ዝግጁ ነው፦ $filename ($size)';
+  }
+
+  @override
+  String get pdfPendingUpload => 'PDF ተመርጧል — ሲያስቀምጡ ይሰቀላል።';
+
+  @override
+  String get pdfUploadFailed => 'PDF መስቀል አልተቻለም።';
+
+  @override
+  String get pdfUploadSuccess => 'PDF ተሰቅሏል።';
+
+  @override
+  String get pdfBookTypeLabel => 'የ PDF መጽሐፍ';
+
+  @override
+  String get pdfBookTypeHelp =>
+      'አንባቢዎች ይህን መጽሐፍ በ PDF አንባቢ ይከፍታሉ እንጂ በምዕራፍ አንባቢ አይደለም።';
+
+  @override
+  String get openPdfBook => 'PDF ክፈት';
+
+  @override
+  String get pdfNoChaptersHint => 'ይህ መጽሐፍ PDF ሰነድ ነው። ለማንበብ ይክፈቱት።';
+
+  @override
   String get generalCategory => 'አጠቃላይ';
 
   @override

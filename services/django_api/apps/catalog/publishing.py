@@ -547,6 +547,24 @@ def publish_book(book: Book, user, revision_id: UUID | None = None) -> PublishBo
             .first()
         )
 
+    # PDF books: binary package only — no chapters_draft / HTML index rebuild.
+    from apps.catalog.pdf_books import (
+        PdfBookError,
+        is_pdf_revision,
+        publish_pdf_revision,
+    )
+
+    if is_pdf_revision(rev):
+        try:
+            publish_pdf_revision(book, rev)
+        except PdfBookError as exc:
+            return PublishBookOutcome(
+                ok=False,
+                error={"error": {"code": exc.code, "message": exc.message}},
+                status_code=exc.status_code,
+            )
+        return PublishBookOutcome(ok=True, book=book)
+
     if rev is not None and sync_book_chapters_draft_from_revision(book, rev):
         synced_from_db = True
 

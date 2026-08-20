@@ -131,7 +131,13 @@ class BookDetailBody extends ConsumerWidget {
                     onRead: () async {
                       if (await ensureBookUnlocked(context, ref, book) &&
                           context.mounted) {
-                        context.push('/reader/$bookId?pickChapter=1');
+                        context.push(
+                          readingPathForBook(
+                            bookId,
+                            isPdf: book.isPdf,
+                            query: 'pickChapter=1',
+                          ),
+                        );
                       }
                     },
                   ),
@@ -178,12 +184,32 @@ class BookDetailBody extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 28),
-            _ContentsSection(
-              tree: tree,
-              loading: contentAsync.isLoading,
-              l10n: l10n,
-              onChapter: (key) => context.push('/reader/$bookId?chapter=$key'),
-            ),
+            if (book.isPdf)
+              WebSection(
+                title: l10n.pdfDocumentSection.toUpperCase(),
+                child: WebPanel(
+                  child: Text(
+                    l10n.pdfNoChaptersHint,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+              )
+            else
+              _ContentsSection(
+                tree: tree,
+                loading: contentAsync.isLoading,
+                l10n: l10n,
+                onChapter: (key) => context.push(
+                  readingPathForBook(
+                    bookId,
+                    isPdf: false,
+                    query: 'chapter=$key',
+                  ),
+                ),
+              ),
             if (currentJob != null) ...[
               const SizedBox(height: 16),
               _DownloadStatusCard(job: currentJob),

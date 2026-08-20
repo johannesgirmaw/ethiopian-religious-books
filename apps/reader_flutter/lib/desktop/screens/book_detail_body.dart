@@ -91,7 +91,13 @@ class DesktopBookDetailBody extends ConsumerWidget {
           onRead: () async {
             if (await ensureBookUnlocked(context, ref, book) &&
                 context.mounted) {
-              context.push('/reader/$bookId?pickChapter=1');
+              context.push(
+                readingPathForBook(
+                  bookId,
+                  isPdf: book.isPdf,
+                  query: 'pickChapter=1',
+                ),
+              );
             }
           },
           onDownload: () => _downloadSample(context, ref),
@@ -105,13 +111,29 @@ class DesktopBookDetailBody extends ConsumerWidget {
           pageCount: pageCount,
         );
         final about = _AboutSection(book: book, l10n: l10n);
-        final contents = _ContentsSection(
-          tree: tree,
-          loading: contentAsync.isLoading,
-          l10n: l10n,
-          onChapter: (key) => context.push('/reader/$bookId?chapter=$key'),
-          onReadStart: () => context.push('/reader/$bookId?pickChapter=1'),
-        );
+        final contents = book.isPdf
+            ? Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text(
+                  l10n.pdfNoChaptersHint,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              )
+            : _ContentsSection(
+                tree: tree,
+                loading: contentAsync.isLoading,
+                l10n: l10n,
+                onChapter: (key) => context.push(
+                  readingPathForBook(bookId, isPdf: false, query: 'chapter=$key'),
+                ),
+                onReadStart: () => context.push(
+                  readingPathForBook(
+                    bookId,
+                    isPdf: false,
+                    query: 'pickChapter=1',
+                  ),
+                ),
+              );
 
         if (!twoColumn) {
           return SingleChildScrollView(

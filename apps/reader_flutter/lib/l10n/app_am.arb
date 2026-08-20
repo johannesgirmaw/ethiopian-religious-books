@@ -10,6 +10,28 @@
   "clear": "አጽዳ",
   "search": "ፈልግ",
   "goBack": "ተመለስ",
+  "pdfReaderTitle": "የ PDF አንባቢ",
+  "pdfLoadingLabel": "PDF በመጫን ላይ…",
+  "pdfOpenFailed": "PDF መክፈት አልተቻለም",
+  "pdfNotAPdfBook": "ይህ መጽሐፍ PDF አይደለም።",
+  "pdfDocumentSection": "PDF ሰነድ",
+  "pdfPickFile": "PDF ምረጥ",
+  "pdfReplaceFile": "PDF ቀይር",
+  "pdfUploadHint": "PDF ስቀል (ከፍተኛ 100 ሜባ)። መጀመሪያ መጽሐፉን አስቀምጥ፣ ከዚያ ፋይሉን አያይዝ።",
+  "pdfReadyLabel": "PDF ዝግጁ ነው፦ {filename} ({size})",
+  "@pdfReadyLabel": {
+    "placeholders": {
+      "filename": {"type": "String"},
+      "size": {"type": "String"}
+    }
+  },
+  "pdfPendingUpload": "PDF ተመርጧል — ሲያስቀምጡ ይሰቀላል።",
+  "pdfUploadFailed": "PDF መስቀል አልተቻለም።",
+  "pdfUploadSuccess": "PDF ተሰቅሏል።",
+  "pdfBookTypeLabel": "የ PDF መጽሐፍ",
+  "pdfBookTypeHelp": "አንባቢዎች ይህን መጽሐፍ በ PDF አንባቢ ይከፍታሉ እንጂ በምዕራፍ አንባቢ አይደለም።",
+  "openPdfBook": "PDF ክፈት",
+  "pdfNoChaptersHint": "ይህ መጽሐፍ PDF ሰነድ ነው። ለማንበብ ይክፈቱት።",
   "generalCategory": "አጠቃላይ",
   "loginFailed": "መግባት አልተሳካም",
   "registrationFailed": "መመዝገብ አልተሳካም",

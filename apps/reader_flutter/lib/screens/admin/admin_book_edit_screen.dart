@@ -74,6 +74,10 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   // What the backend has persisted — content management needs the book saved as
   // a Bible book first (an unsaved toggle isn't a Bible book server-side yet).
   bool _persistedIsBible = false;
+  bool _isPdfBook = false;
+  AdminPdfDraft? _serverPdfDraft;
+  Uint8List? _pendingPdfBytes;
+  String? _pendingPdfFilename;
   String? _testament; // 'old' | 'new'
   bool _isPremium = false;
   bool _isFeatured = false;
@@ -230,6 +234,8 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     _genre = b.genre;
     _isBible = b.isBible;
     _persistedIsBible = b.isBible;
+    _isPdfBook = b.isPdfBook;
+    _serverPdfDraft = b.pdfDraft;
     _testament = (b.testamentType?.isNotEmpty ?? false) ? b.testamentType : null;
     _isPremium = b.isPremium;
     _isFeatured = b.isFeatured;
@@ -404,6 +410,65 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
         data: {'cover_object_key': ''},
       );
     }
+  }
+
+  Future<void> _uploadPdfForBook(Dio api, String bookId) async {
+    final bytes = _pendingPdfBytes;
+    if (bytes == null || bytes.isEmpty) return;
+    final filename = _pendingPdfFilename ?? 'content.pdf';
+    final pres = await api.post<Map<String, dynamic>>(
+      'admin/books/$bookId/pdf/presign',
+      data: {
+        'content_type': 'application/pdf',
+        'filename': filename,
+      },
+    );
+    final data = pres.data;
+    if (data == null) throw StateError('Empty PDF presign response');
+    final putUrl = data['put_url'] as String?;
+    final revisionId = data['revision_id'] as String?;
+    if (putUrl == null || revisionId == null) {
+      throw StateError('Invalid PDF presign response');
+    }
+    final plain = Dio(
+      BaseOptions(
+        connectTimeout: const Duration(seconds: 60),
+        receiveTimeout: const Duration(minutes: 5),
+      ),
+    );
+    await plain.put<dynamic>(
+      putUrl,
+      data: bytes,
+      options: Options(headers: {'Content-Type': 'application/pdf'}),
+    );
+    await api.post<Map<String, dynamic>>(
+      'admin/books/$bookId/pdf/complete',
+      data: {
+        'revision_id': revisionId,
+        'filename': filename,
+      },
+    );
+    _pendingPdfBytes = null;
+    _pendingPdfFilename = null;
+  }
+
+  Future<void> _pickPdfFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['pdf'],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.first;
+    final bytes = file.bytes;
+    if (bytes == null || bytes.isEmpty) return;
+    setState(() {
+      _isPdfBook = true;
+      _isBible = false;
+      _pendingPdfBytes = bytes;
+      _pendingPdfFilename = file.name;
+      _markDirty();
+    });
   }
 
   Future<void> _upsertChapter({int? index}) async {
@@ -628,7 +693,8 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     if (form == null || !form.validate()) return;
     // Bible books have no page-based chapters (content is verses, managed in the
     // Bible workspace); skip the page-chapter validation for them.
-    if (!_isBible) {
+    // PDF books use a binary package instead of chapters.
+    if (!_isBible && !_isPdfBook) {
       final chaptersError = _validateChaptersDraft(l10n);
       if (chaptersError != null) {
         setState(() => _error = chaptersError);
@@ -679,6 +745,9 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
         if (newId != null && kAdminCoverUploadEnabled) {
           await _uploadCoverForBook(dio, newId);
         }
+        if (newId != null && _isPdfBook) {
+          await _uploadPdfForBook(dio, newId);
+        }
       } else {
         final bookId = widget.bookId!;
         final res = await dio.patch<Map<String, dynamic>>(
@@ -714,6 +783,9 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
         _applyChaptersFromResponse(res.data);
         if (kAdminCoverUploadEnabled) {
           await _uploadCoverForBook(dio, bookId);
+        }
+        if (_isPdfBook) {
+          await _uploadPdfForBook(dio, bookId);
         }
       }
       ref.invalidate(adminBooksProvider);
@@ -841,11 +913,36 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
           onChanged: (v) {
             setState(() {
               _isBible = v;
+              if (v) {
+                _isPdfBook = false;
+                _pendingPdfBytes = null;
+                _pendingPdfFilename = null;
+              }
               if (!v) _testament = null;
             });
             _markDirty();
           },
         ),
+        if (!_isBible)
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: Text(l10n.pdfBookTypeLabel),
+            subtitle: Text(l10n.pdfBookTypeHelp),
+            value: _isPdfBook,
+            onChanged: (v) {
+              setState(() {
+                _isPdfBook = v;
+                if (v) {
+                  _isBible = false;
+                  _testament = null;
+                } else {
+                  _pendingPdfBytes = null;
+                  _pendingPdfFilename = null;
+                }
+              });
+              _markDirty();
+            },
+          ),
         if (_isBible) ...[
           const SizedBox(height: 8),
           DropdownButtonFormField<String?>(
@@ -950,8 +1047,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
         ),
       );
 
-  /// Right-pane content: the Bible workspace for Bible books, else the
-  /// page-based chapters editor.
+  /// Right-pane content: Bible workspace, PDF upload, or chapter editor.
   Widget _rightContentPane(
       BuildContext context, AppLocalizations l10n, bool isNew) {
     if (_isBible) {
@@ -959,6 +1055,12 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
         return _contentHint(Icons.menu_book_outlined, l10n.adminBibleSaveFirst);
       }
       return BibleContentWorkspace(bookId: widget.bookId!);
+    }
+    if (_isPdfBook) {
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+        children: _pdfSectionChildren(context, l10n, isNew),
+      );
     }
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
@@ -968,6 +1070,72 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
         ..._pagesSectionChildren(context, l10n, isNew),
       ],
     );
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    }
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  List<Widget> _pdfSectionChildren(
+    BuildContext context,
+    AppLocalizations l10n,
+    bool isNew,
+  ) {
+    final pendingName = _pendingPdfFilename;
+    final server = _serverPdfDraft;
+    return [
+      AppSectionHeader(title: l10n.pdfDocumentSection),
+      const SizedBox(height: 8),
+      Text(
+        l10n.pdfUploadHint,
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
+      const SizedBox(height: 16),
+      if (pendingName != null) ...[
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.picture_as_pdf_outlined),
+          title: Text(pendingName),
+          subtitle: Text(l10n.pdfPendingUpload),
+        ),
+      ] else if (server != null && server.ready) ...[
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.picture_as_pdf_outlined),
+          title: Text(
+            l10n.pdfReadyLabel(
+              server.filename,
+              _formatBytes(server.sizeBytes),
+            ),
+          ),
+        ),
+      ],
+      Align(
+        alignment: Alignment.centerLeft,
+        child: FilledButton.tonalIcon(
+          onPressed: _busy ? null : _pickPdfFile,
+          icon: const Icon(Icons.upload_file_outlined),
+          label: Text(
+            (server?.ready == true || pendingName != null)
+                ? l10n.pdfReplaceFile
+                : l10n.pdfPickFile,
+          ),
+        ),
+      ),
+      if (isNew) ...[
+        const SizedBox(height: 12),
+        Text(
+          l10n.pdfUploadHint,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppColors.textTertiary,
+              ),
+        ),
+      ],
+    ];
   }
 
   List<Widget> _pagesSectionChildren(
@@ -1477,9 +1645,13 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                     onChanged: (_) => _markDirty(),
                   ),
                 ),
-                if (!twoPane && !_isBible) ...[
+                if (!twoPane && !_isBible && !_isPdfBook) ...[
                 const SizedBox(height: 18),
                   ..._pagesSectionChildren(context, l10n, isNew),
+                ],
+                if (!twoPane && !_isBible && _isPdfBook) ...[
+                  const SizedBox(height: 18),
+                  ..._pdfSectionChildren(context, l10n, isNew),
                 ],
                 if (_error != null) ...[
                   const SizedBox(height: 16),

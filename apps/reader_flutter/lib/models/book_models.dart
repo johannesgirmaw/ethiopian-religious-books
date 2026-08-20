@@ -87,6 +87,10 @@ class BookSummary {
   /// reader) and are shown only under the "Bible" catalogue category.
   final bool isBible;
 
+  /// True when the published package is a PDF document (not chapter text).
+  bool get isPdf =>
+      (publishedRevision?.contentFormat ?? '').toLowerCase() == 'pdf';
+
   /// "old" | "new" | null — only meaningful when [isBible].
   final String? testamentType;
   final int? publishedYear;

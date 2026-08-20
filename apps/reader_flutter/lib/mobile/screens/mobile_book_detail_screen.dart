@@ -244,17 +244,35 @@ class MobileBookDetailScreen extends ConsumerWidget {
                             ),
                     ),
                     const SizedBox(height: 22),
-                    AppSectionAccent(
-                      label: l10n.chaptersHeading.toUpperCase(),
-                    ),
-                    const SizedBox(height: 10),
-                    _ContentsPanel(
-                      tree: tree,
-                      loading: contentAsync.isLoading,
-                      l10n: l10n,
-                      onChapter: (key) =>
-                          context.push('/reader/$bookId?chapter=$key'),
-                    ),
+                    if (book.isPdf) ...[
+                      AppSectionAccent(
+                        label: l10n.pdfDocumentSection.toUpperCase(),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        l10n.pdfNoChaptersHint,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                      ),
+                    ] else ...[
+                      AppSectionAccent(
+                        label: l10n.chaptersHeading.toUpperCase(),
+                      ),
+                      const SizedBox(height: 10),
+                      _ContentsPanel(
+                        tree: tree,
+                        loading: contentAsync.isLoading,
+                        l10n: l10n,
+                        onChapter: (key) => context.push(
+                          readingPathForBook(
+                            bookId,
+                            isPdf: false,
+                            query: 'chapter=$key',
+                          ),
+                        ),
+                      ),
+                    ],
                     if (currentJob != null) ...[
                       const SizedBox(height: 16),
                       _DownloadStatusCard(job: currentJob),
@@ -309,7 +327,13 @@ class MobileBookDetailScreen extends ConsumerWidget {
                         onPressed: () async {
                           if (await ensureBookUnlocked(context, ref, book) &&
                               context.mounted) {
-                            context.push('/reader/$bookId?pickChapter=1');
+                            context.push(
+                              readingPathForBook(
+                                bookId,
+                                isPdf: book.isPdf,
+                                query: 'pickChapter=1',
+                              ),
+                            );
                           }
                         },
                         style: FilledButton.styleFrom(
@@ -324,7 +348,9 @@ class MobileBookDetailScreen extends ConsumerWidget {
                         icon: Icon(
                           mustBuy
                               ? Icons.shopping_cart_outlined
-                              : Icons.menu_book_rounded,
+                              : (book.isPdf
+                                  ? Icons.picture_as_pdf_outlined
+                                  : Icons.menu_book_rounded),
                           size: 20,
                         ),
                         label: Text(

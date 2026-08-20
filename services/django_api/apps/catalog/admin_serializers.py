@@ -6,6 +6,7 @@ from rest_framework import serializers
 from apps.catalog.docx_import import ALL_MODES
 from apps.catalog.models import Book, BookReviewNote, BookRevision, BookTag, Tag
 from apps.catalog.publishing import normalize_chapters_draft, review_comment_plain
+from apps.catalog.pdf_books import pdf_draft_summary
 from apps.catalog.storage_s3 import presign_get
 
 logger = logging.getLogger(__name__)
@@ -113,10 +114,12 @@ class AdminReviewRejectSerializer(serializers.Serializer):
 
 class AdminBookSerializer(serializers.ModelSerializer):
     published_revision_number = serializers.SerializerMethodField()
+    published_content_format = serializers.SerializerMethodField()
     cover_get_url = serializers.SerializerMethodField()
     tag_slugs = serializers.SerializerMethodField()
     final_price = serializers.SerializerMethodField()
     latest_review_note = serializers.SerializerMethodField()
+    pdf_draft = serializers.SerializerMethodField()
 
     def get_latest_review_note(self, obj: Book):
         note = obj.review_notes.first()
@@ -129,6 +132,13 @@ class AdminBookSerializer(serializers.ModelSerializer):
     def get_published_revision_number(self, obj: Book):
         rev = getattr(obj, "published_revision", None)
         return rev.revision_number if rev is not None else None
+
+    def get_published_content_format(self, obj: Book) -> str | None:
+        rev = getattr(obj, "published_revision", None)
+        return rev.content_format if rev is not None else None
+
+    def get_pdf_draft(self, obj: Book):
+        return pdf_draft_summary(obj)
 
     def get_tag_slugs(self, obj: Book):
         return list(
@@ -180,6 +190,8 @@ class AdminBookSerializer(serializers.ModelSerializer):
             "cover_get_url",
             "published_revision_id",
             "published_revision_number",
+            "published_content_format",
+            "pdf_draft",
             "tag_slugs",
             "created_by_id",
             "created_at",
@@ -193,6 +205,9 @@ class AdminBookSerializer(serializers.ModelSerializer):
             "review_status",
             "latest_review_note",
             "published_revision_id",
+            "published_revision_number",
+            "published_content_format",
+            "pdf_draft",
             "cover_object_key",
             "cover_get_url",
             "tag_slugs",

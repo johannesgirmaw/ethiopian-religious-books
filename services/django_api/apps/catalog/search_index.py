@@ -86,6 +86,10 @@ def rebuild_revision_index(revision: BookRevision) -> None:
     BookPage.objects.filter(revision=revision).delete()
     BookContentIndex.objects.filter(revision=revision).delete()
 
+    # PDF packages have no text index in MVP.
+    if (revision.content_format or "") == "pdf":
+        return
+
     # Fresh row so we never read a stale cached ``revision.book`` after sync_book_chapters_draft_from_revision.
     book = Book.objects.get(pk=revision.book_id)
 

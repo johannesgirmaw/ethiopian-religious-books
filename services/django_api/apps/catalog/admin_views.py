@@ -51,7 +51,12 @@ from apps.catalog.review import (
     withdraw_review,
 )
 from apps.catalog.search_normalization import normalize_search_text
-from apps.catalog.storage_s3 import head_object, presign_put, put_bytes
+from apps.catalog.storage_s3 import head_object, is_object_storage_configured, presign_put, put_bytes
+from apps.catalog.pdf_books import (
+    PdfBookError,
+    complete_pdf_upload,
+    create_pdf_draft_revision,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -382,6 +387,129 @@ class AdminBookCoverPresignView(APIView):
         return Response({"object_key": object_key, "put_url": put_url})
 
 
+class AdminBookPdfPresignView(APIView):
+    """Create a draft PDF revision and return a presigned PUT URL for the file."""
+
+    permission_classes = [IsPublisherOrAuthor]
+
+    def post(self, request, book_id):
+        book = get_object_or_404(Book, pk=book_id)
+        if book.catalog_visibility == Book.Visibility.PUBLISHED:
+            return Response(
+                {
+                    "error": {
+                        "code": "BOOK_PUBLISHED",
+                        "message": "Unpublish this book before editing.",
+                    }
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        if book.is_bible:
+            return Response(
+                {
+                    "error": {
+                        "code": "BIBLE_BOOK",
+                        "message": "Bible books cannot use PDF packages.",
+                    }
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not can_manage_book(book, request.user):
+            return _not_book_creator_response()
+        if not is_object_storage_configured():
+            return Response(
+                {
+                    "error": {
+                        "code": "STORAGE_UNAVAILABLE",
+                        "message": "Object storage is not configured for PDF uploads.",
+                    }
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        content_type = (request.data.get("content_type") or "application/pdf").strip().lower()
+        if content_type != "application/pdf":
+            return Response(
+                {
+                    "error": {
+                        "code": "INVALID_CONTENT_TYPE",
+                        "message": "Use application/pdf.",
+                    }
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        filename = (request.data.get("filename") or "content.pdf").strip() or "content.pdf"
+        try:
+            rev, object_key, put_ct = create_pdf_draft_revision(
+                book, request.user, filename=filename
+            )
+            put_url = presign_put(object_key, content_type=put_ct)
+        except PdfBookError as exc:
+            return Response(
+                {"error": {"code": exc.code, "message": exc.message}},
+                status=exc.status_code,
+            )
+        except Exception as exc:
+            logger.exception("pdf presign failed: %s", exc)
+            return Response(
+                {
+                    "error": {
+                        "code": "PRESIGN_FAILED",
+                        "message": "Could not create upload URL.",
+                    }
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        return Response(
+            {
+                "revision_id": str(rev.id),
+                "object_key": object_key,
+                "put_url": put_url,
+                "content_type": put_ct,
+                "max_bytes": 100 * 1024 * 1024,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class AdminBookPdfCompleteView(APIView):
+    """Validate uploaded PDF bytes and write the thin manifest."""
+
+    permission_classes = [IsPublisherOrAuthor]
+
+    def post(self, request, book_id):
+        book = get_object_or_404(Book, pk=book_id)
+        if not can_manage_book(book, request.user):
+            return _not_book_creator_response()
+        revision_id = request.data.get("revision_id")
+        if not revision_id:
+            return Response(
+                {
+                    "error": {
+                        "code": "REVISION_REQUIRED",
+                        "message": "revision_id is required.",
+                    }
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        rev = get_object_or_404(BookRevision, pk=revision_id, book=book)
+        filename = (request.data.get("filename") or "content.pdf").strip()
+        sha = (request.data.get("content_sha256") or "").strip()
+        try:
+            complete_pdf_upload(rev, filename=filename, content_sha256=sha)
+        except PdfBookError as exc:
+            return Response(
+                {"error": {"code": exc.code, "message": exc.message}},
+                status=exc.status_code,
+            )
+        return Response(
+            {
+                "status": "draft_validated",
+                "revision_id": str(rev.id),
+                "total_bytes": rev.total_bytes,
+            }
+        )
+
+
 class AdminBookDraftValidationView(APIView):
     permission_classes = [IsPublisherOrAuthor]
 
@@ -391,6 +519,31 @@ class AdminBookDraftValidationView(APIView):
             return _not_book_creator_response()
         if book.is_bible:
             return Response(validate_bible_draft(book))
+        from apps.catalog.pdf_books import latest_pdf_draft, pdf_draft_summary
+
+        pdf = latest_pdf_draft(book)
+        if pdf is not None:
+            summary = pdf_draft_summary(book) or {}
+            warnings = []
+            if not summary.get("ready"):
+                warnings.append(
+                    {
+                        "code": "PDF_INCOMPLETE",
+                        "message": "Upload and complete the PDF package before publishing.",
+                    }
+                )
+            return Response(
+                {
+                    "stats": {
+                        "chapters": 0,
+                        "pages": 0,
+                        "pdf": 1,
+                        "pdf_ready": bool(summary.get("ready")),
+                        "pdf_bytes": int(summary.get("size_bytes") or 0),
+                    },
+                    "warnings": warnings,
+                }
+            )
         chapters_draft = book.chapters_draft if isinstance(book.chapters_draft, list) else []
         return Response(validate_draft_warnings(chapters_draft))
 

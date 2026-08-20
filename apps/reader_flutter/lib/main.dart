@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdfrx/pdfrx.dart';
 
 import 'app.dart';
 import 'config/app_config.dart';
@@ -10,6 +11,7 @@ import 'storage/number_system_storage.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await pdfrxFlutterInitialize(dismissPdfiumWasmWarnings: true);
   await AppConfig.ensureInitialized();
   final code = await AppLocaleStorage.readLanguageCode();
   appLocaleBootOverride =

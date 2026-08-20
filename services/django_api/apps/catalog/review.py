@@ -65,12 +65,42 @@ def _draft_is_publishable(book: Book) -> dict[str, Any] | None:
         if int((validation.get("stats") or {}).get("verses", 0)) == 0:
             return validation
         return None
+
+    # PDF books: require a completed PDF package, not chapters/pages.
+    from apps.catalog.pdf_books import latest_pdf_draft, pdf_draft_summary
+
+    pdf_rev = latest_pdf_draft(book)
+    if pdf_rev is not None:
+        summary = pdf_draft_summary(book) or {}
+        if summary.get("ready"):
+            return None
+        return {
+            "stats": {
+                "chapters": 0,
+                "pages": 0,
+                "pdf": 1,
+                "pdf_ready": False,
+            },
+            "warnings": [
+                "Upload and complete the PDF package before sending for review."
+            ],
+        }
+
     chapters = book.chapters_draft if isinstance(book.chapters_draft, list) else []
     validation = validate_draft_warnings(chapters)
     stats = validation.get("stats") or {}
     if int(stats.get("chapters", 0)) == 0 or int(stats.get("pages", 0)) == 0:
         return validation
     return None
+
+
+def _invalid_draft_message(validation: dict[str, Any]) -> str:
+    stats = validation.get("stats") or {}
+    if int(stats.get("pdf", 0)) > 0:
+        return "Upload and complete the PDF before sending for review."
+    if "verses" in stats:
+        return "Add Bible verse content before sending for review."
+    return "Add chapters and pages before sending for review."
 
 
 def submit_for_review(book: Book, user) -> ReviewOutcome:
@@ -92,7 +122,7 @@ def submit_for_review(book: Book, user) -> ReviewOutcome:
                 error={
                     "error": {
                         "code": "INVALID_DRAFT",
-                        "message": "Add chapters and pages before sending for review.",
+                        "message": _invalid_draft_message(invalid),
                     },
                     "validation": invalid,
                 },

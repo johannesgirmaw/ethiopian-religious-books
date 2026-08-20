@@ -175,3 +175,17 @@ def get_object_bytes(object_key: str) -> bytes:
     if body is None:
         return b""
     return body.read()
+
+
+def get_object_range(object_key: str, start: int, end: int) -> bytes:
+    """Read an inclusive byte range from an object (for magic-byte checks, etc.)."""
+    client = get_s3_client(for_presign=False)
+    obj = client.get_object(
+        Bucket=settings.AWS_STORAGE_BUCKET_NAME,
+        Key=object_key,
+        Range=f"bytes={start}-{end}",
+    )
+    body = obj.get("Body")
+    if body is None:
+        return b""
+    return body.read()

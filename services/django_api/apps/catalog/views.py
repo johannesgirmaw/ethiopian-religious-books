@@ -522,6 +522,17 @@ class BookContentView(APIView):
         if rev is None or not settings.FEATURE_BOOK_CONTENT_INDEX:
             return Response({"chapters": [], "total_pages": 0})
 
+        from apps.catalog.pdf_books import is_pdf_revision
+
+        if is_pdf_revision(rev):
+            return Response(
+                {
+                    "content_format": "pdf",
+                    "chapters": [],
+                    "total_pages": 0,
+                }
+            )
+
         ensure_revision_index_from_book_draft(book, rev)
 
         chapters = BookChapter.objects.filter(revision=rev).order_by("ordinal")
@@ -552,3 +563,93 @@ class BookContentView(APIView):
                 }
             )
         return Response({"chapters": chapter_payload, "total_pages": pages.count()})
+
+
+class BookPdfView(APIView):
+    """Short-lived presigned URL for an entitled reader to open a PDF book online."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, book_id):
+        try:
+            book = _published_books_queryset().get(pk=book_id)
+        except Book.DoesNotExist:
+            return Response(
+                {"error": {"code": "NOT_FOUND", "message": "Book not found"}},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if not user_owns_book(request.user, book):
+            return Response(
+                {
+                    "error": {
+                        "code": "NOT_ENTITLED",
+                        "message": "Purchase this book to read it.",
+                    }
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        rev = book.published_revision
+        from apps.catalog.pdf_books import is_pdf_revision
+
+        if not is_pdf_revision(rev):
+            return Response(
+                {
+                    "error": {
+                        "code": "NOT_PDF",
+                        "message": "This book is not a PDF document.",
+                    }
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not rev.content_object_key or not is_object_storage_configured():
+            return Response(
+                {
+                    "error": {
+                        "code": "STORAGE_UNAVAILABLE",
+                        "message": "PDF is not available from object storage.",
+                    }
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        presign_endpoint = dev_presign_endpoint_from_request(request)
+        try:
+            url = presign_get(
+                rev.content_object_key,
+                expires_in=900,
+                presign_endpoint_url=presign_endpoint,
+            )
+            size_bytes = int(rev.total_bytes or 0)
+            try:
+                size_bytes = int(head_object(rev.content_object_key)["ContentLength"])
+            except Exception:
+                pass
+        except Exception as exc:
+            logger.exception("pdf presign failed: %s", exc)
+            return Response(
+                {
+                    "error": {
+                        "code": "PRESIGN_FAILED",
+                        "message": "Could not generate PDF URL.",
+                    }
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        filename = "content.pdf"
+        if rev.manifest_object_key:
+            try:
+                raw = get_object_bytes(rev.manifest_object_key)
+                data = json.loads(raw.decode("utf-8"))
+                if isinstance(data, dict) and data.get("filename"):
+                    filename = str(data["filename"])
+            except Exception:
+                pass
+        return Response(
+            {
+                "book_id": str(book.id),
+                "content_format": "pdf",
+                "url": url,
+                "size_bytes": size_bytes,
+                "filename": filename,
+                "revision_id": str(rev.id),
+            }
+        )

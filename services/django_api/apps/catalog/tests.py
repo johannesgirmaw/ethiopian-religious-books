@@ -303,6 +303,44 @@ class BookReviewWorkflowTests(TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.data["error"]["code"], "INVALID_DRAFT")
 
+    def test_submit_pdf_draft_without_chapters(self):
+        from apps.catalog.models import BookRevision
+
+        book = self._make_book(chapters_draft=[])
+        BookRevision.objects.create(
+            book=book,
+            revision_number=1,
+            status=BookRevision.Status.DRAFT,
+            content_format="pdf",
+            content_object_key=f"books/{book.id}/r1/content.pdf",
+            manifest_object_key=f"books/{book.id}/r1/manifest.json",
+            created_by=self.author,
+        )
+        self.client.force_authenticate(self.author)
+        res = self._submit(book)
+        self.assertEqual(res.status_code, 200, res.data)
+        book.refresh_from_db()
+        self.assertEqual(book.review_status, Book.ReviewStatus.IN_REVIEW)
+
+    def test_submit_incomplete_pdf_draft_rejected(self):
+        from apps.catalog.models import BookRevision
+
+        book = self._make_book(chapters_draft=[])
+        BookRevision.objects.create(
+            book=book,
+            revision_number=1,
+            status=BookRevision.Status.DRAFT,
+            content_format="pdf",
+            content_object_key=f"books/{book.id}/r1/content.pdf",
+            manifest_object_key="",
+            created_by=self.author,
+        )
+        self.client.force_authenticate(self.author)
+        res = self._submit(book)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.data["error"]["code"], "INVALID_DRAFT")
+        self.assertIn("PDF", res.data["error"]["message"])
+
     def test_submit_requires_draft_state(self):
         book = self._make_book(review_status=Book.ReviewStatus.IN_REVIEW)
         self.client.force_authenticate(self.author)

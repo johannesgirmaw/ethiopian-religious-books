@@ -39,6 +39,59 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goBack => 'Go back';
 
   @override
+  String get pdfReaderTitle => 'PDF reader';
+
+  @override
+  String get pdfLoadingLabel => 'Loading PDF…';
+
+  @override
+  String get pdfOpenFailed => 'Could not open PDF';
+
+  @override
+  String get pdfNotAPdfBook => 'This book is not a PDF document.';
+
+  @override
+  String get pdfDocumentSection => 'PDF document';
+
+  @override
+  String get pdfPickFile => 'Choose PDF';
+
+  @override
+  String get pdfReplaceFile => 'Replace PDF';
+
+  @override
+  String get pdfUploadHint =>
+      'Upload a PDF (max 100 MB). Save the book first, then attach the file.';
+
+  @override
+  String pdfReadyLabel(String filename, String size) {
+    return 'PDF ready: $filename ($size)';
+  }
+
+  @override
+  String get pdfPendingUpload => 'PDF selected — will upload when you save.';
+
+  @override
+  String get pdfUploadFailed => 'Could not upload the PDF.';
+
+  @override
+  String get pdfUploadSuccess => 'PDF uploaded.';
+
+  @override
+  String get pdfBookTypeLabel => 'PDF document book';
+
+  @override
+  String get pdfBookTypeHelp =>
+      'Readers open this book in the PDF viewer instead of the chapter reader.';
+
+  @override
+  String get openPdfBook => 'Open PDF';
+
+  @override
+  String get pdfNoChaptersHint =>
+      'This book is a PDF document. Open it to read.';
+
+  @override
   String get generalCategory => 'General';
 
   @override

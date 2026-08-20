@@ -53,6 +53,8 @@ class AdminBook {
     this.coverGetUrl,
     this.publishedRevisionId,
     this.publishedRevisionNumber,
+    this.publishedContentFormat,
+    this.pdfDraft,
     this.createdById,
     this.createdAt,
     this.updatedAt,
@@ -81,6 +83,10 @@ class AdminBook {
   /// not page-based [chaptersDraft].
   final bool isBible;
 
+  /// True when this book is authored as a PDF package (draft or published).
+  bool get isPdfBook =>
+      (publishedContentFormat ?? '').toLowerCase() == 'pdf' || pdfDraft != null;
+
   /// "old" | "new" | null — only meaningful when [isBible].
   final String? testamentType;
   final int? publishedYear;
@@ -95,6 +101,8 @@ class AdminBook {
   final String? coverGetUrl;
   final String? publishedRevisionId;
   final int? publishedRevisionNumber;
+  final String? publishedContentFormat;
+  final AdminPdfDraft? pdfDraft;
   final String? createdById;
   final String? createdAt;
   final String? updatedAt;
@@ -154,6 +162,11 @@ class AdminBook {
       publishedRevisionId: j['published_revision_id'] as String?,
       publishedRevisionNumber:
           (j['published_revision_number'] as num?)?.toInt(),
+      publishedContentFormat: j['published_content_format'] as String?,
+      pdfDraft: j['pdf_draft'] is Map
+          ? AdminPdfDraft.fromJson(
+              Map<String, dynamic>.from(j['pdf_draft'] as Map))
+          : null,
       createdById: j['created_by_id'] as String?,
       createdAt: j['created_at'] as String?,
       updatedAt: j['updated_at'] as String?,
@@ -238,6 +251,32 @@ class BookReviewNote {
       reviewerId: j['reviewer_id'] as String?,
       reviewerEmail: j['reviewer_email'] as String?,
       createdAt: j['created_at'] as String?,
+    );
+  }
+}
+
+class AdminPdfDraft {
+  AdminPdfDraft({
+    required this.revisionId,
+    required this.filename,
+    required this.sizeBytes,
+    required this.ready,
+    this.status,
+  });
+
+  final String revisionId;
+  final String filename;
+  final int sizeBytes;
+  final bool ready;
+  final String? status;
+
+  factory AdminPdfDraft.fromJson(Map<String, dynamic> j) {
+    return AdminPdfDraft(
+      revisionId: j['revision_id'] as String? ?? '',
+      filename: j['filename'] as String? ?? 'content.pdf',
+      sizeBytes: (j['size_bytes'] as num?)?.toInt() ?? 0,
+      ready: j['ready'] as bool? ?? false,
+      status: j['status'] as String?,
     );
   }
 }
