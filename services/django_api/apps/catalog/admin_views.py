@@ -17,6 +17,7 @@ from apps.catalog.admin_serializers import (
     AdminBookCreateSerializer,
     AdminBookImportDocxPreviewSerializer,
     AdminBookImportDocxSerializer,
+    AdminBookImportPdfSerializer,
     AdminBookPatchSerializer,
     AdminBookSerializer,
     AdminPublishSerializer,
@@ -53,6 +54,8 @@ from apps.catalog.review import (
 from apps.catalog.search_normalization import normalize_search_text
 from apps.catalog.storage_s3 import head_object, is_object_storage_configured, presign_put, put_bytes
 from apps.catalog.pdf_books import (
+    MAX_PDF_BYTES,
+    PDF_MAGIC,
     PdfBookError,
     complete_pdf_upload,
     create_pdf_draft_revision,
@@ -168,6 +171,64 @@ def _read_docx_upload(upload):
     return upload.read(), None
 
 
+def _read_pdf_upload(upload):
+    """Validate a PDF upload and return ``(bytes, error_response)``."""
+    name = (getattr(upload, "name", "") or "").strip()
+    lower = name.lower()
+    if lower and not lower.endswith(".pdf"):
+        return None, Response(
+            {
+                "error": {
+                    "code": "INVALID_FILE_TYPE",
+                    "message": "Upload a PDF with a .pdf extension.",
+                }
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if upload.size and upload.size > MAX_PDF_BYTES:
+        return None, Response(
+            {
+                "error": {
+                    "code": "PDF_TOO_LARGE",
+                    "message": f"PDF exceeds the {MAX_PDF_BYTES // (1024 * 1024)}MB limit.",
+                }
+            },
+            status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+        )
+    raw = upload.read()
+    if not raw:
+        return None, Response(
+            {
+                "error": {
+                    "code": "EMPTY_PDF",
+                    "message": "PDF file is empty.",
+                }
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if len(raw) > MAX_PDF_BYTES:
+        return None, Response(
+            {
+                "error": {
+                    "code": "PDF_TOO_LARGE",
+                    "message": f"PDF exceeds the {MAX_PDF_BYTES // (1024 * 1024)}MB limit.",
+                }
+            },
+            status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+        )
+    if not raw.startswith(PDF_MAGIC):
+        return None, Response(
+            {
+                "error": {
+                    "code": "INVALID_PDF",
+                    "message": "File content is not a valid PDF.",
+                }
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    return raw, None
+
+
 def _parse_error_response(exc: Exception) -> Response:
     return Response(
         {"error": {"code": "DOCX_PARSE_FAILED", "message": str(exc)}},
@@ -280,6 +341,78 @@ class AdminBookImportDocxView(APIView):
         data = AdminBookSerializer(book).data
         data["import_stats"] = stats
         return Response(data, status=status.HTTP_201_CREATED)
+
+
+class AdminBookImportPdfView(APIView):
+    """Create a draft PDF book from an uploaded file (server-side storage write).
+
+    Avoids browser PUT to presigned S3/MinIO URLs (CORS on Flutter web).
+    """
+
+    permission_classes = [IsPublisherOrAuthor]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        ser = AdminBookImportPdfSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        upload = ser.validated_data["file"]
+        name = getattr(upload, "name", "") or "content.pdf"
+
+        raw, error = _read_pdf_upload(upload)
+        if error is not None:
+            return error
+
+        if not is_object_storage_configured():
+            return Response(
+                {
+                    "error": {
+                        "code": "STORAGE_UNAVAILABLE",
+                        "message": "Object storage is not configured for PDF uploads.",
+                    }
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        title = (ser.validated_data.get("title") or "").strip()
+        if not title:
+            stem = name.rsplit(".", 1)[0].strip() if name.lower().endswith(".pdf") else name.strip()
+            title = stem or "Imported PDF"
+
+        create_data: dict[str, Any] = {
+            "title": title[:500],
+            "primary_language": ser.validated_data.get("primary_language") or "am",
+            "chapters_draft": [],
+        }
+        create = AdminBookCreateSerializer(data=create_data, context={"request": request})
+        create.is_valid(raise_exception=True)
+        book = create.save()
+
+        filename = name.strip() or "content.pdf"
+        try:
+            rev, object_key, put_ct = create_pdf_draft_revision(
+                book, request.user, filename=filename
+            )
+            put_bytes(object_key, raw, content_type=put_ct)
+            complete_pdf_upload(rev, filename=filename)
+        except PdfBookError as exc:
+            return Response(
+                {"error": {"code": exc.code, "message": exc.message}},
+                status=exc.status_code,
+            )
+        except Exception as exc:
+            logger.exception("import pdf failed for book %s: %s", book.id, exc)
+            return Response(
+                {
+                    "error": {
+                        "code": "PDF_IMPORT_FAILED",
+                        "message": "Could not store the uploaded PDF.",
+                    }
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        book.refresh_from_db()
+        return Response(AdminBookSerializer(book).data, status=status.HTTP_201_CREATED)
 
 
 class AdminBookDetailView(APIView):

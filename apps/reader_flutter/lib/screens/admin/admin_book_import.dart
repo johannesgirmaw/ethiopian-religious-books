@@ -200,6 +200,7 @@ Future<void> importBookFromPdfFlow({
   } on DioException catch (e) {
     if (rootNavigator.canPop()) rootNavigator.pop();
     snack(messageFromDioResponse(e.response?.data) ??
+        publishErrorMessage(e) ??
         e.message ??
         l10n.importPdfFailed);
   } catch (_) {

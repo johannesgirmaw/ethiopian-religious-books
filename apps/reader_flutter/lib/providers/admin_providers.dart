@@ -254,7 +254,7 @@ Future<void> uploadPdfPackageForBook(
   );
 }
 
-/// Creates a hidden draft book and attaches the PDF package.
+/// Creates a hidden draft PDF book via multipart upload (works on Flutter web).
 Future<AdminBook> importBookFromPdf(
   Dio dio, {
   required List<int> bytes,
@@ -263,24 +263,17 @@ Future<AdminBook> importBookFromPdf(
   String? language,
 }) async {
   final bookTitle = (title ?? titleFromPdfFilename(filename)).trim();
+  final lang = (language ?? 'am').trim();
   final res = await dio.post<Map<String, dynamic>>(
-    'admin/books',
-    data: {
-      'title': bookTitle.isEmpty ? 'Imported PDF' : bookTitle,
-      'primary_language':
-          (language ?? 'am').trim().isEmpty ? 'am' : language!.trim(),
-      'chapters_draft': const <Map<String, dynamic>>[],
-    },
+    'admin/books/import-pdf',
+    data: FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: filename),
+      if (bookTitle.isNotEmpty) 'title': bookTitle,
+      if (lang.isNotEmpty) 'primary_language': lang,
+    }),
+    options: Options(contentType: 'multipart/form-data'),
   );
-  final created = AdminBook.fromJson(res.data!);
-  await uploadPdfPackageForBook(
-    dio,
-    bookId: created.id,
-    bytes: bytes,
-    filename: filename,
-  );
-  final detail = await dio.get<Map<String, dynamic>>('admin/books/${created.id}');
-  return AdminBook.fromJson(detail.data!);
+  return AdminBook.fromJson(res.data!);
 }
 
 String? publishErrorMessage(DioException e) {

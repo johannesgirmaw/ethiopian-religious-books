@@ -307,6 +307,14 @@ class AdminBookImportDocxPreviewSerializer(AdminBookImportDocxSerializer):
     """Preview (dry-run) shares the upload/detection fields; metadata is ignored."""
 
 
+class AdminBookImportPdfSerializer(serializers.Serializer):
+    """Validate a PDF upload plus optional metadata for a new PDF book."""
+
+    file = serializers.FileField()
+    title = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    primary_language = serializers.CharField(max_length=32, required=False, default="am")
+
+
 class AdminRevisionCreateSerializer(serializers.Serializer):
     content_format = serializers.CharField(default="html_chunks")
     expected_total_bytes = serializers.IntegerField(min_value=0, required=False)
