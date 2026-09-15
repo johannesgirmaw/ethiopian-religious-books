@@ -89,7 +89,6 @@ class WebSidebar extends ConsumerWidget {
                   ),
                 ),
               ),
-              const Divider(height: 1, color: WebTokens.borderColor),
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),

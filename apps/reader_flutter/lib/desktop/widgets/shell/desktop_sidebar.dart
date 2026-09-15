@@ -81,7 +81,6 @@ class DesktopSidebar extends ConsumerWidget {
                 ),
               ),
             ),
-            const Divider(height: 1),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
