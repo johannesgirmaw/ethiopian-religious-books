@@ -110,6 +110,13 @@
   "continueReading": "ንባብ ይቀጥሉ",
   "resumeReading": "ቀጥል",
   "readNow": "አሁን አንብብ",
+  "authoredBy": "በ {name}",
+  "@authoredBy": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "downloadOfflineShort": "ከመስመር ውጭ አስቀምጥ",
   "recentlyOpened": "በቅርብ የተከፈቱ",
   "homeQuickBrowse": "ሁሉንም መጽሐፍት",
   "homeQuickBrowseSubtitle": "የሙሉ ዝርዝር ፍለጋ እና ማጣሪያ",
@@ -347,6 +354,12 @@
   "adminManageBooksSubtitle": "መጽሐፍትዎን ይፍጠሩ፣ ያስገቡ እና ያትሙ",
   "noProfileCached": "መገለጫ አልተቀመጠም።",
   "signOut": "ውጣ",
+  "headerGreeting": "ሰላም፣ {name}",
+  "@headerGreeting": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
   "welcomeBack": "እንኳን በደህና መጡ",
   "signInSubtitle": "ለመቀጠል ይግቡ እና እድገትዎን ያመሳስሉ።",
   "emailFieldLabel": "ኢሜይል",
@@ -410,6 +423,8 @@
   "languagePreferenceSubtitle": "ለመተግበሪያው ምናሌዎች እና ቁልፎች እንግሊዝኛ ወይም አማርኛ ይምረጡ።",
   "languageEnglish": "English",
   "languageAmharic": "አማርኛ",
+  "languageEnglishShort": "EN",
+  "languageAmharicShort": "አማ",
   "saveLanguage": "ቋንቋ አስቀምጥ",
   "languageSaved": "ቋንቋ ተቀምጧል",
   "bookDetailsTitle": "የመጽሐፍ ዝርዝሮች",

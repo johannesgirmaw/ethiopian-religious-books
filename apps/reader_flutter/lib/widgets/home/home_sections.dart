@@ -11,12 +11,12 @@ String genreOptionLabel(BuildContext context, GenreOption g) {
   return g.label.isNotEmpty ? g.label : g.slug;
 }
 
-/// Greeting top bar: avatar + name/email (+ verified), favourites heart and a
-/// notification bell with an unread badge. Shared by web & desktop home.
+/// Home catalog toolbar. Greeting and notifications are optional — the
+/// authenticated web/desktop shell owns those in the persistent header.
 class HomeTopBar extends StatelessWidget {
   const HomeTopBar({
     super.key,
-    required this.name,
+    this.name,
     this.email,
     this.verified = false,
     this.notificationCount = 0,
@@ -30,7 +30,7 @@ class HomeTopBar extends StatelessWidget {
     this.searchWidth = 360,
   });
 
-  final String name;
+  final String? name;
   final String? email;
   final bool verified;
   final int notificationCount;
@@ -43,8 +43,10 @@ class HomeTopBar extends StatelessWidget {
   final VoidCallback? onSearchFilterTap;
   final double searchWidth;
 
+  bool get _showGreeting => name != null && name!.trim().isNotEmpty;
+
   String get _initials {
-    final parts = name.trim().split(RegExp(r'\s+'));
+    final parts = (name ?? '').trim().split(RegExp(r'\s+'));
     if (parts.isEmpty || parts.first.isEmpty) return '?';
     if (parts.length == 1) return parts.first.characters.first.toUpperCase();
     return (parts.first.characters.first + parts.last.characters.first)
@@ -60,70 +62,72 @@ class HomeTopBar extends StatelessWidget {
         onSearchChanged != null;
     return Row(
       children: [
-        Container(
-          width: avatarSize,
-          height: avatarSize,
-          decoration: BoxDecoration(
-            gradient: AppGradients.heroVertical,
-            shape: BoxShape.circle,
-            boxShadow: AppShadows.listRow,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            _initials,
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              fontSize: avatarSize * 0.36,
+        if (_showGreeting) ...[
+          Container(
+            width: avatarSize,
+            height: avatarSize,
+            decoration: BoxDecoration(
+              gradient: AppGradients.heroVertical,
+              shape: BoxShape.circle,
+              boxShadow: AppShadows.listRow,
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              _initials,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: avatarSize * 0.36,
+              ),
             ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Flexible(
-                    child: Text(
-                      name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
-                  ),
-                  if (verified) ...[
-                    const SizedBox(width: 4),
-                    const Icon(
-                      Icons.verified_rounded,
-                      size: 16,
-                      color: AppColors.primary,
-                    ),
+                    if (verified) ...[
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.verified_rounded,
+                        size: 16,
+                        color: AppColors.primary,
+                      ),
+                    ],
                   ],
-                ],
-              ),
-              if (email != null && email!.isNotEmpty)
-                Text(
-                  email!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    color: AppColors.textTertiary,
-                    fontWeight: FontWeight.w500,
-                  ),
                 ),
-            ],
+                if (email != null && email!.isNotEmpty)
+                  Text(
+                    email!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      color: AppColors.textTertiary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
-        if (hasSearch) ...[
+          const SizedBox(width: 8),
+        ],
+        if (hasSearch)
           ConstrainedBox(
             constraints: BoxConstraints(maxWidth: searchWidth, minWidth: 220),
             child: _TopRightSearchField(
@@ -133,18 +137,22 @@ class HomeTopBar extends StatelessWidget {
               onFilterTap: onSearchFilterTap,
             ),
           ),
+        if (!_showGreeting) const Spacer(),
+        if (onFavourites != null) ...[
           const SizedBox(width: 10),
+          _CircleIconButton(
+            icon: Icons.favorite_border_rounded,
+            onTap: onFavourites,
+          ),
         ],
-        _CircleIconButton(
-          icon: Icons.favorite_border_rounded,
-          onTap: onFavourites,
-        ),
-        const SizedBox(width: 8),
-        _CircleIconButton(
-          icon: Icons.notifications_none_rounded,
-          onTap: onNotifications,
-          badgeCount: notificationCount,
-        ),
+        if (onNotifications != null) ...[
+          const SizedBox(width: 8),
+          _CircleIconButton(
+            icon: Icons.notifications_none_rounded,
+            onTap: onNotifications,
+            badgeCount: notificationCount,
+          ),
+        ],
       ],
     );
   }

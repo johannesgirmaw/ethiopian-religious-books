@@ -14,13 +14,16 @@ class DesktopContentFrame extends StatelessWidget {
       builder: (context, constraints) {
         final width =
             constraints.maxWidth.clamp(0.0, DesktopTokens.contentMaxWidth);
+        final height = constraints.maxHeight;
+        final hasHeight = height.isFinite && height > 0;
+        if (!hasHeight) {
+          return const SizedBox.expand();
+        }
         return Align(
           alignment: Alignment.topCenter,
           child: SizedBox(
             width: width,
-            height: constraints.maxHeight.isFinite
-                ? constraints.maxHeight
-                : null,
+            height: height,
             child: child,
           ),
         );

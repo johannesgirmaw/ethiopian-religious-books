@@ -3,11 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../design/app_tokens.dart';
-import '../../../models/user_profile.dart';
 import '../../../providers/nav_visibility_providers.dart';
 import '../../../providers/session_notifier.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../utils/sidebar_identity.dart';
 import '../../../widgets/primitives/shared_widgets.dart';
 import '../../design/web_tokens.dart';
 
@@ -51,9 +49,14 @@ class WebSidebar extends ConsumerWidget {
     return currentLocation.startsWith(route);
   }
 
+  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
+    await ref.read(sessionNotifierProvider.notifier).signOut();
+    if (context.mounted) context.go('/login');
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(sessionNotifierProvider).valueOrNull?.user;
+    final l10n = AppLocalizations.of(context);
 
     return DecoratedBox(
       decoration: WebTokens.sidebarDecoration(),
@@ -64,25 +67,32 @@ class WebSidebar extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Brand lockup: stacked Amharic wordmark logo.
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
-                child: InkWell(
-                  onTap: () => context.go('/home'),
-                  borderRadius: BorderRadius.circular(12),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 4),
-                    child: AppBrandWordmark(
-                      fontSize: 22,
-                      stacked: true,
+              // Same height as the main header so the mark+wordmark sit on one
+              // line with EN / notifications / user. Same inset as nav rows.
+              SizedBox(
+                height: WebTokens.navHeight,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: InkWell(
+                    onTap: () => context.go('/home'),
+                    borderRadius: BorderRadius.circular(10),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: AppBrandWordmark(fontSize: 16),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const Divider(height: 1, color: WebTokens.borderColor),
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
                   children: [
                     for (final item in items)
                       _SidebarLink(
@@ -94,7 +104,13 @@ class WebSidebar extends ConsumerWidget {
                 ),
               ),
               const Divider(height: 1, color: WebTokens.borderColor),
-              _UserCard(user: user),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 18),
+                child: _SignOutLink(
+                  label: l10n.signOut,
+                  onTap: () => _signOut(context, ref),
+                ),
+              ),
             ],
           ),
         ),
@@ -118,7 +134,7 @@ class _SidebarLink extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = selected ? AppColors.primaryDeep : AppColors.textSecondary;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: 6),
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
@@ -128,9 +144,7 @@ class _SidebarLink extends StatelessWidget {
             duration: const Duration(milliseconds: 150),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
             decoration: BoxDecoration(
-              color: selected
-                  ? WebTokens.sidebarSelectedBg
-                  : Colors.transparent,
+              color: selected ? WebTokens.sidebarSelectedBg : Colors.transparent,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
@@ -147,9 +161,7 @@ class _SidebarLink extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                      color: selected
-                          ? AppColors.primaryDeep
-                          : AppColors.textPrimary,
+                      color: color,
                     ),
                   ),
                 ),
@@ -162,93 +174,42 @@ class _SidebarLink extends StatelessWidget {
   }
 }
 
-/// Footer identity card: avatar + display name + role. Taps through to profile.
-class _UserCard extends StatelessWidget {
-  const _UserCard({required this.user});
+class _SignOutLink extends StatelessWidget {
+  const _SignOutLink({
+    required this.label,
+    required this.onTap,
+  });
 
-  final UserProfile? user;
+  final String label;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final name = sidebarUserName(user);
-    final subtitle = sidebarUserSubtitle(user);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          onTap: () => context.go('/profile'),
-          behavior: HitTestBehavior.opaque,
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: WebTokens.canvasBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: WebTokens.borderColor),
-            ),
-            child: Row(
-              children: [
-                _SidebarAvatar(initial: sidebarInitial(name)),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 1),
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
-                    ],
-                  ),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.logout_rounded,
+                size: 20,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textSecondary,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SidebarAvatar extends StatelessWidget {
-  const _SidebarAvatar({required this.initial});
-
-  final String initial;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 38,
-      height: 38,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        gradient: AppGradients.hero,
-        borderRadius: BorderRadius.circular(11),
-      ),
-      child: Text(
-        initial,
-        style: const TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w800,
-          color: Colors.white,
         ),
       ),
     );

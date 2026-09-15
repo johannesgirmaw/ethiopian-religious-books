@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../l10n/app_localizations.dart';
 import 'desktop_app_shell.dart';
@@ -24,13 +25,20 @@ class DesktopOverlayScaffold extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     return DesktopAppShell(
       currentLocation: currentLocation,
       sidebarItems: desktopSidebarItemsFor(ref, l10n),
       breadcrumb: title,
       actions: actions,
-      onBack: onBack,
+      onBack: onBack ??
+          () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
+          },
       child: body,
     );
   }

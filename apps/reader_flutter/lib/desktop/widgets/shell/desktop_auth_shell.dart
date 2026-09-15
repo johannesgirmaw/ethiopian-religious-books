@@ -42,15 +42,10 @@ class DesktopAuthShell extends ConsumerWidget {
                   ),
                 );
               },
-              layoutBuilder: (currentChild, previousChildren) {
-                return Stack(
-                  alignment: Alignment.topCenter,
-                  children: [
-                    ...previousChildren,
-                    if (currentChild != null) currentChild,
-                  ],
-                );
-              },
+              // Never keep the outgoing child: GoRouter's nested navigator
+              // uses a GlobalKey, and stacking both copies truncates the tree.
+              layoutBuilder: (currentChild, _) =>
+                  currentChild ?? const SizedBox.shrink(),
               child: KeyedSubtree(key: ValueKey(routeKey), child: child),
             ),
           ),

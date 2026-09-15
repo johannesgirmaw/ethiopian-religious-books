@@ -165,6 +165,33 @@ class SessionNotifier extends AsyncNotifier<Session?> {
     }
   }
 
+  /// Best-effort `POST auth/logout`, then wipe local session and vault.
+  ///
+  /// Network failure does not block local sign-out — the device still clears
+  /// tokens and the encrypted library.
+  Future<void> signOut() async {
+    final cur = state.valueOrNull;
+    if (cur != null) {
+      try {
+        final dio = Dio(
+          BaseOptions(
+            baseUrl: AppConfig.apiBaseUrl,
+            connectTimeout: const Duration(seconds: 15),
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': 'Bearer ${cur.accessToken}',
+            },
+          ),
+        );
+        await dio.post<void>(
+          'auth/logout',
+          data: {'refresh_token': cur.refreshToken},
+        );
+      } catch (_) {}
+    }
+    await clear();
+  }
+
   Future<void> clear() async {
     await _storage.clear();
     // Drop the encrypted offline library and its device key so a different user

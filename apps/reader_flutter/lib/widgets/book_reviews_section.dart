@@ -57,18 +57,43 @@ class BookReviewsSection extends ConsumerWidget {
           data: (reviews) {
             if (reviews.isEmpty) {
               return Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 22,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceCard,
                   borderRadius: BorderRadius.circular(AppRadius.cardV2),
                   border: Border.all(color: AppColors.line),
                 ),
-                child: Text(
-                  l10n.reviewsEmpty,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    height: 1.4,
-                  ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppColors.referencePrimary.withValues(
+                          alpha: 0.08,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.rate_review_outlined,
+                        size: 20,
+                        color: AppColors.referencePrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        l10n.reviewsEmpty,
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               );
             }

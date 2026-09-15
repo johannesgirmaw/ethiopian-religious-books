@@ -9,6 +9,7 @@ import '../design/app_tokens.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/auth_api.dart';
 import '../utils/api_error_message.dart';
+import '../utils/auth_validators.dart';
 import '../utils/dio_connection_message.dart';
 import '../common/platform/platform_shell.dart';
 import '../web/widgets/shell/adaptive_auth_layout.dart';
@@ -86,14 +87,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             autocorrect: false,
             autofillHints: const [AutofillHints.email],
             onSubmitted: (_) => _busy ? null : _submit(),
-            validator: (v) {
-              final s = (v ?? '').trim();
-              if (s.isEmpty) return l10n.emailRequired;
-              if (!s.contains('@') || !s.contains('.')) {
-                return l10n.emailInvalid;
-              }
-              return null;
-            },
+            validator: (v) => validateEmail(v, l10n),
           ),
           if (_error != null) ...[
             const SizedBox(height: 16),

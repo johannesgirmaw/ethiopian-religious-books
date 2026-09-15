@@ -100,6 +100,13 @@
   "continueReading": "Continue reading",
   "resumeReading": "Resume",
   "readNow": "Read now",
+  "authoredBy": "by {name}",
+  "@authoredBy": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "downloadOfflineShort": "Save offline",
   "recentlyOpened": "Recently opened",
   "homeQuickBrowse": "Browse all books",
   "homeQuickBrowseSubtitle": "Search and filter the full catalog",
@@ -305,6 +312,12 @@
   "adminManageBooksSubtitle": "Create, import, and publish your books",
   "noProfileCached": "No profile cached.",
   "signOut": "Sign out",
+  "headerGreeting": "Hi, {name}",
+  "@headerGreeting": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
   "welcomeBack": "Welcome back",
   "signInSubtitle": "Sign in to continue reading and keep your progress synced.",
   "emailFieldLabel": "Email",
@@ -368,6 +381,8 @@
   "languagePreferenceSubtitle": "Choose English or Amharic for app menus and buttons.",
   "languageEnglish": "English",
   "languageAmharic": "አማርኛ (Amharic)",
+  "languageEnglishShort": "EN",
+  "languageAmharicShort": "አማ",
   "saveLanguage": "Save language",
   "languageSaved": "Language saved",
   "bookDetailsTitle": "Book Details",

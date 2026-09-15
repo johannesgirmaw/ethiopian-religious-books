@@ -11,6 +11,7 @@ import '../../providers/catalog_providers.dart';
 import '../../providers/download_jobs_provider.dart';
 import '../../providers/payment_providers.dart';
 import '../../router/app_navigation.dart';
+import '../../utils/catalog_categories.dart';
 import '../../utils/catalog_language_label.dart';
 import '../../utils/offline_book_download.dart';
 import '../../widgets/app_state_view.dart';
@@ -38,7 +39,7 @@ class DesktopBookDetailBody extends ConsumerWidget {
   final void Function(BookSummary book) onShare;
 
   Future<void> _downloadSample(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     messenger.showSnackBar(SnackBar(content: Text(l10n.preparingDownload)));
     final error = await runOfflineBookDownload(ref, bookId, l10n: l10n);
@@ -51,7 +52,7 @@ class DesktopBookDetailBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final asyncBook = ref.watch(bookDetailProvider(bookId));
     final contentAsync = ref.watch(bookContentProvider(bookId));
     final downloadJobs = ref.watch(downloadJobsProvider);
@@ -126,13 +127,6 @@ class DesktopBookDetailBody extends ConsumerWidget {
                 onChapter: (key) => context.push(
                   readingPathForBook(bookId, isPdf: false, query: 'chapter=$key'),
                 ),
-                onReadStart: () => context.push(
-                  readingPathForBook(
-                    bookId,
-                    isPdf: false,
-                    query: 'pickChapter=1',
-                  ),
-                ),
               );
 
         if (!twoColumn) {
@@ -160,7 +154,9 @@ class DesktopBookDetailBody extends ConsumerWidget {
           );
         }
 
-        final railWidth = tier == DesktopLayoutTier.expanded ? 320.0 : 280.0;
+        final railWidth = tier == DesktopLayoutTier.expanded
+            ? DesktopTokens.bookDetailRailExpanded
+            : DesktopTokens.bookDetailRailMedium;
         return Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
@@ -255,16 +251,9 @@ class _LeftRail extends StatelessWidget {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.18),
-                    blurRadius: 28,
-                    offset: const Offset(0, 14),
-                  ),
-                ],
+                boxShadow: DesktopTokens.coverShadow,
               ),
-              // Fills the rail width (capped) instead of a fixed size.
-              child: BookDetailCover(book: book,width: 260, expand: true),
+              child: BookDetailCover(book: book, width: 260, expand: true),
             ),
           ),
         ),
@@ -318,7 +307,9 @@ class _ActionButtons extends StatelessWidget {
           style: FilledButton.styleFrom(
             backgroundColor: AppColors.referencePrimary,
             foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(48),
             padding: const EdgeInsets.symmetric(vertical: 15),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             textStyle: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
@@ -343,13 +334,15 @@ class _ActionButtons extends StatelessWidget {
                   foregroundColor: AppColors.textPrimary,
                   side: const BorderSide(color: DesktopTokens.borderColor),
                   backgroundColor: DesktopTokens.surfaceBg,
+                  minimumSize: const Size.fromHeight(46),
                   padding: const EdgeInsets.symmetric(vertical: 14),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 icon: const Icon(Icons.download_outlined, size: 18),
-                label: Text(l10n.downloadOffline),
+                label: Text(l10n.downloadOfflineShort),
               ),
             ),
             const SizedBox(width: 10),
@@ -388,45 +381,68 @@ class _ContentHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final titleSize = tier == DesktopLayoutTier.expanded ? 32.0 : 26.0;
+    final titleSize = tier == DesktopLayoutTier.expanded ? 34.0 : 26.0;
+    final category = categoryForBook(book);
+    final pageValue =
+        pageCount != null && pageCount! > 0 ? '$pageCount' : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _LanguagePill(
-          label: catalogLanguageFilterLabel(book.primaryLanguage, l10n),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _LanguagePill(
+              label: catalogLanguageFilterLabel(book.primaryLanguage, l10n),
+            ),
+            if (category != BookCategory.other)
+              _SoftPill(label: category.label(l10n)),
+          ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
         Text(
           book.title,
           style: TextStyle(
             fontSize: titleSize,
             fontWeight: FontWeight.w800,
             height: 1.12,
-            letterSpacing: -0.5,
+            letterSpacing: -0.6,
             color: AppColors.textPrimary,
           ),
         ),
+        const SizedBox(height: 12),
+        Container(
+          width: 40,
+          height: 3,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(2),
+            gradient: const LinearGradient(
+              colors: [AppColors.referencePrimary, Color(0xFFF5A623)],
+            ),
+          ),
+        ),
         if (book.subtitle?.isNotEmpty == true) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Text(
             book.subtitle!,
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              height: 1.35,
+              height: 1.4,
               color: AppColors.textSecondary,
             ),
           ),
         ],
         if (book.authorCompiler?.isNotEmpty == true) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           InkWell(
             onTap: () => context.push(
               '/author/${Uri.encodeComponent(book.authorCompiler!.trim())}',
             ),
             borderRadius: BorderRadius.circular(6),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
                   Icons.edit_note_rounded,
@@ -436,7 +452,7 @@ class _ContentHeader extends StatelessWidget {
                 const SizedBox(width: 6),
                 Flexible(
                   child: Text(
-                    book.authorCompiler!,
+                    l10n.authoredBy(book.authorCompiler!),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -456,21 +472,21 @@ class _ContentHeader extends StatelessWidget {
         ],
         const SizedBox(height: 20),
         Wrap(
-          spacing: 10,
-          runSpacing: 10,
+          spacing: 8,
+          runSpacing: 8,
           children: [
-            _MetaChip(
-              icon: Icons.menu_book_outlined,
-              value: chapterCount == null ? '—' : '$chapterCount',
-              label: l10n.bookStatChapters,
-            ),
-            _MetaChip(
-              icon: Icons.description_outlined,
-              value: (pageCount != null && pageCount! > 0)
-                  ? '$pageCount'
-                  : '—',
-              label: l10n.bookStatPages,
-            ),
+            if (chapterCount != null)
+              _MetaChip(
+                icon: Icons.menu_book_outlined,
+                value: '$chapterCount',
+                label: l10n.bookStatChapters,
+              ),
+            if (pageValue != null)
+              _MetaChip(
+                icon: Icons.description_outlined,
+                value: pageValue,
+                label: l10n.bookStatPages,
+              ),
             if (book.hasRating)
               _MetaChip(
                 icon: Icons.star_rounded,
@@ -501,18 +517,17 @@ class _AboutSection extends StatelessWidget {
     final hasSummary = book.summary?.isNotEmpty == true;
     return DesktopSection(
       title: l10n.summarySection.toUpperCase(),
-      child: DesktopPanel(
-        padding: const EdgeInsets.all(20),
-        child: hasSummary
-            ? StoredRichTextView(raw: book.summaryRichRaw ?? book.summary!)
-            : Text(
-                l10n.noSummaryYet,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  height: 1.6,
-                ),
+      child: hasSummary
+          ? DesktopPanel(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+              child: StoredRichTextView(
+                raw: book.summaryRichRaw ?? book.summary!,
               ),
-      ),
+            )
+          : _QuietEmpty(
+              icon: Icons.notes_outlined,
+              message: l10n.noSummaryYet,
+            ),
     );
   }
 }
@@ -524,14 +539,12 @@ class _ContentsSection extends StatelessWidget {
     required this.loading,
     required this.l10n,
     required this.onChapter,
-    required this.onReadStart,
   });
 
   final BookContentTree? tree;
   final bool loading;
   final AppLocalizations l10n;
   final void Function(String chapterKey) onChapter;
-  final VoidCallback onReadStart;
 
   @override
   Widget build(BuildContext context) {
@@ -544,25 +557,18 @@ class _ContentsSection extends StatelessWidget {
               '${chapters.length} ${l10n.chaptersHeading}',
               style: DesktopTokens.sectionLabelStyle,
             ),
-      child: DesktopPanel(
-        padding: EdgeInsets.zero,
-        child: loading && chapters.isEmpty
-            ? const Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            : chapters.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      l10n.noChapterContentYet,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        height: 1.5,
-                      ),
-                    ),
-                  )
-                : Column(
+      child: loading && chapters.isEmpty
+          ? const DesktopPanel(
+              child: Center(child: CircularProgressIndicator()),
+            )
+          : chapters.isEmpty
+              ? _QuietEmpty(
+                  icon: Icons.menu_book_outlined,
+                  message: l10n.noChapterContentYet,
+                )
+              : DesktopPanel(
+                  padding: EdgeInsets.zero,
+                  child: Column(
                     children: [
                       for (var i = 0; i < chapters.length; i++) ...[
                         if (i > 0)
@@ -579,7 +585,7 @@ class _ContentsSection extends StatelessWidget {
                       ],
                     ],
                   ),
-      ),
+                ),
     );
   }
 }
@@ -816,6 +822,69 @@ class _LanguagePill extends StatelessWidget {
   }
 }
 
+class _SoftPill extends StatelessWidget {
+  const _SoftPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: DesktopTokens.surfaceBg,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: DesktopTokens.borderColor),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textSecondary,
+        ),
+      ),
+    );
+  }
+}
+
+class _QuietEmpty extends StatelessWidget {
+  const _QuietEmpty({required this.icon, required this.message});
+
+  final IconData icon;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return DesktopPanel(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.referencePrimary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 20, color: AppColors.referencePrimary),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _DownloadStatusCard extends StatelessWidget {
   const _DownloadStatusCard({required this.job});
 
@@ -823,7 +892,7 @@ class _DownloadStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final isOk = job.state == 'completed';
     final isFail = job.state == 'failed';
     return Container(

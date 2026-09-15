@@ -512,6 +512,18 @@ abstract class AppLocalizations {
   /// **'Read now'**
   String get readNow;
 
+  /// No description provided for @authoredBy.
+  ///
+  /// In en, this message translates to:
+  /// **'by {name}'**
+  String authoredBy(String name);
+
+  /// No description provided for @downloadOfflineShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Save offline'**
+  String get downloadOfflineShort;
+
   /// No description provided for @recentlyOpened.
   ///
   /// In en, this message translates to:
@@ -1280,6 +1292,12 @@ abstract class AppLocalizations {
   /// **'Sign out'**
   String get signOut;
 
+  /// No description provided for @headerGreeting.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi, {name}'**
+  String headerGreeting(String name);
+
   /// No description provided for @welcomeBack.
   ///
   /// In en, this message translates to:
@@ -1597,6 +1615,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'አማርኛ (Amharic)'**
   String get languageAmharic;
+
+  /// No description provided for @languageEnglishShort.
+  ///
+  /// In en, this message translates to:
+  /// **'EN'**
+  String get languageEnglishShort;
+
+  /// No description provided for @languageAmharicShort.
+  ///
+  /// In en, this message translates to:
+  /// **'አማ'**
+  String get languageAmharicShort;
 
   /// No description provided for @saveLanguage.
   ///

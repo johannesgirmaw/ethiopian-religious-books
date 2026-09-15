@@ -13,11 +13,19 @@ class WebContentFrame extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth.clamp(0.0, WebTokens.maxContentWidth);
+        final height = constraints.maxHeight;
+        final hasHeight = height.isFinite && height > 0;
+        // Do not mount page bodies at 0px. Opaque overlays offstage this
+        // route with zero constraints; a 0-height scroll viewport can fail
+        // to recover when the overlay is popped.
+        if (!hasHeight) {
+          return const SizedBox.expand();
+        }
         return Align(
           alignment: Alignment.topCenter,
           child: SizedBox(
             width: width,
-            height: constraints.maxHeight,
+            height: height,
             child: child,
           ),
         );

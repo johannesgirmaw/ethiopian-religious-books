@@ -17,6 +17,9 @@ class WebTokens {
 
   static const double gridSpacing = 20;
   static const double gridMainSpacing = 24;
+  static const double bookDetailRailWidth = 300;
+  static const double bookDetailCoverExpanded = 280;
+  static const double bookDetailCoverMedium = 176;
 
   static const Color canvasBg = Color(0xFFF4F8FB);
   static const Color surfaceBg = Color(0xFFFFFFFF);
@@ -77,6 +80,19 @@ class WebTokens {
       ],
     );
   }
+
+  static List<BoxShadow> coverShadow = [
+    BoxShadow(
+      color: AppColors.primaryDeep.withValues(alpha: 0.22),
+      blurRadius: 32,
+      offset: const Offset(0, 16),
+    ),
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.08),
+      blurRadius: 10,
+      offset: const Offset(0, 4),
+    ),
+  ];
 
   static TextStyle sectionLabelStyle = const TextStyle(
     fontSize: 11,

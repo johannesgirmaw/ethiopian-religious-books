@@ -4,11 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../design/app_tokens.dart';
-import '../../../models/user_profile.dart';
 import '../../../providers/nav_visibility_providers.dart';
 import '../../../providers/session_notifier.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../utils/sidebar_identity.dart';
 import '../../../widgets/primitives/shared_widgets.dart';
 import '../../design/desktop_tokens.dart';
 
@@ -55,9 +53,14 @@ class DesktopSidebar extends ConsumerWidget {
     return currentLocation.startsWith(route);
   }
 
+  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
+    await ref.read(sessionNotifierProvider.notifier).signOut();
+    if (context.mounted) context.go('/login');
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(sessionNotifierProvider).valueOrNull?.user;
+    final l10n = AppLocalizations.of(context);
 
     return DecoratedBox(
       decoration: DesktopTokens.sidebarDecoration(),
@@ -66,116 +69,41 @@ class DesktopSidebar extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Brand lockup: mark + Amharic wordmark, inline. Not stacked --
-            // this row is pinned to the title-bar height (60px) so the sidebar
-            // header lines up with it, and a stacked lockup overflows that.
+            // Brand lockup aligned with the persistent shell header.
             const SizedBox(
-              height: DesktopTokens.titleBarHeight + 12,
+              height: DesktopTokens.toolbarHeight,
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 14),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: AppBrandWordmark(fontSize: 16),
+                padding: EdgeInsets.symmetric(horizontal: 18),
+                child: Row(
+                  children: [
+                    Expanded(child: AppBrandWordmark(fontSize: 16)),
+                  ],
                 ),
               ),
             ),
             const Divider(height: 1),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
                 children: [
-                  for (var i = 0; i < items.length; i++)
+                  for (final item in items)
                     _SidebarLink(
-                      item: items[i],
-                      selected: _isSelected(items[i].route),
-                      onTap: () => context.go(items[i].route),
+                      item: item,
+                      selected: _isSelected(item.route),
+                      onTap: () => context.go(item.route),
                     ),
                 ],
               ),
             ),
             const Divider(height: 1),
-            _DesktopUserCard(user: user),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
+              child: _SignOutLink(
+                label: l10n.signOut,
+                onTap: () => _signOut(context, ref),
+              ),
+            ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Footer identity card: avatar + display name + email. Taps through to profile.
-class _DesktopUserCard extends StatelessWidget {
-  const _DesktopUserCard({required this.user});
-
-  final UserProfile? user;
-
-  @override
-  Widget build(BuildContext context) {
-    final name = sidebarUserName(user);
-    final subtitle = sidebarUserSubtitle(user);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          onTap: () => context.go('/profile'),
-          behavior: HitTestBehavior.opaque,
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: DesktopTokens.canvasBg,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: DesktopTokens.borderColor),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    gradient: AppGradients.hero,
-                    borderRadius: BorderRadius.circular(9),
-                  ),
-                  child: Text(
-                    sidebarInitial(name),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 9),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 10.5,
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );
@@ -195,8 +123,9 @@ class _SidebarLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = selected ? AppColors.primaryDeep : AppColors.textSecondary;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
+      padding: const EdgeInsets.only(bottom: 4),
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
@@ -216,9 +145,7 @@ class _SidebarLink extends StatelessWidget {
                 Icon(
                   selected ? item.selectedIcon : item.icon,
                   size: 18,
-                  color: selected
-                      ? AppColors.primaryDeep
-                      : AppColors.textSecondary,
+                  color: color,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -227,9 +154,7 @@ class _SidebarLink extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                      color: selected
-                          ? AppColors.primaryDeep
-                          : AppColors.textPrimary,
+                      color: color,
                     ),
                   ),
                 ),
@@ -244,6 +169,48 @@ class _SidebarLink extends StatelessWidget {
                   ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SignOutLink extends StatelessWidget {
+  const _SignOutLink({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.logout_rounded,
+                size: 18,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
           ),
         ),
       ),

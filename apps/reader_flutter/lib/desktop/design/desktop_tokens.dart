@@ -19,6 +19,8 @@ class DesktopTokens {
 
   static const double gridSpacing = 16;
   static const double gridMainSpacing = 20;
+  static const double bookDetailRailExpanded = 320;
+  static const double bookDetailRailMedium = 280;
 
   static const Color canvasBg = AppColors.referencePageBg;
   static const Color surfaceBg = Color(0xFFFFFFFF);
@@ -67,6 +69,19 @@ class DesktopTokens {
       border: Border(right: BorderSide(color: borderColor)),
     );
   }
+
+  static List<BoxShadow> coverShadow = [
+    BoxShadow(
+      color: AppColors.primaryDeep.withValues(alpha: 0.24),
+      blurRadius: 36,
+      offset: const Offset(0, 18),
+    ),
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.10),
+      blurRadius: 12,
+      offset: const Offset(0, 4),
+    ),
+  ];
 
   static TextStyle sectionLabelStyle = const TextStyle(
     fontSize: 11,

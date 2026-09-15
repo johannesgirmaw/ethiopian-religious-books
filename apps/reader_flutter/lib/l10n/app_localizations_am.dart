@@ -231,6 +231,14 @@ class AppLocalizationsAm extends AppLocalizations {
   String get readNow => 'አሁን አንብብ';
 
   @override
+  String authoredBy(String name) {
+    return 'በ $name';
+  }
+
+  @override
+  String get downloadOfflineShort => 'ከመስመር ውጭ አስቀምጥ';
+
+  @override
   String get recentlyOpened => 'በቅርብ የተከፈቱ';
 
   @override
@@ -651,6 +659,11 @@ class AppLocalizationsAm extends AppLocalizations {
   String get signOut => 'ውጣ';
 
   @override
+  String headerGreeting(String name) {
+    return 'ሰላም፣ $name';
+  }
+
+  @override
   String get welcomeBack => 'እንኳን በደህና መጡ';
 
   @override
@@ -815,6 +828,12 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get languageAmharic => 'አማርኛ';
+
+  @override
+  String get languageEnglishShort => 'EN';
+
+  @override
+  String get languageAmharicShort => 'አማ';
 
   @override
   String get saveLanguage => 'ቋንቋ አስቀምጥ';

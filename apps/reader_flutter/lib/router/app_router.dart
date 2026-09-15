@@ -56,6 +56,7 @@ import '../screens/reader_screen.dart' deferred as reader;
 
 final rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
+final authNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'auth');
 
 /// Smooth fade+slide transition for detail / reader pages.
 CustomTransitionPage<T> _fadeSlide<T>({
@@ -65,6 +66,10 @@ CustomTransitionPage<T> _fadeSlide<T>({
   return CustomTransitionPage<T>(
     key: key,
     child: child,
+    // Keep the shell route laid out while this overlay is up. Opaque pages
+    // zero-size the route below, and home's scroll view then stays empty
+    // after popping back.
+    opaque: false,
     transitionDuration: const Duration(milliseconds: 280),
     reverseTransitionDuration: const Duration(milliseconds: 220),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -151,6 +156,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SplashScreen(),
       ),
       ShellRoute(
+        navigatorKey: authNavigatorKey,
         builder: (context, state, child) => AuthRouteShell(child: child),
         routes: [
           GoRoute(

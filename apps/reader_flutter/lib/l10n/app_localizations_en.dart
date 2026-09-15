@@ -233,6 +233,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readNow => 'Read now';
 
   @override
+  String authoredBy(String name) {
+    return 'by $name';
+  }
+
+  @override
+  String get downloadOfflineShort => 'Save offline';
+
+  @override
   String get recentlyOpened => 'Recently opened';
 
   @override
@@ -662,6 +670,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signOut => 'Sign out';
 
   @override
+  String headerGreeting(String name) {
+    return 'Hi, $name';
+  }
+
+  @override
   String get welcomeBack => 'Welcome back';
 
   @override
@@ -830,6 +843,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get languageAmharic => 'አማርኛ (Amharic)';
+
+  @override
+  String get languageEnglishShort => 'EN';
+
+  @override
+  String get languageAmharicShort => 'አማ';
 
   @override
   String get saveLanguage => 'Save language';

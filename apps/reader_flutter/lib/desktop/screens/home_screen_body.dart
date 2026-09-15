@@ -11,7 +11,6 @@ import '../../utils/catalog_categories.dart';
 import '../../providers/catalog_providers.dart';
 import '../../providers/continue_reading_provider.dart';
 import '../../providers/engagement_providers.dart';
-import '../../providers/session_notifier.dart';
 import '../../widgets/app_state_view.dart';
 import '../../widgets/home/home_filters.dart';
 import '../../widgets/home/home_sections.dart';
@@ -78,14 +77,7 @@ class _DesktopHomeScreenBodyState extends ConsumerState<DesktopHomeScreenBody> {
   }
 
   Widget _topBar(AppLocalizations l10n) {
-    final user = ref.watch(sessionNotifierProvider).valueOrNull?.user;
-    final name = (user?.displayName?.trim().isNotEmpty == true)
-        ? user!.displayName!.trim()
-        : l10n.readerAccount;
     return HomeTopBar(
-      name: name,
-      email: user?.email,
-      verified: user != null,
       searchHint: l10n.homeSearchHint,
       searchController: _searchCtrl,
       onSearchChanged: _onSearch,
@@ -102,10 +94,7 @@ class _DesktopHomeScreenBodyState extends ConsumerState<DesktopHomeScreenBody> {
         onSort: (v) => setState(() => _sort = v),
       ),
       searchWidth: 360,
-      notificationCount:
-          ref.watch(unreadNotificationCountProvider).valueOrNull ?? 0,
       onFavourites: () => context.push('/favourites'),
-      onNotifications: () => context.push('/notifications'),
     );
   }
 
