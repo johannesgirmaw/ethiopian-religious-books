@@ -15,7 +15,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get brandName => 'ፈለገ መጻሕፍት';
 
   @override
-  String get splashTagline => 'ቅዱስ መጻሕፍት፣ የማይጠፉ ጥበብ';
+  String get splashTagline => 'ቅዱሳት መጻሕፍት፣ የማይጠፋ ጥበብ';
 
   @override
   String get cancel => 'ሰርዝ';
@@ -39,10 +39,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get goBack => 'ተመለስ';
 
   @override
-  String get pdfReaderTitle => 'የ PDF አንባቢ';
+  String get pdfReaderTitle => 'የPDF አንባቢ';
 
   @override
-  String get pdfLoadingLabel => 'PDF በመጫን ላይ…';
+  String get pdfLoadingLabel => 'PDF እየተከፈተ ነው…';
 
   @override
   String get pdfOpenFailed => 'PDF መክፈት አልተቻለም';
@@ -51,7 +51,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get pdfNotAPdfBook => 'ይህ መጽሐፍ PDF አይደለም።';
 
   @override
-  String get pdfDocumentSection => 'PDF ሰነድ';
+  String get pdfDocumentSection => 'የPDF መጽሐፍ';
 
   @override
   String get pdfPickFile => 'PDF ምረጥ';
@@ -61,7 +61,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get pdfUploadHint =>
-      'PDF ስቀል (ከፍተኛ 100 ሜባ)። መጀመሪያ መጽሐፉን አስቀምጥ፣ ከዚያ ፋይሉን አያይዝ።';
+      'PDF ያያይዙ (ከ100 ሜባ አይብለጥ)። መጀመሪያ መጽሐፉን አስቀምጡ፣ ከዚያ ፋይሉን ያያይዙ።';
 
   @override
   String pdfReadyLabel(String filename, String size) {
@@ -69,26 +69,25 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get pdfPendingUpload => 'PDF ተመርጧል — ሲያስቀምጡ ይሰቀላል።';
+  String get pdfPendingUpload => 'PDF ተመርጧል — ሲያስቀምጡ ይጫናል።';
 
   @override
-  String get pdfUploadFailed => 'PDF መስቀል አልተቻለም።';
+  String get pdfUploadFailed => 'PDF መጫን አልተቻለም።';
 
   @override
-  String get pdfUploadSuccess => 'PDF ተሰቅሏል።';
+  String get pdfUploadSuccess => 'PDF ተጭኗል።';
 
   @override
-  String get pdfBookTypeLabel => 'የ PDF መጽሐፍ';
+  String get pdfBookTypeLabel => 'የPDF መጽሐፍ';
 
   @override
-  String get pdfBookTypeHelp =>
-      'አንባቢዎች ይህን መጽሐፍ በ PDF አንባቢ ይከፍታሉ እንጂ በምዕራፍ አንባቢ አይደለም።';
+  String get pdfBookTypeHelp => 'አንባቢው ይህን መጽሐፍ በPDF ይከፍታል እንጂ በምዕራፍ አይደለም።';
 
   @override
   String get openPdfBook => 'PDF ክፈት';
 
   @override
-  String get pdfNoChaptersHint => 'ይህ መጽሐፍ PDF ሰነድ ነው። ለማንበብ ይክፈቱት።';
+  String get pdfNoChaptersHint => 'ይህ መጽሐፍ PDF ነው። ለማንበብ ይክፈቱት።';
 
   @override
   String get generalCategory => 'አጠቃላይ';
@@ -119,25 +118,25 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String catalogSynced(String when) {
-    return 'የመጽሐፍ ዝርዝር ከ$when ጋር ተመሳሰለ';
+    return 'የመጻሕፍት ዝርዝር በ$when ተመሳሰለ';
   }
 
   @override
   String showingLibrarySynced(String when) {
-    return 'ቤተ-መጽሐፍት ከ$when ጋር ተመሳሰለ';
+    return 'ቤተ መጻሕፍት በ$when ተመሳሰለ';
   }
 
   @override
   String get navHome => 'መነሻ';
 
   @override
-  String get navLibrary => 'ቤተ-መጽሐፍት';
+  String get navLibrary => 'ቤተ መጻሕፍት';
 
   @override
   String get navSettings => 'ቅንብሮች';
 
   @override
-  String get navBrowse => 'መጽሐፍት';
+  String get navBrowse => 'መጻሕፍት';
 
   @override
   String get navAccount => 'መገለጫ';
@@ -155,7 +154,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get drawerHome => 'መነሻ';
 
   @override
-  String get drawerBrowse => 'መጽሐፍት ያስሱ';
+  String get drawerBrowse => 'መጻሕፍትን ይመልከቱ';
 
   @override
   String get drawerAccount => 'መለያ';
@@ -167,7 +166,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get drawerSettings => 'ቅንብሮች';
 
   @override
-  String get drawerAbout => 'ስለ መተግበሪያው';
+  String get drawerAbout => 'ስለ ፈለገ መጻሕፍት';
 
   @override
   String get drawerContinueReading => 'ንባብ ይቀጥሉ';
@@ -179,17 +178,17 @@ class AppLocalizationsAm extends AppLocalizations {
   String get settingsTitle => 'ቅንብሮች';
 
   @override
-  String get settingsCacheSection => 'ማከማቻ እና ቤተ-መጻሕፍት';
+  String get settingsCacheSection => 'የተቀመጡ መጻሕፍት';
 
   @override
-  String get aboutTitle => 'ስለ መተግበሪያው';
+  String get aboutTitle => 'ስለ ፈለገ መጻሕፍት';
 
   @override
-  String get aboutAppSectionTitle => 'ስለ መተግበሪያው';
+  String get aboutAppSectionTitle => 'ስለ ፈለገ መጻሕፍት';
 
   @override
   String get aboutAppSectionBody =>
-      'ፈለገ መጻሕፍት ሃይማኖታዊ መጽሐፍትን ለማሰስ፣ ለንባብ እና ለመማር ከኦፍላይን ድጋፍ ጋር ያግዛል።';
+      'ፈለገ መጻሕፍት የኢትዮጵያ ኦርቶዶክስ ተዋሕዶ ቅዱሳት መጻሕፍትን ለማንበብ፣ ለማጥናትና በጸሎት ለመከተል የተዘጋጀ ቤተ መጻሕፍት ነው። ኢንተርኔት ቢኖርም ባይኖርም ንባብዎ አይቋረጥም።';
 
   @override
   String get aboutVersionSectionTitle => 'ስሪት';
@@ -198,154 +197,154 @@ class AppLocalizationsAm extends AppLocalizations {
   String get aboutVersionValue => '1.0.0';
 
   @override
-  String get aboutDevelopersSectionTitle => 'አበልጻጊዎች';
+  String get aboutDevelopersSectionTitle => 'ያዘጋጁት';
 
   @override
-  String get aboutDevelopersBody => 'የኢትዮጵያ ሃይማኖታዊ መጽሐፍት ፕሮጀክት';
+  String get aboutDevelopersBody => 'የኢትዮጵያ ኦርቶዶክስ ተዋሕዶ ቤተ መጻሕፍት ሥራ';
 
   @override
   String get homeQuickProfile => 'መገለጫዎ';
 
   @override
-  String get homeQuickProfileSubtitle => 'መለያ እና መግባት';
+  String get homeQuickProfileSubtitle => 'መለያዎንና መግባትዎን ያስተዳድሩ';
 
   @override
   String get homeQuickSettings => 'ቅንብሮች';
 
   @override
-  String get homeQuickSettingsSubtitle => 'ቋንቋ፣ ኦፍላይን መደበር እና ማስታወሻ';
+  String get homeQuickSettingsSubtitle => 'ቋንቋ፣ የተቀመጡ መጻሕፍትና ማስታወሻ';
 
   @override
   String get actionRead => 'አንብብ';
 
   @override
-  String get actionInfo => 'መረጃ';
+  String get actionInfo => 'ስለ መጽሐፉ';
 
   @override
   String get continueReading => 'ንባብ ይቀጥሉ';
 
   @override
-  String get resumeReading => 'ቀጥል';
+  String get resumeReading => 'ከቆሙበት ይቀጥሉ';
 
   @override
-  String get readNow => 'አሁን አንብብ';
+  String get readNow => 'አሁን ያንብቡ';
 
   @override
   String authoredBy(String name) {
-    return 'በ $name';
+    return 'ያዘጋጁት $name';
   }
 
   @override
-  String get downloadOfflineShort => 'ከመስመር ውጭ አስቀምጥ';
+  String get downloadOfflineShort => 'ያለ ኢንተርኔት አስቀምጥ';
 
   @override
-  String get recentlyOpened => 'በቅርብ የተከፈቱ';
+  String get recentlyOpened => 'በቅርብ የከፈቷቸው';
 
   @override
-  String get homeQuickBrowse => 'ሁሉንም መጽሐፍት';
+  String get homeQuickBrowse => 'ሁሉንም መጻሕፍት';
 
   @override
-  String get homeQuickBrowseSubtitle => 'የሙሉ ዝርዝር ፍለጋ እና ማጣሪያ';
+  String get homeQuickBrowseSubtitle => 'በርዕስ ወይም በምድብ ይፈልጉ';
 
   @override
-  String get homeQuickDownloads => 'የወረዱ';
+  String get homeQuickDownloads => 'የተቀመጡ';
 
   @override
-  String get homeQuickDownloadsSubtitle => 'ለኦፍላይን የተቀመጡ መጽሐፍት';
+  String get homeQuickDownloadsSubtitle => 'ያለ ኢንተርኔት የሚነበቡ መጻሕፍት';
 
   @override
-  String get downloadsPageTitle => 'የወረዱ';
+  String get downloadsPageTitle => 'የተቀመጡ መጻሕፍት';
 
   @override
-  String get downloadsEmptyTitle => 'እስካሁን ምንም አልወረደም';
+  String get downloadsEmptyTitle => 'እስካሁን ምንም አልተቀመጠም';
 
   @override
-  String get downloadsEmptyMessage => 'ከመጽሐፍ ዝርዝር ወይንም በማንበብ ወቅት ለኦፍላይን ያስቀምጡ።';
+  String get downloadsEmptyMessage =>
+      'መጽሐፍ ሲከፍቱ «ያለ ኢንተርኔት አስቀምጥ» ብለው በጉዞም ያንብቡ።';
 
   @override
-  String get downloadsSavedSection => 'በዚህ መሳሪያ ላይ የተቀመጡ';
+  String get downloadsSavedSection => 'በዚህ መሣሪያ ላይ የተቀመጡ';
 
   @override
-  String get downloadsActiveSection => 'በመውረድ ላይ';
+  String get downloadsActiveSection => 'እየወረዱ ያሉ';
 
   @override
-  String get downloadsFailedSection => 'የተሳሳቱ ማውረዶች';
+  String get downloadsFailedSection => 'ያልተሳኩ ማውረዶች';
 
   @override
   String get downloadsNoSavedYet =>
-      'እስካሁን ምንም ከመስመር ውጭ አልተቀመጠም። መጽሐፍ ክፈትና ከመስመር ውጭ አስቀምጥ ተጠቀም።';
+      'እስካሁን ያለ ኢንተርኔት የተቀመጠ መጽሐፍ የለም። መጽሐፍ ይክፈቱና ያስቀምጡ።';
 
   @override
-  String get unableToLoadDownloads => 'የወረዱን ማስገባት አልተቻለም';
+  String get unableToLoadDownloads => 'የተቀመጡትን ማምጣት አልተቻለም';
 
   @override
-  String get savedOfflineBadge => 'ከመስመር ውጭ ይገኛል';
+  String get savedOfflineBadge => 'ያለ ኢንተርኔት ይገኛል';
 
   @override
-  String get downloadInProgress => 'በመውረድ ላይ…';
+  String get downloadInProgress => 'እየወረደ ነው…';
 
   @override
   String get downloadFailedGeneric => 'ማውረድ አልተሳካም';
 
   @override
   String get downloadErrorStorageUnreachable =>
-      'የፋይል ሰርቨሩን ማግኘት አልተቻለም። Docker (MinIO በፖርት 19000) እየሰራ መሆኑንና ይህ መሳሪያ የልማት ኮምፒዩተርዎን በተመሳሳይ አውታረ መረብ ማግኘት እንደሚችል ያረጋግጡ።';
+      'የፋይል ማከማቻው አልተገኘም። Docker (MinIO በፖርት 19000) እየሠራ መሆኑንና ይህ መሣሪያ የልማት ኮምፒውተርዎን ማግኘት እንደሚችል ያረጋግጡ።';
 
   @override
   String get downloadErrorConnection =>
-      'መጽሐፉን ለማውረድ መገናኘት አልተቻለም። ግንኙነትዎን ይፈትሹና እንደገና ይሞክሩ።';
+      'መጽሐፉን ለማውረድ መገናኘት አልተቻለም። ኢንተርኔትዎን ይፈትሹና እንደገና ይሞክሩ።';
 
   @override
-  String get downloadErrorTimeout =>
-      'ማውረድ ጊዜው አልፏል። ቋሚ ግንኙነት ሲኖርዎት እንደገና ይሞክሩ።';
+  String get downloadErrorTimeout => 'ማውረዱ ጊዜው አልፏል። ኢንተርኔት ሲረጋጋ እንደገና ይሞክሩ።';
 
   @override
   String get downloadErrorGeneric => 'ማውረድ አልተሳካም። እባክዎ እንደገና ይሞክሩ።';
 
   @override
-  String get downloadsSyncCache => 'ከሰርቨር አመሳስል';
+  String get downloadsSyncCache => 'አዲሱን አምጣ';
 
   @override
-  String get downloadsClearBookCache => 'ከመስመር ውጭ ቅጂ አስወግድ';
+  String get downloadsClearBookCache => 'ያለ ኢንተርኔት ቅጂ አንሳ';
 
   @override
-  String get downloadsClearAllCache => 'ሁሉንም ከመስመር ውጭ ቅጂዎች አጽዳ';
+  String get downloadsClearAllCache => 'ሁሉንም ያለ ኢንተርኔት ቅጂዎች አጽዳ';
 
   @override
-  String get downloadsSyncDone => 'ከመስመር ውጭ ቅጂ ታድሷል';
+  String get downloadsSyncDone => 'ያለ ኢንተርኔት ቅጂ ታድሷል';
 
   @override
   String downloadsClearBookTitle(String title) {
-    return '\"$title\" ይወገድ?';
+    return '«$title» ይነሳ?';
   }
 
   @override
   String get downloadsClearBookBody =>
-      'በዚህ መሳሪያ ላይ ለዚህ መጽሐፍ የተቀመጡ ምዕራፎችንና ገጾችን ብቻ ያስወግዳል።';
+      'በዚህ መሣሪያ ላይ ለዚህ መጽሐፍ የተቀመጡ ምዕራፎችንና ገጾችን ብቻ ያነሳል።';
 
   @override
-  String get downloadsCacheInvalid => 'ሊነበብ የሚችል ይዘት የለም — አመሳስል ወይም አስወግድ';
+  String get downloadsCacheInvalid => 'ሊነበብ የሚችል ይዘት የለም — ያድሱ ወይም ያንሱ';
 
   @override
   String get downloadsNotInCatalogHint =>
-      'ይህ መጽሐፍ በህዝብ ካታሎጉ ላይ አይደለም፤ ዝርዝሩ ከኦፍላይን ቅጂዎ ይታያል።';
+      'ይህ መጽሐፍ በሕዝብ ዝርዝር ላይ አይደለም፤ ዝርዝሩ ያለ ኢንተርኔት ከተቀመጠው ቅጂዎ ይመጣል።';
 
   @override
-  String get homeQuickAccount => 'መለያ እና ማመሳሰል';
+  String get homeQuickAccount => 'መለያና አንድ ንባብ';
 
   @override
-  String get homeQuickAccountSubtitle => 'መገለጫ፣ ዕቅዶች እና ምርጫዎች';
+  String get homeQuickAccountSubtitle => 'መገለጫ፣ የዕለት ንባብና ምርጫዎች';
 
   @override
-  String get browseByCategory => 'በምድብ ያስሱ';
+  String get browseByCategory => 'በምድብ ይመልከቱ';
 
   @override
   String booksInCategory(int count) {
-    return '$count መጽሐፍት';
+    return '$count መጻሕፍት';
   }
 
   @override
-  String get readFullBook => 'ሙሉ መጽሐፍ አንብብ';
+  String get readFullBook => 'ሙሉ መጽሐፉን ያንብቡ';
 
   @override
   String headerCategoriesStat(int count) {
@@ -354,38 +353,39 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String headerBooksStat(int count) {
-    return '$count መጽሐፍት';
+    return '$count መጻሕፍት';
   }
 
   @override
-  String get mostReadSection => 'በቅርብ የተከፈቱ';
+  String get mostReadSection => 'በቅርብ የከፈቷቸው';
 
   @override
   String get searchTooltip => 'ፈልግ';
 
   @override
-  String get homeNoBooksTitle => 'እስካሁን የታተሙ መጽሐፍት የሉም';
+  String get homeNoBooksTitle => 'እስካሁን የወጡ መጻሕፍት የሉም';
 
   @override
-  String get homeNoBooksMessage => 'አዲስ መጽሐፍት ሲገኙ እዚህ ይታያሉ።';
+  String get homeNoBooksMessage => 'አዲስ መጻሕፍት ሲወጡ እዚህ ይታያሉ።';
 
   @override
-  String get openLibrary => 'ቤተ-መጽሐፍት ክፈት';
+  String get openLibrary => 'ቤተ መጻሕፍት ክፈት';
 
   @override
-  String get exploreWisdomTitle => 'ጥበብን እና ታሪክን ያስሱ';
+  String get exploreWisdomTitle => 'ጥበብና ትውፊት';
 
   @override
-  String get exploreWisdomBody => 'የሃይማኖት መጽሐፍትን በንጹህ አቀራረብ ያንብቡ።';
+  String get exploreWisdomBody =>
+      'የቤተ ክርስቲያንን መጻሕፍት በግልጽ አቀራረብ ያንብቡ፤ ወደ ንባብ በቀላሉ ይግቡ።';
 
   @override
-  String get searchLibrary => 'ቤተ-መጽሐፍት ፈልግ';
+  String get searchLibrary => 'ቤተ መጻሕፍት ፈልግ';
 
   @override
-  String get browseCollections => 'ስብስቦችን ያስሱ';
+  String get browseCollections => 'ምድቦችን ይመልከቱ';
 
   @override
-  String get featuredBooks => 'የተመረጡ መጽሐፍት';
+  String get featuredBooks => 'የተመረጡ መጻሕፍት';
 
   @override
   String curatedSelections(int count) {
@@ -393,28 +393,28 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get librarySections => 'የቤተ-መጽሐፍት ክፍሎች';
+  String get librarySections => 'የቤተ መጻሕፍት ክፍሎች';
 
   @override
   String get viewAll => 'ሁሉንም አሳይ';
 
   @override
-  String get unableToLoadHome => 'መነሻ ገጽ መጫን አልተሳካም';
+  String get unableToLoadHome => 'መነሻውን መክፈት አልተቻለም';
 
   @override
-  String get noSummaryYet => 'እስካሁን ማጠቃለያ የለም።';
+  String get noSummaryYet => 'እስካሁን መግለጫ የለም።';
 
   @override
-  String get readDetails => 'ዝርዝሮችን አንብብ';
+  String get readDetails => 'ስለ መጽሐፉ';
 
   @override
-  String get unknownAuthor => 'ያልታወቀ ደራሲ';
+  String get unknownAuthor => 'አዘጋጁ አልተገለጸም';
 
   @override
-  String get openArticle => 'ጽሑፍ ክፈት';
+  String get openArticle => 'መጽሐፉን ክፈት';
 
   @override
-  String get libraryTitle => 'ቤተ-መጽሐፍት';
+  String get libraryTitle => 'ቤተ መጻሕፍት';
 
   @override
   String get filterTooltip => 'አጣራ';
@@ -426,35 +426,35 @@ class AppLocalizationsAm extends AppLocalizations {
   String get allLanguages => 'ሁሉም ቋንቋዎች';
 
   @override
-  String get chapterKeyLabel => 'የምዕራፍ ቁልፍ';
+  String get chapterKeyLabel => 'የምዕራፍ መለያ';
 
   @override
-  String get chapterKeyHint => 'አማራጭ የሰርቨር ማጣሪያ';
+  String get chapterKeyHint => 'አማራጭ ማጣሪያ';
 
   @override
   String get pageNumberLabel => 'የገጽ ቁጥር';
 
   @override
-  String get pageNumberHint => 'አማራጭ የሰርቨር ማጣሪያ';
+  String get pageNumberHint => 'አማራጭ ማጣሪያ';
 
   @override
-  String get applyFilters => 'ማጣሪያዎችን ተግብር';
+  String get applyFilters => 'አጣራ';
 
   @override
-  String get libraryEmptyTitle => 'ቤተ-መጽሐፍት ባዶ ነው';
+  String get libraryEmptyTitle => 'ቤተ መጻሕፍት ባዶ ነው';
 
   @override
-  String get libraryEmptyMessage => 'አሁን የታተሙ መጽሐፍት የሉም።';
+  String get libraryEmptyMessage => 'አሁን የወጡ መጻሕፍት የሉም።';
 
   @override
-  String get librarySearchHint => 'በርዕስ፣ ደራሲ ወይም ማጠቃለያ ፈልግ';
+  String get librarySearchHint => 'በርዕስ፣ በአዘጋጅ ወይም በመግለጫ ፈልግ';
 
   @override
   String get clearSearchTooltip => 'ፍለጋ አጽዳ';
 
   @override
   String booksAvailable(int count) {
-    return '$count መጽሐፍ(ቶች) ይገኛሉ';
+    return '$count መጻሕፍት ይገኛሉ';
   }
 
   @override
@@ -474,7 +474,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get catalogLanguageGeez => 'ግዕዝ';
 
   @override
-  String get catalogLanguageEnglish => 'English';
+  String get catalogLanguageEnglish => 'እንግሊዝኛ';
 
   @override
   String get clearFilter => 'ማጣሪያ አጽዳ';
@@ -495,17 +495,17 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get noMatchingBooksTitle => 'የሚዛመዱ መጽሐፍት የሉም';
+  String get noMatchingBooksTitle => 'የሚመጥን መጽሐፍ አልተገኘም';
 
   @override
-  String get noMatchingBooksMessage => 'ሌላ ቁልፍ ቃል ይሞክሩ ወይም ማጣሪያዎችን ያጽዱ።';
+  String get noMatchingBooksMessage => 'ሌላ ቃል ይሞክሩ ወይም ማጣሪያውን ያጽዱ።';
 
   @override
-  String get unableToLoadLibrary => 'ቤተ-መጽሐፍት መጫን አልተሳካም';
+  String get unableToLoadLibrary => 'ቤተ መጻሕፍትን መክፈት አልተቻለም';
 
   @override
   String revisionLabel(int n) {
-    return 'ማሻሻያ $n';
+    return 'እትም $n';
   }
 
   @override
@@ -524,48 +524,48 @@ class AppLocalizationsAm extends AppLocalizations {
   String get adminRoleBadge => 'አስተዳዳሪ';
 
   @override
-  String get dashboard => 'ዳሽቦርድ';
+  String get dashboard => 'አስተዳደር';
 
   @override
-  String get inProgressDownloads => 'በሂደት ላይ';
+  String get inProgressDownloads => 'እየወረዱ ያሉ';
 
   @override
-  String get failedDownloads => 'የተሳሳቱ ማውረዶች';
+  String get failedDownloads => 'ያልተሳኩ ማውረዶች';
 
   @override
-  String get availableBooks => 'የሚገኙ መጽሐፍት';
+  String get availableBooks => 'የሚገኙ መጻሕፍት';
 
   @override
   String get languagesMetric => 'ቋንቋዎች';
 
   @override
-  String get offlineChapterCache => 'ከመስመር ውጭ የምዕራፍ ማከማቻ';
+  String get offlineChapterCache => 'ያለ ኢንተርኔት የተቀመጡ ምዕራፎች';
 
   @override
   String offlineBooksSaved(int count) {
-    return '$count መጽሐፍ(ቶች) ከመስመር ውጭ ተቀምጠዋል';
+    return '$count መጻሕፍት ያለ ኢንተርኔት ተቀምጠዋል';
   }
 
   @override
-  String get checkingCache => 'ማከማቻ በመፈተሽ ላይ...';
+  String get checkingCache => 'የተቀመጡትን እየፈተሸ ነው…';
 
   @override
-  String get cacheUnavailable => 'ማከማቻ አይገኝም';
+  String get cacheUnavailable => 'የተቀመጡት አይገኙም';
 
   @override
-  String get clearOfflineCacheTitle => 'ከመስመር ውጭ ማከማቻ ይጸዳ?';
+  String get clearOfflineCacheTitle => 'ያለ ኢንተርኔት የተቀመጡት ይጸዱ?';
 
   @override
-  String get clearOfflineCacheBody => 'የወረዱ የምዕራፍ/ገጽ ይዘቶች ከመሣሪያው ይወገዳሉ።';
+  String get clearOfflineCacheBody => 'ከዚህ መሣሪያ የወረዱ ምዕራፎችና ገጾች ይነሳሉ።';
 
   @override
-  String get offlineCacheCleared => 'ከመስመር ውጭ ማከማቻ ተጸድቋል';
+  String get offlineCacheCleared => 'ያለ ኢንተርኔት የተቀመጡት ተጸድተዋል';
 
   @override
-  String get studyAndReminders => 'ጥናት እና ማስታወሻዎች';
+  String get studyAndReminders => 'ትምህርትና ማስታወሻ';
 
   @override
-  String get dailyReadingReminders => 'ዕለታዊ የንባብ ማስታወሻዎች';
+  String get dailyReadingReminders => 'የዕለት ንባብ ማስታወሻ';
 
   @override
   String reminderTimeUtc(String hh, String mm, String weekdays) {
@@ -573,36 +573,36 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get weekdaysOnlySuffix => ' · በስራ ቀናት ብቻ';
+  String get weekdaysOnlySuffix => ' · ከሰኞ እስከ ዓርብ';
 
   @override
   String get reminderUpdateFailed => 'የማስታወሻ ቅንብሮች አልተሻሻሉም።';
 
   @override
-  String get loadingReminderSettings => 'የማስታወሻ ቅንብሮች በመጫን ላይ...';
+  String get loadingReminderSettings => 'የማስታወሻ ቅንብሮች እየተከፈቱ ነው…';
 
   @override
   String get reminderSettingsUnavailable => 'የማስታወሻ ቅንብሮች አይገኙም';
 
   @override
-  String get dailyReadingPlans => 'ዕለታዊ የንባብ እቅዶች';
+  String get dailyReadingPlans => 'የዕለት ንባብ';
 
   @override
-  String get noReadingPlansYet => 'እስካሁን እቅዶች የሉም';
+  String get noReadingPlansYet => 'እስካሁን የዕለት ንባብ አልተዘጋጀም';
 
   @override
   String readingPlansConfigured(int count) {
-    return '$count እቅድ(ዎች) ተዋቅረዋል';
+    return '$count የዕለት ንባብ ተዘጋጅተዋል';
   }
 
   @override
   String get tapOpenTodaysReading => ' · የዛሬውን ንባብ ለመክፈት ይንኩ';
 
   @override
-  String get createPlanTooltip => 'እቅድ ፍጠር';
+  String get createPlanTooltip => 'የዕለት ንባብ ጨምር';
 
   @override
-  String get dailyPlanCreateFailed => 'ዕለታዊ እቅድ መፍጠር አልተሳካም።';
+  String get dailyPlanCreateFailed => 'የዕለት ንባብ መፍጠር አልተሳካም።';
 
   @override
   String get accountInfo => 'የመለያ መረጃ';
@@ -617,13 +617,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileUserIdCopied => 'የተጠቃሚ መለያ ተቀድቷል';
 
   @override
-  String get profileRoleLabel => 'ሚና';
+  String get profileRoleLabel => 'ኃላፊነት';
 
   @override
-  String get profilePreferredLanguageLabel => 'የተመረጠ ቋንቋ';
+  String get profilePreferredLanguageLabel => 'የመረጡት ቋንቋ';
 
   @override
-  String get profileSuperuserLabel => 'የአስተዳዳሪ መዳረሻ';
+  String get profileSuperuserLabel => 'የአስተዳዳሪ ሥልጣን';
 
   @override
   String get profileValueNotSet => 'አልተመረጠም';
@@ -632,7 +632,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileYes => 'አዎ';
 
   @override
-  String get profileNo => 'አይ';
+  String get profileNo => 'አይደለም';
 
   @override
   String get profileOpenSettings => 'ቅንብሮች';
@@ -641,22 +641,22 @@ class AppLocalizationsAm extends AppLocalizations {
   String get emailLabel => 'ኢሜይል';
 
   @override
-  String get displayNameLabel => 'የማሳያ ስም';
+  String get displayNameLabel => 'ስም';
 
   @override
-  String get adminPanel => 'የአስተዳዳሪ ፓነል';
+  String get adminPanel => 'የአስተዳደር ገጽ';
 
   @override
-  String get adminPanelSubtitle => 'መጽሐፍት፣ ታይነት እና ህትመት ያቀናብሩ';
+  String get adminPanelSubtitle => 'መጻሕፍትን፣ ታይነትንና ህትመትን ያቀናብሩ';
 
   @override
-  String get adminManageBooksSubtitle => 'መጽሐፍትዎን ይፍጠሩ፣ ያስገቡ እና ያትሙ';
+  String get adminManageBooksSubtitle => 'መጻሕፍትዎን ይፍጠሩ፣ ያስገቡ እና ያውጡ';
 
   @override
   String get noProfileCached => 'መገለጫ አልተቀመጠም።';
 
   @override
-  String get signOut => 'ውጣ';
+  String get signOut => 'ይውጡ';
 
   @override
   String headerGreeting(String name) {
@@ -667,7 +667,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get welcomeBack => 'እንኳን በደህና መጡ';
 
   @override
-  String get signInSubtitle => 'ለመቀጠል ይግቡ እና እድገትዎን ያመሳስሉ።';
+  String get signInSubtitle => 'ንባብዎን ለመቀጠልና የደረሱበት እንዳይጠፋ ይግቡ።';
 
   @override
   String get emailFieldLabel => 'ኢሜይል';
@@ -694,64 +694,64 @@ class AppLocalizationsAm extends AppLocalizations {
   String get hidePassword => 'የይለፍ ቃል ደብቅ';
 
   @override
-  String get passwordMinHelper => 'ቢያንስ 10 ቁምፊዎች';
+  String get passwordMinHelper => 'ቢያንስ 10 ፊደላት';
 
   @override
   String get passwordRequired => 'የይለፍ ቃል ያስፈልጋል';
 
   @override
-  String get signIn => 'ግባ';
+  String get signIn => 'ይግቡ';
 
   @override
-  String get createAccount => 'መለያ ፍጠር';
+  String get createAccount => 'መለያ ይክፈቱ';
 
   @override
-  String get createAccountTitle => 'መለያ ፍጠር';
+  String get createAccountTitle => 'መለያ ይክፈቱ';
 
   @override
-  String get registerSubtitle => 'እድገት፣ ምልክቶች እና ማውረዶችን ለማስቀመጥ መገለጫ ይፍጠሩ።';
+  String get registerSubtitle => 'የደረሱበት፣ ምልክቶችዎና የተቀመጡ መጻሕፍት እንዲቆዩ መገለጫ ይክፈቱ።';
 
   @override
-  String get passwordMinRegisterHelper => 'ቢያንስ 10 ቁምፊዎች ይጠቀሙ';
+  String get passwordMinRegisterHelper => 'ቢያንስ 10 ፊደላት ይጠቀሙ';
 
   @override
-  String get passwordTooShort => 'የይለፍ ቃል ቢያንስ 10 ቁምፊዎች መሆን አለበት';
+  String get passwordTooShort => 'የይለፍ ቃል ቢያንስ 10 ፊደላት መሆን አለበት';
 
   @override
-  String get displayNameOptional => 'የማሳያ ስም (አማራጭ)';
+  String get displayNameOptional => 'ስም (አማራጭ)';
 
   @override
   String get alreadyHaveAccount => 'መለያ አለዎት? ይግቡ';
 
   @override
-  String get forgotPassword => 'የይለፍ ቃል ረሱ?';
+  String get forgotPassword => 'የይለፍ ቃልዎን ረሱ?';
 
   @override
-  String get forgotPasswordTitle => 'የይለፍ ቃል ዳግም ያስጀምሩ';
+  String get forgotPasswordTitle => 'የይለፍ ቃል ይቀይሩ';
 
   @override
   String get forgotPasswordSubtitle =>
-      'ኢሜይልዎን ያስገቡ፤ የይለፍ ቃልዎን ዳግም ለማስጀመር ባለ 6 አሃዝ ኮድ እንልክልዎታለን።';
+      'ኢሜይልዎን ያስገቡ፤ የይለፍ ቃልዎን ለመቀየር ባለ 6 አሃዝ ቁጥር እንልክልዎታለን።';
 
   @override
-  String get sendResetCode => 'የማስጀመሪያ ኮድ ላክ';
+  String get sendResetCode => 'ቁጥሩን ላክ';
 
   @override
   String get resetPasswordTitle => 'አዲስ የይለፍ ቃል ያስቀምጡ';
 
   @override
   String resetPasswordSubtitle(String email) {
-    return 'ወደ $email የላክነውን ኮድ ያስገቡ እና አዲስ የይለፍ ቃል ይምረጡ።';
+    return 'ወደ $email የላክነውን ቁጥር ያስገቡና አዲስ የይለፍ ቃል ይምረጡ።';
   }
 
   @override
-  String get resetCodeFieldLabel => 'ባለ 6 አሃዝ ኮድ';
+  String get resetCodeFieldLabel => 'ባለ 6 አሃዝ ቁጥር';
 
   @override
-  String get resetCodeRequired => 'ባለ 6 አሃዝ ኮዱን ያስገቡ';
+  String get resetCodeRequired => 'ባለ 6 አሃዝ ቁጥሩን ያስገቡ';
 
   @override
-  String get resetCodeInvalid => 'ኮዱ 6 አሃዝ መሆን አለበት';
+  String get resetCodeInvalid => 'ቁጥሩ 6 አሃዝ መሆን አለበት';
 
   @override
   String get newPasswordFieldLabel => 'አዲስ የይለፍ ቃል';
@@ -763,28 +763,28 @@ class AppLocalizationsAm extends AppLocalizations {
   String get confirmPasswordRequired => 'አዲሱን የይለፍ ቃል ያረጋግጡ';
 
   @override
-  String get passwordsDoNotMatch => 'የይለፍ ቃላቶቹ አይዛመዱም';
+  String get passwordsDoNotMatch => 'የይለፍ ቃላቶቹ አይመሳሰሉም';
 
   @override
-  String get resetPasswordCta => 'የይለፍ ቃል ዳግም አስጀምር';
+  String get resetPasswordCta => 'የይለፍ ቃል ቀይር';
 
   @override
-  String get passwordResetSuccess => 'የይለፍ ቃልዎ ዳግም ተጀምሯል። እባክዎ ይግቡ።';
+  String get passwordResetSuccess => 'የይለፍ ቃልዎ ተቀይሯል። እባክዎ ይግቡ።';
 
   @override
   String get resetPasswordFailed =>
-      'የይለፍ ቃልዎን ዳግም ማስጀመር አልተቻለም። ኮዱን አረጋግጠው እንደገና ይሞክሩ።';
+      'የይለፍ ቃል መቀየር አልተቻለም። ቁጥሩን ይመልከቱና እንደገና ይሞክሩ።';
 
   @override
-  String get resendCode => 'ኮድ እንደገና ላክ';
+  String get resendCode => 'ቁጥሩን እንደገና ላክ';
 
   @override
   String resendCodeIn(int seconds) {
-    return 'ኮድ በ $seconds ሰከንድ ውስጥ እንደገና ላክ';
+    return 'ቁጥሩን እንደገና በ$seconds ሰከንድ';
   }
 
   @override
-  String get resetCodeResent => 'አዲስ ኮድ እየተላከ ነው።';
+  String get resetCodeResent => 'አዲስ ቁጥር ተልኮልዎታል።';
 
   @override
   String get backToSignIn => 'ወደ መግቢያ ተመለስ';
@@ -796,32 +796,32 @@ class AppLocalizationsAm extends AppLocalizations {
   String get changePasswordSubtitle => 'ለመለያዎ አዲስ የይለፍ ቃል ይምረጡ።';
 
   @override
-  String get currentPasswordFieldLabel => 'የአሁኑ የይለፍ ቃል';
+  String get currentPasswordFieldLabel => 'ያሁኑ የይለፍ ቃል';
 
   @override
-  String get currentPasswordRequired => 'የአሁኑን የይለፍ ቃል ያስገቡ';
+  String get currentPasswordRequired => 'ያሁኑን የይለፍ ቃል ያስገቡ';
 
   @override
-  String get changePasswordCta => 'የይለፍ ቃል አዘምን';
+  String get changePasswordCta => 'የይለፍ ቃል አድስ';
 
   @override
-  String get passwordChangedSuccess => 'የይለፍ ቃልዎ ተዘምኗል።';
+  String get passwordChangedSuccess => 'የይለፍ ቃልዎ ታድሷል።';
 
   @override
-  String get changePasswordFailed => 'የይለፍ ቃልዎን ማዘመን አልተቻለም።';
+  String get changePasswordFailed => 'የይለፍ ቃል ማደስ አልተቻለም።';
 
   @override
-  String get profileSecuritySection => 'ደህንነት';
+  String get profileSecuritySection => 'ደኅንነት';
 
   @override
-  String get changePasswordLinkSubtitle => 'የመለያዎን የይለፍ ቃል ያዘምኑ';
+  String get changePasswordLinkSubtitle => 'የመለያዎን የይለፍ ቃል ያድሱ';
 
   @override
   String get languagePreferenceTitle => 'ቋንቋ';
 
   @override
   String get languagePreferenceSubtitle =>
-      'ለመተግበሪያው ምናሌዎች እና ቁልፎች እንግሊዝኛ ወይም አማርኛ ይምረጡ።';
+      'የመተግበሪያው ጽሑፍና ቁልፎች በእንግሊዝኛ ወይም በአማርኛ ይታዩ።';
 
   @override
   String get languageEnglish => 'English';
@@ -842,7 +842,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get languageSaved => 'ቋንቋ ተቀምጧል';
 
   @override
-  String get bookDetailsTitle => 'የመጽሐፍ ዝርዝሮች';
+  String get bookDetailsTitle => 'ስለ መጽሐፉ';
 
   @override
   String get bookStatChapters => 'ምዕራፎች';
@@ -851,16 +851,16 @@ class AppLocalizationsAm extends AppLocalizations {
   String get bookStatPages => 'ገጾች';
 
   @override
-  String get bookStatReaders => 'አንባቦች';
+  String get bookStatReaders => 'አንባቢዎች';
 
   @override
-  String get shareBookTooltip => 'መጽሐፍን አጋራ';
+  String get shareBookTooltip => 'አገናኝ ቅዳ';
 
   @override
-  String get bookSharedToClipboard => 'የመጽሐፍ ርዕስ ተቀድቷል';
+  String get bookSharedToClipboard => 'የመጽሐፉ አገናኝ ተቀድቷል';
 
   @override
-  String get preparingDownload => 'ማውረድ በመዘጋጀት ላይ…';
+  String get preparingDownload => 'ማውረድ እየተዘጋጀ ነው…';
 
   @override
   String savedUnderPath(String path) {
@@ -873,10 +873,10 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get summarySection => 'ማጠቃለያ';
+  String get summarySection => 'መግለጫ';
 
   @override
-  String get readyToRead => 'ለንባብ ዝግጁ';
+  String get readyToRead => 'ለንባብ ዝግጁ ነው';
 
   @override
   String downloadState(String state) {
@@ -884,23 +884,23 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get startReading => 'ንባብ ጀምር';
+  String get startReading => 'ንባብ ይጀምሩ';
 
   @override
-  String get downloadOffline => 'ለከመስመር ውጭ ንባብ አውርድ';
+  String get downloadOffline => 'ያለ ኢንተርኔት ለማንበብ አውርድ';
 
   @override
-  String get unableToLoadBook => 'ይህን መጽሐፍ መጫን አልተሳካም';
+  String get unableToLoadBook => 'ይህን መጽሐፍ መክፈት አልተቻለም';
 
   @override
-  String get bookLoadErrorMessage => 'መጽሐፉ አሁን መክፈት አልተቻለም። እንደገና ይሞክሩ።';
+  String get bookLoadErrorMessage => 'መጽሐፉ አሁን ሊከፈት አልቻለም። እባክዎ እንደገና ይሞክሩ።';
 
   @override
-  String get bookNotInCatalogTitle => 'መጽሐፉ በአንባቢ ዝርዝር ውስጥ የለም';
+  String get bookNotInCatalogTitle => 'መጽሐፉ በቤተ መጻሕፍት አይገኝም';
 
   @override
   String get bookNotInCatalogMessage =>
-      'ያልታተመ ወይም የተደበቀ ሊሆን ይችላል። ከአስተዳዳሪ ይፍቱ።';
+      'መጽሐፉ ላልወጣ ወይም ለተደበቀ ይመስላል። ከአስተዳደር አውጥተው እንደገና ይሞክሩ።';
 
   @override
   String get readerTitle => 'አንባቢ';
@@ -911,35 +911,35 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get bookmarkRemoved => 'ምልክት ተወግዷል';
+  String get bookmarkRemoved => 'ምልክቱ ተነስቷል';
 
   @override
   String get bookmarkSaved => 'ምልክት ተቀምጧል';
 
   @override
-  String get noBookmarksYet => 'እስካሁን ምልክቶች የሉም።';
+  String get noBookmarksYet => 'እስካሁን ምልክት የለም። በአንባቢው ላይ ምልክት ይንኩ።';
 
   @override
-  String get savedLocation => 'የተቀመጠ ቦታ';
+  String get savedLocation => 'የተቀመጠበት ቦታ';
 
   @override
-  String get removeTooltip => 'አስወግድ';
+  String get removeTooltip => 'አንሳ';
 
   @override
-  String get selectChapter => 'ምዕራፍ ይምረጡ';
+  String get selectChapter => 'ምዕራፍ ምረጥ';
 
   @override
-  String get selectPage => 'ገጽ ይምረጡ';
+  String get selectPage => 'ገጽ ምረጥ';
 
   @override
-  String get readerPosition => 'የአንባቢ ቦታ';
+  String get readerPosition => 'የደረሱበት';
 
   @override
-  String get readingPosition => 'የንባብ ቦታ';
+  String get readingPosition => 'የደረሱበት';
 
   @override
   String pageCount(int count) {
-    return '$count ገጽ(ዎች)';
+    return '$count ገጾች';
   }
 
   @override
@@ -948,28 +948,28 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get choosePage => 'ገጽ ይምረጡ';
+  String get choosePage => 'ገጽ ምረጥ';
 
   @override
-  String get jumpToPageSubtitle => 'በቀጥታ ወደ ገጽ ይዝፉ';
+  String get jumpToPageSubtitle => 'ወደ ገጽ በቀጥታ ይሂዱ';
 
   @override
   String get allChapters => 'ሁሉም ምዕራፎች';
 
   @override
-  String get searchPagesWholeBook => 'በመላው መጽሐፍ ገጾችን ፈልግ';
+  String get searchPagesWholeBook => 'በሙሉ መጽሐፉ ውስጥ ፈልግ';
 
   @override
   String get noChapterSelected => 'ምዕራፍ አልተመረጠም';
 
   @override
-  String get cloudBookmarkSaved => 'የደመና ምልክት ተቀምጧል';
+  String get cloudBookmarkSaved => 'ምልክቱ በመለያዎ ተቀምጧል';
 
   @override
-  String get quickNoteLabel => 'ፈጣን ማስታወሻ';
+  String get quickNoteLabel => 'አጭር ማስታወሻ';
 
   @override
-  String get quickNoteHint => 'አስተያየትዎን ይጻፉ';
+  String get quickNoteHint => 'ያሰቡትን ወይም ያጠቃለሉትን ይጻፉ';
 
   @override
   String get saveNote => 'ማስታወሻ አስቀምጥ';
@@ -979,17 +979,17 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String highlightSavedOnPage(int n) {
-    return 'በገጽ $n ማድመቅ ተቀምጧል';
+    return 'ማድመቂያ በገጽ $n ተቀምጧል';
   }
 
   @override
-  String get highlightsUnavailable => 'ማድመቆች አሁን አይገኙም';
+  String get highlightsUnavailable => 'ማድመቂያዎች አሁን አይገኙም';
 
   @override
-  String get noHighlightsYet => 'እስካሁን ማድመቆች የሉም።';
+  String get noHighlightsYet => 'እስካሁን ማድመቂያ የለም። የማድመቂያ ምልክቱን ይንኩ።';
 
   @override
-  String get highlightDefaultTitle => 'ማድመቅ';
+  String get highlightDefaultTitle => 'ማድመቂያ';
 
   @override
   String highlightChapterPage(String ch, String page) {
@@ -997,67 +997,68 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get offlineCopyRemoved => 'ከመስመር ውጭ ቅጂ ተወግዷል';
+  String get offlineCopyRemoved => 'ያለ ኢንተርኔት ቅጂ ተነስቷል';
 
   @override
-  String get savedOfflineReading => 'ለከመስመር ውጭ ንባብ ተቀምጧል';
+  String get savedOfflineReading => 'ያለ ኢንተርኔት ለማንበብ ተቀምጧል';
 
   @override
-  String get findInBookLabel => 'በመጽሐፍ ውስጥ ፈልግ';
+  String get findInBookLabel => 'በመጽሐፉ ውስጥ ፈልግ';
 
   @override
   String get findInBookHint => 'ቃል ወይም ሐረግ ይጻፉ';
 
   @override
-  String get searchOutsideChapter => 'ከተመረጠው ምዕራፍ ውጭ ፈልግ';
+  String get searchOutsideChapter => 'ከተመረጠው ምዕራፍ ውጭም ፈልግ';
 
   @override
-  String get noMatchesYet => 'እስካሁን ተዛመድ የለም።';
+  String get noMatchesYet => 'እስካሁን የሚመጥን አልተገኘም።';
 
   @override
   String matchCount(int count) {
-    return '$count ተዛመድ(ዎች)';
+    return '$count ተገኝተዋል';
   }
 
   @override
-  String get previousMatch => 'ቀዳሚ ተዛመድ';
+  String get previousMatch => 'ያለፈው';
 
   @override
-  String get nextMatch => 'ቀጣይ ተዛመድ';
+  String get nextMatch => 'የሚቀጥለው';
 
   @override
   String matchPosition(int current, int total) {
-    return '$current ከ $total';
+    return '$current ከ$total';
   }
 
   @override
-  String get pdfSearching => 'በመፈለግ ላይ…';
+  String get pdfSearching => 'እየፈለገ ነው…';
 
   @override
-  String get typographyCompact => 'ጠቅላላ';
+  String get typographyCompact => 'ጠባብ';
 
   @override
-  String get typographyComfort => 'መጣጣም';
+  String get typographyComfort => 'ምቹ';
 
   @override
   String get typographyLarge => 'ትልቅ';
 
   @override
-  String get typographyPresetsTitle => 'የፊደል ቅንብሮች';
+  String get typographyPresetsTitle => 'የፊደል መጠን';
 
   @override
-  String get typographyPresetsSubtitle => 'ለእርስዎ የሚስማማውን ይምረጡ';
+  String get typographyPresetsSubtitle => 'ለዓይንዎ የሚመች ንባብ ይምረጡ';
 
   @override
   String typographySizeLine(int size, String line) {
-    return 'መጠን $size · መስመር $line';
+    return 'መጠን $size • ክፍተት $line';
   }
 
   @override
   String get chaptersHeading => 'ምዕራፎች';
 
   @override
-  String get noChapterContentYet => 'ይህ መጽሐፍ እስካሁን ምዕራፍ/ገጽ የለውም። በአስተዳዳሪ ይጨምሩ።';
+  String get noChapterContentYet =>
+      'ይህ መጽሐፍ እስካሁን ምዕራፍ/ገጽ የለውም። በአስተዳደር ምዕራፍ ጨምረው ያውጡ።';
 
   @override
   String chapterChipRaw(String label) {
@@ -1079,10 +1080,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get filterPageTooltip => 'ገጽ አጣራ';
 
   @override
-  String get removeOfflineCopy => 'ከመስመር ውጭ ቅጂ አስወግድ';
+  String get removeOfflineCopy => 'ያለ ኢንተርኔት ቅጂ አንሳ';
 
   @override
-  String get saveChaptersOffline => 'ምዕራፎች ከመስመር ውጭ አስቀምጥ';
+  String get saveChaptersOffline => 'ምዕራፎችን ያለ ኢንተርኔት አስቀምጥ';
 
   @override
   String get backToChapters => 'ወደ ምዕራፎች ተመለስ';
@@ -1091,44 +1092,44 @@ class AppLocalizationsAm extends AppLocalizations {
   String get noChapterSelectedShort => 'ምዕራፍ አልተመረጠም';
 
   @override
-  String get typographyPresetsTooltip => 'የፊደል ቅንብሮች';
+  String get typographyPresetsTooltip => 'የፊደል መጠን';
 
   @override
-  String get saveCloudBookmarkTooltip => 'የደመና ምልክት አስቀምጥ';
+  String get saveCloudBookmarkTooltip => 'ምልክት በመለያዎ አስቀምጥ';
 
   @override
   String get addNoteTooltip => 'ማስታወሻ ጨምር';
 
   @override
-  String get addHighlightTooltip => 'ማድመቅ ጨምር';
+  String get addHighlightTooltip => 'ማድመቂያ ጨምር';
 
   @override
-  String get highlightsTooltip => 'ማድመቆች';
+  String get highlightsTooltip => 'ማድመቂያዎች';
 
   @override
-  String get pinControls => 'መቆጣጠሪያዎችን አስይዝ';
+  String get pinControls => 'ሁልጊዜ አሳይ';
 
   @override
-  String get autoHideControls => 'መቆጣጠሪያዎችን በራስ-ደብቅ';
+  String get autoHideControls => 'በራሱ ይደበቅ';
 
   @override
-  String get readerExpandTools => 'የንባብ መሳሪያዎችን አሳይ';
+  String get readerExpandTools => 'የንባብ መሣሪያዎችን አሳይ';
 
   @override
-  String get readerCollapseTools => 'የንባብ መሳሪያዎችን ደብቅ';
+  String get readerCollapseTools => 'የንባብ መሣሪያዎችን ደብቅ';
 
   @override
-  String get readerPageCurlOn => 'ወደ ገጽ እይታ ቀይር';
+  String get readerPageCurlOn => 'ገጽ በገጽ አሳይ';
 
   @override
-  String get readerPageCurlOff => 'ወደ ሸብልል እይታ ቀይር';
+  String get readerPageCurlOff => 'ተከታታይ አሳይ';
 
   @override
-  String get readerPageCurlHint => 'ገጾችን ለመቀየር በጎን የሚገኙትን ቀስት ይጠቀሙ።';
+  String get readerPageCurlHint => 'ገጽ ለመቀየር የጎን ቀስቶቹን ይጠቀሙ።';
 
   @override
   String matchOnPage(int page, String snippet) {
-    return 'በገጽ $page ተዛመድ፦ $snippet';
+    return 'በገጽ $page፦ $snippet';
   }
 
   @override
@@ -1138,62 +1139,62 @@ class AppLocalizationsAm extends AppLocalizations {
   String get readerPageLabel => 'ገጽ';
 
   @override
-  String get adminHomeTitle => 'አስተዳዳሪ';
+  String get adminHomeTitle => 'አስተዳደር';
 
   @override
-  String get publisherTools => 'የማተሚያ መሣሪያዎች';
+  String get publisherTools => 'የአዘጋጅ መሣሪያዎች';
 
   @override
-  String get publisherToolsBody => 'የመጽሐፍ ዝርዝር፣ መረጃ እና ህትመት ያቀናብሩ።';
+  String get publisherToolsBody =>
+      'የመጻሕፍት ዝርዝር ታይነት፣ መግለጫና ህትመት ያቀናብሩ። የእትም ጥቅሎች ማስገባት አሁንም ከኤፒአይ የተፈረሙ አድራሻዎችን ይጠቀማል።';
 
   @override
-  String get adminBooksMenuTitle => 'መጽሐፍት';
+  String get adminBooksMenuTitle => 'መጻሕፍት';
 
   @override
-  String get adminBooksMenuSubtitle => 'ዝርዝር፣ ፍጠር፣ አርትዖት፣ ህትመት';
+  String get adminBooksMenuSubtitle => 'ዝርዝር፣ መፍጠር፣ ማረም፣ ማውጣት / መደበቅ';
 
   @override
-  String get adminBooksListTitle => 'መጽሐፍት ያቀናብሩ';
+  String get adminBooksListTitle => 'መጻሕፍትን ያቀናብሩ';
 
   @override
   String adminBooksCount(int shown, int total) {
-    return '$shown ከ $total መጽሐፍት';
+    return '$shown ከ$total መጻሕፍት';
   }
 
   @override
-  String get adminEditAction => 'አርትዕ';
+  String get adminEditAction => 'አርም';
 
   @override
   String get adminBookActionsTooltip => 'የመጽሐፍ ተግባራት';
 
   @override
-  String get adminPublishedBookLockedTitle => 'የታተመ መጽሐፍ';
+  String get adminPublishedBookLockedTitle => 'የወጣ መጽሐፍ';
 
   @override
   String get adminPublishedBookLockedMessage =>
-      'መረጃውን ወይም ረቂቁን ከማስተካከልዎ በፊት ይህን መጽሐፍ ህትመት አስቆም።';
+      'መግለጫውን ወይም ረቂቁን ከማረምዎ በፊት መጽሐፉን ይደብቁ።';
 
   @override
-  String get adminNotBookCreatorTitle => 'ማስተካከል የተገደበ';
+  String get adminNotBookCreatorTitle => 'ማረም የተገደበ ነው';
 
   @override
-  String get adminNotBookCreatorMessage =>
-      'ይህን መጽሐፍ የፈጠረው ተጠቃሚ ብቻ ማስተካከል ይችላል።';
+  String get adminNotBookCreatorMessage => 'መጽሐፉን የፈጠረው ብቻ ማረም ይችላል።';
 
   @override
   String get newBookTooltip => 'አዲስ መጽሐፍ';
 
   @override
-  String get importFromWord => 'ከዎርድ (.docx) አስገባ';
+  String get importFromWord => 'ከWord ያስገቡ (.docx)';
 
   @override
-  String get importFromPdf => 'PDF (.pdf) አስገባ';
+  String get importFromPdf => 'ከPDF ያስገቡ (.pdf)';
 
   @override
   String get importDocxInProgress => 'ሰነዱ እየገባ ነው…';
 
   @override
-  String get importDocxSuccess => 'ገብቷል። ምዕራፎቹን ገምግመው ያትሙ።';
+  String get importDocxSuccess => 'ገብቷል። ምዕራፎቹን ይመልከቱ፣ ከዚያ ያውጡ።';
 
   @override
   String get importDocxFailed => 'ሰነዱን ማስገባት አልተቻለም።';
@@ -1202,35 +1203,35 @@ class AppLocalizationsAm extends AppLocalizations {
   String get importPdfInProgress => 'PDF እየገባ ነው…';
 
   @override
-  String get importPdfSuccess => 'ገብቷል። የመጽሐፉን ዝርዝር ገምግመው ያትሙ።';
+  String get importPdfSuccess => 'ገብቷል። የመጽሐፉን መግለጫ ይመልከቱ፣ ከዚያ ያውጡ።';
 
   @override
   String get importPdfFailed => 'PDF ማስገባት አልተቻለም።';
 
   @override
-  String get importPdfTooLarge => 'PDF ከ 100 ሜባ በላይ ነው።';
+  String get importPdfTooLarge => 'PDF ከ100 ሜባ በላይ ነው።';
 
   @override
   String get importPdfInvalid => 'የተመረጠው ፋይል ትክክለኛ PDF አይደለም።';
 
   @override
-  String get importScanning => 'ሰነዱ እየተመረመረ ነው…';
+  String get importScanning => 'ሰነዱ እየተፈተሸ ነው…';
 
   @override
   String get importLegacyDocTitle => 'እንደ .docx ያስቀምጡ';
 
   @override
   String get importLegacyDocMessage =>
-      'ይህ የቆየ .doc ፋይል ነው። በዎርድ ከፍተው Save As → Word Document (.docx) ካደረጉ በኋላ እንደገና ይሞክሩ።';
+      'ይህ የቆየ .doc ፋይል ነው። በWord ከፍተው Save As → Word Document (.docx) በማለት እንደገና ይሞክሩ።';
 
   @override
   String get importChooseStructure => 'ምዕራፎች እንዴት ይለዩ?';
 
   @override
-  String get importModeAuto => 'በራስ-ሰር';
+  String get importModeAuto => 'በራሱ';
 
   @override
-  String get importModeHeading => 'የርዕስ ቅጦች';
+  String get importModeHeading => 'የርዕስ ቅርጾች';
 
   @override
   String get importModePatterns => 'የምዕራፍ ጽሑፍ (ለምሳሌ ምዕራፍ 1)';
@@ -1239,13 +1240,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get importModeFormat => 'ደማቅ / መሃል ርዕሶች';
 
   @override
-  String get importModePagebreak => 'የገጽ መጨረሻዎች';
+  String get importModePagebreak => 'የገጽ ስብራት';
 
   @override
   String get importModeMarker => 'ምልክት መስመሮች (### / <<<CHAPTER>>>)';
 
   @override
-  String get importModeSize => 'ነጠላ ምዕራፍ (በመጠን)';
+  String get importModeSize => 'አንድ ምዕራፍ (በመጠን)';
 
   @override
   String importDetectedCounts(int chapters, int pages) {
@@ -1256,19 +1257,19 @@ class AppLocalizationsAm extends AppLocalizations {
   String get importRecommendedBadge => 'የሚመከር';
 
   @override
-  String get importCustomPatternLabel => 'ብጁ ስርዓተ-ጥለት (regex)';
+  String get importCustomPatternLabel => 'የራስዎ ሥርዓት (regex)';
 
   @override
-  String get importCustomMarkerLabel => 'ብጁ ምልክት';
+  String get importCustomMarkerLabel => 'የራስዎ ምልክት';
 
   @override
-  String get importRescan => 'እንደገና ቃኝ';
+  String get importRescan => 'እንደገና ፈትሽ';
 
   @override
   String get importDetectedChaptersTitle => 'የተገኙ ምዕራፎች';
 
   @override
-  String get importNoChapters => 'ለዚህ አማራጭ ምንም ምዕራፍ አልተገኘም።';
+  String get importNoChapters => 'ለዚህ ምርጫ ምዕራፍ አልተገኘም።';
 
   @override
   String importMoreTitles(int count) {
@@ -1282,40 +1283,40 @@ class AppLocalizationsAm extends AppLocalizations {
   String get ok => 'እሺ';
 
   @override
-  String get noBooksYetTitle => 'እስካሁን መጽሐፍት የሉም';
+  String get noBooksYetTitle => 'እስካሁን መጽሐፍ የለም';
 
   @override
-  String get noBooksYetMessage => 'ወደ አንባቢዎች ለማተም የመጀመሪያ መጽሐፍዎን ይፍጠሩ።';
+  String get noBooksYetMessage => 'ለአንባቢዎች ለማውጣት የመጀመሪያ መጽሐፍዎን ይፍጠሩ።';
 
   @override
-  String get createFirstBook => 'መጽሐፍ ፍጠር';
+  String get createFirstBook => 'ፍጠር';
 
   @override
-  String get searchBooksLabel => 'መጽሐፍት ፈልግ';
+  String get searchBooksLabel => 'መጻሕፍት ፈልግ';
 
   @override
-  String get searchBooksHint => 'ርዕስ፣ ደራሲ፣ ቋንቋ';
+  String get searchBooksHint => 'ርዕስ፣ አዘጋጅ፣ ቋንቋ';
 
   @override
   String get filterAll => 'ሁሉም';
 
   @override
-  String get filterPublished => 'የታተመ';
+  String get filterPublished => 'የወጡ';
 
   @override
-  String get filterHidden => 'የተደበቀ';
+  String get filterHidden => 'የተደበቁ';
 
   @override
-  String get sortRecent => 'ደርድር፦ ቅርብ';
+  String get sortRecent => 'ደርድር፦ በቅርብ';
 
   @override
   String get sortTitle => 'ደርድር፦ ርዕስ';
 
   @override
-  String get noBooksMatchFilters => 'ከማጣሪያዎች ጋር የሚዛመድ መጽሐፍ የለም።';
+  String get noBooksMatchFilters => 'ከማጣሪያው ጋር የሚመጥን መጽሐፍ የለም።';
 
   @override
-  String get unableToLoadBooks => 'መጽሐፍት መጫን አልተሳካም';
+  String get unableToLoadBooks => 'መጻሕፍትን መክፈት አልተቻለም';
 
   @override
   String visibilityLabel(String vis) {
@@ -1328,90 +1329,89 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get publishedStatus => 'የታተመ';
+  String get publishedStatus => 'ወጥቷል';
 
   @override
   String get draftStatus => 'ረቂቅ';
 
   @override
-  String get inReviewStatus => 'በግምገማ ላይ';
+  String get inReviewStatus => 'በምርመራ ላይ';
 
   @override
-  String get reviewedStatus => 'ተገምግሟል';
+  String get reviewedStatus => 'ታይቷል';
 
   @override
-  String get sendForReview => 'ለግምገማ ላክ';
+  String get sendForReview => 'ለምርመራ ላክ';
 
   @override
-  String get sendForReviewBody =>
-      'ይህን መጽሐፍ ለገምጋሚ ይላኩ? በግምገማ ላይ እያለ ማስተካከል አይችሉም።';
+  String get sendForReviewBody => 'ይህን መጽሐፍ ለመርማሪ ይላኩ? በምርመራ ላይ እያለ ማረም አይችሉም።';
 
   @override
-  String get submitReviewSuccess => 'ለግምገማ ተልኳል።';
+  String get submitReviewSuccess => 'ለምርመራ ተልኳል።';
 
   @override
-  String get withdrawFromReview => 'አንሳ';
+  String get withdrawFromReview => 'መልስ';
 
   @override
-  String get withdrawReviewSuccess => 'ከግምገማ ተነስቷል።';
+  String get withdrawReviewSuccess => 'ከምርመራ ተመልሷል።';
 
   @override
   String get approveReview => 'አጽድቅ';
 
   @override
-  String get approveReviewBody => 'ይህን መጽሐፍ ያጽድቁ? ደራሲው ከዚያ ማተም ይችላል።';
+  String get approveReviewBody => 'ይህን መጽሐፍ ያጸድቃሉ? ከዚያ አዘጋጁ ማውጣት ይችላል።';
 
   @override
   String get approveReviewSuccess => 'መጽሐፉ ጸድቋል።';
 
   @override
-  String get requestChanges => 'ለውጦችን ጠይቅ';
+  String get requestChanges => 'ማስተካከያ ጠይቅ';
 
   @override
-  String get requestChangesSuccess => 'ለውጦች ተጠይቀዋል።';
+  String get requestChangesSuccess => 'ማስተካከያ ተጠይቋል።';
 
   @override
-  String get reviewCommentLabel => 'የሚያስፈልጉትን ለውጦች ይግለጹ';
+  String get reviewCommentLabel => 'የሚያስፈልገውን ማስተካከያ ይግለጹ';
 
   @override
-  String get reviewActionFailed => 'የግምገማ እርምጃውን ማጠናቀቅ አልተቻለም።';
+  String get reviewActionFailed => 'የምርመራውን ተግባር ማጠናቀቅ አልተቻለም።';
 
   @override
-  String get viewReviewFeedback => 'አስተያየት ይመልከቱ';
+  String get viewReviewFeedback => 'አስተያየት ተመልከት';
 
   @override
-  String get reviewFeedbackTitle => 'የገምጋሚ አስተያየት';
+  String get reviewFeedbackTitle => 'የመርማሪ አስተያየት';
 
   @override
-  String get changesRequestedBannerTitle => 'ለውጦች ተጠይቀዋል';
+  String get changesRequestedBannerTitle => 'ማስተካከያ ተጠይቋል';
 
   @override
-  String get reviewHistoryTitle => 'የግምገማ ታሪክ';
+  String get reviewHistoryTitle => 'የምርመራ ታሪክ';
 
   @override
-  String get reviewHistoryEmpty => 'እስካሁን የግምገማ እንቅስቃሴ የለም።';
+  String get reviewHistoryEmpty => 'እስካሁን የምርመራ እንቅስቃሴ የለም።';
 
   @override
   String get reviewNoComment => 'አስተያየት የለም።';
 
   @override
-  String get adminBookInReviewLockedTitle => 'በግምገማ ላይ';
+  String get adminBookInReviewLockedTitle => 'በምርመራ ላይ';
 
   @override
   String get adminBookInReviewLockedMessage =>
-      'ይህ መጽሐፍ በግምገማ ላይ ነው። ለውጥ ለማድረግ ከግምገማ ያንሱት።';
+      'ይህ መጽሐፍ በምርመራ ላይ ነው። ለማረም ከምርመራ ይመልሱ።';
 
   @override
-  String get reviewDecisionSubmitted => 'ለግምገማ ቀርቧል';
+  String get reviewDecisionSubmitted => 'ለምርመራ ተልኳል';
 
   @override
   String get reviewDecisionApproved => 'ጸድቋል';
 
   @override
-  String get reviewDecisionChangesRequested => 'ለውጦች ተጠይቀዋል';
+  String get reviewDecisionChangesRequested => 'ማስተካከያ ተጠይቋል';
 
   @override
-  String get reviewDecisionWithdrawn => 'ተነስቷል';
+  String get reviewDecisionWithdrawn => 'ተመልሷል';
 
   @override
   String statusChip(String status, String vis) {
@@ -1419,40 +1419,41 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get bookNotFound => 'መጽሐፍ አልተገኘም።';
+  String get bookNotFound => 'መጽሐፉ አልተገኘም።';
 
   @override
-  String get unpublishFailed => 'ህትመት ማስቆም አልተሳካም';
+  String get unpublishFailed => 'መደበቅ አልተሳካም';
 
   @override
-  String get publishLatestDraftTitle => 'የኋለኛውን ረቂቅ አትም';
+  String get publishLatestDraftTitle => 'የቅርብ ረቂቁን አውጣ';
 
   @override
-  String get publishLatestDraftBody => 'ለዚህ መጽሐፍ የኋለኛውን ረቂቅ ማሻሻያ ያትማል።';
+  String get publishLatestDraftBody =>
+      'የቅርብ ረቂቅ እትሙን ያወጣል። ረቂቅ ከሌለ ስርዓቱ ከአሁኑ መግለጫ አንድ ይፈጥራል።';
 
   @override
-  String get publish => 'አትም';
+  String get publish => 'አውጣ';
 
   @override
   String publishedRevisionNumber(int n) {
-    return 'የታተመ ማሻሻያ #$n';
+    return 'የወጣ እትም #$n';
   }
 
   @override
-  String get publishedLatestRevision => 'የኋለኛው ማሻሻያ ተታትሟል';
+  String get publishedLatestRevision => 'የቅርብ እትሙ ወጥቷል';
 
   @override
-  String get publishFailed => 'ህትመት አልተሳካም';
+  String get publishFailed => 'ማውጣት አልተሳካም';
 
   @override
   String get deleteBook => 'መጽሐፍ ሰርዝ';
 
   @override
-  String get deleteBookTitle => 'ይህን ረቂቅ ይሰረዝ?';
+  String get deleteBookTitle => 'ይህ ረቂቅ ይሰረዝ?';
 
   @override
   String deleteBookBody(String title) {
-    return '\"$title\" እና ሁሉም ረቂቅ ምዕራፎቹ በቋሚነት ይሰረዛሉ። ይህ መልሶ አይመለስም።';
+    return '«$title» እና ሁሉም ረቂቅ ምዕራፎቹ ይሰረዛሉ። መልሶ ማምጣት አይቻልም።';
   }
 
   @override
@@ -1468,70 +1469,69 @@ class AppLocalizationsAm extends AppLocalizations {
   String get bookFallbackTitle => 'መጽሐፍ';
 
   @override
-  String get editMetadataTooltip => 'መረጃ አርትዖት';
+  String get editMetadataTooltip => 'መግለጫ አርም';
 
   @override
-  String get publishedVisibleBanner => 'ተታትሞ በአንባቢ ይታያል';
+  String get publishedVisibleBanner => 'ወጥቷል፤ ለአንባቢ ይታያል';
 
   @override
-  String get draftOnlyBanner => 'ረቂቅ ብቻ - በአንባቢ አይታይም';
+  String get draftOnlyBanner => 'ረቂቅ ብቻ — ለአንባቢ አይታይም';
 
   @override
   String get visibilityTile => 'ታይነት';
 
   @override
-  String get authorCompilerTile => 'ደራሲ / አዋቂ';
+  String get authorCompilerTile => 'ደራሲ / አዘጋጅ';
 
   @override
   String get languageTile => 'ቋንቋ';
 
   @override
-  String get draftChaptersPagesTile => 'ረቂቅ ምዕራፎች/ገጾች';
+  String get draftChaptersPagesTile => 'የረቂቅ ምዕራፎች/ገጾች';
 
   @override
-  String get noDraftChapters => 'ረቂቅ ምዕራፎች የሉም';
+  String get noDraftChapters => 'የረቂቅ ምዕራፍ የለም';
 
   @override
   String draftChapterPageCounts(int chapters, int pages) {
-    return '$chapters ምዕራፍ(ዎች)፣ $pages ገጽ(ዎች)';
+    return '$chapters ምዕራፎች፣ $pages ገጾች';
   }
 
   @override
-  String get publishedRevisionTile => 'የታተመ ማሻሻያ';
+  String get publishedRevisionTile => 'የወጣ እትም';
 
   @override
-  String get openInReader => 'በአንባቢ ውስጥ ክፈት';
+  String get openInReader => 'በአንባቢ ክፈት';
 
   @override
-  String get publishFirstToOpenReader => 'በአንባቢ ለመክፈት መጀመሪያ ያትሙ።';
+  String get publishFirstToOpenReader => 'በአንባቢ ለመክፈት መጀመሪያ መጽሐፉን ያውጡ።';
 
   @override
-  String get publishRevision => 'ማሻሻያ አትም';
+  String get publishRevision => 'እትም አውጣ';
 
   @override
-  String get unpublish => 'ህትመት አስቆም';
+  String get unpublish => 'ደብቅ';
 
   @override
-  String get summaryLabel => 'ማጠቃለያ';
+  String get summaryLabel => 'መግለጫ';
 
   @override
-  String get createBookFirstValidate => 'መጀመሪያ መጽሐፉን ይፍጠሩ፣ ከዚያ ረቂቅ ያረጋግጡ።';
+  String get createBookFirstValidate => 'መጀመሪያ መጽሐፉን ይፍጠሩ፣ ከዚያ ረቂቁን ይፈትሹ።';
 
   @override
-  String get draftValidationTitle => 'የረቂቅ ማረጋገጫ';
+  String get draftValidationTitle => 'የረቂቅ ፍተሻ';
 
   @override
   String get warningsHeading => 'ማስጠንቀቂያዎች፦';
 
   @override
-  String get discardUnsavedTitle => 'ያልተቀመጡ ለውጦች ይወገዱ?';
+  String get discardUnsavedTitle => 'ያልተቀመጡ ለውጦች ይጣሉ?';
 
   @override
-  String get discardUnsavedBody => 'ያልተቀመጡ ለውጦች አሉ። ከዚህ ከወጡ ይጠፋሉ።';
+  String get discardUnsavedBody => 'ያልተቀመጡ ማረሚያዎች አሉዎት። አሁን ከሄዱ ይጠፋሉ።';
 
   @override
-  String get discardUnsavedBodyEditor =>
-      'በአርትዖቱ ውስጥ ያልተቀመጡ ለውጦች አሉ። ያለማስቀመጥ ይወጣሉ?';
+  String get discardUnsavedBodyEditor => 'በዚህ አርታኢ ያልተቀመጡ ለውጦች አሉ። ሳያስቀምጡ ይወጡ?';
 
   @override
   String get formDraftRestored => 'ረቂቅ ተመልሷል — ከቆሙበት ይቀጥሉ።';
@@ -1540,55 +1540,55 @@ class AppLocalizationsAm extends AppLocalizations {
   String get formDraftSaved => 'ረቂቅ ተቀምጧል። በኋላ መቀጠል ይችላሉ።';
 
   @override
-  String get formDraftDiscardTitle => 'የተቀመጠ ረቂቅ ይወገድ?';
+  String get formDraftDiscardTitle => 'የተቀመጠ ረቂቅ ይጣል?';
 
   @override
-  String get formDraftDiscardBody => 'ለዚህ ቅጽ በአካባቢው የተቀመጠው ረቂቅ ለዘለዓለም ይሰረዛል።';
+  String get formDraftDiscardBody => 'ለዚህ ቅጽ በመሣሪያዎ ላይ የተቀመጠው ረቂቅ ይሰረዛል።';
 
   @override
-  String get formDraftDiscardAction => 'ረቂቅ ይድረስ';
+  String get formDraftDiscardAction => 'ረቂቅ ጣል';
 
   @override
-  String get formDraftLeaveAndSave => 'ረቂቅ አስቀምጥ እና ውጣ';
+  String get formDraftLeaveAndSave => 'ረቂቅ አስቀምጠው ይውጡ';
 
   @override
-  String get stay => 'Stay';
+  String get stay => 'ቆይ';
 
   @override
-  String get discard => 'Discard';
+  String get discard => 'ጣል';
 
   @override
-  String get chooseImage => 'ምስል ይምረጡ';
+  String get chooseImage => 'ምስል ምረጥ';
 
   @override
-  String get removeCover => 'ሽፋን አስወግድ';
+  String get removeCover => 'ሽፋን አንሳ';
 
   @override
-  String get validateDraft => 'ረቂቅ አረጋግጥ';
+  String get validateDraft => 'ረቂቅ ፈትሽ';
 
   @override
   String get addChapter => 'ምዕራፍ ጨምር';
 
   @override
-  String get noPagesYet => 'እስካሁን ገጾች የሉም';
+  String get noPagesYet => 'እስካሁን ገጽ የለም';
 
   @override
-  String get moveUpTooltip => 'ወደ ላይ አንቀሳቅስ';
+  String get moveUpTooltip => 'ወደ ላይ ውሰድ';
 
   @override
-  String get moveDownTooltip => 'ወደ ታች አንቀሳቅስ';
+  String get moveDownTooltip => 'ወደ ታች ውሰድ';
 
   @override
   String get addPageTooltip => 'ገጽ ጨምር';
 
   @override
-  String get editChapterTooltip => 'ምዕራፍ አርትዖት';
+  String get editChapterTooltip => 'ምዕራፍ አርም';
 
   @override
   String get deleteChapterTooltip => 'ምዕራፍ ሰርዝ';
 
   @override
-  String get editPageTooltip => 'ገጽ አርትዖት';
+  String get editPageTooltip => 'ገጽ አርም';
 
   @override
   String get deletePageTooltip => 'ገጽ ሰርዝ';
@@ -1597,7 +1597,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get addChapterTitle => 'ምዕራፍ ጨምር';
 
   @override
-  String get editChapterTitle => 'ምዕራፍ አርትዖት';
+  String get editChapterTitle => 'ምዕራፍ አርም';
 
   @override
   String get chapterKeyHintExample => 'ለምሳሌ chapter-1';
@@ -1606,51 +1606,51 @@ class AppLocalizationsAm extends AppLocalizations {
   String get untitledChapter => 'ርዕስ የሌለው ምዕራፍ';
 
   @override
-  String get unsupportedEmbeddedContent => 'ያልተደገፈ የተሰካ ይዘት';
+  String get unsupportedEmbeddedContent => 'የማይደገፍ የተቀናጀ ይዘት';
 
   @override
-  String get editPageTitle => 'ገጽ አርትዖት';
+  String get editPageTitle => 'ገጽ አርም';
 
   @override
-  String get tagSlugsHint => 'በነጠላ ሰረዝ የተከፈለ፣ ለምሳሌ liturgy, bible';
+  String get tagSlugsHint => 'በነጠላ ሰረዝ፣ ለምሳሌ qidase, metshafe-qidus';
 
   @override
   String get visibilityHidden => 'የተደበቀ';
 
   @override
-  String get visibilityPublished => 'የታተመ';
+  String get visibilityPublished => 'የወጣ';
 
   @override
-  String get create => 'Create';
+  String get create => 'ፍጠር';
 
   @override
-  String get saveChanges => 'Save changes';
+  String get saveChanges => 'ለውጦችን አስቀምጥ';
 
   @override
-  String get commaSeparated => 'በነጠላ ሰረዝ የተከፈለ';
+  String get commaSeparated => 'በነጠላ ሰረዝ';
 
   @override
   String get chapterTitleLabel => 'የምዕራፍ ርዕስ';
 
   @override
-  String get chapterKeyFieldLabel => 'የምዕራፍ ቁልፍ';
+  String get chapterKeyFieldLabel => 'የምዕራፍ መለያ';
 
   @override
-  String get eachChapterNeedsKey => 'እያንዳንዱ ምዕራፍ ቁልፍ ሊኖረው ይገባል።';
+  String get eachChapterNeedsKey => 'እያንዳንዱ ምዕራፍ መለያ ሊኖረው ይገባል።';
 
   @override
   String duplicateChapterKey(String key) {
-    return 'የተደጋገመ የምዕራፍ ቁልፍ ተገኝቷል፦ $key';
+    return 'የተደገመ የምዕራፍ መለያ፦ $key';
   }
 
   @override
   String pageNumberMustBePositive(String title) {
-    return 'በ$title ምዕራፍ ውስጥ የገጽ ቁጥር ከዜሮ ላይ ትልቅ መሆን አለበት።';
+    return 'በምዕራፍ $title የገጽ ቁጥር ከ0 በላይ መሆን አለበት።';
   }
 
   @override
   String duplicatePageNumber(int n, String title) {
-    return 'በ$title ምዕራፍ ውስጥ የተደጋገመ የገጽ ቁጥር $n';
+    return 'በምዕራፍ $title የተደገመ የገጽ ቁጥር $n።';
   }
 
   @override
@@ -1664,7 +1664,7 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get validationFailed => 'ማረጋገጫ አልተሳካም';
+  String get validationFailed => 'ፍተሻ አልተሳካም';
 
   @override
   String get saveFailed => 'ማስቀመጥ አልተሳካም';
@@ -1673,10 +1673,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get newBookAppBar => 'አዲስ መጽሐፍ';
 
   @override
-  String get editBookAppBar => 'መጽሐፍ አርትዖት';
+  String get editBookAppBar => 'መጽሐፍ አርም';
 
   @override
-  String get metadataSection => 'መረጃ';
+  String get metadataSection => 'መግለጫ';
 
   @override
   String get titleLabelRequired => 'ርዕስ *';
@@ -1688,38 +1688,37 @@ class AppLocalizationsAm extends AppLocalizations {
   String get subtitleLabel => 'ንዑስ ርዕስ';
 
   @override
-  String get thumbnailCover => 'አነስተኛ ምስል / ሽፋን';
+  String get thumbnailCover => 'ምስል / ሽፋን';
 
   @override
-  String get coverFormatHelp => 'JPEG፣ PNG ወይም WebP። ከመጽሐፉን ካስቀመጡ በኋላ ይሰቀላል።';
+  String get coverFormatHelp => 'JPEG፣ PNG ወይም WebP። መጽሐፉን ካስቀመጡ በኋላ ይጫናል።';
 
   @override
-  String get authorCompilerLabel => 'ደራሲ / አዋቂ';
+  String get authorCompilerLabel => 'ደራሲ / አዘጋጅ';
 
   @override
-  String get primaryLanguageCodeLabel => 'ዋና የቋንቋ ኮድ';
+  String get primaryLanguageCodeLabel => 'ዋና ቋንቋ';
 
   @override
   String get languageCodeRequired => 'የቋንቋ ኮድ ያስፈልጋል';
 
   @override
-  String get scriptTagsLabel => 'የፊደል መለያዎች';
+  String get scriptTagsLabel => 'የፊደል ምልክቶች';
 
   @override
-  String get chaptersPagesSection => 'ምዕራፎች እና ገጾች';
+  String get chaptersPagesSection => 'ምዕራፎችና ገጾች';
 
   @override
-  String get noChaptersYetHelp =>
-      'እስካሁን ምዕራፎች የሉም። ለአንባቢ አሰሳ ምዕራፎችን እና ገጾችን ይጨምሩ።';
+  String get noChaptersYetHelp => 'እስካሁን ምዕራፍ የለም። ለአንባቢ እንዲዞር ምዕራፍና ገጽ ይጨምሩ።';
 
   @override
   String chapterKeyPageCount(String key, int count) {
-    return '$key · $count ገጽ(ዎች)';
+    return '$key · $count ገጾች';
   }
 
   @override
   String pageListTitle(int n, String title) {
-    return 'p.$n · $title';
+    return 'ገ. $n · $title';
   }
 
   @override
@@ -1731,10 +1730,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get cancelEdit => 'ሰርዝ';
 
   @override
-  String get tagSlugsCreateOnlyLabel => 'የመለያ slug (መፍጠር ብቻ)';
+  String get tagSlugsCreateOnlyLabel => 'የመለያ ስሞች (በመፍጠር ጊዜ ብቻ)';
 
   @override
-  String get catalogVisibilityLabel => 'የካታሎግ ታይነት';
+  String get catalogVisibilityLabel => 'በዝርዝር መታየት';
 
   @override
   String get pageNumberFieldLabel => 'የገጽ ቁጥር';
@@ -1743,7 +1742,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get pageTitleFieldLabel => 'የገጽ ርዕስ';
 
   @override
-  String get pageContentHeading => 'የገጽ ይዘት';
+  String get pageContentHeading => 'የገጽ ጽሑፍ';
 
   @override
   String get pageEditorPlaceholder => 'ይህን ገጽ ይጻፉ…';
@@ -1752,7 +1751,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get pageEditorFormattingToggle => 'ቅርጸት';
 
   @override
-  String get pageEditorFormattingHide => 'መሳሪያ ደብቅ';
+  String get pageEditorFormattingHide => 'መሣሪያዎችን ደብቅ';
 
   @override
   String get goodMorning => 'እንደምን አደሩ';
@@ -1767,34 +1766,34 @@ class AppLocalizationsAm extends AppLocalizations {
   String get libraryViewList => 'ዝርዝር';
 
   @override
-  String get libraryViewGrid => 'ፍርግርግ';
+  String get libraryViewGrid => 'በሽፋን';
 
   @override
   String get homePopularBadge => 'ተወዳጅ';
 
   @override
-  String get homeReadMore => 'ተጨማሪ አንብብ';
+  String get homeReadMore => 'ተጨማሪ ያንብቡ';
 
   @override
-  String get homeAllGenre => 'ሁሉም ዘርፍ';
+  String get homeAllGenre => 'ሁሉም ምድቦች';
 
   @override
-  String get homeSectionExplore => 'መጻሕፍትን ያስሱ';
+  String get homeSectionExplore => 'መጻሕፍትን ይመልከቱ';
 
   @override
-  String get homeSearchHint => 'መጻሕፍት ይፈልጉ…';
+  String get homeSearchHint => 'መጻሕፍት ፈልግ…';
 
   @override
   String get catalogAllResults => 'ሁሉም ውጤቶች';
 
   @override
-  String get bookCategoryPsalms => 'መዝሙር እና ዳዊት';
+  String get bookCategoryPsalms => 'መዝሙረ ዳዊት';
 
   @override
-  String get bookCategoryMarian => 'ማርያማዊ';
+  String get bookCategoryMarian => 'ውዳሴ ማርያም';
 
   @override
-  String get bookCategoryLiturgy => 'ቅዳሴ';
+  String get bookCategoryLiturgy => 'ሥርዓተ ቅዳሴ';
 
   @override
   String get bookCategorySynaxarium => 'ስንክሳር';
@@ -1806,44 +1805,44 @@ class AppLocalizationsAm extends AppLocalizations {
   String get bookCategoryOther => 'አጠቃላይ';
 
   @override
-  String get favouritesTitle => 'ተወዳጆች';
+  String get favouritesTitle => 'የወደዷቸው';
 
   @override
-  String get favouritesEmptyTitle => 'እስካሁን ተወዳጆች የሉም';
+  String get favouritesEmptyTitle => 'እስካሁን የወደዱት የለም';
 
   @override
-  String get favouritesEmptyMessage => 'መጽሐፍን ለማስቀመጥ የልብ ምልክቱን ይንኩ።';
+  String get favouritesEmptyMessage => 'በማንኛውም መጽሐፍ ላይ ልብን በመንካት እዚህ ያስቀምጡ።';
 
   @override
   String get notificationsTitle => 'ማሳወቂያዎች';
 
   @override
-  String get notificationsEmptyTitle => 'ሁሉንም አይተዋል';
+  String get notificationsEmptyTitle => 'አዲስ ማሳወቂያ የለም';
 
   @override
   String get notificationsEmptyMessage =>
-      'ስለ አዲስ መጻሕፍትና አስታዋሾች ማሳወቂያዎች እዚህ ይታያሉ።';
+      'ስለ አዲስ መጻሕፍትና የዕለት ንባብ ማስታወሻዎች እዚህ ይታያሉ።';
 
   @override
-  String get notificationsMarkAllRead => 'ሁሉንም እንዳነበበ ምልክት አድርግ';
+  String get notificationsMarkAllRead => 'ሁሉንም እንደተነበበ ምልክት አድርግ';
 
   @override
-  String get reviewsSection => 'ግምገማዎች';
+  String get reviewsSection => 'አስተያየቶች';
 
   @override
-  String get reviewsEmpty => 'እስካሁን ግምገማ የለም — የመጀመሪያው ይሁኑ።';
+  String get reviewsEmpty => 'እስካሁን አስተያየት የለም — የመጀመሪያው ይሁኑ።';
 
   @override
-  String get writeReviewTitle => 'ግምገማ ይጻፉ';
+  String get writeReviewTitle => 'አስተያየት ይጻፉ';
 
   @override
   String get yourRatingLabel => 'የእርስዎ ደረጃ';
 
   @override
-  String get reviewBodyHint => 'ሐሳብዎን ያካፍሉ (አማራጭ)';
+  String get reviewBodyHint => 'ያሰቡትን ይጻፉ (አማራጭ)';
 
   @override
-  String get submitReviewAction => 'ግምገማ አስገባ';
+  String get submitReviewAction => 'አስተያየት ላክ';
 
   @override
   String ratingsCountLabel(int count) {
@@ -1860,7 +1859,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get sortNewest => 'አዲስ';
 
   @override
-  String get sortOldest => 'የቆየ';
+  String get sortOldest => 'ቀድሞ የወጡ';
 
   @override
   String get sortPopular => 'ተወዳጅ';
@@ -1872,32 +1871,32 @@ class AppLocalizationsAm extends AppLocalizations {
   String get sortTitleAz => 'ርዕስ (ሀ–ፐ)';
 
   @override
-  String get premiumLockedTitle => 'ፕሪሚየም መጽሐፍ';
+  String get premiumLockedTitle => 'በክፍያ የሚነበብ መጽሐፍ';
 
   @override
   String get premiumLockedMessage =>
-      'ይህ መጽሐፍ የፕሪሚየም አካል ነው። የፕሪሚየም መዳረሻ ገና አልተዘጋጀም — በቅርቡ ይመለሱ።';
+      'ይህ መጽሐፍ በክፍያ ነው። ክፍያው ገና አልተከፈተም — በቅርቡ ይመለሱ።';
 
   @override
-  String get premiumGotIt => 'ገባኝ';
+  String get premiumGotIt => 'ተረድቻለሁ';
 
   @override
-  String get adminSummaryLabel => 'ማጠቃለያ';
+  String get adminSummaryLabel => 'መግለጫ';
 
   @override
-  String get adminGenreLabel => 'ዘርፍ / ምድብ';
+  String get adminGenreLabel => 'ምድብ';
 
   @override
   String get adminGenreNone => 'የለም';
 
   @override
-  String get adminPublishedYearLabel => 'የታተመበት ዓመት';
+  String get adminPublishedYearLabel => 'የወጣበት ዓመት';
 
   @override
-  String get adminIsPremiumLabel => 'ፕሪሚየም መጽሐፍ';
+  String get adminIsPremiumLabel => 'በክፍያ የሚነበብ';
 
   @override
-  String get adminIsPremiumSubtitle => 'ለማንበብ የፕሪሚየም መዳረሻ ይፈልጋል';
+  String get adminIsPremiumSubtitle => 'ለማንበብ ክፍያ ያስፈልጋል';
 
   @override
   String get tagsLabel => 'መለያዎች';
@@ -1906,37 +1905,37 @@ class AppLocalizationsAm extends AppLocalizations {
   String get adminChipAddHint => 'ጨምረው Enter ይጫኑ';
 
   @override
-  String get adminIsFeaturedLabel => 'ተለይቶ የቀረበ (ተወዳጅ)';
+  String get adminIsFeaturedLabel => 'የተመረጠ';
 
   @override
-  String get adminIsFeaturedSubtitle => 'በመነሻ ገጹ የተወዳጆች ባነር ላይ አሳይ';
+  String get adminIsFeaturedSubtitle => 'በመነሻው ከላይ ይታይ';
 
   @override
-  String get readerDisplayTitle => 'ማሳያ';
+  String get readerDisplayTitle => 'መልክ';
 
   @override
-  String get readerThemeLabel => 'ገጽታ';
+  String get readerThemeLabel => 'የገጽ ቀለም';
 
   @override
-  String get readerThemeLight => 'ብርሃን';
+  String get readerThemeLight => 'ብሩህ';
 
   @override
-  String get readerThemeSepia => 'ሴፒያ';
+  String get readerThemeSepia => 'የብራና ቀለም';
 
   @override
   String get readerThemeDark => 'ጨለማ';
 
   @override
-  String get readerTextSizeLabel => 'የጽሑፍ መጠን';
+  String get readerTextSizeLabel => 'የፊደል መጠን';
 
   @override
   String get readerSpacingLabel => 'የመስመር ክፍተት';
 
   @override
-  String get readerModeLabel => 'የንባብ ዘዴ';
+  String get readerModeLabel => 'የንባብ መንገድ';
 
   @override
-  String get readerModeScroll => 'ሸብለላ';
+  String get readerModeScroll => 'ተከታታይ';
 
   @override
   String get readerModePage => 'ገጾች';
@@ -1951,10 +1950,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get paymentTitle => 'ክፍያ';
 
   @override
-  String get paymentChooseMethod => 'የክፍያ ዘዴ ይምረጡ';
+  String get paymentChooseMethod => 'የክፍያ መንገድ ይምረጡ';
 
   @override
-  String get paymentMethodStripe => 'የክሬዲት / ዴቢት ካርድ';
+  String get paymentMethodStripe => 'የባንክ ካርድ';
 
   @override
   String get paymentMethodPaypal => 'PayPal';
@@ -1963,7 +1962,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get paymentMethodTelebirr => 'ቴሌብር';
 
   @override
-  String get paymentMethodBank => 'የባንክ ዝውውር';
+  String get paymentMethodBank => 'በባንክ ማስተላለፍ';
 
   @override
   String get paymentOrderSummary => 'የትዕዛዝ ማጠቃለያ';
@@ -1975,29 +1974,29 @@ class AppLocalizationsAm extends AppLocalizations {
   String get paymentSalePrice => 'የቅናሽ ዋጋ';
 
   @override
-  String get paymentTotal => 'ጠቅላላ';
+  String get paymentTotal => 'ድምር';
 
   @override
   String get paymentContinue => 'ቀጥል';
 
   @override
-  String get paymentSelectBank => 'ባንክ ይምረጡ';
+  String get paymentSelectBank => 'ባንክ ምረጥ';
 
   @override
-  String get paymentBankDetails => 'የባንክ ዝርዝሮች';
+  String get paymentBankDetails => 'የባንክ መረጃ';
 
   @override
-  String get paymentAccountName => 'የሒሳብ ስም';
+  String get paymentAccountName => 'የሂሳብ ስም';
 
   @override
-  String get paymentAccountNumber => 'የሒሳብ ቁጥር';
+  String get paymentAccountNumber => 'የሂሳብ ቁጥር';
 
   @override
-  String get paymentUploadReceipt => 'ደረሰኝ ይስቀሉ';
+  String get paymentUploadReceipt => 'ደረሰኝ ጫን';
 
   @override
   String get paymentReceiptHint =>
-      'ይጎትቱ ወይም ለመስቀል ይንኩ — JPG፣ PNG ወይም PDF (ቢበዛ 10MB)';
+      'ጎትተው ይጣሉ ወይም ይንኩ — JPG፣ PNG ወይም PDF (ከ10ሜባ አይብለጥ)';
 
   @override
   String paymentReceiptSelected(String name) {
@@ -2005,35 +2004,35 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get paymentChangeFile => 'ፋይል ይቀይሩ';
+  String get paymentChangeFile => 'ፋይል ቀይር';
 
   @override
-  String get paymentTransactionReference => 'የግብይት ማመሳከሪያ';
+  String get paymentTransactionReference => 'የክፍያ ቁጥር';
 
   @override
-  String get paymentTransactionReferenceHint => 'የባንክ ግብይት ማመሳከሪያ ያስገቡ';
+  String get paymentTransactionReferenceHint => 'የባንኩን የክፍያ ቁጥር ያስገቡ';
 
   @override
-  String get paymentSubmit => 'ክፍያ ያስገቡ';
+  String get paymentSubmit => 'ክፍያ ላክ';
 
   @override
-  String get paymentSubmitting => 'በማስገባት ላይ…';
+  String get paymentSubmitting => 'እየተላከ ነው…';
 
   @override
   String paymentPayNow(String amount) {
-    return '$amount ይክፈሉ';
+    return '$amount ክፈል';
   }
 
   @override
-  String get paymentSuccessTitle => 'ክፍያ ገብቷል';
+  String get paymentSuccessTitle => 'ክፍያ ተልኳል';
 
   @override
   String get paymentSuccessMessage =>
-      'ክፍያዎ ማረጋገጫ በመጠባበቅ ላይ ነው። ሲጸድቅ እናሳውቅዎታለን።';
+      'ክፍያዎ ለማረጋገጥ በመጠባበቅ ላይ ነው። ከጸደቀ እናሳውቅዎታለን።';
 
   @override
   String paymentSuccessReference(String reference) {
-    return 'ማመሳከሪያ፦ $reference';
+    return 'ቁጥር፦ $reference';
   }
 
   @override
@@ -2046,40 +2045,40 @@ class AppLocalizationsAm extends AppLocalizations {
   String get paymentCopied => 'ተቀድቷል';
 
   @override
-  String get paymentErrorGeneric => 'የሆነ ስህተት ተፈጥሯል። እባክዎ እንደገና ይሞክሩ።';
+  String get paymentErrorGeneric => 'ችግር ተፈጥሯል። እባክዎ እንደገና ይሞክሩ።';
 
   @override
-  String get paymentGatewayUnavailable => 'ይህ የክፍያ ዘዴ አሁን አይገኝም።';
+  String get paymentGatewayUnavailable => 'ይህ የክፍያ መንገድ አሁን አይገኝም።';
 
   @override
-  String get paymentReceiptRequired => 'እባክዎ ደረሰኝ ይስቀሉ።';
+  String get paymentReceiptRequired => 'እባክዎ ደረሰኝ ይጫኑ።';
 
   @override
-  String get paymentReferenceRequired => 'እባክዎ የግብይት ማመሳከሪያ ያስገቡ።';
+  String get paymentReferenceRequired => 'እባክዎ የክፍያ ቁጥር ያስገቡ።';
 
   @override
   String get paymentBankRequired => 'እባክዎ ባንክ ይምረጡ።';
 
   @override
-  String get paymentNoMethods => 'አሁን ምንም የክፍያ ዘዴ የለም።';
+  String get paymentNoMethods => 'አሁን የክፍያ መንገድ የለም።';
 
   @override
-  String get paymentNoBanks => 'አሁን ለባንክ ማስተላለፍ ምንም ባንክ የለም።';
+  String get paymentNoBanks => 'አሁን ለባንክ ማስተላለፍ ባንክ የለም።';
 
   @override
-  String get paymentBuyToRead => 'ለማንበብ ይግዙ';
+  String get paymentBuyToRead => 'ገዝተው ያንብቡ';
 
   @override
-  String get purchaseBook => 'መጽሐፍ ይግዙ';
+  String get purchaseBook => 'መጽሐፉን ግዛ';
 
   @override
   String get paymentMyPurchases => 'ግዢዎች';
 
   @override
-  String get paymentStatusPending => 'በመጠባበቅ ላይ';
+  String get paymentStatusPending => 'በመጠባበቅ';
 
   @override
-  String get paymentStatusOnReview => 'በግምገማ ላይ';
+  String get paymentStatusOnReview => 'በምርመራ ላይ';
 
   @override
   String get paymentStatusApproved => 'ጸድቋል';
@@ -2091,32 +2090,32 @@ class AppLocalizationsAm extends AppLocalizations {
   String get paymentStatusCancelled => 'ተሰርዟል';
 
   @override
-  String get paymentStatusRejected => 'ተቀባይነት አላገኘም';
+  String get paymentStatusRejected => 'ውድቅ ሆኗል';
 
   @override
-  String get paymentStepMethod => 'ዘዴ';
+  String get paymentStepMethod => 'መንገድ';
 
   @override
-  String get paymentStepDetails => 'ዝርዝሮች';
+  String get paymentStepDetails => 'ዝርዝር';
 
   @override
   String get paymentStepDone => 'ተጠናቋል';
 
   @override
   String get paymentTransferInstruction =>
-      'ጠቅላላውን ወደ ከታች ወዳለው ሒሳብ ያስተላልፉ፣ ከዚያ ደረሰኝዎንና ማመሳከሪያዎን ይስቀሉ።';
+      'ድምሩን ወደ ከታች ያለው ሂሳብ ያስተላልፉ፣ ከዚያ ደረሰኝና የክፍያ ቁጥር ያስገቡ።';
 
   @override
-  String get paymentNoPurchases => 'እስካሁን ምንም ግዢ አላደረጉም።';
+  String get paymentNoPurchases => 'እስካሁን ግዢ አላደረጉም።';
 
   @override
-  String get paymentPurchasesSubtitle => 'ትዕዛዞችዎንና የክፍያ ሁኔታ ይከታተሉ';
+  String get paymentPurchasesSubtitle => 'ትዕዛዞችዎንና የክፍያ ሁኔታን ይከታተሉ';
 
   @override
-  String get profileSettingsSubtitle => 'ንባብ፣ ቋንቋ እና የመተግበሪያ ምርጫዎች';
+  String get profileSettingsSubtitle => 'ንባብ፣ ቋንቋና የመተግበሪያ ምርጫዎች';
 
   @override
-  String get adminPricingSection => 'ዋጋና ኮሚሽን';
+  String get adminPricingSection => 'ዋጋና ድርሻ';
 
   @override
   String get adminCurrencyLabel => 'ምንዛሬ';
@@ -2128,61 +2127,61 @@ class AppLocalizationsAm extends AppLocalizations {
   String get adminSalePriceLabel => 'የቅናሽ ዋጋ (አማራጭ)';
 
   @override
-  String get adminCommissionPercentLabel => 'ኮሚሽን %';
+  String get adminCommissionPercentLabel => 'ድርሻ %';
 
   @override
-  String get adminCommissionHelp => 'ባዶ ከተተወ የደራሲውን ወይም የመድረኩን ነባሪ ይጠቀማል';
+  String get adminCommissionHelp => 'ባዶ ቢተዉ የደራሲው ወይም የመድረኩ መደበኛ ይሠራል';
 
   @override
   String get adminPaymentsTitle => 'ትዕዛዞችና ክፍያዎች';
 
   @override
-  String get adminManageOrders => 'ትዕዛዞችን ያስተዳድሩ';
+  String get adminManageOrders => 'ትዕዛዞችን ያቀናብሩ';
 
   @override
-  String get adminOrdersSubtitle => 'ክፍያዎችን ይገምግሙ፣ ያጽድቁ እና ያጠናቅቁ';
+  String get adminOrdersSubtitle => 'ክፍያዎችን ይመልከቱ፣ ያጸድቁና ያጠናቅቁ';
 
   @override
-  String get adminPendingReviews => 'በመጠባበቅ ላይ ያሉ ግምገማዎች';
+  String get adminPendingReviews => 'በመጠባበቅ ያሉ ምርመራዎች';
 
   @override
-  String get adminCompleted => 'የተጠናቀቁ';
+  String get adminCompleted => 'ተጠናቀዋል';
 
   @override
   String get adminGrossRevenue => 'ጠቅላላ ገቢ';
 
   @override
-  String get adminPlatformRevenue => 'የመድረክ ገቢ';
+  String get adminPlatformRevenue => 'የመድረኩ ገቢ';
 
   @override
-  String get adminAuthorRevenue => 'የደራሲ ገቢ';
+  String get adminAuthorRevenue => 'የደራሲው ገቢ';
 
   @override
   String get adminNoOrders => 'የሚታይ ትዕዛዝ የለም።';
 
   @override
-  String get adminNoMatchingOrders => 'ከፍለጋዎ ጋር የሚዛመድ ትዕዛዝ የለም።';
+  String get adminNoMatchingOrders => 'ከፍለጋዎ ጋር የሚመጥን ትዕዛዝ የለም።';
 
   @override
-  String get adminSearchOrdersHint => 'ደንበኛ፣ መጽሐፍ ወይም ማመሳከሪያ ይፈልጉ';
+  String get adminSearchOrdersHint => 'ደንበኛ፣ መጽሐፍ ወይም የክፍያ ቁጥር ፈልግ';
 
   @override
-  String get adminShowingResultsFor => 'የሚታዩ ውጤቶች:';
+  String get adminShowingResultsFor => 'የሚታዩ ውጤቶች ለ፦';
 
   @override
   String get adminClearFilters => 'ሁሉንም አጽዳ';
 
   @override
-  String get adminRowsPerPage => 'በገጽ ረድፎች';
+  String get adminRowsPerPage => 'በገጽ የሚታዩ ረድፎች';
 
   @override
-  String get adminActionsTooltip => 'እርምጃዎች';
+  String get adminActionsTooltip => 'ተግባራት';
 
   @override
-  String get adminCopyReference => 'ማመሳከሪያ ቅዳ';
+  String get adminCopyReference => 'የክፍያ ቁጥር ቅዳ';
 
   @override
-  String get adminApproveConfirm => 'ይህን ክፍያ ያጽድቁ?';
+  String get adminApproveConfirm => 'ይህን ክፍያ ያጸድቃሉ?';
 
   @override
   String get bibleTitle => 'መጽሐፍ ቅዱስ';
@@ -2191,7 +2190,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get bibleOldTestament => 'ብሉይ ኪዳን';
 
   @override
-  String get bibleNewTestament => 'አዲስ ኪዳን';
+  String get bibleNewTestament => 'ሐዲስ ኪዳን';
 
   @override
   String get bibleChapter => 'ምዕራፍ';
@@ -2200,46 +2199,53 @@ class AppLocalizationsAm extends AppLocalizations {
   String get bibleChapters => 'ምዕራፎች';
 
   @override
-  String get bibleSearchHint => 'ጥቅስ ወይም ማመሳከሪያ ይፈልጉ (ለምሳሌ ማቴ 3:16)';
+  String get biblePrevious => 'ያለፈው';
 
   @override
-  String get bibleNoResults => 'ምንም ጥቅስ አልተገኘም።';
+  String get bibleNext => 'ቀጣዩ';
 
   @override
-  String get bibleReferenceNotFound => 'ያን ማመሳከሪያ ማግኘት አልተቻለም።';
+  String get bibleSearchHint => 'ጥቅስ ወይም ምዕራፍ ፈልግ (ለምሳሌ ማቴ 3፥16)';
+
+  @override
+  String get bibleNoResults => 'ጥቅስ አልተገኘም።';
+
+  @override
+  String get bibleReferenceNotFound => 'ያ ጥቅስ አልተገኘም።';
 
   @override
   String get bibleSearchScopeAll => 'ሁሉም';
 
   @override
-  String get bibleSearch => 'መጽሐፍ ቅዱስን ይፈልጉ';
+  String get bibleSearch => 'መጽሐፍ ቅዱስ ፈልግ';
 
   @override
   String get numberSystemTitle => 'የግዕዝ ቁጥሮች';
 
   @override
-  String get numberSystemSubtitle => 'የምዕራፍና የጥቅስ ቁጥሮችን በግዕዝ አሳይ (፩ ፪ ፫)';
+  String get numberSystemSubtitle => 'የምዕራፍና የጥቅስ ቁጥሮች በግዕዝ ይታዩ (፩ ፪ ፫)';
 
   @override
   String get geezConvertTooltip => 'የተመረጡ ቁጥሮችን ወደ ግዕዝ ቀይር (1 → ፩)';
 
   @override
-  String get adminIsBibleLabel => 'የመጽሐፍ ቅዱስ መጽሐፍ';
+  String get adminIsBibleLabel => 'የመጽሐፍ ቅዱስ';
 
   @override
-  String get adminIsBibleSubtitle => 'ከገጾች ይልቅ ምዕራፎችን፣ ክፍሎችንና ጥቅሶችን ያስተዳድሩ';
+  String get adminIsBibleSubtitle => 'ገጾች ሳይሆን ምዕራፍ፣ ክፍልና ጥቅስ ያቀናብሩ';
 
   @override
   String get adminTestamentLabel => 'ኪዳን';
 
   @override
-  String get adminBibleSaveFirst => 'መጀመሪያ መጽሐፉን ያስቀምጡ፣ ከዚያ ይዘቱን ያስተዳድሩ።';
+  String get adminBibleSaveFirst =>
+      'መጀመሪያ መጽሐፉን አስቀምጡ፣ ከዚያ የመጽሐፍ ቅዱስ ጽሑፉን ያቀናብሩ።';
 
   @override
-  String get adminManageBibleContent => 'የመጽሐፍ ቅዱስ ይዘት አስተዳድር';
+  String get adminManageBibleContent => 'የመጽሐፍ ቅዱስ ጽሑፍ ያቀናብሩ';
 
   @override
-  String get adminBibleContentTitle => 'የመጽሐፍ ቅዱስ ይዘት';
+  String get adminBibleContentTitle => 'የመጽሐፍ ቅዱስ ጽሑፍ';
 
   @override
   String get adminAddChapter => 'ምዕራፍ ጨምር';
@@ -2268,10 +2274,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get adminChapterSaved => 'ምዕራፍ ተቀምጧል';
 
   @override
-  String get adminDeleteChapterConfirm => 'የዚህን ምዕራፍ ይዘት ይሰረዝ?';
+  String get adminDeleteChapterConfirm => 'የዚህ ምዕራፍ ጽሑፍ ይሰረዝ?';
 
   @override
-  String get adminNoChaptersYet => 'እስካሁን ምዕራፍ የለም። ለመጀመር አንድ ይጨምሩ።';
+  String get adminNoChaptersYet => 'እስካሁን ምዕራፍ የለም። ለመጀመር አንዱን ይጨምሩ።';
 
   @override
   String adminVersesCount(int count) {
@@ -2279,13 +2285,13 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get adminSelectChapter => 'ለማስተካከል ምዕራፍ ይምረጡ፣ ወይም አዲስ ይጨምሩ።';
+  String get adminSelectChapter => 'ለማረም ምዕራፍ ይምረጡ፣ ወይም አዲስ ይጨምሩ።';
 
   @override
   String get adminUnsavedChanges => 'ያልተቀመጡ ለውጦች';
 
   @override
-  String get adminDiscardChangesConfirm => 'ያልተቀመጡ ለውጦችን ይጣሉ?';
+  String get adminDiscardChangesConfirm => 'ያልተቀመጡ ለውጦች ይጣሉ?';
 
   @override
   String get adminDiscard => 'ጣል';
@@ -2305,14 +2311,14 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String adminOrdersRange(int start, int end, int total) {
-    return '$start–$end ከ $total';
+    return '$start–$end ከ$total';
   }
 
   @override
-  String get adminReview => 'ግምገማ';
+  String get adminReview => 'መርምር';
 
   @override
-  String get adminOrderDetail => 'የትዕዛዝ ዝርዝሮች';
+  String get adminOrderDetail => 'የትዕዛዝ ዝርዝር';
 
   @override
   String get adminCustomer => 'ደንበኛ';
@@ -2327,10 +2333,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get adminReceipt => 'ደረሰኝ';
 
   @override
-  String get adminNoReceipt => 'ደረሰኝ አልተሰቀለም';
+  String get adminNoReceipt => 'ደረሰኝ አልተጫነም';
 
   @override
-  String get adminViewReceipt => 'ደረሰኝ ይመልከቱ';
+  String get adminViewReceipt => 'ደረሰኝ ተመልከት';
 
   @override
   String get adminRejectReason => 'ምክንያት (አማራጭ)';
@@ -2345,25 +2351,25 @@ class AppLocalizationsAm extends AppLocalizations {
   String get adminApproved => 'ትዕዛዙ ጸድቆ ተጠናቋል';
 
   @override
-  String get adminRejected => 'ትዕዛዙ ውድቅ ተደርጓል';
+  String get adminRejected => 'ትዕዛዙ ውድቅ ሆኗል';
 
   @override
-  String get authorMyBooks => 'የእኔ መጻሕፍት';
+  String get authorMyBooks => 'መጻሕፍቴ';
 
   @override
   String get paymentDate => 'ቀን';
 
   @override
-  String get paymentMethod => 'ዘዴ';
+  String get paymentMethod => 'መንገድ';
 
   @override
-  String get paymentCommission => 'የመድረክ ኮሚሽን';
+  String get paymentCommission => 'የመድረኩ ድርሻ';
 
   @override
-  String get paymentOrderId => 'የትዕዛዝ መለያ';
+  String get paymentOrderId => 'የትዕዛዝ ቁጥር';
 
   @override
-  String get paymentPurchaseDetail => 'የግዢ ዝርዝሮች';
+  String get paymentPurchaseDetail => 'የግዢ ዝርዝር';
 
   @override
   String get adminOrdersAllStatuses => 'ሁሉም';
@@ -2375,63 +2381,62 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authorApplyEntryTitle => 'ደራሲ ይሁኑ';
 
   @override
-  String get authorApplyEntrySubtitle => 'የራስዎን መጻሕፍት ለማሳተም ያመልክቱ';
+  String get authorApplyEntrySubtitle => 'የራስዎን መጻሕፍት ለማውጣት ይጠይቁ';
 
   @override
-  String get authorApplyTitle => 'የደራሲ ማመልከቻ';
+  String get authorApplyTitle => 'የደራሲ ጥያቄ';
 
   @override
   String get authorApplyIntro =>
-      'ስለ ራስዎ ይንገሩን። ቡድናችን እያንዳንዱን ማመልከቻ ደራሲ ከማድረግ በፊት ይገመግማል።';
+      'ስለ ራስዎ ይንገሩን። ቡድናችን እያንዳንዱን ጥያቄ ከመቀበሉ በፊት ይመረምራል።';
 
   @override
-  String get authorApplyStatusPending => 'ማመልከቻዎ በግምገማ ላይ ነው።';
+  String get authorApplyStatusPending => 'ጥያቄዎ በምርመራ ላይ ነው።';
 
   @override
-  String get authorApplyStatusApproved => 'እንደ ደራሲ ጸድቀዋል!';
+  String get authorApplyStatusApproved => 'እንደ ደራሲ ተቀብለዋል!';
 
   @override
-  String get authorApplyStatusRejected =>
-      'ማመልከቻዎ አልጸደቀም። አስተካክለው እንደገና ማስገባት ይችላሉ።';
+  String get authorApplyStatusRejected => 'ጥያቄዎ አልተቀበለም። አድሰው እንደገና መላክ ይችላሉ።';
 
   @override
-  String get authorApplyReviewNoteLabel => 'የገምጋሚ ማስታወሻ';
+  String get authorApplyReviewNoteLabel => 'የመርማሪ ማስታወሻ';
 
   @override
-  String get authorApplyAlreadyAuthor => 'እርስዎ ቀድሞውኑ ደራሲ ነዎት።';
+  String get authorApplyAlreadyAuthor => 'አስቀድመው ደራሲ ነዎት።';
 
   @override
-  String get authorApplyManageBooks => 'መጻሕፍትዎን ያስተዳድሩ';
+  String get authorApplyManageBooks => 'መጻሕፍትዎን ያቀናብሩ';
 
   @override
-  String get authorApplySubmit => 'ማመልከቻ አስገባ';
+  String get authorApplySubmit => 'ጥያቄ ላክ';
 
   @override
-  String get authorApplyResubmit => 'አዘምን እና እንደገና አስገባ';
+  String get authorApplyResubmit => 'አድሰው እንደገና ላክ';
 
   @override
-  String get authorApplySubmitted => 'ማመልከቻ ገብቷል';
+  String get authorApplySubmitted => 'ጥያቄ ተልኳል';
 
   @override
-  String get authorApplyFailed => 'ማመልከቻዎን ማስገባት አልተቻለም።';
+  String get authorApplyFailed => 'ጥያቄዎን መላክ አልተቻለም።';
 
   @override
   String get authorApplySectionIdentity => 'ስለ እርስዎ';
 
   @override
-  String get authorApplySectionEvidence => 'ተጨማሪ መረጃ';
+  String get authorApplySectionEvidence => 'የሚደግፍ መረጃ';
 
   @override
-  String get authorApplySectionPayout => 'የክፍያ ዝርዝሮች (አማራጭ)';
+  String get authorApplySectionPayout => 'የክፍያ መረጃ (አማራጭ)';
 
   @override
   String get authorFieldFullName => 'ሙሉ ስም';
 
   @override
-  String get authorFieldFullNameHint => 'የሕጋዊ ስምዎ';
+  String get authorFieldFullNameHint => 'በሕግ የሚታወቀው ስምዎ';
 
   @override
-  String get authorFieldPenName => 'የብዕር ስም';
+  String get authorFieldPenName => 'የጽሑፍ ስም';
 
   @override
   String get authorFieldPenNameHint => 'በመጻሕፍትዎ ላይ የሚታየው ስም';
@@ -2440,10 +2445,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authorFieldTitle => 'ማዕረግ';
 
   @override
-  String get authorFieldTitleHint => 'ለምሳሌ ቄስ፣ ዲያቆን፣ ዶ/ር';
+  String get authorFieldTitleHint => 'ለምሳሌ ቀሲስ፣ ዲያቆን፣ ዶክተር';
 
   @override
-  String get authorFieldBio => 'የሕይወት ታሪክ';
+  String get authorFieldBio => 'አጭር ታሪክ';
 
   @override
   String get authorFieldBioHint => 'አጭር መግቢያ';
@@ -2452,19 +2457,19 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authorFieldPhone => 'ስልክ';
 
   @override
-  String get authorFieldCountry => 'አገር';
+  String get authorFieldCountry => 'ሀገር';
 
   @override
-  String get authorFieldCredentials => 'ማስረጃዎች እና ብቃቶች';
+  String get authorFieldCredentials => 'ትምህርትና ማስረጃ';
 
   @override
-  String get authorFieldCredentialsHint => 'ትምህርት፣ ሹመት፣ የምስክር ወረቀቶች';
+  String get authorFieldCredentialsHint => 'ትምህርት፣ ክህነት፣ ምስክር ወረቀቶች';
 
   @override
-  String get authorFieldSampleLinks => 'የጽሑፍ ናሙናዎች / አገናኞች';
+  String get authorFieldSampleLinks => 'የጽሑፍ ናሙና / አድራሻ';
 
   @override
-  String get authorFieldSampleLinksHint => 'የቀድሞ ሥራዎች አገናኞች (በአንድ መስመር አንድ)';
+  String get authorFieldSampleLinksHint => 'ቀድሞ የሠሩት ሥራ አድራሻ (አንድ በአንድ መስመር)';
 
   @override
   String get authorFieldPaymentEmail => 'የክፍያ ኢሜይል';
@@ -2476,54 +2481,54 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authorFieldPhoto => 'የግል ፎቶ';
 
   @override
-  String get authorPhotoPick => 'ፎቶ ይምረጡ';
+  String get authorPhotoPick => 'ፎቶ ምረጥ';
 
   @override
-  String get authorPhotoChange => 'ፎቶ ይቀይሩ';
+  String get authorPhotoChange => 'ፎቶ ቀይር';
 
   @override
-  String get authorPhotoUploading => 'ፎቶ በመጫን ላይ…';
+  String get authorPhotoUploading => 'ፎቶ እየተጫነ ነው…';
 
   @override
   String get authorFullNameRequired => 'እባክዎ ሙሉ ስምዎን ያስገቡ';
 
   @override
-  String get adminAuthorAppsTitle => 'የደራሲ ማመልከቻዎች';
+  String get adminAuthorAppsTitle => 'የደራሲ ጥያቄዎች';
 
   @override
-  String get adminAuthorAppsSubtitle => 'ደራሲ የመሆን ጥያቄዎችን ይገምግሙ';
+  String get adminAuthorAppsSubtitle => 'ደራሲ ለመሆን የቀረቡ ጥያቄዎችን ይመልከቱ';
 
   @override
-  String get adminAuthorAppsEmpty => 'እስካሁን የደራሲ ማመልከቻ የለም';
+  String get adminAuthorAppsEmpty => 'እስካሁን የደራሲ ጥያቄ የለም';
 
   @override
-  String get adminAuthorAppsNoMatch => 'ከዚህ ማጣሪያ ጋር የሚዛመድ ማመልከቻ የለም';
+  String get adminAuthorAppsNoMatch => 'ከማጣሪያው ጋር የሚመጥን ጥያቄ የለም';
 
   @override
-  String get adminAuthorAppStatusPending => 'በመጠባበቅ ላይ';
+  String get adminAuthorAppStatusPending => 'በመጠባበቅ';
 
   @override
   String get adminAuthorAppStatusApproved => 'ጸድቋል';
 
   @override
-  String get adminAuthorAppStatusRejected => 'ተቀባይነት አላገኘም';
+  String get adminAuthorAppStatusRejected => 'ውድቅ ሆኗል';
 
   @override
-  String get adminAuthorAppReviewTitle => 'ማመልከቻ';
+  String get adminAuthorAppReviewTitle => 'ጥያቄ';
 
   @override
-  String get adminAuthorAppApproveConfirm => 'ይህን ደራሲ ያጽድቁ?';
+  String get adminAuthorAppApproveConfirm => 'ይህን ደራሲ ያጸድቃሉ?';
 
   @override
   String get adminAuthorAppApproveConfirmBody =>
-      'ይህ የደራሲ ሚና ይሰጣል እና የደራሲ መገለጫ ይፈጥራል።';
+      'የደራሲ ኃላፊነት ይሰጣልና የደራሲ መገለጫ ይፈጥራል።';
 
   @override
-  String get adminAuthorAppApplicant => 'አመልካች';
+  String get adminAuthorAppApplicant => 'ጠያቂ';
 
   @override
-  String get adminAuthorAppPendingReviews => 'በመጠባበቅ ላይ ያሉ ማመልከቻዎች';
+  String get adminAuthorAppPendingReviews => 'በመጠባበቅ ያሉ ጥያቄዎች';
 
   @override
-  String get adminAuthorAppUnnamed => 'ስም የሌለው አመልካች';
+  String get adminAuthorAppUnnamed => 'ስም ያልተሰጠ ጠያቂ';
 }

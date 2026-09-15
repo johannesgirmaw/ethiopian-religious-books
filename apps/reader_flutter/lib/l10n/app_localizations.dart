@@ -4190,6 +4190,18 @@ abstract class AppLocalizations {
   /// **'Chapters'**
   String get bibleChapters;
 
+  /// No description provided for @biblePrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get biblePrevious;
+
+  /// No description provided for @bibleNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get bibleNext;
+
   /// No description provided for @bibleSearchHint.
   ///
   /// In en, this message translates to:

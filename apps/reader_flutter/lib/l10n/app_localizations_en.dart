@@ -2242,6 +2242,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bibleChapters => 'Chapters';
 
   @override
+  String get biblePrevious => 'Previous';
+
+  @override
+  String get bibleNext => 'Next';
+
+  @override
   String get bibleSearchHint => 'Search verses or a reference (e.g. ማቴ 3:16)';
 
   @override

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../design/app_tokens.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/app_locale_provider.dart';
 import 'shell_primitives.dart';
 
@@ -70,6 +71,7 @@ class _LangToggle extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final code = ref.watch(appLocaleProvider).languageCode;
+    final l10n = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surfaceCard,
@@ -81,14 +83,20 @@ class _LangToggle extends ConsumerWidget {
           visualDensity: VisualDensity.compact,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
-        segments: const [
+        segments: [
           ButtonSegment(
             value: 'en',
-            label: Text('EN', style: TextStyle(fontSize: 12)),
+            label: Text(
+              l10n.languageEnglishShort,
+              style: const TextStyle(fontSize: 12),
+            ),
           ),
           ButtonSegment(
             value: 'am',
-            label: Text('አማ', style: TextStyle(fontSize: 12)),
+            label: Text(
+              l10n.languageAmharicShort,
+              style: const TextStyle(fontSize: 12),
+            ),
           ),
         ],
         selected: {code},

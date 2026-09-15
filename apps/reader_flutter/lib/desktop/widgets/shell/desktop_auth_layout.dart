@@ -138,6 +138,7 @@ class DesktopAuthFormPane extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final code = ref.watch(appLocaleProvider).languageCode;
+    final l10n = AppLocalizations.of(context);
 
     return ColoredBox(
       color: AppColors.background,
@@ -162,14 +163,20 @@ class DesktopAuthFormPane extends ConsumerWidget {
                         visualDensity: VisualDensity.compact,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      segments: const [
+                      segments: [
                         ButtonSegment(
                           value: 'en',
-                          label: Text('EN', style: TextStyle(fontSize: 12)),
+                          label: Text(
+                            l10n.languageEnglishShort,
+                            style: const TextStyle(fontSize: 12),
+                          ),
                         ),
                         ButtonSegment(
                           value: 'am',
-                          label: Text('አማ', style: TextStyle(fontSize: 12)),
+                          label: Text(
+                            l10n.languageAmharicShort,
+                            style: const TextStyle(fontSize: 12),
+                          ),
                         ),
                       ],
                       selected: {code},

@@ -998,6 +998,8 @@
   "bibleNewTestament": "New Testament",
   "bibleChapter": "Chapter",
   "bibleChapters": "Chapters",
+  "biblePrevious": "Previous",
+  "bibleNext": "Next",
   "bibleSearchHint": "Search verses or a reference (e.g. ማቴ 3:16)",
   "bibleNoResults": "No verses found.",
   "bibleReferenceNotFound": "Couldn't resolve that reference.",

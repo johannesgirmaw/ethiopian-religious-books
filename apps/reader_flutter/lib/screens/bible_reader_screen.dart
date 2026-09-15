@@ -443,7 +443,7 @@ class _ChapterNavBar extends StatelessWidget {
               child: TextButton.icon(
                 onPressed: onPrev,
                 icon: const Icon(Icons.chevron_left),
-                label: const Text('Prev'),
+                label: Text(AppLocalizations.of(context).biblePrevious),
               ),
             ),
             Text(
@@ -460,7 +460,7 @@ class _ChapterNavBar extends StatelessWidget {
               child: TextButton.icon(
                 onPressed: onNext,
                 icon: const Icon(Icons.chevron_right),
-                label: const Text('Next'),
+                label: Text(AppLocalizations.of(context).bibleNext),
               ),
             ),
           ],

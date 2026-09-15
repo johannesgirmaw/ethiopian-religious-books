@@ -7,12 +7,12 @@ import { useLang } from '@/i18n/LanguageProvider';
 import BrandMark from './BrandMark';
 
 function LangToggle() {
-  const { lang, setLang } = useLang();
+  const { lang, setLang, t } = useLang();
   return (
     <div
       className="inline-flex items-center rounded-full border border-ink-900/[0.06] bg-white p-0.5 text-xs font-semibold"
       role="group"
-      aria-label="Language"
+      aria-label={t.langAria}
     >
       <button
         onClick={() => setLang('en')}
@@ -91,7 +91,7 @@ export default function Header() {
           </div>
 
           <button
-            aria-label="Menu"
+            aria-label={t.menuAria}
             onClick={() => setOpen((v) => !v)}
             className="flex size-10 items-center justify-center rounded-full text-ink-900 md:hidden"
           >
