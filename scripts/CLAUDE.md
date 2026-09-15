@@ -16,6 +16,7 @@
 | [`print_api_url.sh`](print_api_url.sh) | Print local API base URL + Swagger/health from running container port. |
 | [`seed_ethiopian_history.sh`](seed_ethiopian_history.sh) | Run `seed_ethiopian_history` in api container. |
 | [`../.github/workflows/build-apps.yml`](../.github/workflows/build-apps.yml) | Manual CI (`workflow_dispatch`): Windows `.exe`, Linux tar, Android APK, macOS dmg. Flutter 3.44.0. |
+| [`../.github/workflows/deploy-prod.yml`](../.github/workflows/deploy-prod.yml) | Prod deploy CI: `workflow_dispatch` or push to `main` (filtered paths) → `deploy-prod.sh`. Needs `DEPLOY_SSH_*` secrets. |
 
 ## Conventions
 - Every script uses `set -euo pipefail` and self-locates its root via `cd "$(dirname "${BASH_SOURCE[0]}")/.."` — invoke from any cwd.
@@ -39,6 +40,7 @@
 - `make seed` / `seed-covers` · `scripts/seed_ethiopian_history.sh` — Django seed commands in api container.
 - `make print-api-url` — show local API/Swagger/health URLs.
 - Actions → "Build apps (all platforms)" (`workflow_dispatch`) — ONLY way to build the Windows `.exe`.
+- Actions → "Deploy production" — preferred prod deploy path (`workflow_dispatch` or auto on `main`); local `deploy-prod.sh` still works with SSH alias `felegemetsahft`.
 
 ## Gotchas
 - CRITICAL: `flutter_reader_common.sh` still defaults `PRODUCTION_API_BASE_URL` to the RETIRED Render host `https://religious-books-api-wz6y.onrender.com/v1/`, NOT `https://api.felegemetsahft.com/v1/` (its "keep in sync with `app_config.dart`" comment is stale — `_productionApiBaseUrl` there is already correct). Local desktop/mobile release builds bake the WRONG URL unless you pass `API_BASE_URL=https://api.felegemetsahft.com/v1/`. `deploy-prod.sh web` hardcodes the correct URL and `build-apps.yml` defaults its `api_base_url` input to it, so only local release scripts are affected.

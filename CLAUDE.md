@@ -109,7 +109,10 @@ Landing lives in `apps/landing/` (Next.js, `output: 'export'`); login/register l
 `--dart-define=API_BASE_URL=https://api.felegemetsahft.com/v1/`. The Flutter web origin is
 `app.felegemetsahft.com`, so it MUST stay in the API's `CORS_ALLOWED_ORIGINS` / `CSRF_TRUSTED_ORIGINS`.
 
-**Deploy with the script — do not hand-run ad-hoc rsync/ssh:**
+**Deploy via CI/CD (preferred) or the script — do not hand-run ad-hoc rsync/ssh:**
+
+- GitHub Actions → **Deploy production** (`.github/workflows/deploy-prod.yml`): manual run or automatic on push to `main` when API/web/landing/infra paths change. Requires repo secrets `DEPLOY_SSH_PRIVATE_KEY`, `DEPLOY_SSH_HOST`, `DEPLOY_SSH_USER`.
+- Local fallback (same behavior):
 
 ```
 scripts/deploy-prod.sh          # api + web + landing

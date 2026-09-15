@@ -1,0 +1,99 @@
+name: Deploy production
+
+# Runs the same steps as scripts/deploy-prod.sh on GitHub-hosted runners.
+#
+# Required repository secrets (Settings → Secrets and variables → Actions):
+#   DEPLOY_SSH_PRIVATE_KEY — private key for the VPS (passwordless deploy user or root)
+#   DEPLOY_SSH_HOST        — server hostname or IP (e.g. 187.55.226.86)
+#   DEPLOY_SSH_USER        — SSH user (e.g. root)
+#
+# Optional: create a "production" environment with required reviewers for workflow_dispatch.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Deploy target (same as scripts/deploy-prod.sh)'
+        type: choice
+        options:
+          - all
+          - api
+          - web
+          - landing
+          - nginx
+          - downloads
+        default: all
+  push:
+    branches: [main]
+    paths:
+      - 'services/django_api/**'
+      - 'apps/reader_flutter/**'
+      - 'apps/landing/**'
+      - 'infra/prod/**'
+      - 'scripts/deploy-prod.sh'
+      - '.github/workflows/deploy-prod.yml'
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: '3.44.0'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure SSH for deploy-prod.sh
+        env:
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          DEPLOY_SSH_HOST: ${{ secrets.DEPLOY_SSH_HOST }}
+          DEPLOY_SSH_USER: ${{ secrets.DEPLOY_SSH_USER }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DEPLOY_SSH_PRIVATE_KEY:-}" ] || [ -z "${DEPLOY_SSH_HOST:-}" ] || [ -z "${DEPLOY_SSH_USER:-}" ]; then
+            echo 'Missing DEPLOY_SSH_PRIVATE_KEY, DEPLOY_SSH_HOST, or DEPLOY_SSH_USER repository secrets.'
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -H "$DEPLOY_SSH_HOST" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          cat >> ~/.ssh/config <<EOF
+          Host felegemetsahft
+            HostName ${DEPLOY_SSH_HOST}
+            User ${DEPLOY_SSH_USER}
+            IdentityFile ~/.ssh/id_deploy
+            IdentitiesOnly yes
+          EOF
+          chmod 600 ~/.ssh/config
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: apps/landing/package-lock.json
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Resolve deploy target
+        id: target
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TARGET: ${{ github.event.inputs.target }}
+        run: |
+          if [ "$EVENT_NAME" = 'workflow_dispatch' ]; then
+            echo "value=${INPUT_TARGET:-all}" >> "$GITHUB_OUTPUT"
+          else
+            echo 'value=all' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy
+        run: bash scripts/deploy-prod.sh "${{ steps.target.outputs.value }}"
