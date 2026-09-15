@@ -87,6 +87,11 @@ class WebContinueReadingStrip extends ConsumerWidget {
                             horizontal: 20,
                             vertical: 12,
                           ),
+                          // Theme uses Size.fromHeight(50) (infinite min
+                          // width). A Row cannot layout that as a non-flex
+                          // child — shrink to the label instead.
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                         child: Text(l10n.readNow),
                       ),
@@ -105,6 +110,8 @@ class WebContinueReadingStrip extends ConsumerWidget {
                           horizontal: 20,
                           vertical: 12,
                         ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                       child: Text(l10n.readNow),
                     ),
