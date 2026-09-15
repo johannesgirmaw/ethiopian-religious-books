@@ -14,6 +14,7 @@ import '../web/widgets/shell/web_overlay_scaffold.dart';
 import '../widgets/app_state_view.dart';
 import '../widgets/pdf_document_reader.dart';
 import '../widgets/premium_gate.dart';
+import '../widgets/protected_content_scope.dart';
 
 /// Full-screen PDF reader for books with ``content_format == pdf``.
 class PdfReaderScreen extends ConsumerStatefulWidget {
@@ -147,13 +148,15 @@ class _PdfReaderBody extends ConsumerWidget {
             actionLabel: l10n.retry,
             onAction: () => ref.invalidate(pdfViewerSourceProvider(bookId)),
           ),
-          data: (source) => Padding(
-            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-            child: PdfDocumentReader(
-              filePath: source.filePath,
-              uri: source.uri,
-              loadingLabel: l10n.pdfLoadingLabel,
-              errorTitle: l10n.pdfOpenFailed,
+          data: (source) => ContentProtectionLifecycle(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+              child: PdfDocumentReader(
+                filePath: source.filePath,
+                uri: source.uri,
+                loadingLabel: l10n.pdfLoadingLabel,
+                errorTitle: l10n.pdfOpenFailed,
+              ),
             ),
           ),
         );

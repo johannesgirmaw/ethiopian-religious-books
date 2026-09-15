@@ -1007,6 +1007,14 @@ class AppLocalizationsAm extends AppLocalizations {
   String get nextMatch => 'ቀጣይ ተዛመድ';
 
   @override
+  String matchPosition(int current, int total) {
+    return '$current ከ $total';
+  }
+
+  @override
+  String get pdfSearching => 'በመፈለግ ላይ…';
+
+  @override
   String get typographyCompact => 'ጠቅላላ';
 
   @override

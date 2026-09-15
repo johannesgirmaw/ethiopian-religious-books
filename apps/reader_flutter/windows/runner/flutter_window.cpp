@@ -4,6 +4,13 @@
 
 #include "flutter/generated_plugin_registrant.h"
 
+#ifndef WDA_NONE
+#define WDA_NONE 0x00000000
+#endif
+#ifndef WDA_EXCLUDEFROMCAPTURE
+#define WDA_EXCLUDEFROMCAPTURE 0x00000011
+#endif
+
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
     : project_(project) {}
 
@@ -27,6 +34,38 @@ bool FlutterWindow::OnCreate() {
   RegisterPlugins(flutter_controller_->engine());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
+  content_protection_channel_ =
+      std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+          flutter_controller_->engine()->messenger(),
+          "com.ethiopianreligious.reader/content_protection",
+          &flutter::StandardMethodCodec::GetInstance());
+  content_protection_channel_->SetMethodCallHandler(
+      [this](const flutter::MethodCall<flutter::EncodableValue>& call,
+             std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>>
+                 result) {
+        if (call.method_name() != "setSecureMode") {
+          result->NotImplemented();
+          return;
+        }
+        bool enabled = false;
+        const auto* args =
+            std::get_if<flutter::EncodableMap>(call.arguments());
+        if (args) {
+          auto it = args->find(flutter::EncodableValue("enabled"));
+          if (it != args->end()) {
+            if (const auto* value = std::get_if<bool>(&it->second)) {
+              enabled = *value;
+            }
+          }
+        }
+        HWND hwnd = GetHandle();
+        if (hwnd) {
+          SetWindowDisplayAffinity(
+              hwnd, enabled ? WDA_EXCLUDEFROMCAPTURE : WDA_NONE);
+        }
+        result->Success();
+      });
+
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
     this->Show();
   });
@@ -40,6 +79,7 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  content_protection_channel_ = nullptr;
   if (flutter_controller_) {
     flutter_controller_ = nullptr;
   }

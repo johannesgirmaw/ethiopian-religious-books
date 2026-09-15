@@ -1025,6 +1025,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nextMatch => 'Next match';
 
   @override
+  String matchPosition(int current, int total) {
+    return '$current of $total';
+  }
+
+  @override
+  String get pdfSearching => 'Searching…';
+
+  @override
   String get typographyCompact => 'Compact';
 
   @override

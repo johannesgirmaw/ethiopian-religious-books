@@ -14,6 +14,7 @@ import '../web/layout/app_layout_scope.dart';
 import '../web/widgets/shell/web_overlay_scaffold.dart';
 import '../widgets/app_state_view.dart';
 import '../widgets/bible/bible_search.dart';
+import '../widgets/protected_content_scope.dart';
 
 /// Full-screen Bible chapter reader: section headings + numbered verses, with
 /// chapter navigation and an optional highlighted verse (from search/reference).
@@ -112,22 +113,24 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
     final hasChapters = chapterCount > 0;
     final geez = ref.watch(useGeezNumeralsProvider);
 
-    final content = SafeArea(
-      child: chapterAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => AppStateView(
-          title: l10n.bibleNoResults,
-          message: '$e',
-          icon: Icons.menu_book_outlined,
-          actionLabel: l10n.retry,
-          onAction: () => ref.invalidate(
-            bibleChapterProvider((bookId: widget.bookId, chapter: _chapter)),
+    final content = CopyProtectedContent(
+      child: SafeArea(
+        child: chapterAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => AppStateView(
+            title: l10n.bibleNoResults,
+            message: '$e',
+            icon: Icons.menu_book_outlined,
+            actionLabel: l10n.retry,
+            onAction: () => ref.invalidate(
+              bibleChapterProvider((bookId: widget.bookId, chapter: _chapter)),
+            ),
           ),
-        ),
-        data: (chapter) => _ChapterView(
-          chapter: chapter,
-          highlightVerse: _highlight,
-          geez: geez,
+          data: (chapter) => _ChapterView(
+            chapter: chapter,
+            highlightVerse: _highlight,
+            geez: geez,
+          ),
         ),
       ),
     );
@@ -201,26 +204,31 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
         '$bookTitle · ${l10n.bibleChapter} ${formatNumber(_chapter, geez: geez)}';
 
     if (useWebShell(context)) {
-      return WebOverlayScaffold(
-        title: overlayTitle,
-        currentLocation: GoRouterState.of(context).matchedLocation,
-        onBack: _exit,
-        actions: overlayActions,
-        body: readerBody,
+      return ContentProtectionLifecycle(
+        child: WebOverlayScaffold(
+          title: overlayTitle,
+          currentLocation: GoRouterState.of(context).matchedLocation,
+          onBack: _exit,
+          actions: overlayActions,
+          body: readerBody,
+        ),
       );
     }
 
     if (useDesktopShell(context)) {
-      return DesktopOverlayScaffold(
-        title: overlayTitle,
-        currentLocation: GoRouterState.of(context).matchedLocation,
-        onBack: _exit,
-        actions: overlayActions,
-        body: readerBody,
+      return ContentProtectionLifecycle(
+        child: DesktopOverlayScaffold(
+          title: overlayTitle,
+          currentLocation: GoRouterState.of(context).matchedLocation,
+          onBack: _exit,
+          actions: overlayActions,
+          body: readerBody,
+        ),
       );
     }
 
-    return Scaffold(
+    return ContentProtectionLifecycle(
+      child: Scaffold(
       appBar: AppBar(
         leadingWidth: showRailToggle ? 96 : null,
         leading: showRailToggle
@@ -285,6 +293,7 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
             ? () => _goChapter(_chapter + 1)
             : null,
       ),
+    ),
     );
   }
 }

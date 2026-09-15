@@ -533,6 +533,18 @@
   },
   "previousMatch": "ቀዳሚ ተዛመድ",
   "nextMatch": "ቀጣይ ተዛመድ",
+  "matchPosition": "{current} ከ {total}",
+  "@matchPosition": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "pdfSearching": "በመፈለግ ላይ…",
   "typographyCompact": "ጠቅላላ",
   "typographyComfort": "መጣጣም",
   "typographyLarge": "ትልቅ",

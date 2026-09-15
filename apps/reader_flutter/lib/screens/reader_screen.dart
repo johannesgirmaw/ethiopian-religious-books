@@ -24,6 +24,7 @@ import '../web/widgets/reader/web_reader_layout.dart';
 import '../widgets/highlighted_search_text.dart';
 import '../widgets/reader_book_page_view.dart';
 import '../widgets/stored_rich_text_view.dart';
+import '../widgets/protected_content_scope.dart';
 
 class ReaderScreen extends ConsumerStatefulWidget {
   const ReaderScreen({
@@ -1947,7 +1948,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
               )
             : 28.0;
 
-        return PopScope(
+        return ContentProtectionLifecycle(
+          child: PopScope(
           canPop: !_hasSelectedChapter,
           onPopInvokedWithResult: (didPop, _) {
             if (didPop) return;
@@ -1989,7 +1991,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                     right: 0,
                     top: contentTop,
                     bottom: contentBottom,
-                    child: pageViewReading
+                    child: CopyProtectedContent(
+                      child: pageViewReading
                         ? ClipRect(
                             child: _buildPageViewReader(
                               sections: _pageViewSections,
@@ -2277,6 +2280,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                               ],
                             ),
                           ),
+                    ),
                   ),
                   AnimatedPositioned(
                     duration: const Duration(milliseconds: 220),
@@ -2875,6 +2879,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
               ),
             ),
           ),
+        ),
         );
       },
       loading: () {

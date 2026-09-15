@@ -1940,6 +1940,18 @@ abstract class AppLocalizations {
   /// **'Next match'**
   String get nextMatch;
 
+  /// No description provided for @matchPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} of {total}'**
+  String matchPosition(int current, int total);
+
+  /// No description provided for @pdfSearching.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching…'**
+  String get pdfSearching;
+
   /// No description provided for @typographyCompact.
   ///
   /// In en, this message translates to:

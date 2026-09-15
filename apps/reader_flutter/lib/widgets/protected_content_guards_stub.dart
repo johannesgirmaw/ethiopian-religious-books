@@ -1,0 +1,1 @@
+void enableWebContentGuards(bool enabled) {}

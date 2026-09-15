@@ -471,6 +471,14 @@
   },
   "previousMatch": "Previous match",
   "nextMatch": "Next match",
+  "matchPosition": "{current} of {total}",
+  "@matchPosition": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "pdfSearching": "Searching…",
   "typographyCompact": "Compact",
   "typographyComfort": "Comfort",
   "typographyLarge": "Large",

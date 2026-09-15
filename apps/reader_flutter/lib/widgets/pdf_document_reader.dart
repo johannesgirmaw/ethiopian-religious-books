@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
 
 import '../design/app_tokens.dart';
+import '../l10n/app_localizations.dart';
+import 'protected_content_scope.dart';
 
-/// In-app PDF reader with navigation and zoom controls (ported from gizecare).
+/// In-app PDF reader with navigation, zoom, and text search (ported from gizecare).
 ///
 /// Provide either [filePath] (native cache file) or [uri] (presigned / blob URL on web).
 class PdfDocumentReader extends StatefulWidget {
@@ -33,7 +35,12 @@ class PdfDocumentReader extends StatefulWidget {
 class _PdfDocumentReaderState extends State<PdfDocumentReader> {
   late final PdfViewerController _controller;
   final TextEditingController _pageField = TextEditingController();
+  final TextEditingController _searchField = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
+  PdfTextSearcher? _searcher;
+  VoidCallback? _removeSearchListener;
   var _ready = false;
+  var _showSearch = false;
   int _pageNumber = 1;
   int _pageCount = 1;
   double _zoom = 1;
@@ -50,7 +57,11 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
   @override
   void dispose() {
     _controller.removeListener(_onControllerChanged);
+    _removeSearchListener?.call();
+    _searcher?.dispose();
     _pageField.dispose();
+    _searchField.dispose();
+    _searchFocus.dispose();
     super.dispose();
   }
 
@@ -59,13 +70,16 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
     super.didUpdateWidget(oldWidget);
     final oldKey = oldWidget.filePath ?? oldWidget.uri;
     if (oldKey != _sourceKey) {
+      _teardownSearch();
       setState(() {
         _ready = false;
+        _showSearch = false;
         _pageNumber = 1;
         _pageCount = 1;
         _zoom = 1;
       });
       _pageField.text = '1';
+      _searchField.clear();
     }
   }
 
@@ -88,6 +102,77 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
     if (_pageField.text != '$page') {
       _pageField.text = '$page';
     }
+  }
+
+  void _setupSearch() {
+    if (!_controller.isReady) return;
+    _teardownSearch();
+    final searcher = PdfTextSearcher(_controller);
+    _removeSearchListener = searcher.addListener(() {
+      if (mounted) setState(() {});
+    });
+    _searcher = searcher;
+  }
+
+  void _teardownSearch() {
+    _removeSearchListener?.call();
+    _removeSearchListener = null;
+    _searcher?.dispose();
+    _searcher = null;
+  }
+
+  void _onSearchChanged([String? _]) {
+    final query = _searchField.text;
+    final searcher = _searcher;
+    if (searcher == null) return;
+    if (query.trim().isEmpty) {
+      searcher.resetTextSearch();
+      return;
+    }
+    searcher.startTextSearch(
+      query,
+      caseInsensitive: true,
+      goToFirstMatch: true,
+    );
+  }
+
+  void _toggleSearch() {
+    if (_showSearch) {
+      _searcher?.resetTextSearch();
+      _searchField.clear();
+      _searchFocus.unfocus();
+      setState(() => _showSearch = false);
+      return;
+    }
+    setState(() => _showSearch = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _searchFocus.requestFocus();
+    });
+  }
+
+  String _searchStatusLabel(AppLocalizations l10n) {
+    final query = _searchField.text.trim();
+    if (query.isEmpty) return l10n.noMatchesYet;
+
+    final searcher = _searcher;
+    if (searcher == null) return l10n.noMatchesYet;
+
+    final total = searcher.matches.length;
+    if (total == 0) {
+      return searcher.isSearching ? l10n.pdfSearching : l10n.noMatchesYet;
+    }
+
+    final current = searcher.currentIndex;
+    if (current != null) {
+      return l10n.matchPosition(current + 1, total);
+    }
+    return l10n.matchCount(total);
+  }
+
+  bool get _canCycleMatches {
+    final searcher = _searcher;
+    if (searcher == null) return false;
+    return searcher.matches.length >= 2;
   }
 
   Future<void> _goToPage(int page) async {
@@ -158,6 +243,7 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
   }
 
   Widget _buildViewer() {
+    final searcher = _searcher;
     final params = PdfViewerParams(
       backgroundColor: AppColors.surfaceStrong,
       panEnabled: true,
@@ -168,6 +254,12 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
       scrollByMouseWheel: 0.25,
       enableKeyboardNavigation: true,
       margin: 16,
+      matchTextColor: AppColors.accent.withValues(alpha: 0.45),
+      activeMatchTextColor: AppColors.primary.withValues(alpha: 0.55),
+      textSelectionParams: const PdfTextSelectionParams(enabled: false),
+      pagePaintCallbacks: searcher == null
+          ? null
+          : [searcher.pageTextMatchPaintCallback],
       calculateInitialZoom: (document, controller, fitZoom, coverZoom) => 1.0,
       loadingBannerBuilder: (context, bytesDownloaded, totalBytes) {
         return Center(
@@ -221,6 +313,7 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
       },
       onViewerReady: (document, controller) {
         if (!mounted) return;
+        _setupSearch();
         setState(() {
           _ready = true;
           _pageCount = document.pages.length;
@@ -283,6 +376,8 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Padding(
       padding: widget.padding,
       child: Column(
@@ -294,6 +389,8 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
             pageCount: _pageCount,
             zoom: _zoom,
             pageField: _pageField,
+            searchActive: _showSearch,
+            searchTooltip: l10n.findInBookLabel,
             onFirst: () => _goToPage(1),
             onPrevious: () => _goToPage(_pageNumber - 1),
             onNext: () => _goToPage(_pageNumber + 1),
@@ -304,23 +401,199 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
             onFitWidth: _fitWidth,
             onFitPage: _fitPage,
             onResetZoom: _resetZoom,
+            onToggleSearch: _toggleSearch,
           ),
+          if (_showSearch) ...[
+            const SizedBox(height: AppSpace.xxs),
+            _PdfSearchBar(
+              enabled: _ready,
+              controller: _searchField,
+              focusNode: _searchFocus,
+              hintText: l10n.findInBookHint,
+              statusLabel: _searchStatusLabel(l10n),
+              searchTooltip: l10n.search,
+              previousTooltip: l10n.previousMatch,
+              nextTooltip: l10n.nextMatch,
+              canCycleMatches: _canCycleMatches,
+              onChanged: _onSearchChanged,
+              onSubmitted: () => _onSearchChanged(),
+              onPreviousMatch: () => _searcher?.goToPrevMatch(),
+              onNextMatch: () => _searcher?.goToNextMatch(),
+              onClose: _toggleSearch,
+            ),
+          ],
           const SizedBox(height: AppSpace.xs),
           Expanded(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.surfaceStrong,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-                child: _buildViewer(),
+            child: CopyProtectedContent(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceStrong,
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  child: _buildViewer(),
+                ),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PdfSearchBar extends StatelessWidget {
+  const _PdfSearchBar({
+    required this.enabled,
+    required this.controller,
+    required this.focusNode,
+    required this.hintText,
+    required this.statusLabel,
+    required this.searchTooltip,
+    required this.previousTooltip,
+    required this.nextTooltip,
+    required this.canCycleMatches,
+    required this.onChanged,
+    required this.onSubmitted,
+    required this.onPreviousMatch,
+    required this.onNextMatch,
+    required this.onClose,
+  });
+
+  final bool enabled;
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String hintText;
+  final String statusLabel;
+  final String searchTooltip;
+  final String previousTooltip;
+  final String nextTooltip;
+  final bool canCycleMatches;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onSubmitted;
+  final VoidCallback onPreviousMatch;
+  final VoidCallback onNextMatch;
+  final VoidCallback onClose;
+
+  static const _compactBreakpoint = 560.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < _compactBreakpoint;
+
+        final field = TextField(
+          controller: controller,
+          focusNode: focusNode,
+          enabled: enabled,
+          textInputAction: TextInputAction.search,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.textPrimary,
+              ),
+          decoration: InputDecoration(
+            isDense: true,
+            hintText: hintText,
+            hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textTertiary,
+                ),
+            prefixIcon: const Icon(
+              Icons.search_rounded,
+              color: AppColors.textSecondary,
+              size: 20,
+            ),
+            suffixIcon: IconButton(
+              tooltip: searchTooltip,
+              onPressed: enabled ? onSubmitted : null,
+              icon: const Icon(Icons.check_rounded, size: 20),
+            ),
+            filled: true,
+            fillColor: AppColors.surfaceCard,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.sm,
+              vertical: 10,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.xs),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.xs),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.xs),
+              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+            ),
+            disabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.xs),
+              borderSide: BorderSide(
+                color: AppColors.border.withValues(alpha: 0.7),
+              ),
+            ),
+          ),
+          onChanged: onChanged,
+          onSubmitted: (_) => onSubmitted(),
+        );
+
+        final controls = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                statusLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+              ),
+            ),
+            _ToolbarIcon(
+              tooltip: previousTooltip,
+              icon: Icons.keyboard_arrow_up_rounded,
+              onPressed: enabled && canCycleMatches ? onPreviousMatch : null,
+            ),
+            _ToolbarIcon(
+              tooltip: nextTooltip,
+              icon: Icons.keyboard_arrow_down_rounded,
+              onPressed: enabled && canCycleMatches ? onNextMatch : null,
+            ),
+            _ToolbarIcon(
+              tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+              icon: Icons.close_rounded,
+              onPressed: onClose,
+            ),
+          ],
+        );
+
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.surfaceCard,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            border: Border.all(color: AppColors.border),
+          ),
+          padding: const EdgeInsets.all(AppSpace.xs),
+          child: compact
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    field,
+                    const SizedBox(height: AppSpace.xxs),
+                    controls,
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: field),
+                    const SizedBox(width: AppSpace.sm),
+                    SizedBox(width: 220, child: controls),
+                  ],
+                ),
+        );
+      },
     );
   }
 }
@@ -332,6 +605,8 @@ class _PdfToolbar extends StatelessWidget {
     required this.pageCount,
     required this.zoom,
     required this.pageField,
+    required this.searchActive,
+    required this.searchTooltip,
     required this.onFirst,
     required this.onPrevious,
     required this.onNext,
@@ -342,6 +617,7 @@ class _PdfToolbar extends StatelessWidget {
     required this.onFitWidth,
     required this.onFitPage,
     required this.onResetZoom,
+    required this.onToggleSearch,
   });
 
   final bool enabled;
@@ -349,6 +625,8 @@ class _PdfToolbar extends StatelessWidget {
   final int pageCount;
   final double zoom;
   final TextEditingController pageField;
+  final bool searchActive;
+  final String searchTooltip;
   final VoidCallback onFirst;
   final VoidCallback onPrevious;
   final VoidCallback onNext;
@@ -359,6 +637,7 @@ class _PdfToolbar extends StatelessWidget {
   final VoidCallback onFitWidth;
   final VoidCallback onFitPage;
   final VoidCallback onResetZoom;
+  final VoidCallback onToggleSearch;
 
   static const _compactBreakpoint = 560.0;
 
@@ -438,6 +717,16 @@ class _PdfToolbar extends StatelessWidget {
           ],
         );
 
+        final searchControl = _ToolbarGroup(
+          children: [
+            _ToolbarIcon(
+              tooltip: searchTooltip,
+              icon: searchActive ? Icons.search_off_rounded : Icons.search_rounded,
+              onPressed: enabled ? onToggleSearch : null,
+            ),
+          ],
+        );
+
         return Container(
           decoration: BoxDecoration(
             color: AppColors.surfaceCard,
@@ -467,6 +756,8 @@ class _PdfToolbar extends StatelessWidget {
                         zoomControls,
                         const SizedBox(width: AppSpace.xs),
                         fitControls,
+                        const SizedBox(width: AppSpace.xs),
+                        searchControl,
                       ],
                     ),
                   ],
@@ -482,6 +773,8 @@ class _PdfToolbar extends StatelessWidget {
                     zoomControls,
                     const SizedBox(width: AppSpace.xs),
                     fitControls,
+                    const SizedBox(width: AppSpace.xs),
+                    searchControl,
                   ],
                 ),
         );
