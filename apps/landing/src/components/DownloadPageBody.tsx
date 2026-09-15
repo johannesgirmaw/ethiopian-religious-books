@@ -13,28 +13,33 @@ export default function DownloadPageBody() {
   return (
     <>
       <Header />
-      <main className="pt-32">
-        <section className="container-px text-center">
-          <span className="eyebrow">{t.download.eyebrow}</span>
-          <h1 className="mx-auto mt-5 max-w-3xl font-display text-4xl font-semibold text-white sm:text-5xl">
-            {before}
-            <span className="gold-text">{site.name}</span>
-            {after}
-          </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-lg text-slate-300">{t.download.sub}</p>
-          <div className="mt-8 flex justify-center">
-            <a href={site.webApp} className="btn-ghost">
-              <GlobeIcon className="h-5 w-5" /> {t.download.openInstead}
-            </a>
+      <main>
+        <section className="relative overflow-hidden bg-white pt-[calc(5.5rem+env(safe-area-inset-top))] pb-12 lg:pt-28 lg:pb-14">
+          <div className="hero-glow pointer-events-none absolute inset-0" />
+          <div className="container-px relative text-center">
+            <p className="section-label justify-center">{t.download.eyebrow}</p>
+            <h1 className="mx-auto mt-3 max-w-3xl display-heading text-ink-900" style={{ fontSize: 'clamp(2rem, 4vw, 3.25rem)' }}>
+              {before}
+              <span className="highlight">{site.name}</span>
+              {after}
+            </h1>
+            <p className="mx-auto mt-5 max-w-2xl text-lg text-slate-500">{t.download.sub}</p>
+            <div className="mt-8 flex justify-center">
+              <a href={site.webApp} className="btn-pill border border-ink-900/10 bg-white text-ink-800 hover:border-brand-400">
+                <GlobeIcon className="h-5 w-5 text-brand-500" /> {t.download.openInstead}
+              </a>
+            </div>
           </div>
         </section>
 
-        <DownloadGrid />
+        <div className="bg-slate-50">
+          <DownloadGrid />
+        </div>
 
-        <section className="container-px pb-24">
-          <div className="glass rounded-2xl p-6 text-center text-sm text-slate-400">
+        <section className="container-px py-16">
+          <div className="soft-card p-6 text-center text-sm text-slate-500">
             {t.download.help}{' '}
-            <a href={`mailto:${site.email}`} className="text-brand-300 hover:text-brand-200">
+            <a href={`mailto:${site.email}`} className="font-medium text-brand-600 hover:text-brand-500">
               {site.email}
             </a>
             .

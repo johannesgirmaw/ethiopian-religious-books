@@ -141,7 +141,8 @@ class _AuthTextFieldState extends State<AuthTextField> {
             focusNode: _focus,
             autofocus: widget.autofocus,
             obscureText: widget.obscureText,
-            keyboardType: widget.keyboardType ??
+            keyboardType:
+                widget.keyboardType ??
                 (widget.maxLines > 1 ? TextInputType.multiline : null),
             textInputAction: widget.textInputAction,
             autocorrect: widget.autocorrect,
@@ -152,7 +153,8 @@ class _AuthTextFieldState extends State<AuthTextField> {
             maxLines: widget.obscureText ? 1 : widget.maxLines,
             enabled: widget.enabled,
             validator: widget.validator,
-            autovalidateMode: widget.autovalidateMode ??
+            autovalidateMode:
+                widget.autovalidateMode ??
                 (widget.validator != null
                     ? AutovalidateMode.onUserInteraction
                     : null),
@@ -180,8 +182,10 @@ class _AuthTextFieldState extends State<AuthTextField> {
                     )
                   : null,
               suffixIcon: widget.trailing,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide.none,
@@ -289,9 +293,7 @@ class _AuthPasswordFieldState extends State<AuthPasswordField> {
       trailing: IconButton(
         splashRadius: 20,
         icon: Icon(
-          _show
-              ? Icons.visibility_off_outlined
-              : Icons.visibility_outlined,
+          _show ? Icons.visibility_off_outlined : Icons.visibility_outlined,
           size: 20,
           color: AppColors.textTertiary,
         ),
@@ -324,12 +326,12 @@ class AuthPrimaryButton extends StatelessWidget {
       opacity: enabled ? 1 : 0.7,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          gradient: AppGradients.hero,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          color: AppColors.primary,
           boxShadow: enabled
               ? [
                   BoxShadow(
-                    color: AppColors.primaryDeep.withValues(alpha: 0.28),
+                    color: AppColors.primary.withValues(alpha: 0.28),
                     blurRadius: 18,
                     offset: const Offset(0, 8),
                   ),
@@ -339,7 +341,7 @@ class AuthPrimaryButton extends StatelessWidget {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
             onTap: enabled ? onPressed : null,
             child: SizedBox(
               height: 54,

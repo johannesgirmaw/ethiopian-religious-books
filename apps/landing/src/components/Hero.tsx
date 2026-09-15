@@ -2,80 +2,135 @@
 
 import { site } from '@/config/site';
 import { useLang } from '@/i18n/LanguageProvider';
-import { GlobeIcon } from './icons';
+import {
+  BookIcon,
+  GlobeIcon,
+  HighlightIcon,
+  OfflineIcon,
+  PlanIcon,
+  SearchIcon,
+} from './icons';
 import PrimaryDownload from './PrimaryDownload';
+import BookStack from './BookStack';
+import Marquee from './Marquee';
+
+const FLOATING = [
+  { Icon: BookIcon, bg: 'bg-brand-400 text-white', rotate: '-16deg', className: 'left-[2%] top-[6%]', delay: '0s' },
+  { Icon: OfflineIcon, bg: 'bg-gold-400 text-ink-900', rotate: '-8deg', className: 'bottom-[18%] left-[10%]', delay: '-1.4s' },
+  { Icon: SearchIcon, bg: 'bg-brand-500 text-white', rotate: '6deg', className: 'bottom-0 left-1/2 -translate-x-1/2', delay: '-2.6s' },
+  { Icon: HighlightIcon, bg: 'bg-brand-400 text-white', rotate: '12deg', className: 'bottom-[16%] right-[8%]', delay: '-0.8s' },
+  { Icon: PlanIcon, bg: 'bg-gold-400 text-ink-900', rotate: '18deg', className: 'right-[1%] top-[4%]', delay: '-2s' },
+] as const;
 
 export default function Hero() {
   const { t } = useLang();
-  return (
-    <section className="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-28">
-      {/* glow orbs */}
-      <div className="pointer-events-none absolute -top-24 left-1/2 -z-10 h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-brand-500/20 blur-3xl" />
-      <div className="pointer-events-none absolute right-0 top-40 -z-10 h-72 w-72 rounded-full bg-gold-500/10 blur-3xl" />
+  const marquee = [
+    t.hero.cards.bible,
+    t.hero.cards.praise,
+    t.hero.cards.synax,
+    'Web',
+    'Android',
+    'macOS',
+    'Windows',
+    'Linux',
+  ];
 
-      <div className="container-px flex flex-col items-center text-center">
-        <span className="eyebrow animate-fade-up">✦ {t.hero.eyebrow}</span>
+  return (
+    <section className="relative flex min-h-[92vh] flex-col overflow-hidden bg-white pt-[calc(5.5rem+env(safe-area-inset-top))] lg:pt-24">
+      <div className="hero-glow pointer-events-none absolute inset-0" />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-[42%] size-[720px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-ink-900/[0.05]"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-[42%] size-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-ink-900/[0.05]"
+      />
+
+      <div className="relative mx-auto flex w-full max-w-5xl flex-1 flex-col items-center px-5 pb-8 pt-10 text-center lg:pt-16">
+        <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-ink-900/10 bg-white px-3 py-1 text-xs font-medium text-ink-900/70 shadow-sm animate-fade-up">
+          <span className="size-1.5 rounded-full bg-brand-400" />
+          {t.hero.eyebrow}
+        </p>
 
         <h1
-          className="mt-6 max-w-4xl font-display text-4xl font-semibold leading-[1.08] tracking-tight text-white animate-fade-up sm:text-6xl"
+          className="display-heading max-w-4xl text-ink-900 animate-fade-up"
           style={{ animationDelay: '80ms' }}
         >
-          {t.hero.titleA} <span className="gold-text">{t.hero.titleB}</span>
+          {t.hero.titleA}{' '}
+          <span className="highlight">{t.hero.titleB}</span>
         </h1>
 
         <p
-          className="mt-6 max-w-2xl text-lg text-slate-300 animate-fade-up"
+          className="mt-6 max-w-xl text-base text-slate-500 sm:text-lg animate-fade-up"
           style={{ animationDelay: '160ms' }}
         >
           {t.hero.subtitle}
         </p>
 
         <div
-          className="mt-10 flex flex-col items-center gap-4 animate-fade-up sm:flex-row"
+          className="mt-8 flex flex-col items-center gap-3 sm:flex-row animate-fade-up"
           style={{ animationDelay: '240ms' }}
         >
           <PrimaryDownload />
-          <a href={site.webApp} className="btn-ghost text-base">
-            <GlobeIcon className="h-5 w-5" /> {t.cta.openWebApp}
+          <a href={site.webApp} className="btn-pill border border-ink-900/10 bg-white text-ink-800 hover:border-brand-400 hover:text-brand-600">
+            <GlobeIcon className="h-4 w-4 text-brand-500" /> {t.cta.openWebApp}
           </a>
         </div>
 
-        <p className="mt-5 text-xs text-slate-500 animate-fade-up" style={{ animationDelay: '320ms' }}>
-          {t.hero.freeLine}
-        </p>
-
-        {/* device mock */}
-        <div
-          className="relative mt-16 w-full max-w-4xl animate-fade-up"
-          style={{ animationDelay: '400ms' }}
-        >
-          <div className="glass mx-auto overflow-hidden rounded-3xl p-2 shadow-2xl shadow-black/40">
-            <div className="rounded-2xl bg-gradient-to-b from-ink-800 to-ink-900 p-6 sm:p-10">
-              <div className="grid gap-4 sm:grid-cols-3">
-                {[
-                  { t: 'መጽሐፍ ቅዱስ', s: t.hero.cards.bible },
-                  { t: 'ውዳሴ ማርያም', s: t.hero.cards.praise },
-                  { t: 'ስንክሳር', s: t.hero.cards.synax },
-                ].map((c, i) => (
-                  <div
-                    key={c.t}
-                    className="rounded-xl border border-white/10 bg-white/[0.03] p-5 text-left"
-                    style={{ transform: `translateY(${i === 1 ? -10 : 0}px)` }}
-                  >
-                    <div className="mb-6 h-1.5 w-10 rounded-full bg-gold-500/70" />
-                    <div className="font-display text-lg text-white">{c.t}</div>
-                    <div className="mt-1 text-sm text-slate-400">{c.s}</div>
-                    <div className="mt-6 space-y-2">
-                      <div className="h-2 w-full rounded-full bg-white/10" />
-                      <div className="h-2 w-4/5 rounded-full bg-white/10" />
-                      <div className="h-2 w-2/3 rounded-full bg-white/10" />
-                    </div>
-                  </div>
-                ))}
+        <div className="relative mt-10 hidden h-[300px] w-full lg:block">
+          {FLOATING.map((card) => (
+            <div key={card.rotate} className={`absolute ${card.className}`}>
+              <div className="animate-float-y" style={{ animationDelay: card.delay }}>
+                <div
+                  className="flex size-[7.5rem] items-center justify-center rounded-[28px] bg-white shadow-[0_22px_50px_rgb(4_24_32/0.12)]"
+                  style={{ transform: `rotate(${card.rotate})` }}
+                >
+                  <span className={`flex size-14 items-center justify-center rounded-2xl ${card.bg}`}>
+                    <card.Icon className="size-7" />
+                  </span>
+                </div>
               </div>
+            </div>
+          ))}
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div className="pointer-events-auto scale-90">
+              <BookStack
+                books={[
+                  { title: 'መጽሐፍ ቅዱስ', subtitle: t.hero.cards.bible },
+                  { title: 'ውዳሴ ማርያም', subtitle: t.hero.cards.praise },
+                  { title: 'ስንክሳር', subtitle: t.hero.cards.synax },
+                ]}
+              />
             </div>
           </div>
         </div>
+
+        <div className="mt-10 w-full max-w-lg lg:hidden">
+          <BookStack
+            books={[
+              { title: 'መጽሐፍ ቅዱስ', subtitle: t.hero.cards.bible },
+              { title: 'ውዳሴ ማርያም', subtitle: t.hero.cards.praise },
+              { title: 'ስንክሳር', subtitle: t.hero.cards.synax },
+            ]}
+          />
+          <div className="mt-2 flex justify-center gap-3">
+            {FLOATING.slice(0, 3).map((card) => (
+              <div
+                key={card.rotate}
+                className="flex size-[4.5rem] items-center justify-center rounded-[22px] bg-white shadow-[0_16px_40px_rgb(4_24_32/0.1)]"
+              >
+                <span className={`flex size-11 items-center justify-center rounded-2xl ${card.bg}`}>
+                  <card.Icon className="size-5" />
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="relative border-t border-ink-900/5 py-3">
+        <Marquee items={marquee} />
       </div>
     </section>
   );

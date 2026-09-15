@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../design/web_tokens.dart';
+import '../../../design/app_tokens.dart';
 import '../../layout/app_layout_scope.dart';
 import 'web_auth_layout.dart';
 
@@ -24,18 +24,15 @@ class WebAuthShell extends ConsumerWidget {
           final routeKey = GoRouterState.of(context).matchedLocation;
 
           return Scaffold(
-            backgroundColor: WebTokens.canvasBg,
+            backgroundColor: AppColors.background,
             body: SafeArea(
               child: Row(
                 children: [
-                  const Expanded(
-                    flex: 5,
-                    child: WebAuthBrandPanel(),
-                  ),
+                  const Expanded(flex: 5, child: WebAuthBrandPanel()),
                   Expanded(
                     flex: 4,
                     child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 280),
+                      duration: const Duration(milliseconds: 420),
                       switchInCurve: Curves.easeOutCubic,
                       switchOutCurve: Curves.easeInCubic,
                       transitionBuilder: (child, animation) {

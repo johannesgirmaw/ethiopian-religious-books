@@ -44,9 +44,25 @@ const config: Config = {
           '0%': { opacity: '0', transform: 'translateY(16px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
         float: {
           '0%, 100%': { transform: 'translateY(0)' },
-          '50%': { transform: 'translateY(-10px)' },
+          '50%': { transform: 'translateY(-12px)' },
+        },
+        'float-y': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-14px)' },
+        },
+        marquee: {
+          from: { transform: 'translateX(0)' },
+          to: { transform: 'translateX(-50%)' },
+        },
+        tilt: {
+          '0%, 100%': { transform: 'rotate(-1.4deg)' },
+          '50%': { transform: 'rotate(1.4deg)' },
         },
         shimmer: {
           '0%': { backgroundPosition: '-200% 0' },
@@ -55,7 +71,11 @@ const config: Config = {
       },
       animation: {
         'fade-up': 'fade-up 0.7s cubic-bezier(0.22,1,0.36,1) both',
-        float: 'float 6s ease-in-out infinite',
+        'fade-in': 'fade-in 0.6s cubic-bezier(0.22,1,0.36,1) both',
+        float: 'float 7s ease-in-out infinite',
+        'float-y': 'float-y 5.5s ease-in-out infinite',
+        tilt: 'tilt 8s ease-in-out infinite',
+        marquee: 'marquee 28s linear infinite',
         shimmer: 'shimmer 3s linear infinite',
       },
     },

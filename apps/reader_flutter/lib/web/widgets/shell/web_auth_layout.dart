@@ -5,9 +5,8 @@ import '../../../design/app_tokens.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../providers/app_locale_provider.dart';
 import '../../../widgets/primitives/shared_widgets.dart';
-import '../../design/web_tokens.dart';
 import '../../layout/app_layout_scope.dart';
-import '../common/web_section.dart';
+import 'web_auth_book_stack.dart';
 
 /// Wide-web auth layout: brand panel + form column.
 class WebAuthLayout extends ConsumerWidget {
@@ -30,16 +29,13 @@ class WebAuthLayout extends ConsumerWidget {
     final isExpanded = tier == AppLayoutTier.expanded;
 
     return Scaffold(
-      backgroundColor: WebTokens.canvasBg,
+      backgroundColor: AppColors.background,
       body: AppLayoutScopeBuilder(
         child: SafeArea(
           child: isExpanded
               ? Row(
                   children: [
-                    const Expanded(
-                      flex: 5,
-                      child: WebAuthBrandPanel(),
-                    ),
+                    const Expanded(flex: 5, child: WebAuthBrandPanel()),
                     Expanded(
                       flex: 4,
                       child: WebAuthFormPane(
@@ -76,40 +72,72 @@ class WebAuthBrandPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
 
     return DecoratedBox(
       decoration: const BoxDecoration(
-        gradient: AppGradients.greetingMesh,
+        color: Colors.white,
+        border: Border(right: BorderSide(color: AppColors.border)),
       ),
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(48),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const AppBrandWordmark(
-                  fontSize: 40,
-                  color: Colors.white,
-                  stacked: true,
-                  gold: true,
+      child: ClipRect(
+        child: Stack(
+          children: [
+            Positioned(
+              top: -80,
+              left: -60,
+              child: Container(
+                width: 280,
+                height: 280,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primary.withValues(alpha: 0.10),
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  l10n.splashTagline,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.88),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    height: 1.5,
+              ),
+            ),
+            Positioned(
+              bottom: -40,
+              right: -20,
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primaryMid.withValues(alpha: 0.14),
+                ),
+              ),
+            ),
+            Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(48),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const AppBrandWordmark(
+                        fontSize: 40,
+                        color: AppColors.primary,
+                        stacked: true,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        l10n.splashTagline,
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                      const WebAuthBookStack(),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -134,69 +162,88 @@ class WebAuthFormPane extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final code = ref.watch(appLocaleProvider).languageCode;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              const AppBrandWordmark(fontSize: 20, stacked: true),
-              const Spacer(),
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceCard,
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                  border: Border.all(color: AppColors.line),
+    return ColoredBox(
+      color: AppColors.background,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(32, 24, 32, 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const AppBrandWordmark(
+                  fontSize: 20,
+                  stacked: true,
+                  color: AppColors.primary,
                 ),
-                child: SegmentedButton<String>(
-                  style: SegmentedButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                const Spacer(),
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceCard,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    border: Border.all(color: AppColors.line),
                   ),
-                  segments: const [
-                    ButtonSegment(
-                      value: 'en',
-                      label: Text('EN', style: TextStyle(fontSize: 12)),
+                  child: SegmentedButton<String>(
+                    style: SegmentedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    ButtonSegment(
-                      value: 'am',
-                      label: Text('አማ', style: TextStyle(fontSize: 12)),
-                    ),
-                  ],
-                  selected: {code},
-                  onSelectionChanged: (s) async =>
-                      ref.setAppLocale(Locale(s.first)),
+                    segments: const [
+                      ButtonSegment(
+                        value: 'en',
+                        label: Text('EN', style: TextStyle(fontSize: 12)),
+                      ),
+                      ButtonSegment(
+                        value: 'am',
+                        label: Text('አማ', style: TextStyle(fontSize: 12)),
+                      ),
+                    ],
+                    selected: {code},
+                    onSelectionChanged: (s) async =>
+                        ref.setAppLocale(Locale(s.first)),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 28),
-          Text(
-            headline,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 15,
-              height: 1.45,
+              ],
             ),
-          ),
-          const SizedBox(height: 28),
-          WebPanel(
-            padding: const EdgeInsets.all(28),
-            child: formChild,
-          ),
-          if (footer != null) ...[
-            const SizedBox(height: 20),
-            footer!,
+            const SizedBox(height: 36),
+            Text(
+              headline,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+                letterSpacing: -0.4,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 15,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 28),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primaryDeep.withValues(alpha: 0.08),
+                    blurRadius: 80,
+                    offset: const Offset(0, 24),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(28),
+                child: formChild,
+              ),
+            ),
+            if (footer != null) ...[const SizedBox(height: 20), footer!],
           ],
-        ],
+        ),
       ),
     );
   }

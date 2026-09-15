@@ -26,7 +26,7 @@ export default function PrimaryDownload() {
 
   if (!p || p.comingSoon) {
     return (
-      <Link href="/download" className="btn-primary text-base">
+      <Link href="/download" className="btn-pill bg-brand-400 text-white shadow-lg shadow-brand-400/25 hover:bg-brand-500">
         <DownloadIcon className="h-5 w-5" /> {t.hero.downloadApp}
       </Link>
     );
@@ -35,10 +35,10 @@ export default function PrimaryDownload() {
   const Icon = platformIcon[p.id];
   return (
     <div className="flex flex-col items-center gap-2 sm:items-start">
-      <a href={p.url} className="btn-primary text-base" download>
+      <a href={p.url} className="btn-pill bg-brand-400 text-white shadow-lg shadow-brand-400/25 hover:bg-brand-500" download>
         <Icon className="h-5 w-5" /> {fill(t.hero.downloadFor, { os: p.os })}
       </a>
-      <Link href="/download" className="text-xs text-slate-400 hover:text-white">
+      <Link href="/download" className="text-xs text-slate-500 hover:text-brand-600">
         {t.hero.chooseAnother}
       </Link>
     </div>

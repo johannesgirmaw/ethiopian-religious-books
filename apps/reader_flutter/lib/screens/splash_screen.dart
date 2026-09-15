@@ -19,6 +19,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final AnimationController _controller;
   late final Animation<double> _fadeIn;
   late final Animation<double> _scale;
+  late final Animation<double> _tilt;
 
   @override
   void initState() {
@@ -28,9 +29,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       duration: const Duration(milliseconds: 1100),
     );
     _fadeIn = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-    _scale = Tween<double>(begin: 0.88, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-    );
+    _scale = Tween<double>(
+      begin: 0.88,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+    _tilt = Tween<double>(
+      begin: 0.08,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
     _controller.forward();
     WidgetsBinding.instance.addPostFrameCallback((_) => _route());
   }
@@ -54,82 +60,95 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFF041820),
+      backgroundColor: Colors.white,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Deep radial gradient background
-          const DecoratedBox(
+          DecoratedBox(
             decoration: BoxDecoration(
-              gradient: AppGradients.splashRadial,
-            ),
-          ),
-
-          // Decorative concentric rings
-          Center(
-            child: FadeTransition(
-              opacity: _fadeIn,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Outermost ring
-                  Container(
-                    width: 320,
-                    height: 320,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.accent.withValues(alpha: 0.07),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                  // Middle ring
-                  Container(
-                    width: 230,
-                    height: 230,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.accent.withValues(alpha: 0.13),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                  // Soft ambient field behind the wordmark
-                  Container(
-                    width: 280,
-                    height: 200,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.rectangle,
-                      borderRadius: BorderRadius.circular(100),
-                      gradient: RadialGradient(
-                        colors: [
-                          AppColors.primary.withValues(alpha: 0.35),
-                          AppColors.primary.withValues(alpha: 0.0),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Amharic wordmark logo
-                  ScaleTransition(
-                    scale: _scale,
-                    child: const AppBrandWordmark(
-                      fontSize: 44,
-                      color: Colors.white,
-                      textAlign: TextAlign.center,
-                      stacked: true,
-                      gold: true,
-                    ),
-                  ),
+              gradient: RadialGradient(
+                center: Alignment.center,
+                radius: 1.15,
+                colors: [
+                  AppColors.primary.withValues(alpha: 0.16),
+                  AppColors.background,
+                  Colors.white,
                 ],
+                stops: const [0.0, 0.45, 1.0],
               ),
             ),
           ),
-
-          // Bottom anchored text + progress
+          Center(
+            child: FadeTransition(
+              opacity: _fadeIn,
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  return Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.identity()
+                      ..setEntry(3, 2, 0.001)
+                      ..rotateY(_tilt.value)
+                      ..scaleByDouble(
+                        _scale.value,
+                        _scale.value,
+                        _scale.value,
+                        1,
+                      ),
+                    child: child,
+                  );
+                },
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: 320,
+                      height: 320,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.10),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      width: 230,
+                      height: 230,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.18),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      width: 280,
+                      height: 200,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(100),
+                        gradient: RadialGradient(
+                          colors: [
+                            AppColors.primary.withValues(alpha: 0.22),
+                            AppColors.primary.withValues(alpha: 0.0),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const AppBrandWordmark(
+                      fontSize: 44,
+                      color: AppColors.primary,
+                      textAlign: TextAlign.center,
+                      stacked: true,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
           Positioned(
             left: 0,
             right: 0,
@@ -143,7 +162,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     Text(
                       l10n.splashTagline,
                       style: const TextStyle(
-                        color: AppColors.accent,
+                        color: AppColors.primaryDeep,
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                         letterSpacing: 0.8,
@@ -157,8 +176,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         value: null,
                         minHeight: 2,
                         borderRadius: BorderRadius.circular(AppRadius.pill),
-                        backgroundColor: AppColors.accent.withValues(alpha: 0.15),
-                        color: AppColors.accent,
+                        backgroundColor: AppColors.primary.withValues(
+                          alpha: 0.12,
+                        ),
+                        color: AppColors.primary,
                       ),
                     ),
                     const SizedBox(height: 44),

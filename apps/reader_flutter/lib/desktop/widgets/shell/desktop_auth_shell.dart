@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../design/desktop_tokens.dart';
+import '../../../design/app_tokens.dart';
 import 'desktop_auth_layout.dart';
 
 /// Desktop auth shell: fixed brand panel + animated form column.
@@ -16,17 +16,14 @@ class DesktopAuthShell extends ConsumerWidget {
     final routeKey = GoRouterState.of(context).matchedLocation;
 
     return Scaffold(
-      backgroundColor: DesktopTokens.canvasBg,
+      backgroundColor: AppColors.background,
       body: Row(
         children: [
-          const Expanded(
-            flex: 5,
-            child: DesktopAuthBrandPanel(),
-          ),
+          const Expanded(flex: 5, child: DesktopAuthBrandPanel()),
           Expanded(
             flex: 4,
             child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 280),
+              duration: const Duration(milliseconds: 420),
               switchInCurve: Curves.easeOutCubic,
               switchOutCurve: Curves.easeInCubic,
               transitionBuilder: (child, animation) {
@@ -54,10 +51,7 @@ class DesktopAuthShell extends ConsumerWidget {
                   ],
                 );
               },
-              child: KeyedSubtree(
-                key: ValueKey(routeKey),
-                child: child,
-              ),
+              child: KeyedSubtree(key: ValueKey(routeKey), child: child),
             ),
           ),
         ],

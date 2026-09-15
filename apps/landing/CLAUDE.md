@@ -1,6 +1,6 @@
 # Marketing landing (`apps/landing/`) — Next.js 14 App Router **static export** for felegemetsahft.com
 
-Home + `/download` marketing pages only. Tailwind dark theme, client-side en/am i18n.
+Home + `/download` marketing pages only. Tailwind **light** theme (white canvas, brand cyan accents), client-side en/am i18n.
 This is a pure static site: **no server runtime, no API routes, no data fetching, no app product logic.**
 
 ## Layout
@@ -12,7 +12,7 @@ This is a pure static site: **no server runtime, no API routes, no data fetching
 | `src/app/page.tsx` | Home: Header, Hero, Features, Platforms, CTA, Footer. |
 | `src/app/download/page.tsx` | `/download`: server component w/ Metadata → `<DownloadPageBody>`. |
 | `src/app/robots.ts`, `sitemap.ts` | Metadata routes, both `dynamic='force-static'`. Sitemap lists `/` and `/download/` only. |
-| `src/app/globals.css` | Tailwind + shared classes: `.container-px .glass .btn/.btn-primary/.btn-ghost .eyebrow .gold-text`. Dark-only (`color-scheme:dark`, `bg-ink-900`). |
+| `src/app/globals.css` | Tailwind + shared classes: `.container-px .glass .btn/.btn-primary/.btn-ghost .eyebrow .gold-text .brand-text`. Light-only (`color-scheme:light`, white canvas, cyan glows). |
 | [`src/config/site.ts`](src/config/site.ts) | **Single source of truth** for `site` URLs + exported `platforms[]`. Edit download links here. |
 | `src/i18n/translations.ts` | `Dict` type + `dict` Record<'en'\|'am'>. **All copy lives here.** |
 | `src/i18n/LanguageProvider.tsx` | `'use client'` context; `useLang()` → `{lang,setLang,toggle,t}`; persists to localStorage `fm-lang`; also exports `fill()` for `{token}` interpolation. |
@@ -25,7 +25,7 @@ This is a pure static site: **no server runtime, no API routes, no data fetching
 - Import alias `@/*` → `./src/*` ([tsconfig.json](tsconfig.json)). Use `@/config/site`, `@/i18n/...`, `@/components/...`.
 - Every interactive component starts with `'use client'` — whole site is client-rendered under a static shell. `useLang()` must be called inside `<LanguageProvider>` or it throws.
 - Never hard-code copy in components: pull from `t` (`useLang`) and add matching `en` + `am` entries in `translations.ts`, extending the `Dict` type first. OS names (Android/macOS/Windows/Linux) stay untranslated.
-- Colors from Tailwind theme in [`tailwind.config.ts`](tailwind.config.ts) mirroring Flutter tokens: `brand.*` (cyan, `brand-400` #29b6e0), `gold.*` (orange, `gold-500` #f5a623), `ink.*` (dark ramp). Use these + shared globals.css classes, never raw hex.
+- Colors from Tailwind theme in [`tailwind.config.ts`](tailwind.config.ts) mirroring Flutter tokens: `brand.*` (cyan, `brand-400` #29b6e0), `gold.*` (orange, `gold-500` #f5a623 — wordmark only), `ink.*` (text). White canvas; cyan for CTAs/accents. Use these + shared globals.css classes, never raw hex.
 - Fonts are CSS vars on `<html>`; reference via Tailwind `font-sans`/`font-display` (both fall back to the Ethiopic var).
 - Centralize download URLs + platform metadata in `config/site.ts` `platforms[]` — env-overridable via `NEXT_PUBLIC_*_URL`. Filenames must match uploads: `felege-metsahft.apk`, `felege-metsahft-setup.exe`, `felege-metsahft-macos.dmg`, `felege-metsahft-linux-x64.tar.gz`.
 - Login/register are plain `<a href={site.login}>` to Flutter web hash routes — keep the `/#/` prefix.
