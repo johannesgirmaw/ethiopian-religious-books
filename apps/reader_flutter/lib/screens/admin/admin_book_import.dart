@@ -143,6 +143,71 @@ Future<void> importBookFromDocxFlow({
   }
 }
 
+/// Pick a PDF, create a draft PDF book, upload the file, then open the editor.
+Future<void> importBookFromPdfFlow({
+  required BuildContext context,
+  required WidgetRef ref,
+}) async {
+  final l10n = AppLocalizations.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+  final router = GoRouter.of(context);
+  final rootNavigator = Navigator.of(context, rootNavigator: true);
+  final dio = ref.read(apiDioProvider);
+
+  void snack(String message) =>
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+
+  FilePickerResult? picked;
+  try {
+    picked = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['pdf'],
+      withData: true,
+    );
+  } catch (_) {
+    snack(l10n.importPdfFailed);
+    return;
+  }
+  if (picked == null || picked.files.isEmpty) return;
+
+  final file = picked.files.first;
+  final bytes = file.bytes;
+  if (bytes == null || bytes.isEmpty) {
+    snack(l10n.importPdfFailed);
+    return;
+  }
+  if (bytes.length > kMaxPdfImportBytes) {
+    snack(l10n.importPdfTooLarge);
+    return;
+  }
+  if (!looksLikePdfBytes(bytes)) {
+    snack(l10n.importPdfInvalid);
+    return;
+  }
+
+  if (!context.mounted) return;
+  _showBlockingProgress(context, l10n.importPdfInProgress);
+  try {
+    final book = await importBookFromPdf(
+      dio,
+      bytes: bytes,
+      filename: file.name,
+    );
+    ref.invalidate(adminBooksProvider);
+    if (rootNavigator.canPop()) rootNavigator.pop();
+    snack(l10n.importPdfSuccess);
+    router.push('/admin/books/${book.id}/edit', extra: book);
+  } on DioException catch (e) {
+    if (rootNavigator.canPop()) rootNavigator.pop();
+    snack(messageFromDioResponse(e.response?.data) ??
+        e.message ??
+        l10n.importPdfFailed);
+  } catch (_) {
+    if (rootNavigator.canPop()) rootNavigator.pop();
+    snack(l10n.importPdfFailed);
+  }
+}
+
 void _showBlockingProgress(BuildContext context, String message) {
   showDialog<void>(
     context: context,

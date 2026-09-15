@@ -127,6 +127,21 @@ class _DesktopAdminBooksScreenBodyState
                   icon: const Icon(Icons.upload_file_rounded, size: 18),
                   label: Text(l10n.importFromWord),
                 ),
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      importBookFromPdfFlow(context: context, ref: ref),
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                  ),
+                  icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                  label: Text(l10n.importFromPdf),
+                ),
                 FilledButton.icon(
                   onPressed: () => context.push('/admin/books/new'),
                   style: FilledButton.styleFrom(

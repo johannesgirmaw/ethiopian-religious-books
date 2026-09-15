@@ -189,6 +189,100 @@ Future<AdminBook> importBookFromDocx(
   return AdminBook.fromJson(res.data!);
 }
 
+/// Same limit as the Django API (`MAX_PDF_BYTES` in `pdf_books.py`).
+const int kMaxPdfImportBytes = 100 * 1024 * 1024;
+
+bool looksLikePdfBytes(List<int> bytes) {
+  if (bytes.length < 5) return false;
+  return bytes[0] == 0x25 &&
+      bytes[1] == 0x50 &&
+      bytes[2] == 0x44 &&
+      bytes[3] == 0x46 &&
+      bytes[4] == 0x2d;
+}
+
+String titleFromPdfFilename(String filename) {
+  final name = filename.trim();
+  if (name.isEmpty) return 'Imported PDF';
+  final lower = name.toLowerCase();
+  if (lower.endsWith('.pdf')) {
+    final stem = name.substring(0, name.length - 4).trim();
+    if (stem.isNotEmpty) return stem;
+  }
+  return name;
+}
+
+/// Presigned PUT + complete for a PDF package on an existing draft book.
+Future<void> uploadPdfPackageForBook(
+  Dio dio, {
+  required String bookId,
+  required List<int> bytes,
+  required String filename,
+}) async {
+  final safeName = filename.trim().isEmpty ? 'content.pdf' : filename.trim();
+  final pres = await dio.post<Map<String, dynamic>>(
+    'admin/books/$bookId/pdf/presign',
+    data: {
+      'content_type': 'application/pdf',
+      'filename': safeName,
+    },
+  );
+  final data = pres.data;
+  if (data == null) throw StateError('Empty PDF presign response');
+  final putUrl = data['put_url'] as String?;
+  final revisionId = data['revision_id'] as String?;
+  if (putUrl == null || revisionId == null) {
+    throw StateError('Invalid PDF presign response');
+  }
+  final plain = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 60),
+      receiveTimeout: const Duration(minutes: 5),
+    ),
+  );
+  await plain.put<dynamic>(
+    putUrl,
+    data: bytes,
+    options: Options(headers: {'Content-Type': 'application/pdf'}),
+  );
+  await dio.post<Map<String, dynamic>>(
+    'admin/books/$bookId/pdf/complete',
+    data: {
+      'revision_id': revisionId,
+      'filename': safeName,
+    },
+  );
+}
+
+/// Creates a hidden draft book and attaches the PDF package.
+Future<AdminBook> importBookFromPdf(
+  Dio dio, {
+  required List<int> bytes,
+  required String filename,
+  String? title,
+  String? language,
+}) async {
+  final bookTitle = (title ?? titleFromPdfFilename(filename)).trim();
+  final res = await dio.post<Map<String, dynamic>>(
+    'admin/books',
+    data: {
+      'title': bookTitle.isEmpty ? 'Imported PDF' : bookTitle,
+      'primary_language':
+          (language ?? 'am').trim().isEmpty ? 'am' : language!.trim(),
+      'chapters_draft': const <Map<String, dynamic>>[],
+    },
+  );
+  final created = AdminBook.fromJson(res.data!);
+  await uploadPdfPackageForBook(
+    dio,
+    bookId: created.id,
+    bytes: bytes,
+    filename: filename,
+  );
+  final detail = await dio.get<Map<String, dynamic>>('admin/books/${created.id}');
+  return AdminBook.fromJson(detail.data!);
+}
+
 String? publishErrorMessage(DioException e) {
   final data = e.response?.data;
   if (data is Map && data['error'] is Map) {

@@ -1191,6 +1191,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importFromWord => 'Import Word (.docx)';
 
   @override
+  String get importFromPdf => 'Import PDF (.pdf)';
+
+  @override
   String get importDocxInProgress => 'Importing document…';
 
   @override
@@ -1199,6 +1202,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importDocxFailed => 'Could not import the document.';
+
+  @override
+  String get importPdfInProgress => 'Importing PDF…';
+
+  @override
+  String get importPdfSuccess =>
+      'Imported. Review the book details, then publish.';
+
+  @override
+  String get importPdfFailed => 'Could not import the PDF.';
+
+  @override
+  String get importPdfTooLarge => 'PDF exceeds the 100 MB limit.';
+
+  @override
+  String get importPdfInvalid => 'The selected file is not a valid PDF.';
 
   @override
   String get importScanning => 'Scanning document…';

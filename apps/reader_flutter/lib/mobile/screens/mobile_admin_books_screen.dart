@@ -63,6 +63,11 @@ class _MobileAdminBooksScreenState
             icon: const Icon(Icons.upload_file_rounded),
           ),
           IconButton(
+            tooltip: l10n.importFromPdf,
+            onPressed: () => importBookFromPdfFlow(context: context, ref: ref),
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+          ),
+          IconButton(
             tooltip: l10n.newBookTooltip,
             onPressed: () => context.push('/admin/books/new'),
             icon: const Icon(Icons.add_rounded),

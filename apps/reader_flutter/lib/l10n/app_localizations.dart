@@ -2234,6 +2234,12 @@ abstract class AppLocalizations {
   /// **'Import Word (.docx)'**
   String get importFromWord;
 
+  /// No description provided for @importFromPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Import PDF (.pdf)'**
+  String get importFromPdf;
+
   /// No description provided for @importDocxInProgress.
   ///
   /// In en, this message translates to:
@@ -2251,6 +2257,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not import the document.'**
   String get importDocxFailed;
+
+  /// No description provided for @importPdfInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing PDF…'**
+  String get importPdfInProgress;
+
+  /// No description provided for @importPdfSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported. Review the book details, then publish.'**
+  String get importPdfSuccess;
+
+  /// No description provided for @importPdfFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not import the PDF.'**
+  String get importPdfFailed;
+
+  /// No description provided for @importPdfTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF exceeds the 100 MB limit.'**
+  String get importPdfTooLarge;
+
+  /// No description provided for @importPdfInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected file is not a valid PDF.'**
+  String get importPdfInvalid;
 
   /// No description provided for @importScanning.
   ///

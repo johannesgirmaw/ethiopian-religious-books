@@ -1168,6 +1168,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get importFromWord => 'ከዎርድ (.docx) አስገባ';
 
   @override
+  String get importFromPdf => 'PDF (.pdf) አስገባ';
+
+  @override
   String get importDocxInProgress => 'ሰነዱ እየገባ ነው…';
 
   @override
@@ -1175,6 +1178,21 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get importDocxFailed => 'ሰነዱን ማስገባት አልተቻለም።';
+
+  @override
+  String get importPdfInProgress => 'PDF እየገባ ነው…';
+
+  @override
+  String get importPdfSuccess => 'ገብቷል። የመጽሐፉን ዝርዝር ገምግመው ያትሙ።';
+
+  @override
+  String get importPdfFailed => 'PDF ማስገባት አልተቻለም።';
+
+  @override
+  String get importPdfTooLarge => 'PDF ከ 100 ሜባ በላይ ነው።';
+
+  @override
+  String get importPdfInvalid => 'የተመረጠው ፋይል ትክክለኛ PDF አይደለም።';
 
   @override
   String get importScanning => 'ሰነዱ እየተመረመረ ነው…';
