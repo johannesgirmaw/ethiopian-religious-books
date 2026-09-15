@@ -1,22 +1,30 @@
 'use client';
 
-import { useCallback, useRef, type MouseEvent } from 'react';
+import { useCallback, useRef, type MouseEvent, type ReactNode } from 'react';
 
 type Book = { title: string; subtitle: string };
 
-export default function BookStack({ books }: { books: Book[] }) {
+export default function BookStack({
+  books,
+  children,
+  tilt = true,
+}: {
+  books: Book[];
+  children?: ReactNode;
+  tilt?: boolean;
+}) {
   const rig = useRef<HTMLDivElement>(null);
 
   const onMove = useCallback((e: MouseEvent<HTMLDivElement>) => {
+    if (!tilt) return;
     const el = rig.current;
-    const stage = e.currentTarget;
     if (!el) return;
-    const r = stage.getBoundingClientRect();
+    const r = e.currentTarget.getBoundingClientRect();
     const x = (e.clientX - r.left) / r.width - 0.5;
     const y = (e.clientY - r.top) / r.height - 0.5;
     el.style.setProperty('--rx', `${(8 - y * 8).toFixed(2)}deg`);
     el.style.setProperty('--ry', `${(-16 + x * 10).toFixed(2)}deg`);
-  }, []);
+  }, [tilt]);
 
   const onLeave = useCallback(() => {
     const el = rig.current;
@@ -40,7 +48,7 @@ export default function BookStack({ books }: { books: Book[] }) {
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute h-48 w-48 rounded-full bg-brand-400/20 blur-3xl animate-float"
+        className="pointer-events-none absolute h-48 w-48 rounded-full bg-brand-400/20 blur-3xl"
       />
       <div ref={rig} className="book-rig relative h-64 w-full max-w-md sm:h-72">
         {books.slice(0, 3).map((book, i) => {
@@ -49,6 +57,7 @@ export default function BookStack({ books }: { books: Book[] }) {
           return (
             <article
               key={book.title}
+              data-book={i}
               className={`book absolute left-1/2 top-1/2 ${variants[i]}`}
               style={{
                 transform: `translate3d(calc(-50% + ${o.x}rem), calc(-50% + ${o.y}rem), ${o.z}px) rotateY(${o.rot}deg)`,
@@ -76,6 +85,7 @@ export default function BookStack({ books }: { books: Book[] }) {
             </article>
           );
         })}
+        {children}
       </div>
     </div>
   );

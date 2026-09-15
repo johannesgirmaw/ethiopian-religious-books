@@ -12,6 +12,7 @@ html {
 
 body {
   @apply bg-white text-slate-500 antialiased;
+  overflow-x: clip;
 }
 
 @layer components {
@@ -44,12 +45,42 @@ body {
       radial-gradient(ellipse 40% 30% at 82% 18%, rgb(245 166 35 / 0.08), transparent 50%);
   }
 
+  .reader-screen {
+    transform-style: preserve-3d;
+  }
+
+  .cta-hatch {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 14px,
+      rgb(255 255 255 / 0.035) 14px,
+      rgb(255 255 255 / 0.035) 15px
+    );
+  }
+
+  .emblem-hatch {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 7px,
+      rgb(255 255 255 / 0.07) 7px,
+      rgb(255 255 255 / 0.07) 8px
+    );
+  }
+
+  .platform-panel {
+    min-height: 18rem;
+  }
+
   .marquee-mask {
     mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent);
   }
 
   .highlight {
-    @apply mx-0.5 inline rounded-[0.4em] bg-gold-400/90 px-[0.28em] py-[0.02em] text-ink-900;
+    @apply mx-0.5 rounded-[0.4em] bg-gold-400/90 px-[0.28em] py-[0.02em] text-ink-900;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
   }
 
   .glass {

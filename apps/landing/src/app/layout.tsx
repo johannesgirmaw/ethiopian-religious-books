@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, Fraunces, Noto_Sans_Ethiopic } from 'next/font/google';
 import { site } from '@/config/site';
 import { LanguageProvider } from '@/i18n/LanguageProvider';
+import SmoothScroll from '@/components/SmoothScroll';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
@@ -73,7 +74,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <LanguageProvider>{children}</LanguageProvider>
+        <LanguageProvider>
+          <SmoothScroll>{children}</SmoothScroll>
+        </LanguageProvider>
       </body>
     </html>
   );

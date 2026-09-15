@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
+import { gsap, registerGsap, prefersReducedMotion } from '@/lib/gsap';
 
 export default function Reveal({
   children,
@@ -12,31 +13,28 @@ export default function Reveal({
   delay?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [shown, setShown] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    registerGsap();
     const el = ref.current;
     if (!el) return;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) return;
-        setShown(true);
-        io.disconnect();
-      },
-      { threshold: 0.16, rootMargin: '0px 0px -40px 0px' },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  const style: CSSProperties = {
-    opacity: shown ? 1 : 0,
-    transform: shown ? 'none' : 'translateY(16px)',
-    transition: `opacity 0.7s cubic-bezier(0.22,1,0.36,1) ${delay}ms, transform 0.7s cubic-bezier(0.22,1,0.36,1) ${delay}ms`,
-  };
+    if (prefersReducedMotion()) return;
+    const ctx = gsap.context(() => {
+      gsap.from(el, {
+        opacity: 0,
+        y: 28,
+        filter: 'blur(10px)',
+        duration: 0.85,
+        delay: delay / 1000,
+        ease: 'power3.out',
+        scrollTrigger: { trigger: el, start: 'top 86%' },
+      });
+    }, el);
+    return () => ctx.revert();
+  }, [delay]);
 
   return (
-    <div ref={ref} className={className} style={style}>
+    <div ref={ref} className={className}>
       {children}
     </div>
   );

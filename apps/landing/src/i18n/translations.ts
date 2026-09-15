@@ -13,6 +13,14 @@ export type Dict = {
     downloadFor: string; // uses {os}
     chooseAnother: string;
     cards: { bible: string; praise: string; synax: string };
+    scroll: string;
+  };
+  reader: { today: string; lead: string; verse: string; tail: string; progress: string };
+  experience: {
+    eyebrow: string;
+    heading: string;
+    body: string;
+    stats: { value: string; label: string }[];
   };
   features: {
     eyebrow: string;
@@ -28,7 +36,7 @@ export type Dict = {
     allDownloads: string;
   };
   ctaSection: { heading: string; body: string; createAccount: string; openWebApp: string };
-  footer: { webApp: string; rights: string; builtFor: string };
+  footer: { webApp: string; rights: string; builtFor: string; toTop: string };
   download: {
     eyebrow: string;
     title: string; // uses {name}
@@ -60,6 +68,24 @@ export const dict: Record<Lang, Dict> = {
       downloadFor: 'Download for {os}',
       chooseAnother: 'or choose another platform →',
       cards: { bible: 'Holy Bible · 81 books', praise: 'Praise of St. Mary', synax: 'Synaxarium · daily' },
+      scroll: 'Scroll',
+    },
+    reader: {
+      today: 'Today’s reading',
+      lead: 'Open the books of the Church in a calm, focused reader — Geʽez and Amharic, verse by verse.',
+      verse: 'My soul magnifies the Lord, and my spirit rejoices in God my Saviour.',
+      tail: 'Highlight a line, leave a note, and pick up the same page on every device you own.',
+      progress: 'Reading progress',
+    },
+    experience: {
+      eyebrow: 'The library, in numbers',
+      heading: 'A reverent reading experience',
+      body: 'Felege Metsahft brings Scripture, liturgy and study into a calm modern reader — so the treasures of the Church stay with you, online and off, on every device you pray with.',
+      stats: [
+        { value: '81+', label: 'Canonical books' },
+        { value: '6', label: 'Ways to read' },
+        { value: '2', label: 'Sacred scripts' },
+      ],
     },
     features: {
       eyebrow: 'Why ፈለገ መጻሕፍት',
@@ -91,6 +117,7 @@ export const dict: Record<Lang, Dict> = {
       webApp: 'Web app',
       rights: 'All rights reserved.',
       builtFor: 'Built for the Ethiopian Orthodox Tewahedo community.',
+      toTop: 'Back to top',
     },
     download: {
       eyebrow: 'Install the app',
@@ -142,6 +169,24 @@ export const dict: Record<Lang, Dict> = {
       downloadFor: 'ለ{os} አውርድ',
       chooseAnother: 'ወይም ሌላ መድረክ ይምረጡ →',
       cards: { bible: 'መጽሐፍ ቅዱስ · 81 መጻሕፍት', praise: 'ውዳሴ ማርያም', synax: 'ስንክሳር · ዕለታዊ' },
+      scroll: 'ሸብልል',
+    },
+    reader: {
+      today: 'የዛሬ ንባብ',
+      lead: 'የቤተ ክርስቲያንን መጻሕፍት በተረጋጋ አንባቢ ይክፈቱ — ግዕዝና አማርኛ፣ ጥቅስ በጥቅስ።',
+      verse: 'ነፍሴ ጌታን ታከብራለች፥ መንፈሴም በአምላኬ በመድኃኒቴ ሐሤት ታደርጋለች።',
+      tail: 'አንድ መስመር ያድምቁ፣ ማስታወሻ ይጻፉ፣ በሁሉም መሣሪያዎችዎ ላይ ከዚያው ገጽ ይቀጥሉ።',
+      progress: 'የንባብ እድገት',
+    },
+    experience: {
+      eyebrow: 'ቤተ መጻሕፍቱ በቁጥር',
+      heading: 'ክብር ያለው የንባብ ተሞክሮ',
+      body: 'ፈለገ መጻሕፍት ቅዱሳት መጻሕፍትን፣ ሥርዓተ ቅዳሴንና ጥናትን ወደ ተረጋጋ ዘመናዊ አንባቢ ያመጣል — የቤተ ክርስቲያን ሀብት ከእርስዎ ጋር ይቆያል፣ በመስመር ላይም ውጭም፣ በሚጸልዩበት ሁሉ።',
+      stats: [
+        { value: '81+', label: 'ቅዱሳት መጻሕፍት' },
+        { value: '6', label: 'የንባብ መንገዶች' },
+        { value: '2', label: 'ቅዱሳት ፊደላት' },
+      ],
     },
     features: {
       eyebrow: 'ለምን ፈለገ መጻሕፍት?',
@@ -173,6 +218,7 @@ export const dict: Record<Lang, Dict> = {
       webApp: 'የድር መተግበሪያ',
       rights: 'መብቱ በሕግ የተጠበቀ ነው።',
       builtFor: 'ለኢትዮጵያ ኦርቶዶክስ ተዋሕዶ ማኅበረሰብ የተሰራ።',
+      toTop: 'ወደ ላይ ተመለስ',
     },
     download: {
       eyebrow: 'መተግበሪያውን ይጫኑ',
