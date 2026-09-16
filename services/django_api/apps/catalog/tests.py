@@ -415,6 +415,44 @@ class BookReviewWorkflowTests(TestCase):
         self.assertEqual(book.review_status, Book.ReviewStatus.DRAFT)
         self.assertEqual(book.review_notes.first().decision, "withdrawn")
 
+    # --- reader preview (unpublished) -----------------------------------
+    def test_reviewer_can_open_in_review_book_in_reader(self):
+        book = self._make_book(review_status=Book.ReviewStatus.IN_REVIEW)
+        self.client.force_authenticate(self.admin)
+        detail = self.client.get(f"/v1/books/{book.id}")
+        self.assertEqual(detail.status_code, 200, detail.data)
+        self.assertEqual(detail.data["title"], "Mine")
+        content = self.client.get(f"/v1/books/{book.id}/content")
+        self.assertEqual(content.status_code, 200, content.data)
+        self.assertEqual(len(content.data["chapters"]), 1)
+        self.assertEqual(
+            content.data["chapters"][0]["pages"][0]["body"], "Hello reader"
+        )
+        chapters = self.client.get(f"/v1/books/{book.id}/chapters")
+        self.assertEqual(chapters.status_code, 200, chapters.data)
+        self.assertEqual(len(chapters.data["items"]), 1)
+
+    def test_author_can_preview_own_unpublished_book(self):
+        book = self._make_book()
+        self.client.force_authenticate(self.author)
+        self.assertEqual(self.client.get(f"/v1/books/{book.id}").status_code, 200)
+        content = self.client.get(f"/v1/books/{book.id}/content")
+        self.assertEqual(content.status_code, 200, content.data)
+        self.assertEqual(len(content.data["chapters"]), 1)
+
+    def test_reader_cannot_open_unpublished_book(self):
+        book = self._make_book(review_status=Book.ReviewStatus.IN_REVIEW)
+        self.client.force_authenticate(self.reader)
+        self.assertEqual(self.client.get(f"/v1/books/{book.id}").status_code, 404)
+        self.assertEqual(
+            self.client.get(f"/v1/books/{book.id}/content").status_code, 404
+        )
+
+    def test_other_author_cannot_open_unpublished_book(self):
+        book = self._make_book(review_status=Book.ReviewStatus.IN_REVIEW)
+        self.client.force_authenticate(self.other)
+        self.assertEqual(self.client.get(f"/v1/books/{book.id}").status_code, 404)
+
     # --- publish gate ---------------------------------------------------
     def test_publish_blocked_until_reviewed(self):
         book = self._make_book()

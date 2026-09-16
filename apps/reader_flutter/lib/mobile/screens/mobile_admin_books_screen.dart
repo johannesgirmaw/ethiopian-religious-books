@@ -7,6 +7,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/admin_book.dart';
 import '../../providers/admin_providers.dart';
 import '../../providers/session_notifier.dart';
+import '../../router/app_navigation.dart';
 import '../../screens/admin/admin_book_actions.dart';
 import '../../screens/admin/admin_book_import.dart';
 import '../../widgets/admin_book_status_chip.dart';
@@ -245,9 +246,7 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
 
   void _openDetail() {
     context.push(
-      widget.book.isBible
-          ? '/bible/book/${widget.book.id}'
-          : '/book/${widget.book.id}',
+      bookDetailPathForBook(widget.book.id, isBible: widget.book.isBible),
     );
   }
 
@@ -299,8 +298,11 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
           () => adminUnpublishBook(context: context, ref: ref, bookId: book.id),
         );
       case _AdminBookMenuAction.openReader:
-        context.push(
-          book.isBible ? '/bible/book/${book.id}' : '/book/${book.id}',
+        openBookInReader(
+          context,
+          bookId: book.id,
+          isBible: book.isBible,
+          isPdf: book.isPdfBook,
         );
       case _AdminBookMenuAction.delete:
         await _run(
@@ -350,7 +352,7 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
             ? null
             : canEdit
             ? _openEdit
-            : isPublished
+            : book.hasReaderPreview
             ? _openDetail
             : null,
         child: AppPanel(
@@ -453,7 +455,7 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
                                 icon: Icons.visibility_off_outlined,
                                 label: l10n.unpublish,
                               ),
-                            if (isPublished)
+                            if (book.hasReaderPreview)
                               _menuItem(
                                 value: _AdminBookMenuAction.openReader,
                                 icon: Icons.menu_book_outlined,

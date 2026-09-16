@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.catalog.models import Book, BookRevision, Genre, Tag
+from apps.catalog.permissions import can_manage_book
 
 
 class PublishedRevisionSerializer(serializers.ModelSerializer):
@@ -30,6 +31,7 @@ class BookListSerializer(serializers.ModelSerializer):
     # The price a buyer actually pays (sale_price when set, else price). Computed
     # inline so the catalog app keeps no dependency on the payments app.
     final_price = serializers.SerializerMethodField()
+    content_format = serializers.SerializerMethodField()
 
     class Meta:
         model = Book
@@ -56,6 +58,7 @@ class BookListSerializer(serializers.ModelSerializer):
             "price",
             "sale_price",
             "final_price",
+            "content_format",
             "published_revision",
             "created_at",
             "tags",
@@ -64,6 +67,21 @@ class BookListSerializer(serializers.ModelSerializer):
     def get_final_price(self, obj: Book) -> str:
         value = obj.sale_price if obj.sale_price is not None else obj.price
         return str(value if value is not None else 0)
+
+    def get_content_format(self, obj: Book) -> str | None:
+        rev = obj.published_revision
+        if rev is not None:
+            return rev.content_format or None
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request is not None else None
+        if not can_manage_book(obj, user):
+            return None
+        from apps.catalog.pdf_books import is_pdf_revision, latest_pdf_draft
+
+        draft = latest_pdf_draft(obj)
+        if is_pdf_revision(draft):
+            return "pdf"
+        return None
 
     def get_cover_url(self, obj: Book) -> str | None:
         if not (obj.cover_object_key or "").strip():

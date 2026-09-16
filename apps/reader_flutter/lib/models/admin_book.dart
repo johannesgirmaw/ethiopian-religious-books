@@ -205,6 +205,10 @@ class AdminBook {
   bool get hasPendingChangeRequest =>
       isDraftReview && (latestReviewNote?.isChangesRequested ?? false);
 
+  /// Whether manage-books can open this title in the catalog reader.
+  bool get hasReaderPreview =>
+      isPublished || isPdfBook || chaptersDraft.isNotEmpty;
+
   bool isCreatedBy(String? userId) =>
       userId != null && createdById != null && createdById == userId;
 }

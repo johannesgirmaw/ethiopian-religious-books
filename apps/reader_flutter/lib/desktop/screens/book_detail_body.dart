@@ -118,7 +118,7 @@ class DesktopBookDetailBody extends ConsumerWidget {
           pageCount: pageCount,
           onWriteReview: showReviews
               ? null
-              : () => openBookReviewSheet(context, ref, bookId: bookId),
+              : () => openBookReviewSheet(context, ref, book: book),
         );
         final details = _DetailsCard(
           book: book,
@@ -138,7 +138,7 @@ class DesktopBookDetailBody extends ConsumerWidget {
                 readingPathForBook(bookId, isPdf: false, query: 'chapter=$key'),
               ),
             ),
-          if (showReviews) BookReviewsSection(bookId: bookId),
+          if (showReviews) BookReviewsSection(book: book),
         ];
 
         List<Widget> spacedBody() {

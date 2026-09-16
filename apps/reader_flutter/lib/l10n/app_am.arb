@@ -1014,6 +1014,9 @@
   "yourRatingLabel": "የእርስዎ ደረጃ",
   "reviewBodyHint": "ያሰቡትን ይጻፉ (አማራጭ)",
   "submitReviewAction": "አስተያየት ላክ",
+  "reviewRequiresPurchase": "አስተያየት ከመስጠትዎ በፊት ይህን መጽሐፍ ይግዙ።",
+  "reviewRequiresReading": "አስተያየት ከመስጠትዎ በፊት መጽሐፉን ማንበብ ይጀምሩ።",
+  "reviewSubmitFailed": "አስተያየትዎን መላክ አልተቻለም።",
   "ratingsCountLabel": "{count} ደረጃዎች",
   "@ratingsCountLabel": {
     "placeholders": {

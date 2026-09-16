@@ -37,6 +37,7 @@ from apps.study.serializers import (
     UserNotificationSerializer,
     UserReadingProgressSerializer,
 )
+from apps.study.services import review_eligibility_error
 
 
 def _recompute_book_rating(book: Book) -> None:
@@ -325,6 +326,12 @@ class BookReviewsView(APIView):
         serializer = BookReviewSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         book = serializer.validated_data["book"]
+        gate = review_eligibility_error(request.user, book)
+        if gate is not None:
+            return Response(
+                {"error": gate},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         obj, _ = BookReview.objects.update_or_create(
             user=request.user,
             book=book,

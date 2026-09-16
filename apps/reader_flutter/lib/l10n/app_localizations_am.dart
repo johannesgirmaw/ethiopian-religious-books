@@ -1845,6 +1845,15 @@ class AppLocalizationsAm extends AppLocalizations {
   String get submitReviewAction => 'አስተያየት ላክ';
 
   @override
+  String get reviewRequiresPurchase => 'አስተያየት ከመስጠትዎ በፊት ይህን መጽሐፍ ይግዙ።';
+
+  @override
+  String get reviewRequiresReading => 'አስተያየት ከመስጠትዎ በፊት መጽሐፉን ማንበብ ይጀምሩ።';
+
+  @override
+  String get reviewSubmitFailed => 'አስተያየትዎን መላክ አልተቻለም።';
+
+  @override
   String ratingsCountLabel(int count) {
     return '$count ደረጃዎች';
   }

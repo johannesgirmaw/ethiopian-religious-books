@@ -7,6 +7,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/admin_book.dart';
 import '../../providers/admin_providers.dart';
 import '../../providers/session_notifier.dart';
+import '../../router/app_navigation.dart';
 import '../../screens/admin/admin_book_actions.dart';
 import '../../screens/admin/admin_book_import.dart';
 import '../../widgets/admin_book_status_chip.dart';
@@ -333,9 +334,9 @@ class _AdminBookRowState extends ConsumerState<_AdminBookRow> {
           ? null
           : canEdit
           ? () => context.push('/admin/books/${book.id}/edit', extra: book)
-          : isPublished
+          : book.hasReaderPreview
           ? () => context.push(
-              book.isBible ? '/bible/book/${book.id}' : '/book/${book.id}',
+              bookDetailPathForBook(book.id, isBible: book.isBible),
             )
           : null,
       child: Padding(
@@ -454,10 +455,11 @@ class _AdminBookRowState extends ConsumerState<_AdminBookRow> {
                         ),
                       );
                     case _AdminBookMenuAction.openReader:
-                      context.push(
-                        book.isBible
-                            ? '/bible/book/${book.id}'
-                            : '/book/${book.id}',
+                      openBookInReader(
+                        context,
+                        bookId: book.id,
+                        isBible: book.isBible,
+                        isPdf: book.isPdfBook,
                       );
                     case _AdminBookMenuAction.delete:
                       await _run(
@@ -511,7 +513,7 @@ class _AdminBookRowState extends ConsumerState<_AdminBookRow> {
                       value: _AdminBookMenuAction.unpublish,
                       child: Text(l10n.unpublish),
                     ),
-                  if (isPublished)
+                  if (book.hasReaderPreview)
                     PopupMenuItem(
                       value: _AdminBookMenuAction.openReader,
                       child: Text(l10n.openInReader),

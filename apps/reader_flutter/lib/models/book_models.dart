@@ -50,6 +50,7 @@ class BookSummary {
     this.primaryLanguage,
     this.catalogVisibility,
     this.publishedRevision,
+    this.contentFormat,
     this.coverUrl,
     this.genre,
     this.isBible = false,
@@ -77,6 +78,10 @@ class BookSummary {
   final String? catalogVisibility;
   final PublishedRevision? publishedRevision;
 
+  /// Package format from the API (`html_chunks`, `pdf`, …). Falls back to
+  /// [publishedRevision] when omitted.
+  final String? contentFormat;
+
   /// Presigned cover image URL (null when no cover or storage unconfigured).
   final String? coverUrl;
 
@@ -89,7 +94,9 @@ class BookSummary {
 
   /// True when the published package is a PDF document (not chapter text).
   bool get isPdf =>
-      (publishedRevision?.contentFormat ?? '').toLowerCase() == 'pdf';
+      (contentFormat ?? publishedRevision?.contentFormat ?? '')
+          .toLowerCase() ==
+      'pdf';
 
   /// "old" | "new" | null — only meaningful when [isBible].
   final String? testamentType;
@@ -118,6 +125,9 @@ class BookSummary {
   /// Whether this title requires a purchase to read.
   bool get requiresPurchase => isPremium && finalPrice > 0;
 
+  /// Unpublished titles are only returned to managers previewing a draft.
+  bool get isCatalogPublished => catalogVisibility == 'published';
+
   bool get isOnSale => salePrice != null && salePrice! < price;
 
   factory BookSummary.fromJson(Map<String, dynamic> j) {
@@ -136,6 +146,7 @@ class BookSummary {
               j['published_revision'] as Map<String, dynamic>,
             )
           : null,
+      contentFormat: j['content_format'] as String?,
       coverUrl: resolveCoverUrl(j['cover_url'] as String?),
       genre: j['genre'] as String?,
       isBible: j['is_bible'] as bool? ?? false,

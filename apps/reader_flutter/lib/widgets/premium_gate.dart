@@ -20,6 +20,8 @@ Future<bool> ensureBookUnlocked(
   BookSummary book,
 ) async {
   if (!book.isPremium) return true;
+  // Managers previewing an unpublished draft skip checkout.
+  if (!book.isCatalogPublished && book.catalogVisibility != null) return true;
 
   // A completed purchase entitles the user to read.
   if (await userOwnsBook(ref, book.id)) return true;

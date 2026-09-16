@@ -866,6 +866,9 @@
   "yourRatingLabel": "Your rating",
   "reviewBodyHint": "Share your thoughts (optional)",
   "submitReviewAction": "Submit review",
+  "reviewRequiresPurchase": "Purchase this book before leaving a review.",
+  "reviewRequiresReading": "Start reading this book before leaving a review.",
+  "reviewSubmitFailed": "Could not submit your review.",
   "ratingsCountLabel": "{count} ratings",
   "@ratingsCountLabel": {
     "placeholders": {"count": {"type": "int"}}

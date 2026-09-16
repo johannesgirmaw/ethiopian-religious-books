@@ -123,6 +123,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         ),
       );
     }
+    unawaited(
+      trackReaderEvent(ref, bookId: widget.bookId, eventName: 'chapter_open'),
+    );
   }
 
   Future<void> _restoreReaderState() async {
@@ -215,19 +218,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 
   void _handleReaderBack() {
-    if (_hasSelectedChapter) {
-      setState(() {
-        _selectedChapterKey = null;
-        _selectedPageNumber = null;
-        _progress = 0;
-        _showChrome = true;
-      });
-      if (_scrollController.hasClients) {
-        _scrollController.jumpTo(0);
-      }
-      return;
-    }
-    popOverlayRoute(context);
+    leaveReaderToBookDetail(context, widget.bookId);
   }
 
   Future<void> _toggleBookmark() async {
@@ -1927,8 +1918,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             _pageViewSections.isNotEmpty;
         const showChromeUi = true;
         final showFindPanel = showChromeUi && _showFindBar;
-        final showToolbarPanel =
-            showChromeUi && !keyboardOpen;
+        final showToolbarPanel = showChromeUi && !keyboardOpen;
         final findBottom = showChromeUi ? 8.0 : -(findPanelH + 24);
         final toolbarH = _readerToolbarHeight(
           hasChapter: _hasSelectedChapter,
@@ -1950,936 +1940,966 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
         return ContentProtectionLifecycle(
           child: PopScope(
-          canPop: !_hasSelectedChapter,
+          canPop: false,
           onPopInvokedWithResult: (didPop, _) {
             if (didPop) return;
             _handleReaderBack();
           },
-          child: Scaffold(
-            backgroundColor: bg,
-            resizeToAvoidBottomInset: true,
-            body: SafeArea(
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: _readerPageBackgroundDecoration(dark, sepia),
+            child: Scaffold(
+              backgroundColor: bg,
+              resizeToAvoidBottomInset: true,
+              body: SafeArea(
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: _readerPageBackgroundDecoration(
+                          dark,
+                          sepia,
+                        ),
+                      ),
                     ),
-                  ),
-                  if (twoPaneRail)
+                    if (twoPaneRail)
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: _desktopRailWidth,
+                        child: _DesktopChapterRail(
+                          chapters: contentTree.chapters,
+                          selectedChapterKey: _selectedChapterKey,
+                          bookTitle: book.title,
+                          chaptersLabel: l10n.chaptersHeading,
+                          pageCountLabel: (c) => l10n.pageCount(c.pages.length),
+                          dark: dark,
+                          sepia: sepia,
+                          textColor: text,
+                          background: bg,
+                          onSelect: (chapter) =>
+                              _selectChapter(chapter, contentTree),
+                        ),
+                      ),
                     Positioned(
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: _desktopRailWidth,
-                      child: _DesktopChapterRail(
-                        chapters: contentTree.chapters,
-                        selectedChapterKey: _selectedChapterKey,
-                        bookTitle: book.title,
-                        chaptersLabel: l10n.chaptersHeading,
-                        pageCountLabel: (c) => l10n.pageCount(c.pages.length),
-                        dark: dark,
-                        sepia: sepia,
-                        textColor: text,
-                        background: bg,
-                        onSelect: (chapter) =>
-                            _selectChapter(chapter, contentTree),
-                      ),
-                    ),
-                  Positioned(
-                    left: twoPaneRail ? _desktopRailWidth : 0,
-                    right: 0,
-                    top: contentTop,
-                    bottom: contentBottom,
-                    child: CopyProtectedContent(
-                      child: pageViewReading
-                        ? ClipRect(
-                            child: _buildPageViewReader(
-                              sections: _pageViewSections,
-                              fullBookPaging: continuousBookPaging,
-                              dark: dark,
-                              sepia: sepia,
-                              text: text,
-                              colorScheme: Theme.of(context).colorScheme,
-                            ),
-                          )
-                        : GestureDetector(
-                            onTap: _toggleChrome,
-                            onPanDown: (_) {
-                              if (!_showChrome)
-                                setState(() => _showChrome = true);
-                              _scheduleAutoHide();
-                            },
-                            child: ListView(
-                              controller: _scrollController,
-                              padding: EdgeInsets.fromLTRB(
-                                _selectedChapterKey != null
-                                    ? 0
-                                    : webReaderHorizontalPadding(context),
-                                0,
-                                _selectedChapterKey != null
-                                    ? 0
-                                    : webReaderHorizontalPadding(context),
-                                0,
-                              ),
-                              children: [
-                                if (twoPaneRail &&
-                                    _selectedChapterKey == null) ...[
-                                  // The rail lists chapters; right pane prompts a choice.
-                                  _DesktopReaderPlaceholder(
-                                    message: l10n.selectChapter,
-                                    textColor: text,
+                      left: twoPaneRail ? _desktopRailWidth : 0,
+                      right: 0,
+                      top: contentTop,
+                      bottom: contentBottom,
+                      child: CopyProtectedContent(
+                        child: pageViewReading
+                            ? ClipRect(
+                                child: _buildPageViewReader(
+                                  sections: _pageViewSections,
+                                  fullBookPaging: continuousBookPaging,
+                                  dark: dark,
+                                  sepia: sepia,
+                                  text: text,
+                                  colorScheme: Theme.of(context).colorScheme,
+                                ),
+                              )
+                            : GestureDetector(
+                                onTap: _toggleChrome,
+                                onPanDown: (_) {
+                                  if (!_showChrome)
+                                    setState(() => _showChrome = true);
+                                  _scheduleAutoHide();
+                                },
+                                child: ListView(
+                                  controller: _scrollController,
+                                  padding: EdgeInsets.fromLTRB(
+                                    _selectedChapterKey != null
+                                        ? 0
+                                        : webReaderHorizontalPadding(context),
+                                    0,
+                                    _selectedChapterKey != null
+                                        ? 0
+                                        : webReaderHorizontalPadding(context),
+                                    0,
                                   ),
-                                ] else if (hasTree &&
-                                    _selectedChapterKey == null) ...[
-                                  if (useWebShell(context)) ...[
-                                    WebReaderChapterGrid(
-                                      chapters: contentTree.chapters,
-                                      pageCountLabel: (chapter) =>
-                                          l10n.pageCount(chapter.pages.length),
-                                      onChapterTap: (key) {
-                                        final chapter = contentTree.chapters
-                                            .firstWhere(
-                                              (c) => c.chapterKey == key,
+                                  children: [
+                                    if (twoPaneRail &&
+                                        _selectedChapterKey == null) ...[
+                                      // The rail lists chapters; right pane prompts a choice.
+                                      _DesktopReaderPlaceholder(
+                                        message: l10n.selectChapter,
+                                        textColor: text,
+                                      ),
+                                    ] else if (hasTree &&
+                                        _selectedChapterKey == null) ...[
+                                      if (useWebShell(context)) ...[
+                                        WebReaderChapterGrid(
+                                          chapters: contentTree.chapters,
+                                          pageCountLabel: (chapter) => l10n
+                                              .pageCount(chapter.pages.length),
+                                          onChapterTap: (key) {
+                                            final chapter = contentTree.chapters
+                                                .firstWhere(
+                                                  (c) => c.chapterKey == key,
+                                                );
+                                            _selectChapter(
+                                              chapter,
+                                              contentTree,
                                             );
-                                        _selectChapter(chapter, contentTree);
-                                      },
-                                    ),
-                                  ] else ...[
-                                    Text(
-                                      l10n.chaptersHeading,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium
-                                          ?.copyWith(
-                                            color: text,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    ...contentTree.chapters.map((chapter) {
-                                      final cardPaper = _readerPaperForPage(
-                                        bg,
-                                        _readerPageAccent(
-                                          chapter.chapterKey.hashCode,
-                                          dark,
-                                          sepia,
+                                          },
                                         ),
-                                        chapter.chapterKey.hashCode,
-                                      );
-                                      final accent = _readerPageAccent(
-                                        chapter.chapterKey.hashCode,
-                                        dark,
-                                        sepia,
-                                      );
-                                      return Padding(
-                                        padding: const EdgeInsets.only(
-                                          bottom: 10,
+                                      ] else ...[
+                                        Text(
+                                          l10n.chaptersHeading,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
+                                                color: text,
+                                                fontWeight: FontWeight.w800,
+                                              ),
                                         ),
-                                        child: Card(
-                                          color: cardPaper,
-                                          elevation: 0,
-                                          clipBehavior: Clip.antiAlias,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              AppRadius.sm,
+                                        const SizedBox(height: 10),
+                                        ...contentTree.chapters.map((chapter) {
+                                          final cardPaper = _readerPaperForPage(
+                                            bg,
+                                            _readerPageAccent(
+                                              chapter.chapterKey.hashCode,
+                                              dark,
+                                              sepia,
                                             ),
-                                            side: BorderSide(
-                                              color: text.withValues(
-                                                alpha: dark ? 0.2 : 0.1,
-                                              ),
+                                            chapter.chapterKey.hashCode,
+                                          );
+                                          final accent = _readerPageAccent(
+                                            chapter.chapterKey.hashCode,
+                                            dark,
+                                            sepia,
+                                          );
+                                          return Padding(
+                                            padding: const EdgeInsets.only(
+                                              bottom: 10,
                                             ),
-                                          ),
-                                          child: Material(
-                                            color: Colors.transparent,
-                                            child: InkWell(
-                                              onTap: () => _selectChapter(
-                                                chapter,
-                                                contentTree,
-                                              ),
-                                              child: IntrinsicHeight(
-                                                child: Row(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment
-                                                          .stretch,
-                                                  children: [
-                                                    Container(
-                                                      width: 4,
-                                                      color: accent,
+                                            child: Card(
+                                              color: cardPaper,
+                                              elevation: 0,
+                                              clipBehavior: Clip.antiAlias,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                      AppRadius.sm,
                                                     ),
-                                                    Expanded(
-                                                      child: Padding(
-                                                        padding:
-                                                            const EdgeInsets.fromLTRB(
-                                                              12,
-                                                              12,
-                                                              8,
-                                                              12,
-                                                            ),
-                                                        child: Row(
-                                                          crossAxisAlignment:
-                                                              CrossAxisAlignment
-                                                                  .start,
-                                                          children: [
-                                                            Padding(
-                                                              padding:
-                                                                  const EdgeInsets.only(
-                                                                    top: 2,
-                                                                  ),
-                                                              child: Icon(
-                                                                Icons
-                                                                    .menu_book_rounded,
-                                                                color: text
-                                                                    .withValues(
-                                                                      alpha:
-                                                                          0.7,
-                                                                    ),
-                                                              ),
-                                                            ),
-                                                            const SizedBox(
-                                                              width: 12,
-                                                            ),
-                                                            Expanded(
-                                                              child: Column(
-                                                                crossAxisAlignment:
-                                                                    CrossAxisAlignment
-                                                                        .start,
-                                                                children: [
-                                                                  Text(
-                                                                    chapter
-                                                                        .title,
-                                                                    style: TextStyle(
-                                                                      color:
-                                                                          text,
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .w700,
-                                                                      fontSize:
-                                                                          15,
-                                                                      height:
-                                                                          1.35,
-                                                                    ),
-                                                                  ),
-                                                                  const SizedBox(
-                                                                    height: 4,
-                                                                  ),
-                                                                  Text(
-                                                                    l10n.pageCount(
-                                                                      chapter
-                                                                          .pages
-                                                                          .length,
-                                                                    ),
-                                                                    style: TextStyle(
-                                                                      color: text.withValues(
-                                                                        alpha:
-                                                                            0.65,
-                                                                      ),
-                                                                      fontSize:
-                                                                          13,
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .w500,
-                                                                    ),
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                            ),
-                                                            Padding(
-                                                              padding:
-                                                                  const EdgeInsets.only(
-                                                                    top: 2,
-                                                                  ),
-                                                              child: Icon(
-                                                                Icons
-                                                                    .chevron_right_rounded,
-                                                                color: text
-                                                                    .withValues(
-                                                                      alpha:
-                                                                          0.5,
-                                                                    ),
-                                                              ),
-                                                            ),
-                                                          ],
+                                                side: BorderSide(
+                                                  color: text.withValues(
+                                                    alpha: dark ? 0.2 : 0.1,
+                                                  ),
+                                                ),
+                                              ),
+                                              child: Material(
+                                                color: Colors.transparent,
+                                                child: InkWell(
+                                                  onTap: () => _selectChapter(
+                                                    chapter,
+                                                    contentTree,
+                                                  ),
+                                                  child: IntrinsicHeight(
+                                                    child: Row(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .stretch,
+                                                      children: [
+                                                        Container(
+                                                          width: 4,
+                                                          color: accent,
                                                         ),
-                                                      ),
+                                                        Expanded(
+                                                          child: Padding(
+                                                            padding:
+                                                                const EdgeInsets.fromLTRB(
+                                                                  12,
+                                                                  12,
+                                                                  8,
+                                                                  12,
+                                                                ),
+                                                            child: Row(
+                                                              crossAxisAlignment:
+                                                                  CrossAxisAlignment
+                                                                      .start,
+                                                              children: [
+                                                                Padding(
+                                                                  padding:
+                                                                      const EdgeInsets.only(
+                                                                        top: 2,
+                                                                      ),
+                                                                  child: Icon(
+                                                                    Icons
+                                                                        .menu_book_rounded,
+                                                                    color: text
+                                                                        .withValues(
+                                                                          alpha:
+                                                                              0.7,
+                                                                        ),
+                                                                  ),
+                                                                ),
+                                                                const SizedBox(
+                                                                  width: 12,
+                                                                ),
+                                                                Expanded(
+                                                                  child: Column(
+                                                                    crossAxisAlignment:
+                                                                        CrossAxisAlignment
+                                                                            .start,
+                                                                    children: [
+                                                                      Text(
+                                                                        chapter
+                                                                            .title,
+                                                                        style: TextStyle(
+                                                                          color:
+                                                                              text,
+                                                                          fontWeight:
+                                                                              FontWeight.w700,
+                                                                          fontSize:
+                                                                              15,
+                                                                          height:
+                                                                              1.35,
+                                                                        ),
+                                                                      ),
+                                                                      const SizedBox(
+                                                                        height:
+                                                                            4,
+                                                                      ),
+                                                                      Text(
+                                                                        l10n.pageCount(
+                                                                          chapter
+                                                                              .pages
+                                                                              .length,
+                                                                        ),
+                                                                        style: TextStyle(
+                                                                          color: text.withValues(
+                                                                            alpha:
+                                                                                0.65,
+                                                                          ),
+                                                                          fontSize:
+                                                                              13,
+                                                                          fontWeight:
+                                                                              FontWeight.w500,
+                                                                        ),
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                                Padding(
+                                                                  padding:
+                                                                      const EdgeInsets.only(
+                                                                        top: 2,
+                                                                      ),
+                                                                  child: Icon(
+                                                                    Icons
+                                                                        .chevron_right_rounded,
+                                                                    color: text
+                                                                        .withValues(
+                                                                          alpha:
+                                                                              0.5,
+                                                                        ),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
                                                     ),
-                                                  ],
+                                                  ),
                                                 ),
                                               ),
                                             ),
+                                          );
+                                        }),
+                                      ],
+                                      const SizedBox(height: 80),
+                                    ] else if (asyncContentTree.isLoading) ...[
+                                      const Padding(
+                                        padding: EdgeInsets.only(top: 24),
+                                        child: Center(
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 80),
+                                    ] else if (!hasTree) ...[
+                                      Center(
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 24,
+                                          ),
+                                          child: Text(
+                                            l10n.noChapterContentYet,
+                                            textAlign: TextAlign.center,
                                           ),
                                         ),
-                                      );
-                                    }),
-                                  ],
-                                  const SizedBox(height: 80),
-                                ] else if (asyncContentTree.isLoading) ...[
-                                  const Padding(
-                                    padding: EdgeInsets.only(top: 24),
-                                    child: Center(
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 80),
-                                ] else if (!hasTree) ...[
-                                  Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(top: 24),
-                                      child: Text(
-                                        l10n.noChapterContentYet,
-                                        textAlign: TextAlign.center,
                                       ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 80),
-                                ] else ...[
-                                  webConstrainReaderContent(
-                                    context,
-                                    Column(
-                                      children: [
-                                        for (
-                                          var i = 0;
-                                          i < sections.length;
-                                          i++
-                                        )
-                                          _ReaderBookPage(
-                                            key: _sectionKeyFor(
-                                              sections[i].index,
-                                            ),
-                                            section: sections[i],
-                                            dark: dark,
-                                            sepia: sepia,
-                                            textColor: text,
-                                            fontSize: _fontSize,
-                                            lineHeight: _lineHeight,
-                                            findQuery: _findQuery,
-                                            activeFindMatch:
-                                                _activeFindMatchForSection(
-                                                  sections[i],
+                                      const SizedBox(height: 80),
+                                    ] else ...[
+                                      webConstrainReaderContent(
+                                        context,
+                                        Column(
+                                          children: [
+                                            for (
+                                              var i = 0;
+                                              i < sections.length;
+                                              i++
+                                            )
+                                              _ReaderBookPage(
+                                                key: _sectionKeyFor(
+                                                  sections[i].index,
                                                 ),
-                                            colorScheme: Theme.of(
-                                              context,
-                                            ).colorScheme,
-                                            // In scroll mode, show the chapter/subtitle
-                                            // header only once per chapter (the first
-                                            // page); continuation pages show paragraphs
-                                            // only. Page mode keeps every header.
-                                            showChapterHeader:
-                                                _pageCurlEnabled ||
-                                                i == 0 ||
-                                                sections[i].chapterKey !=
-                                                    sections[i - 1].chapterKey,
-                                            // Scroll mode reads continuously, so hide the
-                                            // per-page "· N ·" marker; page mode keeps it.
-                                            showPageFooter: _pageCurlEnabled,
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
+                                                section: sections[i],
+                                                dark: dark,
+                                                sepia: sepia,
+                                                textColor: text,
+                                                fontSize: _fontSize,
+                                                lineHeight: _lineHeight,
+                                                findQuery: _findQuery,
+                                                activeFindMatch:
+                                                    _activeFindMatchForSection(
+                                                      sections[i],
+                                                    ),
+                                                colorScheme: Theme.of(
+                                                  context,
+                                                ).colorScheme,
+                                                // In scroll mode, show the chapter/subtitle
+                                                // header only once per chapter (the first
+                                                // page); continuation pages show paragraphs
+                                                // only. Page mode keeps every header.
+                                                showChapterHeader:
+                                                    _pageCurlEnabled ||
+                                                    i == 0 ||
+                                                    sections[i].chapterKey !=
+                                                        sections[i - 1]
+                                                            .chapterKey,
+                                                // Scroll mode reads continuously, so hide the
+                                                // per-page "· N ·" marker; page mode keeps it.
+                                                showPageFooter:
+                                                    _pageCurlEnabled,
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                      ),
                     ),
-                  ),
-                  AnimatedPositioned(
-                    duration: const Duration(milliseconds: 220),
-                    top: showChromeUi ? 0 : -72,
-                    left: twoPaneRail ? _desktopRailWidth : 0,
-                    right: 0,
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {},
-                      child: Material(
-                        color: bg.withValues(alpha: 0.97),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(4, 4, 12, 6),
-                              child: Row(
-                                children: [
-                                  if (supportsRail)
-                                    _ReaderChromeIcon(
-                                      onPressed: () => setState(
-                                        () => _chapterRailOpen =
-                                            !_chapterRailOpen,
-                                      ),
-                                      icon: _chapterRailOpen
-                                          ? Icons.menu_open_rounded
-                                          : Icons.menu_rounded,
-                                      color: text,
-                                      tooltip: l10n.chaptersHeading,
-                                    ),
-                                  _ReaderChromeIcon(
-                                    onPressed: _handleReaderBack,
-                                    icon: Icons.arrow_back_rounded,
-                                    color: text,
-                                  ),
-                                  Expanded(
-                                    child: Text(
-                                      book.title,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 220),
+                      top: showChromeUi ? 0 : -72,
+                      left: twoPaneRail ? _desktopRailWidth : 0,
+                      right: 0,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {},
+                        child: Material(
+                          color: bg.withValues(alpha: 0.97),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(4, 4, 12, 6),
+                                child: Row(
+                                  children: [
+                                    if (supportsRail)
+                                      _ReaderChromeIcon(
+                                        onPressed: () => setState(
+                                          () => _chapterRailOpen =
+                                              !_chapterRailOpen,
+                                        ),
+                                        icon: _chapterRailOpen
+                                            ? Icons.menu_open_rounded
+                                            : Icons.menu_rounded,
                                         color: text,
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 17,
-                                        height: 1.25,
+                                        tooltip: l10n.chaptersHeading,
+                                      ),
+                                    _ReaderChromeIcon(
+                                      onPressed: _handleReaderBack,
+                                      icon: Icons.arrow_back_rounded,
+                                      color: text,
+                                    ),
+                                    Expanded(
+                                      child: Text(
+                                        book.title,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: text,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 17,
+                                          height: 1.25,
+                                        ),
                                       ),
                                     ),
+                                  ],
+                                ),
+                              ),
+                              LinearProgressIndicator(
+                                value: _progress.clamp(0.0, 1.0),
+                                minHeight: 2,
+                                backgroundColor: text.withValues(alpha: 0.10),
+                                color: AppColors.accent,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (showFindPanel)
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 220),
+                        left: twoPaneRail ? _desktopRailWidth + 12 : 12,
+                        right: 12,
+                        bottom: findBottom,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {},
+                          child: Material(
+                            color: Colors.transparent,
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: _readerChromePanelDecoration(
+                                bg: bg,
+                                text: text,
+                                dark: dark,
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  TextField(
+                                    focusNode: _findFocusNode,
+                                    controller: _findController,
+                                    style: TextStyle(color: text, fontSize: 15),
+                                    textInputAction: TextInputAction.search,
+                                    decoration: InputDecoration(
+                                      isDense: true,
+                                      hintText: l10n.findInBookHint,
+                                      hintStyle: TextStyle(
+                                        color: text.withValues(alpha: 0.45),
+                                      ),
+                                      prefixIcon: Icon(
+                                        Icons.search_rounded,
+                                        color: text.withValues(alpha: 0.7),
+                                        size: 22,
+                                      ),
+                                      suffixIcon: IconButton(
+                                        tooltip: l10n.search,
+                                        onPressed: _submitFind,
+                                        icon: Icon(
+                                          Icons.check_rounded,
+                                          color: text,
+                                        ),
+                                      ),
+                                      filled: true,
+                                      fillColor: dark
+                                          ? const Color(0xFF243044)
+                                          : text.withValues(alpha: 0.06),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                    ),
+                                    onChanged: (v) => _updateFindMatches(
+                                      v,
+                                      allChapters: _searchAllChapters,
+                                    ),
+                                    onSubmitted: (_) => _submitFind(),
+                                  ),
+                                  if (_hasSelectedChapter)
+                                    SwitchListTile(
+                                      contentPadding: EdgeInsets.zero,
+                                      dense: true,
+                                      value: _searchAllChapters,
+                                      onChanged: (value) {
+                                        _updateFindMatches(
+                                          _findController.text,
+                                          allChapters: value,
+                                        );
+                                      },
+                                      title: Text(
+                                        l10n.allChapters,
+                                        style: TextStyle(
+                                          color: text,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      subtitle: Text(
+                                        l10n.searchOutsideChapter,
+                                        style: TextStyle(
+                                          color: text.withValues(alpha: 0.6),
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          _findQuery.trim().isEmpty
+                                              ? l10n.noMatchesYet
+                                              : _findStatusLabel(),
+                                          style: TextStyle(
+                                            color: text.withValues(alpha: 0.7),
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        tooltip: l10n.previousMatch,
+                                        visualDensity: VisualDensity.compact,
+                                        onPressed:
+                                            _displayedFindMatchCount() < 2
+                                            ? null
+                                            : () => _cycleFindMatch(-1),
+                                        icon: Icon(
+                                          Icons.keyboard_arrow_up_rounded,
+                                          color: text,
+                                          size: 20,
+                                        ),
+                                      ),
+                                      IconButton(
+                                        tooltip: l10n.nextMatch,
+                                        visualDensity: VisualDensity.compact,
+                                        onPressed:
+                                            _displayedFindMatchCount() < 2
+                                            ? null
+                                            : () => _cycleFindMatch(1),
+                                        icon: Icon(
+                                          Icons.keyboard_arrow_down_rounded,
+                                          color: text,
+                                          size: 20,
+                                        ),
+                                      ),
+                                      IconButton(
+                                        visualDensity: VisualDensity.compact,
+                                        onPressed: () {
+                                          setState(() => _showFindBar = false);
+                                          _findFocusNode.unfocus();
+                                          _scheduleAutoHide();
+                                        },
+                                        icon: Icon(
+                                          Icons.close_rounded,
+                                          color: text,
+                                          size: 20,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
                             ),
-                            LinearProgressIndicator(
-                              value: _progress.clamp(0.0, 1.0),
-                              minHeight: 2,
-                              backgroundColor: text.withValues(alpha: 0.10),
-                              color: AppColors.accent,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (showFindPanel)
-                    AnimatedPositioned(
-                      duration: const Duration(milliseconds: 220),
-                      left: twoPaneRail ? _desktopRailWidth + 12 : 12,
-                      right: 12,
-                      bottom: findBottom,
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {},
-                        child: Material(
-                          color: Colors.transparent,
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: _readerChromePanelDecoration(
-                              bg: bg,
-                              text: text,
-                              dark: dark,
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                TextField(
-                                  focusNode: _findFocusNode,
-                                  controller: _findController,
-                                  style: TextStyle(color: text, fontSize: 15),
-                                  textInputAction: TextInputAction.search,
-                                  decoration: InputDecoration(
-                                    isDense: true,
-                                    hintText: l10n.findInBookHint,
-                                    hintStyle: TextStyle(
-                                      color: text.withValues(alpha: 0.45),
-                                    ),
-                                    prefixIcon: Icon(
-                                      Icons.search_rounded,
-                                      color: text.withValues(alpha: 0.7),
-                                      size: 22,
-                                    ),
-                                    suffixIcon: IconButton(
-                                      tooltip: l10n.search,
-                                      onPressed: _submitFind,
-                                      icon: Icon(
-                                        Icons.check_rounded,
-                                        color: text,
-                                      ),
-                                    ),
-                                    filled: true,
-                                    fillColor: dark
-                                        ? const Color(0xFF243044)
-                                        : text.withValues(alpha: 0.06),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                  ),
-                                  onChanged: (v) => _updateFindMatches(
-                                    v,
-                                    allChapters: _searchAllChapters,
-                                  ),
-                                  onSubmitted: (_) => _submitFind(),
-                                ),
-                                if (_hasSelectedChapter)
-                                  SwitchListTile(
-                                    contentPadding: EdgeInsets.zero,
-                                    dense: true,
-                                    value: _searchAllChapters,
-                                    onChanged: (value) {
-                                      _updateFindMatches(
-                                        _findController.text,
-                                        allChapters: value,
-                                      );
-                                    },
-                                    title: Text(
-                                      l10n.allChapters,
-                                      style: TextStyle(
-                                        color: text,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                    subtitle: Text(
-                                      l10n.searchOutsideChapter,
-                                      style: TextStyle(
-                                        color: text.withValues(alpha: 0.6),
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        _findQuery.trim().isEmpty
-                                            ? l10n.noMatchesYet
-                                            : _findStatusLabel(),
-                                        style: TextStyle(
-                                          color: text.withValues(alpha: 0.7),
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ),
-                                    IconButton(
-                                      tooltip: l10n.previousMatch,
-                                      visualDensity: VisualDensity.compact,
-                                      onPressed: _displayedFindMatchCount() < 2
-                                          ? null
-                                          : () => _cycleFindMatch(-1),
-                                      icon: Icon(
-                                        Icons.keyboard_arrow_up_rounded,
-                                        color: text,
-                                        size: 20,
-                                      ),
-                                    ),
-                                    IconButton(
-                                      tooltip: l10n.nextMatch,
-                                      visualDensity: VisualDensity.compact,
-                                      onPressed: _displayedFindMatchCount() < 2
-                                          ? null
-                                          : () => _cycleFindMatch(1),
-                                      icon: Icon(
-                                        Icons.keyboard_arrow_down_rounded,
-                                        color: text,
-                                        size: 20,
-                                      ),
-                                    ),
-                                    IconButton(
-                                      visualDensity: VisualDensity.compact,
-                                      onPressed: () {
-                                        setState(() => _showFindBar = false);
-                                        _findFocusNode.unfocus();
-                                        _scheduleAutoHide();
-                                      },
-                                      icon: Icon(
-                                        Icons.close_rounded,
-                                        color: text,
-                                        size: 20,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
                           ),
                         ),
                       ),
-                    ),
-                  if (showToolbarPanel)
-                    AnimatedPositioned(
-                      duration: const Duration(milliseconds: 220),
-                      left: twoPaneRail ? _desktopRailWidth + 12 : 12,
-                      right: 12,
-                      bottom: toolbarBottom,
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {},
-                        child: Material(
-                          color: Colors.transparent,
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: _readerChromePanelDecoration(
-                              bg: bg,
-                              text: text,
-                              dark: dark,
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: LinearProgressIndicator(
-                                        value: _progress.clamp(0, 1),
-                                        minHeight: 4,
-                                        borderRadius: BorderRadius.circular(99),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      '${(_progress * 100).round()}%',
-                                      style: TextStyle(
-                                        color: text,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceAround,
-                                  children: [
-                                    _ReaderChromeIcon(
-                                      tooltip: l10n.chaptersHeading,
-                                      onPressed: () => _openTocSheet(
-                                        book.title,
-                                        sections,
-                                        contentTree,
-                                      ),
-                                      icon: Icons.toc_rounded,
-                                      color: text,
-                                    ),
-                                    _ReaderChromeIcon(
-                                      tooltip: l10n.readerDisplayTitle,
-                                      onPressed: () =>
-                                          _openDisplaySettingsSheet(
-                                            bg: bg,
-                                            text: text,
-                                            dark: dark,
+                    if (showToolbarPanel)
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 220),
+                        left: twoPaneRail ? _desktopRailWidth + 12 : 12,
+                        right: 12,
+                        bottom: toolbarBottom,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {},
+                          child: Material(
+                            color: Colors.transparent,
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: _readerChromePanelDecoration(
+                                bg: bg,
+                                text: text,
+                                dark: dark,
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: LinearProgressIndicator(
+                                          value: _progress.clamp(0, 1),
+                                          minHeight: 4,
+                                          borderRadius: BorderRadius.circular(
+                                            99,
                                           ),
-                                      icon: Icons.text_format_rounded,
-                                      color: text,
-                                    ),
-                                    _ReaderChromeIcon(
-                                      tooltip: l10n.findInBookLabel,
-                                      onPressed: _toggleFindBar,
-                                      icon: _showFindBar
-                                          ? Icons.search_off_rounded
-                                          : Icons.search_rounded,
-                                      color: text,
-                                    ),
-                                    _ReaderChromeIcon(
-                                      onPressed: _toggleBookmark,
-                                      icon: Icons.bookmark_add_outlined,
-                                      color: text,
-                                    ),
-                                    _ReaderChromeIcon(
-                                      tooltip: l10n.readerMoreTooltip,
-                                      onPressed: () => _openReaderToolsSheet(
-                                        book: book,
-                                        sections: sections,
-                                        contentTree: contentTree,
-                                        offlineCached: offlineCached,
+                                        ),
                                       ),
-                                      icon: Icons.more_horiz_rounded,
-                                      color: text,
-                                    ),
-                                  ],
-                                ),
-                                AnimatedSize(
-                                  duration: const Duration(milliseconds: 220),
-                                  curve: Curves.easeOutCubic,
-                                  alignment: Alignment.topCenter,
-                                  child: _footerExpanded
-                                      ? Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const SizedBox(height: 8),
-                                            Wrap(
-                                              spacing: 4,
-                                              runSpacing: 6,
-                                              alignment: WrapAlignment.center,
-                                              children: [
-                                                if (_hasSelectedChapter)
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        '${(_progress * 100).round()}%',
+                                        style: TextStyle(
+                                          color: text,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceAround,
+                                    children: [
+                                      _ReaderChromeIcon(
+                                        tooltip: l10n.chaptersHeading,
+                                        onPressed: () => _openTocSheet(
+                                          book.title,
+                                          sections,
+                                          contentTree,
+                                        ),
+                                        icon: Icons.toc_rounded,
+                                        color: text,
+                                      ),
+                                      _ReaderChromeIcon(
+                                        tooltip: l10n.readerDisplayTitle,
+                                        onPressed: () =>
+                                            _openDisplaySettingsSheet(
+                                              bg: bg,
+                                              text: text,
+                                              dark: dark,
+                                            ),
+                                        icon: Icons.text_format_rounded,
+                                        color: text,
+                                      ),
+                                      _ReaderChromeIcon(
+                                        tooltip: l10n.findInBookLabel,
+                                        onPressed: _toggleFindBar,
+                                        icon: _showFindBar
+                                            ? Icons.search_off_rounded
+                                            : Icons.search_rounded,
+                                        color: text,
+                                      ),
+                                      _ReaderChromeIcon(
+                                        onPressed: _toggleBookmark,
+                                        icon: Icons.bookmark_add_outlined,
+                                        color: text,
+                                      ),
+                                      _ReaderChromeIcon(
+                                        tooltip: l10n.readerMoreTooltip,
+                                        onPressed: () => _openReaderToolsSheet(
+                                          book: book,
+                                          sections: sections,
+                                          contentTree: contentTree,
+                                          offlineCached: offlineCached,
+                                        ),
+                                        icon: Icons.more_horiz_rounded,
+                                        color: text,
+                                      ),
+                                    ],
+                                  ),
+                                  AnimatedSize(
+                                    duration: const Duration(milliseconds: 220),
+                                    curve: Curves.easeOutCubic,
+                                    alignment: Alignment.topCenter,
+                                    child: _footerExpanded
+                                        ? Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const SizedBox(height: 8),
+                                              Wrap(
+                                                spacing: 4,
+                                                runSpacing: 6,
+                                                alignment: WrapAlignment.center,
+                                                children: [
+                                                  if (_hasSelectedChapter)
+                                                    _ReaderChromeIcon(
+                                                      tooltip: l10n
+                                                          .backToChaptersTooltip,
+                                                      onPressed:
+                                                          _returnToChapters,
+                                                      icon: Icons
+                                                          .grid_view_rounded,
+                                                      color: text,
+                                                    ),
                                                   _ReaderChromeIcon(
-                                                    tooltip: l10n
-                                                        .backToChaptersTooltip,
-                                                    onPressed:
-                                                        _returnToChapters,
-                                                    icon:
-                                                        Icons.grid_view_rounded,
+                                                    onPressed: () =>
+                                                        _openTocSheet(
+                                                          book.title,
+                                                          sections,
+                                                          contentTree,
+                                                        ),
+                                                    icon: Icons.toc_rounded,
                                                     color: text,
                                                   ),
-                                                _ReaderChromeIcon(
-                                                  onPressed: () =>
-                                                      _openTocSheet(
-                                                        book.title,
-                                                        sections,
-                                                        contentTree,
-                                                      ),
-                                                  icon: Icons.toc_rounded,
-                                                  color: text,
-                                                ),
-                                                if (_hasSelectedChapter) ...[
+                                                  if (_hasSelectedChapter) ...[
+                                                    _ReaderChromeIcon(
+                                                      tooltip: l10n
+                                                          .filterChapterTooltip,
+                                                      onPressed:
+                                                          (contentTree ==
+                                                                  null ||
+                                                              contentTree
+                                                                  .chapters
+                                                                  .isEmpty)
+                                                          ? null
+                                                          : () => _pickChapter(
+                                                              contentTree
+                                                                  .chapters,
+                                                            ),
+                                                      icon: Icons
+                                                          .swap_horiz_rounded,
+                                                      color: text,
+                                                    ),
+                                                    _ReaderChromeIcon(
+                                                      tooltip: l10n
+                                                          .filterPageTooltip,
+                                                      onPressed:
+                                                          sections.isEmpty
+                                                          ? null
+                                                          : _pickPage,
+                                                      icon: Icons.tag_rounded,
+                                                      color: text,
+                                                    ),
+                                                  ],
+                                                  _ReaderChromeIcon(
+                                                    tooltip: _pageCurlEnabled
+                                                        ? l10n.readerPageCurlOff
+                                                        : l10n.readerPageCurlOn,
+                                                    onPressed:
+                                                        _togglePageCurlMode,
+                                                    icon: _pageCurlEnabled
+                                                        ? Icons
+                                                              .view_agenda_outlined
+                                                        : Icons
+                                                              .menu_book_outlined,
+                                                    color: _pageCurlEnabled
+                                                        ? Theme.of(
+                                                            context,
+                                                          ).colorScheme.primary
+                                                        : text,
+                                                  ),
+                                                  _ReaderChromeIcon(
+                                                    tooltip:
+                                                        l10n.findInBookLabel,
+                                                    onPressed: _toggleFindBar,
+                                                    icon: _showFindBar
+                                                        ? Icons
+                                                              .search_off_rounded
+                                                        : Icons.search_rounded,
+                                                    color: text,
+                                                  ),
+                                                  const SizedBox(
+                                                    width: double.infinity,
+                                                  ),
+                                                  Container(
+                                                    width: double.infinity,
+                                                    height: 1,
+                                                    color: text.withValues(
+                                                      alpha: 0.14,
+                                                    ),
+                                                  ),
+                                                  _ReaderChromeIcon(
+                                                    onPressed:
+                                                        _openBookmarksSheet,
+                                                    icon: Icons
+                                                        .bookmarks_outlined,
+                                                    color: text,
+                                                  ),
+                                                  _ReaderChromeIcon(
+                                                    tooltip: offlineCached
+                                                        ? l10n.removeOfflineCopy
+                                                        : l10n.saveChaptersOffline,
+                                                    onPressed: () =>
+                                                        _toggleOfflineCache(
+                                                          offlineCached,
+                                                        ),
+                                                    icon: offlineCached
+                                                        ? Icons
+                                                              .cloud_done_outlined
+                                                        : Icons
+                                                              .cloud_download_outlined,
+                                                    color: text,
+                                                  ),
+                                                  _ReaderChromeIcon(
+                                                    onPressed: () async {
+                                                      final next =
+                                                          (_fontSize - 1).clamp(
+                                                            15,
+                                                            28,
+                                                          );
+                                                      setState(
+                                                        () => _fontSize = next
+                                                            .toDouble(),
+                                                      );
+                                                      await ReaderPrefsStorage.writeFontSize(
+                                                        widget.bookId,
+                                                        _fontSize,
+                                                      );
+                                                    },
+                                                    icon: Icons
+                                                        .text_decrease_rounded,
+                                                    color: text,
+                                                  ),
+                                                  _ReaderChromeIcon(
+                                                    onPressed: () async {
+                                                      final next =
+                                                          (_fontSize + 1).clamp(
+                                                            15,
+                                                            28,
+                                                          );
+                                                      setState(
+                                                        () => _fontSize = next
+                                                            .toDouble(),
+                                                      );
+                                                      await ReaderPrefsStorage.writeFontSize(
+                                                        widget.bookId,
+                                                        _fontSize,
+                                                      );
+                                                    },
+                                                    icon: Icons
+                                                        .text_increase_rounded,
+                                                    color: text,
+                                                  ),
                                                   _ReaderChromeIcon(
                                                     tooltip: l10n
-                                                        .filterChapterTooltip,
+                                                        .typographyPresetsTooltip,
                                                     onPressed:
-                                                        (contentTree == null ||
-                                                            contentTree
-                                                                .chapters
-                                                                .isEmpty)
-                                                        ? null
-                                                        : () => _pickChapter(
-                                                            contentTree
-                                                                .chapters,
-                                                          ),
+                                                        _openTypographySheet,
                                                     icon: Icons
-                                                        .swap_horiz_rounded,
+                                                        .text_fields_rounded,
+                                                    color: text,
+                                                  ),
+                                                  const SizedBox(
+                                                    width: double.infinity,
+                                                  ),
+                                                  Container(
+                                                    width: double.infinity,
+                                                    height: 1,
+                                                    color: text.withValues(
+                                                      alpha: 0.14,
+                                                    ),
+                                                  ),
+                                                  _ReaderChromeIcon(
+                                                    onPressed: _toggleBookmark,
+                                                    icon: Icons
+                                                        .bookmark_add_outlined,
+                                                    color: text,
+                                                  ),
+                                                  _ReaderChromeIcon(
+                                                    tooltip: l10n
+                                                        .saveCloudBookmarkTooltip,
+                                                    onPressed: () =>
+                                                        _saveCloudBookmark(
+                                                          book,
+                                                        ),
+                                                    icon: Icons
+                                                        .cloud_upload_outlined,
                                                     color: text,
                                                   ),
                                                   _ReaderChromeIcon(
                                                     tooltip:
-                                                        l10n.filterPageTooltip,
-                                                    onPressed: sections.isEmpty
-                                                        ? null
-                                                        : _pickPage,
-                                                    icon: Icons.tag_rounded,
+                                                        l10n.addNoteTooltip,
+                                                    onPressed: () =>
+                                                        _createQuickNote(book),
+                                                    icon: Icons
+                                                        .sticky_note_2_outlined,
+                                                    color: text,
+                                                  ),
+                                                  _ReaderChromeIcon(
+                                                    tooltip: l10n
+                                                        .addHighlightTooltip,
+                                                    onPressed: () =>
+                                                        _addQuickHighlight(
+                                                          book,
+                                                        ),
+                                                    icon: Icons
+                                                        .highlight_alt_outlined,
+                                                    color: text,
+                                                  ),
+                                                  _ReaderChromeIcon(
+                                                    tooltip:
+                                                        l10n.highlightsTooltip,
+                                                    onPressed:
+                                                        _openHighlightsSheet,
+                                                    icon: Icons
+                                                        .format_paint_outlined,
+                                                    color: text,
+                                                  ),
+                                                  _ReaderChromeIcon(
+                                                    tooltip: _autoHideEnabled
+                                                        ? l10n.pinControls
+                                                        : l10n.autoHideControls,
+                                                    onPressed: () {
+                                                      setState(() {
+                                                        _autoHideEnabled =
+                                                            !_autoHideEnabled;
+                                                        _showChrome = true;
+                                                      });
+                                                      if (_autoHideEnabled)
+                                                        _scheduleAutoHide();
+                                                    },
+                                                    icon: _autoHideEnabled
+                                                        ? Icons
+                                                              .push_pin_outlined
+                                                        : Icons.push_pin,
+                                                    color: text,
+                                                  ),
+                                                  _ReaderChromeIcon(
+                                                    onPressed: () async {
+                                                      final modes = [
+                                                        'light',
+                                                        'sepia',
+                                                        'dark',
+                                                      ];
+                                                      final index = modes
+                                                          .indexOf(_mode);
+                                                      final next =
+                                                          modes[(index + 1) %
+                                                              modes.length];
+                                                      setState(
+                                                        () => _mode = next,
+                                                      );
+                                                      await ReaderPrefsStorage.writeThemeMode(
+                                                        widget.bookId,
+                                                        next,
+                                                      );
+                                                    },
+                                                    icon:
+                                                        Icons.palette_outlined,
                                                     color: text,
                                                   ),
                                                 ],
-                                                _ReaderChromeIcon(
-                                                  tooltip: _pageCurlEnabled
-                                                      ? l10n.readerPageCurlOff
-                                                      : l10n.readerPageCurlOn,
-                                                  onPressed:
-                                                      _togglePageCurlMode,
-                                                  icon: _pageCurlEnabled
-                                                      ? Icons
-                                                            .view_agenda_outlined
-                                                      : Icons
-                                                            .menu_book_outlined,
-                                                  color: _pageCurlEnabled
-                                                      ? Theme.of(
-                                                          context,
-                                                        ).colorScheme.primary
-                                                      : text,
-                                                ),
-                                                _ReaderChromeIcon(
-                                                  tooltip: l10n.findInBookLabel,
-                                                  onPressed: _toggleFindBar,
-                                                  icon: _showFindBar
-                                                      ? Icons.search_off_rounded
-                                                      : Icons.search_rounded,
-                                                  color: text,
-                                                ),
-                                                const SizedBox(
-                                                  width: double.infinity,
-                                                ),
-                                                Container(
-                                                  width: double.infinity,
-                                                  height: 1,
-                                                  color: text.withValues(
-                                                    alpha: 0.14,
-                                                  ),
-                                                ),
-                                                _ReaderChromeIcon(
-                                                  onPressed:
-                                                      _openBookmarksSheet,
-                                                  icon:
-                                                      Icons.bookmarks_outlined,
-                                                  color: text,
-                                                ),
-                                                _ReaderChromeIcon(
-                                                  tooltip: offlineCached
-                                                      ? l10n.removeOfflineCopy
-                                                      : l10n.saveChaptersOffline,
-                                                  onPressed: () =>
-                                                      _toggleOfflineCache(
-                                                        offlineCached,
-                                                      ),
-                                                  icon: offlineCached
-                                                      ? Icons
-                                                            .cloud_done_outlined
-                                                      : Icons
-                                                            .cloud_download_outlined,
-                                                  color: text,
-                                                ),
-                                                _ReaderChromeIcon(
-                                                  onPressed: () async {
-                                                    final next = (_fontSize - 1)
-                                                        .clamp(15, 28);
-                                                    setState(
-                                                      () => _fontSize = next
-                                                          .toDouble(),
-                                                    );
-                                                    await ReaderPrefsStorage.writeFontSize(
-                                                      widget.bookId,
-                                                      _fontSize,
-                                                    );
-                                                  },
-                                                  icon: Icons
-                                                      .text_decrease_rounded,
-                                                  color: text,
-                                                ),
-                                                _ReaderChromeIcon(
-                                                  onPressed: () async {
-                                                    final next = (_fontSize + 1)
-                                                        .clamp(15, 28);
-                                                    setState(
-                                                      () => _fontSize = next
-                                                          .toDouble(),
-                                                    );
-                                                    await ReaderPrefsStorage.writeFontSize(
-                                                      widget.bookId,
-                                                      _fontSize,
-                                                    );
-                                                  },
-                                                  icon: Icons
-                                                      .text_increase_rounded,
-                                                  color: text,
-                                                ),
-                                                _ReaderChromeIcon(
-                                                  tooltip: l10n
-                                                      .typographyPresetsTooltip,
-                                                  onPressed:
-                                                      _openTypographySheet,
-                                                  icon:
-                                                      Icons.text_fields_rounded,
-                                                  color: text,
-                                                ),
-                                                const SizedBox(
-                                                  width: double.infinity,
-                                                ),
-                                                Container(
-                                                  width: double.infinity,
-                                                  height: 1,
-                                                  color: text.withValues(
-                                                    alpha: 0.14,
-                                                  ),
-                                                ),
-                                                _ReaderChromeIcon(
-                                                  onPressed: _toggleBookmark,
-                                                  icon: Icons
-                                                      .bookmark_add_outlined,
-                                                  color: text,
-                                                ),
-                                                _ReaderChromeIcon(
-                                                  tooltip: l10n
-                                                      .saveCloudBookmarkTooltip,
-                                                  onPressed: () =>
-                                                      _saveCloudBookmark(book),
-                                                  icon: Icons
-                                                      .cloud_upload_outlined,
-                                                  color: text,
-                                                ),
-                                                _ReaderChromeIcon(
-                                                  tooltip: l10n.addNoteTooltip,
-                                                  onPressed: () =>
-                                                      _createQuickNote(book),
-                                                  icon: Icons
-                                                      .sticky_note_2_outlined,
-                                                  color: text,
-                                                ),
-                                                _ReaderChromeIcon(
-                                                  tooltip:
-                                                      l10n.addHighlightTooltip,
-                                                  onPressed: () =>
-                                                      _addQuickHighlight(book),
-                                                  icon: Icons
-                                                      .highlight_alt_outlined,
-                                                  color: text,
-                                                ),
-                                                _ReaderChromeIcon(
-                                                  tooltip:
-                                                      l10n.highlightsTooltip,
-                                                  onPressed:
-                                                      _openHighlightsSheet,
-                                                  icon: Icons
-                                                      .format_paint_outlined,
-                                                  color: text,
-                                                ),
-                                                _ReaderChromeIcon(
-                                                  tooltip: _autoHideEnabled
-                                                      ? l10n.pinControls
-                                                      : l10n.autoHideControls,
-                                                  onPressed: () {
-                                                    setState(() {
-                                                      _autoHideEnabled =
-                                                          !_autoHideEnabled;
-                                                      _showChrome = true;
-                                                    });
-                                                    if (_autoHideEnabled)
-                                                      _scheduleAutoHide();
-                                                  },
-                                                  icon: _autoHideEnabled
-                                                      ? Icons.push_pin_outlined
-                                                      : Icons.push_pin,
-                                                  color: text,
-                                                ),
-                                                _ReaderChromeIcon(
-                                                  onPressed: () async {
-                                                    final modes = [
-                                                      'light',
-                                                      'sepia',
-                                                      'dark',
-                                                    ];
-                                                    final index = modes.indexOf(
-                                                      _mode,
-                                                    );
-                                                    final next =
-                                                        modes[(index + 1) %
-                                                            modes.length];
-                                                    setState(
-                                                      () => _mode = next,
-                                                    );
-                                                    await ReaderPrefsStorage.writeThemeMode(
-                                                      widget.bookId,
-                                                      next,
-                                                    );
-                                                  },
-                                                  icon: Icons.palette_outlined,
-                                                  color: text,
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        )
-                                      : const SizedBox.shrink(),
-                                ),
-                              ],
+                                              ),
+                                            ],
+                                          )
+                                        : const SizedBox.shrink(),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  if (!showChromeUi && _hasSelectedChapter)
-                    Positioned(
-                      top: 0,
-                      left: twoPaneRail ? _desktopRailWidth : 0,
-                      child: SafeArea(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (supportsRail)
-                              _ReaderChromeIcon(
-                                onPressed: () => setState(
-                                  () => _chapterRailOpen = !_chapterRailOpen,
+                    if (!showChromeUi && _hasSelectedChapter)
+                      Positioned(
+                        top: 0,
+                        left: twoPaneRail ? _desktopRailWidth : 0,
+                        child: SafeArea(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (supportsRail)
+                                _ReaderChromeIcon(
+                                  onPressed: () => setState(
+                                    () => _chapterRailOpen = !_chapterRailOpen,
+                                  ),
+                                  icon: _chapterRailOpen
+                                      ? Icons.menu_open_rounded
+                                      : Icons.menu_rounded,
+                                  color: text.withValues(alpha: 0.75),
+                                  tooltip: l10n.chaptersHeading,
                                 ),
-                                icon: _chapterRailOpen
-                                    ? Icons.menu_open_rounded
-                                    : Icons.menu_rounded,
+                              _ReaderChromeIcon(
+                                onPressed: _handleReaderBack,
+                                icon: Icons.arrow_back_rounded,
                                 color: text.withValues(alpha: 0.75),
-                                tooltip: l10n.chaptersHeading,
                               ),
-                            _ReaderChromeIcon(
-                              onPressed: _handleReaderBack,
-                              icon: Icons.arrow_back_rounded,
-                              color: text.withValues(alpha: 0.75),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ),
         );
       },
       loading: () {

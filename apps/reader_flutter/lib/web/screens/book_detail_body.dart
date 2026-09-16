@@ -120,7 +120,7 @@ class BookDetailBody extends ConsumerWidget {
           large: expanded,
           onWriteReview: showReviews
               ? null
-              : () => openBookReviewSheet(context, ref, bookId: bookId),
+              : () => openBookReviewSheet(context, ref, book: book),
         );
 
         final bodySections = <Widget>[
@@ -134,7 +134,7 @@ class BookDetailBody extends ConsumerWidget {
                 readingPathForBook(bookId, isPdf: false, query: 'chapter=$key'),
               ),
             ),
-          if (showReviews) BookReviewsSection(bookId: bookId),
+          if (showReviews) BookReviewsSection(book: book),
         ];
 
         Widget spacedBody() {

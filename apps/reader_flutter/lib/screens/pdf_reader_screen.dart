@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,8 +8,12 @@ import 'package:go_router/go_router.dart';
 import '../common/platform/platform_shell.dart';
 import '../desktop/widgets/shell/desktop_overlay_scaffold.dart';
 import '../l10n/app_localizations.dart';
+import '../models/book_models.dart';
 import '../providers/catalog_providers.dart';
+import '../providers/continue_reading_provider.dart';
+import '../providers/study_providers.dart';
 import '../router/app_navigation.dart';
+import '../storage/reader_prefs_storage.dart';
 import '../utils/api_error_message.dart';
 import '../web/layout/app_layout_scope.dart';
 import '../web/widgets/shell/web_overlay_scaffold.dart';
@@ -41,10 +47,42 @@ class _PdfReaderScreenState extends ConsumerState<PdfReaderScreen> {
     final ok = await ensureBookUnlocked(context, ref, book);
     if (!mounted) return;
     if (!ok) {
-      popOverlayRoute(context);
+      leaveReaderToBookDetail(context, widget.bookId);
       return;
     }
     setState(() => _unlockChecked = true);
+    unawaited(_recordStarted(book));
+  }
+
+  Future<void> _recordStarted(BookSummary book) async {
+    try {
+      await ReaderPrefsStorage.writeLastOpenedBook(
+        LastOpenedBook(
+          bookId: book.id,
+          title: book.title,
+          updatedAtEpochMs: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
+      if (mounted) ref.invalidate(lastOpenedBookProvider);
+    } catch (_) {}
+    try {
+      await saveReadingProgress(
+        ref,
+        book.id,
+        chapterKey: 'pdf',
+        pageNumber: 1,
+        progressPercent: 1,
+      );
+    } catch (_) {}
+    unawaited(
+      trackReaderEvent(
+        ref,
+        bookId: book.id,
+        eventName: 'chapter_open',
+        chapterKey: 'pdf',
+        pageNumber: 1,
+      ),
+    );
   }
 
   @override
@@ -63,7 +101,7 @@ class _PdfReaderScreenState extends ConsumerState<PdfReaderScreen> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) popOverlayRoute(context);
+        if (!didPop) leaveReaderToBookDetail(context, widget.bookId);
       },
       child: AppLayoutScopeBuilder(
         child: Builder(
@@ -72,6 +110,7 @@ class _PdfReaderScreenState extends ConsumerState<PdfReaderScreen> {
               return WebOverlayScaffold(
                 title: title,
                 currentLocation: GoRouterState.of(context).matchedLocation,
+                onBack: () => leaveReaderToBookDetail(context, widget.bookId),
                 body: body,
               );
             }
@@ -79,11 +118,19 @@ class _PdfReaderScreenState extends ConsumerState<PdfReaderScreen> {
               return DesktopOverlayScaffold(
                 title: title,
                 currentLocation: GoRouterState.of(context).matchedLocation,
+                onBack: () => leaveReaderToBookDetail(context, widget.bookId),
                 body: body,
               );
             }
             return Scaffold(
-              appBar: AppBar(title: Text(title)),
+              appBar: AppBar(
+                title: Text(title),
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  onPressed: () =>
+                      leaveReaderToBookDetail(context, widget.bookId),
+                ),
+              ),
               body: SafeArea(child: body),
             );
           },

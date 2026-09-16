@@ -1882,6 +1882,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get submitReviewAction => 'Submit review';
 
   @override
+  String get reviewRequiresPurchase =>
+      'Purchase this book before leaving a review.';
+
+  @override
+  String get reviewRequiresReading =>
+      'Start reading this book before leaving a review.';
+
+  @override
+  String get reviewSubmitFailed => 'Could not submit your review.';
+
+  @override
   String ratingsCountLabel(int count) {
     return '$count ratings';
   }

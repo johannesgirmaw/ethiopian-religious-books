@@ -3506,6 +3506,24 @@ abstract class AppLocalizations {
   /// **'Submit review'**
   String get submitReviewAction;
 
+  /// No description provided for @reviewRequiresPurchase.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase this book before leaving a review.'**
+  String get reviewRequiresPurchase;
+
+  /// No description provided for @reviewRequiresReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Start reading this book before leaving a review.'**
+  String get reviewRequiresReading;
+
+  /// No description provided for @reviewSubmitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not submit your review.'**
+  String get reviewSubmitFailed;
+
   /// No description provided for @ratingsCountLabel.
   ///
   /// In en, this message translates to:

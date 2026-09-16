@@ -24,6 +24,7 @@ from apps.catalog.models import (
     OfflineDownload,
     Tag,
 )
+from apps.catalog.permissions import can_manage_book
 from apps.catalog.search_index import ensure_revision_index_from_book_draft
 from apps.catalog.search_normalization import normalize_search_text
 from apps.catalog.serializers import BookListSerializer, GenreSerializer, TagSerializer
@@ -165,6 +166,105 @@ def _published_books_queryset():
     )
 
 
+def _book_not_found_response():
+    return Response(
+        {"error": {"code": "NOT_FOUND", "message": "Book not found"}},
+        status=status.HTTP_404_NOT_FOUND,
+    )
+
+
+def _readable_book(request, book_id) -> Book | None:
+    """Published catalog books, plus unpublished books the caller may manage.
+
+    Reviewers and authors open in-review drafts in the reader; regular readers
+    still only see published titles.
+    """
+    book = (
+        Book.objects.filter(pk=book_id)
+        .select_related("published_revision")
+        .first()
+    )
+    if book is None:
+        return None
+    if book.catalog_visibility == Book.Visibility.PUBLISHED:
+        return book
+    if can_manage_book(book, getattr(request, "user", None)):
+        return book
+    return None
+
+
+def _chapters_from_draft(book: Book) -> list[dict]:
+    draft = book.chapters_draft if isinstance(book.chapters_draft, list) else []
+    items: list[dict] = []
+    for ordinal, chapter in enumerate(draft, start=1):
+        if not isinstance(chapter, dict):
+            continue
+        pages_raw = chapter.get("pages")
+        pages: list[dict] = []
+        if isinstance(pages_raw, list):
+            for page in pages_raw:
+                if not isinstance(page, dict):
+                    continue
+                page_number = page.get("page_number") or len(pages) + 1
+                pages.append(
+                    {
+                        "page_number": page_number,
+                        "title": page.get("title") or f"Page {page_number}",
+                        "body": page.get("body") or "",
+                    }
+                )
+        items.append(
+            {
+                "chapter_key": str(chapter.get("chapter_key") or f"chapter-{ordinal}"),
+                "title": str(chapter.get("title") or f"Chapter {ordinal}"),
+                "ordinal": ordinal,
+                "pages": pages,
+            }
+        )
+    return items
+
+
+def _content_payload_from_draft(book: Book) -> dict:
+    chapters = _chapters_from_draft(book)
+    total_pages = sum(len(c["pages"]) for c in chapters)
+    return {"chapters": chapters, "total_pages": total_pages}
+
+
+def _content_payload_from_revision(book: Book, rev: BookRevision) -> dict:
+    from apps.catalog.pdf_books import is_pdf_revision
+
+    if is_pdf_revision(rev):
+        return {"content_format": "pdf", "chapters": [], "total_pages": 0}
+
+    ensure_revision_index_from_book_draft(book, rev)
+    chapters = BookChapter.objects.filter(revision=rev).order_by("ordinal")
+    pages = (
+        BookPage.objects.filter(revision=rev)
+        .select_related("chapter")
+        .order_by("page_number")
+    )
+    pages_by_chapter: dict[str, list[dict]] = {}
+    for page in pages:
+        chapter_key = page.chapter.chapter_key if page.chapter else ""
+        pages_by_chapter.setdefault(chapter_key, []).append(
+            {
+                "page_number": page.page_number,
+                "title": page.page_title or f"Page {page.page_number}",
+                "body": page.text_plain,
+            }
+        )
+    chapter_payload = [
+        {
+            "chapter_key": chapter.chapter_key,
+            "title": chapter.title,
+            "ordinal": chapter.ordinal,
+            "pages": pages_by_chapter.get(chapter.chapter_key, []),
+        }
+        for chapter in chapters
+    ]
+    return {"chapters": chapter_payload, "total_pages": pages.count()}
+
+
 def _books_response(request, qs):
     etag = compute_catalog_etag(qs)
     inm = request.META.get("HTTP_IF_NONE_MATCH", "").strip()
@@ -247,13 +347,9 @@ class BookDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, book_id):
-        try:
-            book = _published_books_queryset().get(pk=book_id)
-        except Book.DoesNotExist:
-            return Response(
-                {"error": {"code": "NOT_FOUND", "message": "Book not found"}},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        book = _readable_book(request, book_id)
+        if book is None:
+            return _book_not_found_response()
         ser = BookListSerializer(book, context={"request": request})
         return Response(ser.data)
 
@@ -435,17 +531,20 @@ class BookChapterListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, book_id):
-        del request
-        try:
-            book = _published_books_queryset().get(pk=book_id)
-        except Book.DoesNotExist:
-            return Response(
-                {"error": {"code": "NOT_FOUND", "message": "Book not found"}},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        book = _readable_book(request, book_id)
+        if book is None:
+            return _book_not_found_response()
         rev = book.published_revision
         if rev is None:
-            return Response({"items": []})
+            items = [
+                {
+                    "chapter_key": c["chapter_key"],
+                    "title": c["title"],
+                    "ordinal": c["ordinal"],
+                }
+                for c in _chapters_from_draft(book)
+            ]
+            return Response({"items": items})
         chapters = BookChapter.objects.filter(revision=rev).order_by("ordinal")
         payload = {
             "items": [
@@ -510,59 +609,23 @@ class BookContentView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, book_id):
-        del request
-        try:
-            book = _published_books_queryset().get(pk=book_id)
-        except Book.DoesNotExist:
-            return Response(
-                {"error": {"code": "NOT_FOUND", "message": "Book not found"}},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        book = _readable_book(request, book_id)
+        if book is None:
+            return _book_not_found_response()
         rev = book.published_revision
-        if rev is None or not settings.FEATURE_BOOK_CONTENT_INDEX:
-            return Response({"chapters": [], "total_pages": 0})
+        if rev is not None:
+            if not settings.FEATURE_BOOK_CONTENT_INDEX:
+                return Response({"chapters": [], "total_pages": 0})
+            return Response(_content_payload_from_revision(book, rev))
 
-        from apps.catalog.pdf_books import is_pdf_revision
+        from apps.catalog.pdf_books import is_pdf_revision, latest_pdf_draft
 
-        if is_pdf_revision(rev):
+        pdf_draft = latest_pdf_draft(book)
+        if is_pdf_revision(pdf_draft):
             return Response(
-                {
-                    "content_format": "pdf",
-                    "chapters": [],
-                    "total_pages": 0,
-                }
+                {"content_format": "pdf", "chapters": [], "total_pages": 0}
             )
-
-        ensure_revision_index_from_book_draft(book, rev)
-
-        chapters = BookChapter.objects.filter(revision=rev).order_by("ordinal")
-        pages = (
-            BookPage.objects.filter(revision=rev)
-            .select_related("chapter")
-            .order_by("page_number")
-        )
-        pages_by_chapter: dict[str, list[dict]] = {}
-        for page in pages:
-            chapter_key = page.chapter.chapter_key if page.chapter else ""
-            pages_by_chapter.setdefault(chapter_key, []).append(
-                {
-                    "page_number": page.page_number,
-                    "title": page.page_title or f"Page {page.page_number}",
-                    "body": page.text_plain,
-                }
-            )
-
-        chapter_payload = []
-        for chapter in chapters:
-            chapter_payload.append(
-                {
-                    "chapter_key": chapter.chapter_key,
-                    "title": chapter.title,
-                    "ordinal": chapter.ordinal,
-                    "pages": pages_by_chapter.get(chapter.chapter_key, []),
-                }
-            )
-        return Response({"chapters": chapter_payload, "total_pages": pages.count()})
+        return Response(_content_payload_from_draft(book))
 
 
 class BookPdfView(APIView):
@@ -571,14 +634,11 @@ class BookPdfView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, book_id):
-        try:
-            book = _published_books_queryset().get(pk=book_id)
-        except Book.DoesNotExist:
-            return Response(
-                {"error": {"code": "NOT_FOUND", "message": "Book not found"}},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        if not user_owns_book(request.user, book):
+        book = _readable_book(request, book_id)
+        if book is None:
+            return _book_not_found_response()
+        is_published = book.catalog_visibility == Book.Visibility.PUBLISHED
+        if is_published and not user_owns_book(request.user, book):
             return Response(
                 {
                     "error": {
@@ -589,8 +649,10 @@ class BookPdfView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
         rev = book.published_revision
-        from apps.catalog.pdf_books import is_pdf_revision
+        from apps.catalog.pdf_books import is_pdf_revision, latest_pdf_draft
 
+        if not is_pdf_revision(rev):
+            rev = latest_pdf_draft(book)
         if not is_pdf_revision(rev):
             return Response(
                 {

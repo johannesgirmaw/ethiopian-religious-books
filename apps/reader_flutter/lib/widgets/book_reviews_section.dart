@@ -1,22 +1,77 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../design/app_tokens.dart';
 import '../l10n/app_localizations.dart';
+import '../models/book_models.dart';
+import '../providers/continue_reading_provider.dart';
 import '../providers/engagement_providers.dart';
+import '../providers/payment_providers.dart';
 import '../providers/session_notifier.dart';
+import '../providers/study_providers.dart';
+import '../router/app_navigation.dart';
+import '../storage/reader_prefs_storage.dart';
+import '../utils/api_error_message.dart';
 import '../utils/form_draft_controller.dart';
 import '../utils/form_draft_keys.dart';
+import 'premium_gate.dart';
 
-/// Opens the write-review composer for [bookId].
+Future<bool> _userHasStartedBook(WidgetRef ref, String bookId) async {
+  final last = await ref.read(lastOpenedBookProvider.future);
+  if (last?.bookId == bookId) return true;
+  final localProgress = await ReaderPrefsStorage.readProgress(bookId);
+  if (localProgress > 0) return true;
+  try {
+    final progress = await ref.read(readingProgressProvider(bookId).future);
+    if (progress.chapterKey.isNotEmpty || progress.progressPercent > 0) {
+      return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
+/// Opens the write-review composer after purchase / start-reading gates.
 Future<void> openBookReviewSheet(
   BuildContext context,
   WidgetRef ref, {
-  required String bookId,
+  required BookSummary book,
 }) async {
   final l10n = AppLocalizations.of(context);
+
+  if (book.isPremium) {
+    if (book.requiresPurchase && !await userOwnsBook(ref, book.id)) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.reviewRequiresPurchase)));
+      if (!context.mounted) return;
+      await ensureBookUnlocked(context, ref, book);
+      return;
+    }
+    if (!context.mounted) return;
+    if (!await ensureBookUnlocked(context, ref, book)) return;
+  }
+
+  if (!await _userHasStartedBook(ref, book.id)) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.reviewRequiresReading)));
+    context.push(
+      readingPathForBook(
+        book.id,
+        isPdf: book.isPdf,
+        query: book.isPdf ? null : 'pickChapter=1',
+      ),
+    );
+    return;
+  }
+
+  if (!context.mounted) return;
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -25,10 +80,10 @@ Future<void> openBookReviewSheet(
       borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
     ),
     builder: (context) => _ReviewComposerSheet(
-      bookId: bookId,
+      bookId: book.id,
       draftKey: FormDraftKeys.scope(
         userId: ref.read(sessionNotifierProvider).valueOrNull?.user?.id,
-        formKey: FormDraftKeys.bookReview(bookId),
+        formKey: FormDraftKeys.bookReview(book.id),
       ),
       l10n: l10n,
     ),
@@ -41,14 +96,14 @@ Future<void> openBookReviewSheet(
 /// Hidden entirely when there are no reviews yet — callers should offer a
 /// compact write-review action in the header instead of an empty-state card.
 class BookReviewsSection extends ConsumerWidget {
-  const BookReviewsSection({super.key, required this.bookId});
+  const BookReviewsSection({super.key, required this.book});
 
-  final String bookId;
+  final BookSummary book;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final async = ref.watch(bookReviewsProvider(bookId));
+    final async = ref.watch(bookReviewsProvider(book.id));
     final reviews = async.valueOrNull;
     if (reviews == null || reviews.isEmpty) {
       return const SizedBox.shrink();
@@ -70,8 +125,7 @@ class BookReviewsSection extends ConsumerWidget {
               ),
             ),
             TextButton.icon(
-              onPressed: () =>
-                  openBookReviewSheet(context, ref, bookId: bookId),
+              onPressed: () => openBookReviewSheet(context, ref, book: book),
               icon: const Icon(Icons.rate_review_outlined, size: 18),
               label: Text(l10n.writeReviewTitle),
             ),
@@ -149,8 +203,15 @@ class _ReviewComposerSheetState extends ConsumerState<_ReviewComposerSheet> {
         body: _bodyCtrl.text.trim(),
       );
       await _draft.clear();
-    } catch (_) {
-      /* ignore submit failure */
+    } catch (e) {
+      if (!mounted) return;
+      final fromApi = e is DioException
+          ? messageFromDioResponse(e.response?.data)
+          : null;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(fromApi ?? widget.l10n.reviewSubmitFailed)),
+      );
+      return;
     }
     if (mounted) Navigator.of(context).pop();
   }

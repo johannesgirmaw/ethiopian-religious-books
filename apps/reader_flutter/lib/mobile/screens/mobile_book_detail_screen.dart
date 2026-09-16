@@ -263,14 +263,14 @@ class MobileBookDetailScreen extends ConsumerWidget {
                     ],
                     if (showReviews) ...[
                       const SizedBox(height: 22),
-                      BookReviewsSection(bookId: bookId),
+                      BookReviewsSection(book: book),
                     ] else ...[
                       const SizedBox(height: 16),
                       Align(
                         alignment: AlignmentDirectional.centerStart,
                         child: TextButton.icon(
                           onPressed: () =>
-                              openBookReviewSheet(context, ref, bookId: bookId),
+                              openBookReviewSheet(context, ref, book: book),
                           style: TextButton.styleFrom(
                             foregroundColor: AppColors.referencePrimary,
                             padding: EdgeInsets.zero,
