@@ -10,8 +10,36 @@ import '../providers/session_notifier.dart';
 import '../utils/form_draft_controller.dart';
 import '../utils/form_draft_keys.dart';
 
+/// Opens the write-review composer for [bookId].
+Future<void> openBookReviewSheet(
+  BuildContext context,
+  WidgetRef ref, {
+  required String bookId,
+}) async {
+  final l10n = AppLocalizations.of(context);
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: AppColors.surfaceCard,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+    ),
+    builder: (context) => _ReviewComposerSheet(
+      bookId: bookId,
+      draftKey: FormDraftKeys.scope(
+        userId: ref.read(sessionNotifierProvider).valueOrNull?.user?.id,
+        formKey: FormDraftKeys.bookReview(bookId),
+      ),
+      l10n: l10n,
+    ),
+  );
+}
+
 /// Reviews block for the book detail page: average summary, the list of
 /// reviews, and a "write a review" action. Shared across platforms.
+///
+/// Hidden entirely when there are no reviews yet — callers should offer a
+/// compact write-review action in the header instead of an empty-state card.
 class BookReviewsSection extends ConsumerWidget {
   const BookReviewsSection({super.key, required this.bookId});
 
@@ -21,6 +49,10 @@ class BookReviewsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final async = ref.watch(bookReviewsProvider(bookId));
+    final reviews = async.valueOrNull;
+    if (reviews == null || reviews.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -38,96 +70,16 @@ class BookReviewsSection extends ConsumerWidget {
               ),
             ),
             TextButton.icon(
-              onPressed: () => _openReviewSheet(context, ref, l10n),
+              onPressed: () =>
+                  openBookReviewSheet(context, ref, bookId: bookId),
               icon: const Icon(Icons.rate_review_outlined, size: 18),
               label: Text(l10n.writeReviewTitle),
             ),
           ],
         ),
         const SizedBox(height: 8),
-        async.when(
-          loading: () => const Padding(
-            padding: EdgeInsets.all(16),
-            child: Center(child: CircularProgressIndicator()),
-          ),
-          error: (e, _) => Text(
-            '$e',
-            style: const TextStyle(color: AppColors.textTertiary),
-          ),
-          data: (reviews) {
-            if (reviews.isEmpty) {
-              return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 22,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceCard,
-                  borderRadius: BorderRadius.circular(AppRadius.cardV2),
-                  border: Border.all(color: AppColors.line),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: AppColors.referencePrimary.withValues(
-                          alpha: 0.08,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.rate_review_outlined,
-                        size: 20,
-                        color: AppColors.referencePrimary,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        l10n.reviewsEmpty,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          height: 1.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-            return Column(
-              children: [
-                for (final r in reviews) _ReviewTile(review: r),
-              ],
-            );
-          },
-        ),
+        for (final r in reviews) _ReviewTile(review: r),
       ],
-    );
-  }
-
-  Future<void> _openReviewSheet(
-    BuildContext context,
-    WidgetRef ref,
-    AppLocalizations l10n,
-  ) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surfaceCard,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
-      builder: (context) => _ReviewComposerSheet(
-        bookId: bookId,
-        draftKey: FormDraftKeys.scope(
-          userId: ref.read(sessionNotifierProvider).valueOrNull?.user?.id,
-          formKey: FormDraftKeys.bookReview(bookId),
-        ),
-        l10n: l10n,
-      ),
     );
   }
 }
@@ -197,7 +149,9 @@ class _ReviewComposerSheetState extends ConsumerState<_ReviewComposerSheet> {
         body: _bodyCtrl.text.trim(),
       );
       await _draft.clear();
-    } catch (_) {/* ignore submit failure */}
+    } catch (_) {
+      /* ignore submit failure */
+    }
     if (mounted) Navigator.of(context).pop();
   }
 

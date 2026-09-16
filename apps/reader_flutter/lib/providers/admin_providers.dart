@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/admin_book.dart';
 import 'api_client.dart';
 
-final adminBooksProvider = FutureProvider.autoDispose<AdminBooksPage>((ref) async {
+final adminBooksProvider = FutureProvider.autoDispose<AdminBooksPage>((
+  ref,
+) async {
   final dio = ref.watch(apiDioProvider);
   try {
     final res = await dio.get<Map<String, dynamic>>('admin/books');
@@ -23,24 +25,25 @@ final adminBooksProvider = FutureProvider.autoDispose<AdminBooksPage>((ref) asyn
 /// errors by returning an empty list so the admin UI stays usable.
 final reviewNotesProvider = FutureProvider.autoDispose
     .family<List<BookReviewNote>, String>((ref, bookId) async {
-  final dio = ref.watch(apiDioProvider);
-  try {
-    final res =
-        await dio.get<Map<String, dynamic>>('admin/books/$bookId/review-notes');
-    final raw = res.data?['items'];
-    if (raw is! List) return const [];
-    return raw
-        .whereType<Map>()
-        .map((e) => BookReviewNote.fromJson(Map<String, dynamic>.from(e)))
-        .toList();
-  } on DioException catch (e) {
-    final status = e.response?.statusCode;
-    if (status == 403 || status == 404 || status == 500 || status == 503) {
-      return const [];
-    }
-    rethrow;
-  }
-});
+      final dio = ref.watch(apiDioProvider);
+      try {
+        final res = await dio.get<Map<String, dynamic>>(
+          'admin/books/$bookId/review-notes',
+        );
+        final raw = res.data?['items'];
+        if (raw is! List) return const [];
+        return raw
+            .whereType<Map>()
+            .map((e) => BookReviewNote.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      } on DioException catch (e) {
+        final status = e.response?.statusCode;
+        if (status == 403 || status == 404 || status == 500 || status == 503) {
+          return const [];
+        }
+        rethrow;
+      }
+    });
 
 Future<AdminBook?> fetchAdminBookByDio(Dio dio, String id) async {
   try {
@@ -106,9 +109,11 @@ class ImportPreview {
     final rawModes = j['modes'];
     final modes = rawModes is List
         ? rawModes
-            .whereType<Map>()
-            .map((e) => ImportModeSummary.fromJson(Map<String, dynamic>.from(e)))
-            .toList()
+              .whereType<Map>()
+              .map(
+                (e) => ImportModeSummary.fromJson(Map<String, dynamic>.from(e)),
+              )
+              .toList()
         : <ImportModeSummary>[];
     return ImportPreview(
       recommended: j['recommended'] as String? ?? 'auto',
@@ -222,10 +227,7 @@ Future<void> uploadPdfPackageForBook(
   final safeName = filename.trim().isEmpty ? 'content.pdf' : filename.trim();
   final pres = await dio.post<Map<String, dynamic>>(
     'admin/books/$bookId/pdf/presign',
-    data: {
-      'content_type': 'application/pdf',
-      'filename': safeName,
-    },
+    data: {'content_type': 'application/pdf', 'filename': safeName},
   );
   final data = pres.data;
   if (data == null) throw StateError('Empty PDF presign response');
@@ -247,10 +249,7 @@ Future<void> uploadPdfPackageForBook(
   );
   await dio.post<Map<String, dynamic>>(
     'admin/books/$bookId/pdf/complete',
-    data: {
-      'revision_id': revisionId,
-      'filename': safeName,
-    },
+    data: {'revision_id': revisionId, 'filename': safeName},
   );
 }
 
@@ -284,3 +283,14 @@ String? publishErrorMessage(DioException e) {
   }
   return null;
 }
+
+/// Platform (or per-author) commission percent used when pricing a premium book.
+final commissionRateProvider = FutureProvider.autoDispose<double>((ref) async {
+  final dio = ref.watch(apiDioProvider);
+  try {
+    final res = await dio.get<Map<String, dynamic>>('payments/commission-rate');
+    return double.tryParse('${res.data?['commission_percent'] ?? ''}') ?? 0;
+  } on DioException {
+    return 0;
+  }
+});

@@ -2115,13 +2115,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileSettingsSubtitle => 'ንባብ፣ ቋንቋና የመተግበሪያ ምርጫዎች';
 
   @override
-  String get adminPricingSection => 'ዋጋና ድርሻ';
+  String get adminPricingSection => 'ዋጋ';
 
   @override
   String get adminCurrencyLabel => 'ምንዛሬ';
 
   @override
-  String get adminPriceLabel => 'ዋጋ';
+  String get adminPriceLabel => 'የእርስዎ ዋጋ';
 
   @override
   String get adminSalePriceLabel => 'የቅናሽ ዋጋ (አማራጭ)';
@@ -2131,6 +2131,19 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get adminCommissionHelp => 'ባዶ ቢተዉ የደራሲው ወይም የመድረኩ መደበኛ ይሠራል';
+
+  @override
+  String get adminServiceFeeTitle => 'የአገልግሎት ክፍያ';
+
+  @override
+  String adminServiceFeeDescription(String percent, String total) {
+    return 'በዋጋዎ ላይ $percent% የመድረክ አገልግሎት ክፍያ ይጨመራል። አንባቢዎች $total ይከፍላሉ።';
+  }
+
+  @override
+  String adminServiceFeeEmptyDescription(String percent) {
+    return 'በሚያስገቡት ዋጋ ላይ $percent% የመድረክ አገልግሎት ክፍያ ይጨመራል። ይህ የክፍያ ሂደትና የመድረክ ወጪን ይሸፍናል።';
+  }
 
   @override
   String get adminPaymentsTitle => 'ትዕዛዞችና ክፍያዎች';

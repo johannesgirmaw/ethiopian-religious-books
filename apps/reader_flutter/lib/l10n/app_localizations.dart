@@ -4025,7 +4025,7 @@ abstract class AppLocalizations {
   /// No description provided for @adminPricingSection.
   ///
   /// In en, this message translates to:
-  /// **'Pricing & commission'**
+  /// **'Pricing'**
   String get adminPricingSection;
 
   /// No description provided for @adminCurrencyLabel.
@@ -4037,7 +4037,7 @@ abstract class AppLocalizations {
   /// No description provided for @adminPriceLabel.
   ///
   /// In en, this message translates to:
-  /// **'Price'**
+  /// **'Your price'**
   String get adminPriceLabel;
 
   /// No description provided for @adminSalePriceLabel.
@@ -4057,6 +4057,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Leave blank to use the author or platform default'**
   String get adminCommissionHelp;
+
+  /// No description provided for @adminServiceFeeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Service fee'**
+  String get adminServiceFeeTitle;
+
+  /// No description provided for @adminServiceFeeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'A {percent}% platform service fee is added to your price to cover payments and hosting. Readers will pay {total}.'**
+  String adminServiceFeeDescription(String percent, String total);
+
+  /// No description provided for @adminServiceFeeEmptyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'A {percent}% platform service fee is added to the price you enter. This covers payment processing and platform costs.'**
+  String adminServiceFeeEmptyDescription(String percent);
 
   /// No description provided for @adminPaymentsTitle.
   ///

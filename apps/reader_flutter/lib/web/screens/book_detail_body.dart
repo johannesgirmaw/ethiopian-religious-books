@@ -9,6 +9,7 @@ import '../../models/book_models.dart';
 import '../../models/download_job.dart';
 import '../../providers/catalog_providers.dart';
 import '../../providers/download_jobs_provider.dart';
+import '../../providers/engagement_providers.dart';
 import '../../providers/payment_providers.dart';
 import '../../router/app_navigation.dart';
 import '../../utils/catalog_categories.dart';
@@ -35,26 +36,17 @@ class BookDetailBody extends ConsumerWidget {
   final String bookId;
   final void Function(BookSummary book) onShare;
 
-  Future<void> _downloadSample(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
+  Future<void> _downloadSample(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(
-      SnackBar(content: Text(l10n.preparingDownload)),
-    );
+    messenger.showSnackBar(SnackBar(content: Text(l10n.preparingDownload)));
     final error = await runOfflineBookDownload(ref, bookId, l10n: l10n);
     if (!context.mounted) return;
     ref.invalidate(downloadJobsProvider);
     if (error == null) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.savedOfflineReading)),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(l10n.savedOfflineReading)));
     } else {
-      messenger.showSnackBar(
-        SnackBar(content: Text(error)),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(error)));
     }
   }
 
@@ -67,6 +59,8 @@ class BookDetailBody extends ConsumerWidget {
     final padding = WebTokens.pagePadding(AppLayoutScope.tierOf(context));
     final tier = AppLayoutScope.tierOf(context);
     final expanded = tier == AppLayoutTier.expanded;
+    final reviews =
+        ref.watch(bookReviewsProvider(bookId)).valueOrNull ?? const [];
 
     DownloadJob? currentJob;
     final jobs = downloadJobs.valueOrNull;
@@ -82,9 +76,15 @@ class BookDetailBody extends ConsumerWidget {
     return asyncBook.when(
       data: (book) {
         final tree = contentAsync.valueOrNull;
-        final chapterCount = tree?.chapters.length;
+        final chapters = tree?.chapters ?? const <BookContentChapter>[];
+        final chapterCount = chapters.isEmpty ? null : chapters.length;
         final pageCount = tree?.totalPages;
-        final mustBuy = book.requiresPurchase &&
+        final hasSummary = book.summary?.trim().isNotEmpty == true;
+        final showToc =
+            !book.isPdf && (contentAsync.isLoading || chapters.isNotEmpty);
+        final showReviews = reviews.isNotEmpty;
+        final mustBuy =
+            book.requiresPurchase &&
             !(ref
                     .watch(entitledBookIdsProvider)
                     .valueOrNull
@@ -92,8 +92,7 @@ class BookDetailBody extends ConsumerWidget {
                 false);
 
         Future<void> onRead() async {
-          if (await ensureBookUnlocked(context, ref, book) &&
-              context.mounted) {
+          if (await ensureBookUnlocked(context, ref, book) && context.mounted) {
             context.push(
               readingPathForBook(
                 bookId,
@@ -119,77 +118,73 @@ class BookDetailBody extends ConsumerWidget {
           chapterCount: chapterCount,
           pageCount: pageCount,
           large: expanded,
+          onWriteReview: showReviews
+              ? null
+              : () => openBookReviewSheet(context, ref, bookId: bookId),
         );
 
-        final about = _AboutSection(book: book, l10n: l10n);
-        final contents = book.isPdf
-            ? WebSection(
-                title: l10n.pdfDocumentSection.toUpperCase(),
-                child: WebPanel(
-                  child: Text(
-                    l10n.pdfNoChaptersHint,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      height: 1.55,
-                    ),
-                  ),
-                ),
-              )
-            : _ContentsSection(
-                tree: tree,
-                loading: contentAsync.isLoading,
-                l10n: l10n,
-                onChapter: (key) => context.push(
-                  readingPathForBook(
-                    bookId,
-                    isPdf: false,
-                    query: 'chapter=$key',
-                  ),
-                ),
-              );
-
-        final sections = <Widget>[
-          about,
-          const SizedBox(height: 28),
-          contents,
-          if (currentJob != null && !expanded) ...[
-            const SizedBox(height: 16),
-            _DownloadStatusCard(job: currentJob),
-          ],
-          const SizedBox(height: 32),
-          BookReviewsSection(bookId: bookId),
+        final bodySections = <Widget>[
+          if (hasSummary) _AboutSection(book: book, l10n: l10n),
+          if (showToc)
+            _ContentsSection(
+              tree: tree,
+              loading: contentAsync.isLoading,
+              l10n: l10n,
+              onChapter: (key) => context.push(
+                readingPathForBook(bookId, isPdf: false, query: 'chapter=$key'),
+              ),
+            ),
+          if (showReviews) BookReviewsSection(bookId: bookId),
         ];
+
+        Widget spacedBody() {
+          final children = <Widget>[];
+          for (final section in bodySections) {
+            if (children.isNotEmpty) {
+              children.add(const SizedBox(height: 28));
+            }
+            children.add(section);
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: children,
+          );
+        }
 
         if (expanded) {
           return ListView(
             padding: padding,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: WebTokens.bookDetailRailWidth,
-                    child: _CoverRail(
-                      book: book,
-                      l10n: l10n,
-                      chapterCount: chapterCount,
-                      pageCount: pageCount,
-                      downloadJob: currentJob,
-                      actions: actions,
-                    ),
+              Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: WebTokens.maxContentWidth,
                   ),
-                  const SizedBox(width: 40),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        header,
-                        const SizedBox(height: 32),
-                        ...sections,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _ExpandedHero(
+                        coverRail: _CoverRail(
+                          book: book,
+                          downloadJob: currentJob,
+                          actions: actions,
+                        ),
+                        header: header,
+                        details: _DetailsCard(
+                          book: book,
+                          l10n: l10n,
+                          chapterCount: chapterCount,
+                          pageCount: pageCount,
+                        ),
+                      ),
+                      if (bodySections.isNotEmpty) ...[
+                        const SizedBox(height: 28),
+                        spacedBody(),
                       ],
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ],
           );
@@ -198,17 +193,38 @@ class BookDetailBody extends ConsumerWidget {
         return ListView(
           padding: padding,
           children: [
-            _HeroRow(
-              book: book,
-              header: header,
-              actions: actions,
+            Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: WebTokens.maxContentWidth,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _HeroRow(
+                      book: book,
+                      header: header,
+                      actions: actions,
+                      details: _DetailsCard(
+                        book: book,
+                        l10n: l10n,
+                        chapterCount: chapterCount,
+                        pageCount: pageCount,
+                      ),
+                    ),
+                    if (currentJob != null) ...[
+                      const SizedBox(height: 16),
+                      _DownloadStatusCard(job: currentJob),
+                    ],
+                    if (bodySections.isNotEmpty) ...[
+                      const SizedBox(height: 28),
+                      spacedBody(),
+                    ],
+                  ],
+                ),
+              ),
             ),
-            if (currentJob != null) ...[
-              const SizedBox(height: 16),
-              _DownloadStatusCard(job: currentJob),
-            ],
-            const SizedBox(height: 32),
-            ...sections,
           ],
         );
       },
@@ -240,11 +256,13 @@ class _HeroRow extends StatelessWidget {
     required this.book,
     required this.header,
     required this.actions,
+    required this.details,
   });
 
   final BookSummary book;
   final Widget header;
   final Widget actions;
+  final Widget details;
 
   @override
   Widget build(BuildContext context) {
@@ -252,25 +270,114 @@ class _HeroRow extends StatelessWidget {
       decoration: WebTokens.panelDecoration(),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 24, 28, 24),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _CoverFrame(
-              book: book,
-              width: WebTokens.bookDetailCoverMedium,
-            ),
-            const SizedBox(width: 28),
-            Expanded(
-              child: Column(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final wide = constraints.maxWidth >= 760;
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _CoverFrame(book: book, width: WebTokens.bookDetailCoverMedium),
+                const SizedBox(width: 28),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      header,
+                      const SizedBox(height: 22),
+                      actions,
+                      if (!wide) ...[const SizedBox(height: 24), details],
+                    ],
+                  ),
+                ),
+                if (wide) ...[
+                  const SizedBox(width: 24),
+                  SizedBox(
+                    width: WebTokens.bookDetailMetaWidth,
+                    child: DecoratedBox(
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          left: BorderSide(color: WebTokens.borderColor),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 24),
+                        child: details,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _ExpandedHero extends StatelessWidget {
+  const _ExpandedHero({
+    required this.coverRail,
+    required this.header,
+    required this.details,
+  });
+
+  final Widget coverRail;
+  final Widget header;
+  final Widget details;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: WebTokens.panelDecoration(),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(28, 28, 28, 28),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final wide = constraints.maxWidth >= 920;
+            final cover = SizedBox(
+              width: WebTokens.bookDetailCoverExpanded,
+              child: coverRail,
+            );
+            if (wide) {
+              return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  header,
-                  const SizedBox(height: 22),
-                  actions,
+                  cover,
+                  const SizedBox(width: 36),
+                  Expanded(child: header),
+                  const SizedBox(width: 28),
+                  SizedBox(
+                    width: WebTokens.bookDetailMetaWidth,
+                    child: DecoratedBox(
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          left: BorderSide(color: WebTokens.borderColor),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 24),
+                        child: details,
+                      ),
+                    ),
+                  ),
                 ],
-              ),
-            ),
-          ],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                cover,
+                const SizedBox(width: 28),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [header, const SizedBox(height: 24), details],
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -280,17 +387,11 @@ class _HeroRow extends StatelessWidget {
 class _CoverRail extends StatelessWidget {
   const _CoverRail({
     required this.book,
-    required this.l10n,
-    required this.chapterCount,
-    required this.pageCount,
     required this.downloadJob,
     required this.actions,
   });
 
   final BookSummary book;
-  final AppLocalizations l10n;
-  final int? chapterCount;
-  final int? pageCount;
   final DownloadJob? downloadJob;
   final Widget actions;
 
@@ -299,35 +400,20 @@ class _CoverRail extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Center(
-          child: _CoverFrame(
-            book: book,
-            width: WebTokens.bookDetailCoverExpanded,
-          ),
-        ),
-        const SizedBox(height: 24),
+        _CoverFrame(book: book, width: WebTokens.bookDetailCoverExpanded),
+        const SizedBox(height: 20),
         actions,
         if (downloadJob != null) ...[
           const SizedBox(height: 14),
           _DownloadStatusCard(job: downloadJob!),
         ],
-        const SizedBox(height: 28),
-        _DetailsCard(
-          book: book,
-          l10n: l10n,
-          chapterCount: chapterCount,
-          pageCount: pageCount,
-        ),
       ],
     );
   }
 }
 
 class _CoverFrame extends StatelessWidget {
-  const _CoverFrame({
-    required this.book,
-    required this.width,
-  });
+  const _CoverFrame({required this.book, required this.width});
 
   final BookSummary book;
   final double width;
@@ -339,10 +425,7 @@ class _CoverFrame extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: WebTokens.coverShadow,
       ),
-      child: BookDetailCover(
-        book: book,
-        width: width,
-      ),
+      child: BookDetailCover(book: book, width: width),
     );
   }
 }
@@ -354,6 +437,7 @@ class _TitleBlock extends StatelessWidget {
     required this.chapterCount,
     required this.pageCount,
     required this.large,
+    this.onWriteReview,
   });
 
   final BookSummary book;
@@ -361,13 +445,13 @@ class _TitleBlock extends StatelessWidget {
   final int? chapterCount;
   final int? pageCount;
   final bool large;
+  final VoidCallback? onWriteReview;
 
   @override
   Widget build(BuildContext context) {
     final category = categoryForBook(book);
     final titleSize = large ? 34.0 : 26.0;
-    final pageValue =
-        pageCount != null && pageCount! > 0 ? '$pageCount' : null;
+    final pageValue = pageCount != null && pageCount! > 0 ? '$pageCount' : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -454,6 +538,20 @@ class _TitleBlock extends StatelessWidget {
               ),
           ],
         ),
+        if (onWriteReview != null) ...[
+          const SizedBox(height: 16),
+          TextButton.icon(
+            onPressed: onWriteReview,
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.referencePrimary,
+              padding: EdgeInsets.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            ),
+            icon: const Icon(Icons.rate_review_outlined, size: 18),
+            label: Text(l10n.writeReviewTitle),
+          ),
+        ],
       ],
     );
   }
@@ -489,10 +587,7 @@ class _ActionCluster extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         elevation: 0,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        textStyle: const TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w700,
-        ),
+        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
         shape: const RoundedRectangleBorder(borderRadius: _radius),
       ),
       icon: Icon(
@@ -511,10 +606,7 @@ class _ActionCluster extends StatelessWidget {
         minimumSize: stretch ? const Size.fromHeight(46) : const Size(0, 46),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        textStyle: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
+        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         shape: const RoundedRectangleBorder(borderRadius: _radius),
       ),
       icon: const Icon(Icons.download_outlined, size: 18),
@@ -568,20 +660,12 @@ class _AboutSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasSummary = book.summary?.isNotEmpty == true;
     return WebSection(
       title: l10n.summarySection.toUpperCase(),
-      child: hasSummary
-          ? WebPanel(
-              padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),
-              child: StoredRichTextView(
-                raw: book.summaryRichRaw ?? book.summary!,
-              ),
-            )
-          : _QuietEmpty(
-              icon: Icons.notes_outlined,
-              message: l10n.noSummaryYet,
-            ),
+      child: WebPanel(
+        padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),
+        child: StoredRichTextView(raw: book.summaryRichRaw ?? book.summary!),
+      ),
     );
   }
 }
@@ -602,43 +686,33 @@ class _ContentsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final chapters = tree?.chapters ?? const <BookContentChapter>[];
+    if (!loading && chapters.isEmpty) {
+      return const SizedBox.shrink();
+    }
     return WebSection(
       title: l10n.chaptersHeading.toUpperCase(),
       trailing: chapters.isEmpty
           ? null
-          : Text(
-              '${chapters.length}',
-              style: WebTokens.sectionLabelStyle,
-            ),
+          : Text('${chapters.length}', style: WebTokens.sectionLabelStyle),
       child: loading && chapters.isEmpty
-          ? const WebPanel(
-              child: Center(child: CircularProgressIndicator()),
-            )
-          : chapters.isEmpty
-              ? _QuietEmpty(
-                  icon: Icons.menu_book_outlined,
-                  message: l10n.noChapterContentYet,
-                )
-              : WebPanel(
-                  padding: EdgeInsets.zero,
-                  child: Column(
-                    children: [
-                      for (var i = 0; i < chapters.length; i++) ...[
-                        if (i > 0)
-                          const Divider(
-                            height: 1,
-                            color: WebTokens.borderColor,
-                          ),
-                        _TocRow(
-                          index: i + 1,
-                          chapter: chapters[i],
-                          pageLabel: l10n.pageCount(chapters[i].pages.length),
-                          onTap: () => onChapter(chapters[i].chapterKey),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
+          ? const WebPanel(child: Center(child: CircularProgressIndicator()))
+          : WebPanel(
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  for (var i = 0; i < chapters.length; i++) ...[
+                    if (i > 0)
+                      const Divider(height: 1, color: WebTokens.borderColor),
+                    _TocRow(
+                      index: i + 1,
+                      chapter: chapters[i],
+                      pageLabel: l10n.pageCount(chapters[i].pages.length),
+                      onTap: () => onChapter(chapters[i].chapterKey),
+                    ),
+                  ],
+                ],
+              ),
+            ),
     );
   }
 }
@@ -757,52 +831,51 @@ class _DetailsCard extends StatelessWidget {
       ),
       if (book.authorCompiler?.isNotEmpty == true)
         (label: l10n.authorCompilerLabel, value: book.authorCompiler!),
-      if (chapterCount != null)
+      if (chapterCount != null && chapterCount! > 0)
         (label: l10n.bookStatChapters, value: '$chapterCount'),
       if (pageCount != null && pageCount! > 0)
         (label: l10n.bookStatPages, value: '$pageCount'),
     ];
 
-    return WebSection(
-      title: l10n.bookDetailsTitle.toUpperCase(),
-      child: WebPanel(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-        child: Column(
-          children: [
-            for (var i = 0; i < displayRows.length; i++) ...[
-              if (i > 0)
-                const Divider(height: 1, color: WebTokens.borderColor),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      displayRows[i].label,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textTertiary,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        displayRows[i].value,
-                        textAlign: TextAlign.right,
-                        style: const TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          l10n.bookDetailsTitle.toUpperCase(),
+          style: WebTokens.sectionLabelStyle,
         ),
-      ),
+        const SizedBox(height: 4),
+        for (var i = 0; i < displayRows.length; i++) ...[
+          if (i > 0) const Divider(height: 1, color: WebTokens.borderColor),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  displayRows[i].label,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    displayRows[i].value,
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -947,10 +1020,7 @@ class _RatingRow extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           '·  ${book.ratingCount}',
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppColors.textTertiary,
-          ),
+          style: const TextStyle(fontSize: 13, color: AppColors.textTertiary),
         ),
       ],
     );
@@ -1002,43 +1072,6 @@ class _AuthorLink extends StatelessWidget {
   }
 }
 
-class _QuietEmpty extends StatelessWidget {
-  const _QuietEmpty({required this.icon, required this.message});
-
-  final IconData icon;
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return WebPanel(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 28),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.referencePrimary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, size: 20, color: AppColors.referencePrimary),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                height: 1.5,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _DownloadStatusCard extends StatelessWidget {
   const _DownloadStatusCard({required this.job});
 
@@ -1055,15 +1088,15 @@ class _DownloadStatusCard extends StatelessWidget {
         color: isOk
             ? AppColors.successSurface
             : isFail
-                ? AppColors.errorSurface
-                : AppColors.surfaceSoft,
+            ? AppColors.errorSurface
+            : AppColors.surfaceSoft,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isOk
               ? AppColors.successBorder
               : isFail
-                  ? AppColors.errorBorder
-                  : AppColors.line,
+              ? AppColors.errorBorder
+              : AppColors.line,
         ),
       ),
       child: Row(
@@ -1072,14 +1105,14 @@ class _DownloadStatusCard extends StatelessWidget {
             isOk
                 ? Icons.check_circle_outline_rounded
                 : isFail
-                    ? Icons.error_outline_rounded
-                    : Icons.downloading_rounded,
+                ? Icons.error_outline_rounded
+                : Icons.downloading_rounded,
             size: 20,
             color: isOk
                 ? AppColors.successText
                 : isFail
-                    ? AppColors.errorText
-                    : AppColors.textSecondary,
+                ? AppColors.errorText
+                : AppColors.textSecondary,
           ),
           const SizedBox(width: 10),
           Expanded(

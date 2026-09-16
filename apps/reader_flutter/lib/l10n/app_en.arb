@@ -970,12 +970,26 @@
   "paymentNoPurchases": "You haven't made any purchases yet.",
   "paymentPurchasesSubtitle": "Track your orders and payment status",
   "profileSettingsSubtitle": "Reading, language and app preferences",
-  "adminPricingSection": "Pricing & commission",
+  "adminPricingSection": "Pricing",
   "adminCurrencyLabel": "Currency",
-  "adminPriceLabel": "Price",
+  "adminPriceLabel": "Your price",
   "adminSalePriceLabel": "Sale price (optional)",
   "adminCommissionPercentLabel": "Commission %",
   "adminCommissionHelp": "Leave blank to use the author or platform default",
+  "adminServiceFeeTitle": "Service fee",
+  "adminServiceFeeDescription": "A {percent}% platform service fee is added to your price to cover payments and hosting. Readers will pay {total}.",
+  "@adminServiceFeeDescription": {
+    "placeholders": {
+      "percent": { "type": "String" },
+      "total": { "type": "String" }
+    }
+  },
+  "adminServiceFeeEmptyDescription": "A {percent}% platform service fee is added to the price you enter. This covers payment processing and platform costs.",
+  "@adminServiceFeeEmptyDescription": {
+    "placeholders": {
+      "percent": { "type": "String" }
+    }
+  },
   "adminPaymentsTitle": "Orders & payments",
   "adminManageOrders": "Manage orders",
   "adminOrdersSubtitle": "Review, approve and complete payments",

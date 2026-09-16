@@ -2157,13 +2157,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileSettingsSubtitle => 'Reading, language and app preferences';
 
   @override
-  String get adminPricingSection => 'Pricing & commission';
+  String get adminPricingSection => 'Pricing';
 
   @override
   String get adminCurrencyLabel => 'Currency';
 
   @override
-  String get adminPriceLabel => 'Price';
+  String get adminPriceLabel => 'Your price';
 
   @override
   String get adminSalePriceLabel => 'Sale price (optional)';
@@ -2174,6 +2174,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get adminCommissionHelp =>
       'Leave blank to use the author or platform default';
+
+  @override
+  String get adminServiceFeeTitle => 'Service fee';
+
+  @override
+  String adminServiceFeeDescription(String percent, String total) {
+    return 'A $percent% platform service fee is added to your price to cover payments and hosting. Readers will pay $total.';
+  }
+
+  @override
+  String adminServiceFeeEmptyDescription(String percent) {
+    return 'A $percent% platform service fee is added to the price you enter. This covers payment processing and platform costs.';
+  }
 
   @override
   String get adminPaymentsTitle => 'Orders & payments';

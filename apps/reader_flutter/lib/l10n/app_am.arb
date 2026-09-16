@@ -1128,12 +1128,26 @@
   "paymentNoPurchases": "እስካሁን ግዢ አላደረጉም።",
   "paymentPurchasesSubtitle": "ትዕዛዞችዎንና የክፍያ ሁኔታን ይከታተሉ",
   "profileSettingsSubtitle": "ንባብ፣ ቋንቋና የመተግበሪያ ምርጫዎች",
-  "adminPricingSection": "ዋጋና ድርሻ",
+  "adminPricingSection": "ዋጋ",
   "adminCurrencyLabel": "ምንዛሬ",
-  "adminPriceLabel": "ዋጋ",
+  "adminPriceLabel": "የእርስዎ ዋጋ",
   "adminSalePriceLabel": "የቅናሽ ዋጋ (አማራጭ)",
   "adminCommissionPercentLabel": "ድርሻ %",
   "adminCommissionHelp": "ባዶ ቢተዉ የደራሲው ወይም የመድረኩ መደበኛ ይሠራል",
+  "adminServiceFeeTitle": "የአገልግሎት ክፍያ",
+  "adminServiceFeeDescription": "በዋጋዎ ላይ {percent}% የመድረክ አገልግሎት ክፍያ ይጨመራል። አንባቢዎች {total} ይከፍላሉ።",
+  "@adminServiceFeeDescription": {
+    "placeholders": {
+      "percent": { "type": "String" },
+      "total": { "type": "String" }
+    }
+  },
+  "adminServiceFeeEmptyDescription": "በሚያስገቡት ዋጋ ላይ {percent}% የመድረክ አገልግሎት ክፍያ ይጨመራል። ይህ የክፍያ ሂደትና የመድረክ ወጪን ይሸፍናል።",
+  "@adminServiceFeeEmptyDescription": {
+    "placeholders": {
+      "percent": { "type": "String" }
+    }
+  },
   "adminPaymentsTitle": "ትዕዛዞችና ክፍያዎች",
   "adminManageOrders": "ትዕዛዞችን ያቀናብሩ",
   "adminOrdersSubtitle": "ክፍያዎችን ይመልከቱ፣ ያጸድቁና ያጠናቅቁ",

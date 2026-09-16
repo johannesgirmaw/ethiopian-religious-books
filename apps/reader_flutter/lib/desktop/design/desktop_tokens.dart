@@ -21,6 +21,7 @@ class DesktopTokens {
   static const double gridMainSpacing = 20;
   static const double bookDetailRailExpanded = 320;
   static const double bookDetailRailMedium = 280;
+  static const double bookDetailMetaWidth = 260;
 
   static const Color canvasBg = AppColors.referencePageBg;
   static const Color surfaceBg = Color(0xFFFFFFFF);

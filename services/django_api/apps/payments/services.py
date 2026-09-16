@@ -81,6 +81,24 @@ def resolve_commission_percent(
     return Decimal(settings_obj.default_commission_percent)
 
 
+def resolve_commission_percent_for_author(
+    user, settings_obj: PlatformSettings | None = None
+) -> Decimal:
+    """Commission percent for books this user publishes when no book exists yet.
+
+    Same fallbacks as :func:`resolve_commission_percent` minus the per-book
+    override (there is no book to read it from).
+    """
+    settings_obj = settings_obj or PlatformSettings.get_solo()
+    if settings_obj.allow_author_override and user is not None:
+        author_commission = AuthorCommission.objects.filter(
+            author_id=user.id
+        ).first()
+        if author_commission is not None:
+            return Decimal(author_commission.commission_percent)
+    return Decimal(settings_obj.default_commission_percent)
+
+
 def compute_amounts(
     book: Book, settings_obj: PlatformSettings | None = None
 ) -> dict[str, Decimal]:

@@ -11,6 +11,7 @@ import '../../models/book_models.dart';
 import '../../models/download_job.dart';
 import '../../providers/catalog_providers.dart';
 import '../../providers/download_jobs_provider.dart';
+import '../../providers/engagement_providers.dart';
 import '../../providers/payment_providers.dart';
 import '../../router/app_navigation.dart';
 import '../../utils/catalog_language_label.dart';
@@ -31,20 +32,14 @@ Future<void> _downloadSample(
 ) async {
   final l10n = AppLocalizations.of(context)!;
   final messenger = ScaffoldMessenger.of(context);
-  messenger.showSnackBar(
-    SnackBar(content: Text(l10n.preparingDownload)),
-  );
+  messenger.showSnackBar(SnackBar(content: Text(l10n.preparingDownload)));
   final error = await runOfflineBookDownload(ref, bookId, l10n: l10n);
   if (!context.mounted) return;
   ref.invalidate(downloadJobsProvider);
   if (error == null) {
-    messenger.showSnackBar(
-      SnackBar(content: Text(l10n.savedOfflineReading)),
-    );
+    messenger.showSnackBar(SnackBar(content: Text(l10n.savedOfflineReading)));
   } else {
-    messenger.showSnackBar(
-      SnackBar(content: Text(error)),
-    );
+    messenger.showSnackBar(SnackBar(content: Text(error)));
   }
 }
 
@@ -54,8 +49,6 @@ Future<void> _shareBook(BuildContext context, BookSummary book) async {
       : book.title;
   await SharePlus.instance.share(ShareParams(text: text));
 }
-
-String _statValue(int? value) => value == null ? '—' : '$value';
 
 class MobileBookDetailScreen extends ConsumerWidget {
   const MobileBookDetailScreen({super.key, required this.bookId});
@@ -68,6 +61,8 @@ class MobileBookDetailScreen extends ConsumerWidget {
     final asyncBook = ref.watch(bookDetailProvider(bookId));
     final contentAsync = ref.watch(bookContentProvider(bookId));
     final downloadJobs = ref.watch(downloadJobsProvider);
+    final reviews =
+        ref.watch(bookReviewsProvider(bookId)).valueOrNull ?? const [];
     DownloadJob? currentJob;
     final jobs = downloadJobs.valueOrNull;
     if (jobs != null) {
@@ -108,8 +103,36 @@ class MobileBookDetailScreen extends ConsumerWidget {
       body: asyncBook.when(
         data: (book) {
           final tree = contentAsync.valueOrNull;
-          final chapterCount = tree?.chapters.length;
-          final pageCount = tree?.totalPages;
+          final chapters = tree?.chapters ?? const <BookContentChapter>[];
+          final chapterCount = chapters.isEmpty ? null : chapters.length;
+          final pageCount = tree?.totalPages != null && tree!.totalPages > 0
+              ? tree.totalPages
+              : null;
+          final hasSummary = book.summary?.trim().isNotEmpty == true;
+          final showToc =
+              !book.isPdf && (contentAsync.isLoading || chapters.isNotEmpty);
+          final showReviews = reviews.isNotEmpty;
+
+          final stats = <Widget>[
+            if (chapterCount != null)
+              _BookDetailStatCard(
+                icon: Icons.menu_book_outlined,
+                value: '$chapterCount',
+                label: l10n.bookStatChapters,
+              ),
+            if (pageCount != null)
+              _BookDetailStatCard(
+                icon: Icons.description_outlined,
+                value: '$pageCount',
+                label: l10n.bookStatPages,
+              ),
+            if (book.readersCount > 0)
+              _BookDetailStatCard(
+                icon: Icons.groups_outlined,
+                value: '${book.readersCount}',
+                label: l10n.bookStatReaders,
+              ),
+          ];
 
           return Column(
             children: [
@@ -135,9 +158,7 @@ class MobileBookDetailScreen extends ConsumerWidget {
                               const SizedBox(height: 10),
                               Text(
                                 book.title,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineSmall
+                                style: Theme.of(context).textTheme.headlineSmall
                                     ?.copyWith(
                                       fontWeight: FontWeight.w800,
                                       height: 1.15,
@@ -148,9 +169,7 @@ class MobileBookDetailScreen extends ConsumerWidget {
                                 const SizedBox(height: 6),
                                 Text(
                                   book.subtitle!,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
+                                  style: Theme.of(context).textTheme.titleMedium
                                       ?.copyWith(
                                         color: AppColors.textSecondary,
                                         fontWeight: FontWeight.w500,
@@ -196,66 +215,31 @@ class MobileBookDetailScreen extends ConsumerWidget {
                       const SizedBox(height: 16),
                       BookPriceLabel(book: book),
                     ],
-                    const SizedBox(height: 18),
-                    Row(
-                      children: [
-                        _BookDetailStatCard(
-                          icon: Icons.menu_book_outlined,
-                          value: _statValue(chapterCount),
-                          label: l10n.bookStatChapters,
-                        ),
-                        const SizedBox(width: 10),
-                        _BookDetailStatCard(
-                          icon: Icons.description_outlined,
-                          value: _statValue(
-                            pageCount != null && pageCount > 0
-                                ? pageCount
-                                : null,
-                          ),
-                          label: l10n.bookStatPages,
-                        ),
-                        const SizedBox(width: 10),
-                        _BookDetailStatCard(
-                          icon: Icons.groups_outlined,
-                          value: _statValue(
-                            book.readersCount > 0 ? book.readersCount : null,
-                          ),
-                          label: l10n.bookStatReaders,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 22),
-                    AppSectionAccent(
-                      label: l10n.summarySection.toUpperCase(),
-                    ),
-                    const SizedBox(height: 10),
-                    AppPanel(
-                      child: book.summary != null &&
-                              book.summary!.isNotEmpty
-                          ? StoredRichTextView(
-                              raw: book.summaryRichRaw ?? book.summary!,
-                            )
-                          : Text(
-                              l10n.noSummaryYet,
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                height: 1.5,
-                              ),
-                            ),
-                    ),
-                    const SizedBox(height: 22),
-                    if (book.isPdf) ...[
+                    if (stats.isNotEmpty) ...[
+                      const SizedBox(height: 18),
+                      Row(
+                        children: [
+                          for (var i = 0; i < stats.length; i++) ...[
+                            if (i > 0) const SizedBox(width: 10),
+                            Expanded(child: stats[i]),
+                          ],
+                        ],
+                      ),
+                    ],
+                    if (hasSummary) ...[
+                      const SizedBox(height: 22),
                       AppSectionAccent(
-                        label: l10n.pdfDocumentSection.toUpperCase(),
+                        label: l10n.summarySection.toUpperCase(),
                       ),
                       const SizedBox(height: 10),
-                      Text(
-                        l10n.pdfNoChaptersHint,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
+                      AppPanel(
+                        child: StoredRichTextView(
+                          raw: book.summaryRichRaw ?? book.summary!,
+                        ),
                       ),
-                    ] else ...[
+                    ],
+                    if (showToc) ...[
+                      const SizedBox(height: 22),
                       AppSectionAccent(
                         label: l10n.chaptersHeading.toUpperCase(),
                       ),
@@ -277,22 +261,43 @@ class MobileBookDetailScreen extends ConsumerWidget {
                       const SizedBox(height: 16),
                       _DownloadStatusCard(job: currentJob),
                     ],
-                    const SizedBox(height: 22),
-                    BookReviewsSection(bookId: bookId),
+                    if (showReviews) ...[
+                      const SizedBox(height: 22),
+                      BookReviewsSection(bookId: bookId),
+                    ] else ...[
+                      const SizedBox(height: 16),
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: TextButton.icon(
+                          onPressed: () =>
+                              openBookReviewSheet(context, ref, bookId: bookId),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.referencePrimary,
+                            padding: EdgeInsets.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          icon: const Icon(
+                            Icons.rate_review_outlined,
+                            size: 18,
+                          ),
+                          label: Text(l10n.writeReviewTitle),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
-                        onPressed: () =>
-                            _downloadSample(context, ref, bookId),
+                        onPressed: () => _downloadSample(context, ref, bookId),
                         style: OutlinedButton.styleFrom(
                           backgroundColor: AppColors.surfaceCard,
                           foregroundColor: AppColors.textPrimary,
                           side: BorderSide(color: AppColors.line),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.cardV2),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.cardV2,
+                            ),
                           ),
                         ),
                         icon: const Icon(Icons.download_outlined, size: 20),
@@ -317,7 +322,8 @@ class MobileBookDetailScreen extends ConsumerWidget {
                   width: double.infinity,
                   child: Builder(
                     builder: (context) {
-                      final owned = ref
+                      final owned =
+                          ref
                               .watch(entitledBookIdsProvider)
                               .valueOrNull
                               ?.contains(bookId) ??
@@ -341,21 +347,20 @@ class MobileBookDetailScreen extends ConsumerWidget {
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.cardV2),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.cardV2,
+                            ),
                           ),
                         ),
                         icon: Icon(
                           mustBuy
                               ? Icons.shopping_cart_outlined
                               : (book.isPdf
-                                  ? Icons.picture_as_pdf_outlined
-                                  : Icons.menu_book_rounded),
+                                    ? Icons.picture_as_pdf_outlined
+                                    : Icons.menu_book_rounded),
                           size: 20,
                         ),
-                        label: Text(
-                          mustBuy ? l10n.purchaseBook : l10n.readNow,
-                        ),
+                        label: Text(mustBuy ? l10n.purchaseBook : l10n.readNow),
                       );
                     },
                   ),
@@ -426,49 +431,43 @@ class _BookDetailStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-        decoration: AppDecorations.listRow(),
-        child: Column(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: AppColors.referencePrimary.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                icon,
-                size: 18,
-                color: AppColors.referencePrimary,
-              ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      decoration: AppDecorations.listRow(),
+      child: Column(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: AppColors.referencePrimary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(10),
             ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-                height: 1,
-              ),
+            child: Icon(icon, size: 18, color: AppColors.referencePrimary),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+              height: 1,
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
-              ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -490,15 +489,15 @@ class _DownloadStatusCard extends StatelessWidget {
         color: isOk
             ? AppColors.successSurface
             : isFail
-                ? AppColors.errorSurface
-                : AppColors.surfaceSoft,
+            ? AppColors.errorSurface
+            : AppColors.surfaceSoft,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(
           color: isOk
               ? AppColors.successBorder
               : isFail
-                  ? AppColors.errorBorder
-                  : AppColors.line,
+              ? AppColors.errorBorder
+              : AppColors.line,
         ),
       ),
       child: Row(
@@ -507,14 +506,14 @@ class _DownloadStatusCard extends StatelessWidget {
             isOk
                 ? Icons.check_circle_outline_rounded
                 : isFail
-                    ? Icons.error_outline_rounded
-                    : Icons.downloading_rounded,
+                ? Icons.error_outline_rounded
+                : Icons.downloading_rounded,
             size: 20,
             color: isOk
                 ? AppColors.successText
                 : isFail
-                    ? AppColors.errorText
-                    : AppColors.textSecondary,
+                ? AppColors.errorText
+                : AppColors.textSecondary,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -559,12 +558,7 @@ class _ContentsPanel extends StatelessWidget {
       );
     }
     if (chapters.isEmpty) {
-      return AppPanel(
-        child: Text(
-          l10n.noChapterContentYet,
-          style: const TextStyle(color: AppColors.textSecondary, height: 1.5),
-        ),
-      );
+      return const SizedBox.shrink();
     }
     return AppPanel(
       padding: EdgeInsets.zero,

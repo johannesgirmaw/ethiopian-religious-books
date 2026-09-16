@@ -20,6 +20,7 @@ class WebTokens {
   static const double bookDetailRailWidth = 300;
   static const double bookDetailCoverExpanded = 280;
   static const double bookDetailCoverMedium = 176;
+  static const double bookDetailMetaWidth = 260;
 
   static const Color canvasBg = Color(0xFFF4F8FB);
   static const Color surfaceBg = Color(0xFFFFFFFF);

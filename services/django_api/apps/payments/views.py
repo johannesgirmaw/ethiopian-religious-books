@@ -53,6 +53,7 @@ from apps.payments.serializers import (
 from apps.payments.services import (
     compute_amounts,
     record_audit,
+    resolve_commission_percent_for_author,
     submit_author_application,
 )
 
@@ -337,6 +338,19 @@ class SubmitReceiptView(_PaymentsView):
 
 
 # --- Author dashboard & profile -----------------------------------------
+
+
+class CommissionRateView(APIView):
+    """Platform/author commission percent used when pricing a premium book."""
+
+    permission_classes = [IsAuthor]
+
+    def get(self, request):
+        disabled = _feature_disabled_response()
+        if disabled is not None:
+            return disabled
+        percent = resolve_commission_percent_for_author(request.user)
+        return Response({"commission_percent": str(percent)})
 
 
 class AuthorDashboardView(APIView):

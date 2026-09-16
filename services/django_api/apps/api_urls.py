@@ -79,6 +79,7 @@ from apps.payments.views import (
     AuthorApplicationPhotoPresignView,
     AuthorApplicationView,
     AuthorDashboardView,
+    CommissionRateView,
     AuthorProfileView,
     BankListView,
     PaymentMethodsView,
@@ -209,6 +210,7 @@ urlpatterns = [
     path("payments/webhooks/paypal", PayPalWebhookView.as_view()),
     path("payments/webhooks/telebirr", TelebirrWebhookView.as_view()),
     path("author/dashboard", AuthorDashboardView.as_view()),
+    path("payments/commission-rate", CommissionRateView.as_view()),
     path("author/profile", AuthorProfileView.as_view()),
     # --- Author application (reader -> author request) ---
     path("author/application", AuthorApplicationView.as_view()),

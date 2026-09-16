@@ -22,6 +22,7 @@ from apps.payments.services import (
     create_revenue_ledger,
     final_price,
     resolve_commission_percent,
+    resolve_commission_percent_for_author,
 )
 
 User = get_user_model()
@@ -92,6 +93,55 @@ class CommissionResolutionTests(TestCase):
         )
         book = make_book(author=self.author)
         self.assertEqual(resolve_commission_percent(book), Decimal("10.00"))
+
+
+class AuthorCommissionRateTests(TestCase):
+    def setUp(self):
+        self.author = make_user("author@example.com", role="author")
+        self.ps = PlatformSettings.get_solo()
+        self.ps.default_commission_percent = Decimal("10.00")
+        self.ps.save()
+
+    def test_platform_default_without_author_row(self):
+        self.assertEqual(
+            resolve_commission_percent_for_author(self.author), Decimal("10.00")
+        )
+
+    def test_author_override(self):
+        AuthorCommission.objects.create(
+            author=self.author, commission_percent=Decimal("15.00")
+        )
+        self.assertEqual(
+            resolve_commission_percent_for_author(self.author), Decimal("15.00")
+        )
+
+
+class CommissionRateApiTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.author = make_user("rate-author@example.com", role="author")
+        self.ps = PlatformSettings.get_solo()
+        self.ps.default_commission_percent = Decimal("10.00")
+        self.ps.save()
+
+    def test_returns_platform_default(self):
+        self.client.force_authenticate(self.author)
+        res = self.client.get("/v1/payments/commission-rate")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(Decimal(res.data["commission_percent"]), Decimal("10.00"))
+
+    def test_returns_author_override(self):
+        AuthorCommission.objects.create(
+            author=self.author, commission_percent=Decimal("18.00")
+        )
+        self.client.force_authenticate(self.author)
+        res = self.client.get("/v1/payments/commission-rate")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(Decimal(res.data["commission_percent"]), Decimal("18.00"))
+
+    def test_requires_auth(self):
+        res = self.client.get("/v1/payments/commission-rate")
+        self.assertEqual(res.status_code, 401)
 
 
 class PricingAndAmountsTests(TestCase):

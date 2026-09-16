@@ -26,13 +26,15 @@ import '../../utils/api_error_message.dart';
 import '../../utils/catalog_language_label.dart';
 import '../../utils/form_draft_controller.dart';
 import '../../utils/form_draft_keys.dart';
+import '../../utils/money_format.dart';
 import '../../providers/bible_providers.dart';
 import '../../providers/number_system_provider.dart';
 import '../../utils/geez_numerals.dart';
 import '../../web/layout/app_layout_scope.dart';
 import '../../web/widgets/shell/web_overlay_scaffold.dart';
 import 'bible_content_editor_screen.dart';
-import '../../utils/rich_text_codec.dart' show documentFromStoredSummary, plainTextFromStoredSummary;
+import '../../utils/rich_text_codec.dart'
+    show documentFromStoredSummary, plainTextFromStoredSummary;
 
 /// Set true when cover presign + object storage are enabled for publishers.
 const bool kAdminCoverUploadEnabled = true;
@@ -60,11 +62,8 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   final _language = TextEditingController(text: 'am');
   final _publishedYear = TextEditingController();
   final _price = TextEditingController();
-  final _salePrice = TextEditingController();
-  final _commissionPercent = TextEditingController();
   String _currency = 'USD';
   List<String> _scriptTagsList = [];
-  List<String> _selectedTags = [];
   List<AdminDraftChapter> _chaptersDraft = const [];
   String _visibility = 'hidden';
   String _reviewStatus = 'draft';
@@ -93,13 +92,17 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   bool _clearCoverOnSave = false;
   late final FormDraftController _bookDraft;
 
+  /// True when [_price] currently holds the reader-facing (stored) amount and
+  /// still needs to be converted to the author's pre-fee price.
+  bool _priceIsListedAmount = false;
+
   String? _draftUserId() =>
       ref.read(sessionNotifierProvider).valueOrNull?.user?.id;
 
   String _bookDraftKey() => FormDraftKeys.scope(
-        userId: _draftUserId(),
-        formKey: FormDraftKeys.adminBook(bookId: widget.bookId),
-      );
+    userId: _draftUserId(),
+    formKey: FormDraftKeys.adminBook(bookId: widget.bookId),
+  );
 
   @override
   void initState() {
@@ -122,7 +125,10 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     final restored = await _bookDraft.restoreIfPresent();
     if (!mounted) return;
     if (restored) {
-      setState(() => _dirty = true);
+      setState(() {
+        _dirty = true;
+        _priceIsListedAmount = false;
+      });
       showFormDraftRestoredSnackBar(context);
     }
   }
@@ -137,11 +143,8 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
       'language': _language.text,
       'publishedYear': _publishedYear.text,
       'price': _price.text,
-      'salePrice': _salePrice.text,
-      'commissionPercent': _commissionPercent.text,
       'currency': _currency,
       'scriptTags': _scriptTagsList,
-      'selectedTags': _selectedTags,
       'chaptersDraft': _chaptersDraft.map((e) => e.toJson()).toList(),
       'genre': _genre,
       'isPremium': _isPremium,
@@ -163,15 +166,9 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     _language.text = data['language'] as String? ?? 'am';
     _publishedYear.text = data['publishedYear'] as String? ?? '';
     _price.text = data['price'] as String? ?? '';
-    _salePrice.text = data['salePrice'] as String? ?? '';
-    _commissionPercent.text = data['commissionPercent'] as String? ?? '';
     _currency = data['currency'] as String? ?? 'USD';
     _scriptTagsList = [
       for (final tag in (data['scriptTags'] as List? ?? const []))
-        tag.toString(),
-    ];
-    _selectedTags = [
-      for (final tag in (data['selectedTags'] as List? ?? const []))
         tag.toString(),
     ];
     final chaptersRaw = data['chaptersDraft'];
@@ -179,7 +176,9 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
       _chaptersDraft = _withConsecutivePageNumbers(
         chaptersRaw
             .whereType<Map>()
-            .map((e) => AdminDraftChapter.fromJson(Map<String, dynamic>.from(e)))
+            .map(
+              (e) => AdminDraftChapter.fromJson(Map<String, dynamic>.from(e)),
+            )
             .toList(),
       );
     }
@@ -206,7 +205,8 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     final author = (data['author'] as String? ?? '').trim();
     final chapters = data['chaptersDraft'];
     final hasChapters = chapters is List && chapters.isNotEmpty;
-    final hasCover = data['coverBytesB64'] is String &&
+    final hasCover =
+        data['coverBytesB64'] is String &&
         (data['coverBytesB64'] as String).isNotEmpty;
     return title.isEmpty &&
         subtitle.isEmpty &&
@@ -229,21 +229,20 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     _author.text = b.authorCompiler ?? '';
     _language.text = b.primaryLanguage;
     _scriptTagsList = [...b.scriptTags];
-    _selectedTags = [...b.tagSlugs];
     _publishedYear.text = b.publishedYear?.toString() ?? '';
     _genre = b.genre;
     _isBible = b.isBible;
     _persistedIsBible = b.isBible;
     _isPdfBook = b.isPdfBook;
     _serverPdfDraft = b.pdfDraft;
-    _testament = (b.testamentType?.isNotEmpty ?? false) ? b.testamentType : null;
+    _testament = (b.testamentType?.isNotEmpty ?? false)
+        ? b.testamentType
+        : null;
     _isPremium = b.isPremium;
     _isFeatured = b.isFeatured;
     _currency = b.currency.isNotEmpty ? b.currency : 'USD';
     _price.text = b.price > 0 ? _trimNum(b.price) : '';
-    _salePrice.text = b.salePrice != null ? _trimNum(b.salePrice!) : '';
-    _commissionPercent.text =
-        b.commissionPercent != null ? _trimNum(b.commissionPercent!) : '';
+    _priceIsListedAmount = b.price > 0;
     _chaptersDraft = _withConsecutivePageNumbers(b.chaptersDraft);
     _visibility = b.catalogVisibility;
     _reviewStatus = b.reviewStatus;
@@ -312,8 +311,6 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     _language.dispose();
     _publishedYear.dispose();
     _price.dispose();
-    _salePrice.dispose();
-    _commissionPercent.dispose();
     _bookDraft.dispose();
     super.dispose();
   }
@@ -322,6 +319,34 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   String _trimNum(double v) {
     if (v == v.roundToDouble()) return v.toInt().toString();
     return v.toString();
+  }
+
+  double _listedPriceFromAuthor(double authorAmount, double commissionPercent) {
+    if (authorAmount <= 0) return 0;
+    if (commissionPercent <= 0) return authorAmount;
+    return double.parse(
+      (authorAmount * (1 + commissionPercent / 100)).toStringAsFixed(2),
+    );
+  }
+
+  double _authorAmountFromListed(double listed, double commissionPercent) {
+    if (listed <= 0) return 0;
+    if (commissionPercent <= 0) return listed;
+    return listed / (1 + commissionPercent / 100);
+  }
+
+  void _convertListedPriceIfNeeded(double commissionPercent) {
+    if (!_priceIsListedAmount) return;
+    _priceIsListedAmount = false;
+    final listed = double.tryParse(_price.text.trim());
+    if (listed == null || listed <= 0 || commissionPercent <= 0) return;
+    _price.text = _trimNum(_authorAmountFromListed(listed, commissionPercent));
+  }
+
+  double _pricePayload(double commissionPercent) {
+    if (!_isPremium) return 0;
+    final authorAmount = double.tryParse(_price.text.trim()) ?? 0;
+    return _listedPriceFromAuthor(authorAmount, commissionPercent);
   }
 
   String _mimeFromPath(String path) {
@@ -418,10 +443,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     final filename = _pendingPdfFilename ?? 'content.pdf';
     final pres = await api.post<Map<String, dynamic>>(
       'admin/books/$bookId/pdf/presign',
-      data: {
-        'content_type': 'application/pdf',
-        'filename': filename,
-      },
+      data: {'content_type': 'application/pdf', 'filename': filename},
     );
     final data = pres.data;
     if (data == null) throw StateError('Empty PDF presign response');
@@ -443,10 +465,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     );
     await api.post<Map<String, dynamic>>(
       'admin/books/$bookId/pdf/complete',
-      data: {
-        'revision_id': revisionId,
-        'filename': filename,
-      },
+      data: {'revision_id': revisionId, 'filename': filename},
     );
     _pendingPdfBytes = null;
     _pendingPdfFilename = null;
@@ -548,24 +567,24 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     final editing = pageIndex != null ? chapter.pages[pageIndex] : null;
     final result = await Navigator.of(context, rootNavigator: true)
         .push<AdminDraftPage>(
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (ctx) => _DraftPageEditorDialog(
-          isNewPage: pageIndex == null,
-          initialTitle: editing?.title ?? '',
-          initialBody: editing?.body ?? '',
-          draftKey: FormDraftKeys.scope(
-            userId: _draftUserId(),
-            formKey: FormDraftKeys.adminBookPage(
-              bookId: widget.bookId,
-              chapterIndex: chapterIndex,
-              pageIndex: pageIndex,
-              isNew: pageIndex == null,
+          MaterialPageRoute(
+            fullscreenDialog: true,
+            builder: (ctx) => _DraftPageEditorDialog(
+              isNewPage: pageIndex == null,
+              initialTitle: editing?.title ?? '',
+              initialBody: editing?.body ?? '',
+              draftKey: FormDraftKeys.scope(
+                userId: _draftUserId(),
+                formKey: FormDraftKeys.adminBookPage(
+                  bookId: widget.bookId,
+                  chapterIndex: chapterIndex,
+                  pageIndex: pageIndex,
+                  isNew: pageIndex == null,
+                ),
+              ),
             ),
           ),
-        ),
-      ),
-    );
+        );
     if (result == null) return;
     final chapters = [..._chaptersDraft];
     final pages = [...chapters[chapterIndex].pages];
@@ -621,9 +640,9 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     final bookId = widget.bookId;
     if (bookId == null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.createBookFirstValidate)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.createBookFirstValidate)));
       return;
     }
     setState(() {
@@ -632,7 +651,9 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     });
     try {
       final dio = ref.read(apiDioProvider);
-      final res = await dio.get<Map<String, dynamic>>('admin/books/$bookId/validate-draft');
+      final res = await dio.get<Map<String, dynamic>>(
+        'admin/books/$bookId/validate-draft',
+      );
       if (!mounted) return;
       final warnings = (res.data?['warnings'] as List<dynamic>? ?? const [])
           .map((e) => e.toString())
@@ -659,10 +680,12 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                         const SizedBox(height: 10),
                         Text(d.warningsHeading),
                         const SizedBox(height: 6),
-                        ...warnings.map((w) => Padding(
-                              padding: const EdgeInsets.only(bottom: 6),
-                              child: Text('• $w'),
-                            )),
+                        ...warnings.map(
+                          (w) => Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Text('• $w'),
+                          ),
+                        ),
                       ],
                     ),
             ),
@@ -678,7 +701,8 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     } on DioException catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = messageFromDioResponse(e.response?.data) ??
+        _error =
+            messageFromDioResponse(e.response?.data) ??
             e.message ??
             AppLocalizations.of(context).validationFailed;
       });
@@ -708,8 +732,12 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     try {
       final dio = ref.read(apiDioProvider);
       final scriptTags = _scriptTagsList;
-      final chaptersDraftPayload =
-          _chaptersDraft.map((e) => e.toDraftPayload()).toList();
+      final chaptersDraftPayload = _chaptersDraft
+          .map((e) => e.toDraftPayload())
+          .toList();
+      final commissionPercent =
+          ref.read(commissionRateProvider).valueOrNull ?? 0;
+      final listedPrice = _pricePayload(commissionPercent);
       if (widget.isNew) {
         final res = await dio.post<Map<String, dynamic>>(
           'admin/books',
@@ -718,8 +746,9 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
             'subtitle': _subtitle.text.trim(),
             'summary': _summary.text.trim(),
             'author_compiler': _author.text.trim(),
-            'primary_language':
-                _language.text.trim().isEmpty ? 'am' : _language.text.trim(),
+            'primary_language': _language.text.trim().isEmpty
+                ? 'am'
+                : _language.text.trim(),
             'script_tags': scriptTags,
             if (_genre != null) 'genre': _genre,
             'is_bible': _isBible,
@@ -729,15 +758,9 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
             'is_premium': _isPremium,
             'is_featured': _isFeatured,
             'currency': _currency,
-            'price': double.tryParse(_price.text.trim()) ?? 0,
-            'sale_price': _salePrice.text.trim().isEmpty
-                ? null
-                : double.tryParse(_salePrice.text.trim()),
-            'commission_percent': _commissionPercent.text.trim().isEmpty
-                ? null
-                : double.tryParse(_commissionPercent.text.trim()),
+            'price': listedPrice,
+            'sale_price': null,
             'chapters_draft': chaptersDraftPayload,
-            'tag_slugs': _selectedTags,
           },
         );
         _applyChaptersFromResponse(res.data);
@@ -757,8 +780,9 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
             'subtitle': _subtitle.text.trim(),
             'summary': _summary.text.trim(),
             'author_compiler': _author.text.trim(),
-            'primary_language':
-                _language.text.trim().isEmpty ? 'am' : _language.text.trim(),
+            'primary_language': _language.text.trim().isEmpty
+                ? 'am'
+                : _language.text.trim(),
             'script_tags': scriptTags,
             'genre': _genre ?? '',
             'is_bible': _isBible,
@@ -769,15 +793,9 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
             'is_premium': _isPremium,
             'is_featured': _isFeatured,
             'currency': _currency,
-            'price': double.tryParse(_price.text.trim()) ?? 0,
-            'sale_price': _salePrice.text.trim().isEmpty
-                ? null
-                : double.tryParse(_salePrice.text.trim()),
-            'commission_percent': _commissionPercent.text.trim().isEmpty
-                ? null
-                : double.tryParse(_commissionPercent.text.trim()),
+            'price': listedPrice,
+            'sale_price': null,
             'chapters_draft': chaptersDraftPayload,
-            'tag_slugs': _selectedTags,
           },
         );
         _applyChaptersFromResponse(res.data);
@@ -807,7 +825,8 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
       context.pop();
     } on DioException catch (e) {
       setState(() {
-        _error = messageFromDioResponse(e.response?.data) ??
+        _error =
+            messageFromDioResponse(e.response?.data) ??
             e.message ??
             l10n.saveFailed;
       });
@@ -821,7 +840,9 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   static const _languageCodes = ['am', 'gez', 'en', 'ti', 'om'];
 
   Widget _buildLanguageDropdown(AppLocalizations l10n) {
-    final current = _language.text.trim().isEmpty ? 'am' : _language.text.trim();
+    final current = _language.text.trim().isEmpty
+        ? 'am'
+        : _language.text.trim();
     final codes = [
       ..._languageCodes,
       if (!_languageCodes.contains(current)) current,
@@ -848,7 +869,8 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     final currentYear = DateTime.now().year;
     final selected = int.tryParse(_publishedYear.text.trim());
     final years = [for (var y = currentYear; y >= 1900; y--) y];
-    if (selected != null && !years.contains(selected)) years.insert(0, selected);
+    if (selected != null && !years.contains(selected))
+      years.insert(0, selected);
     return DropdownButtonFormField<int?>(
       initialValue: selected,
       isExpanded: true,
@@ -866,6 +888,73 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   }
 
   static const _currencyCodes = ['USD', 'ETB', 'EUR', 'GBP'];
+
+  Widget _buildServiceFeeRow(
+    AppLocalizations l10n, {
+    required bool sideBySide,
+  }) {
+    final commissionPercent =
+        ref.watch(commissionRateProvider).valueOrNull ?? 0;
+    final authorAmount = double.tryParse(_price.text.trim()) ?? 0;
+    final listed = _listedPriceFromAuthor(authorAmount, commissionPercent);
+    final percentLabel = commissionPercent == commissionPercent.roundToDouble()
+        ? commissionPercent.toInt().toString()
+        : commissionPercent.toString();
+    final description = authorAmount > 0 && commissionPercent > 0
+        ? l10n.adminServiceFeeDescription(
+            percentLabel,
+            formatMoney(listed, _currency),
+          )
+        : l10n.adminServiceFeeEmptyDescription(percentLabel);
+    final copy = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.adminServiceFeeTitle,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          description,
+          style: const TextStyle(
+            fontSize: 13,
+            height: 1.45,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+    final field = TextField(
+      controller: _price,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      decoration: InputDecoration(
+        labelText: l10n.adminPriceLabel,
+        prefixText: '$_currency ',
+      ),
+      onChanged: (_) {
+        setState(() {});
+        _markDirty();
+      },
+    );
+    if (sideBySide) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(flex: 5, child: copy),
+          const SizedBox(width: 16),
+          Expanded(flex: 6, child: field),
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [copy, const SizedBox(height: 12), field],
+    );
+  }
 
   Widget _buildCurrencyDropdown(AppLocalizations l10n) {
     final codes = [
@@ -892,16 +981,13 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     if (id == null) return;
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => BibleContentEditorScreen(
-          bookId: id,
-          bookTitle: _title.text.trim(),
-        ),
+        builder: (_) =>
+            BibleContentEditorScreen(bookId: id, bookTitle: _title.text.trim()),
       ),
     );
   }
 
-  Widget _buildBibleControls(
-      AppLocalizations l10n, bool isNew, bool twoPane) {
+  Widget _buildBibleControls(AppLocalizations l10n, bool isNew, bool twoPane) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -999,8 +1085,8 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     final slugs = genres.map((g) => g.slug).toSet();
     final extra =
         (_genre != null && _genre!.isNotEmpty && !slugs.contains(_genre))
-            ? [_genre!]
-            : const <String>[];
+        ? [_genre!]
+        : const <String>[];
     return DropdownButtonFormField<String?>(
       initialValue: _genre,
       isExpanded: true,
@@ -1028,28 +1114,33 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   }
 
   Widget _contentHint(IconData icon, String message) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon,
-                size: 48,
-                color: AppColors.textTertiary.withValues(alpha: 0.5)),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                message,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textTertiary),
-              ),
-            ),
-          ],
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 48,
+          color: AppColors.textTertiary.withValues(alpha: 0.5),
         ),
-      );
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppColors.textTertiary),
+          ),
+        ),
+      ],
+    ),
+  );
 
   /// Right-pane content: Bible workspace, PDF upload, or chapter editor.
   Widget _rightContentPane(
-      BuildContext context, AppLocalizations l10n, bool isNew) {
+    BuildContext context,
+    AppLocalizations l10n,
+    bool isNew,
+  ) {
     if (_isBible) {
       if (isNew || widget.bookId == null || !_persistedIsBible) {
         return _contentHint(Icons.menu_book_outlined, l10n.adminBibleSaveFirst);
@@ -1090,10 +1181,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     return [
       AppSectionHeader(title: l10n.pdfDocumentSection),
       const SizedBox(height: 8),
-      Text(
-        l10n.pdfUploadHint,
-        style: Theme.of(context).textTheme.bodySmall,
-      ),
+      Text(l10n.pdfUploadHint, style: Theme.of(context).textTheme.bodySmall),
       const SizedBox(height: 16),
       if (pendingName != null) ...[
         ListTile(
@@ -1107,10 +1195,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.picture_as_pdf_outlined),
           title: Text(
-            l10n.pdfReadyLabel(
-              server.filename,
-              _formatBytes(server.sizeBytes),
-            ),
+            l10n.pdfReadyLabel(server.filename, _formatBytes(server.sizeBytes)),
           ),
         ),
       ],
@@ -1130,236 +1215,233 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
         const SizedBox(height: 12),
         Text(
           l10n.pdfUploadHint,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textTertiary,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
         ),
       ],
     ];
   }
 
   List<Widget> _pagesSectionChildren(
-      BuildContext context, AppLocalizations l10n, bool isNew) {
+    BuildContext context,
+    AppLocalizations l10n,
+    bool isNew,
+  ) {
     return [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Text(
+              l10n.chaptersPagesSection,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            ),
+          ),
+          if (!isNew)
+            TextButton.icon(
+              onPressed: _busy ? null : _validateDraftOnServer,
+              icon: const Icon(Icons.rule_folder_outlined),
+              label: Text(l10n.validateDraft),
+            ),
+          TextButton.icon(
+            onPressed: () => _upsertChapter(),
+            icon: const Icon(Icons.add),
+            label: Text(l10n.addChapter),
+          ),
+        ],
+      ),
+      const SizedBox(height: 8),
+      if (_chaptersDraft.isEmpty)
+        Text(
+          l10n.noChaptersYetHelp,
+          style: Theme.of(context).textTheme.bodySmall,
+        )
+      else
+        ..._chaptersDraft.asMap().entries.map((entry) {
+          final cIndex = entry.key;
+          final chapter = entry.value;
+          return Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: AppPanel(
+              padding: EdgeInsets.zero,
+              child: ExpansionTile(
+                // Avoid a wide Row in `trailing`: ListTile often gives it
+                // zero width → zero-size IconButtons → hit-test / mouse_tracker
+                // errors on desktop/web.
+                tilePadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                title: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: Text(
-                        l10n.chaptersPagesSection,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                      ),
+                    Text(
+                      chapter.title,
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
-                    if (!isNew)
-                      TextButton.icon(
-                        onPressed: _busy ? null : _validateDraftOnServer,
-                        icon: const Icon(Icons.rule_folder_outlined),
-                        label: Text(l10n.validateDraft),
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.pageCount(chapter.pages.length),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: l10n.moveUpTooltip,
+                            onPressed: cIndex == 0
+                                ? null
+                                : () => _moveChapter(cIndex, -1),
+                            icon: const Icon(Icons.arrow_upward_rounded),
+                          ),
+                          IconButton(
+                            tooltip: l10n.moveDownTooltip,
+                            onPressed: cIndex == _chaptersDraft.length - 1
+                                ? null
+                                : () => _moveChapter(cIndex, 1),
+                            icon: const Icon(Icons.arrow_downward_rounded),
+                          ),
+                          IconButton(
+                            tooltip: l10n.addPageTooltip,
+                            onPressed: () => _upsertPage(cIndex),
+                            icon: const Icon(Icons.note_add_outlined),
+                          ),
+                          IconButton(
+                            tooltip: l10n.editChapterTooltip,
+                            onPressed: () => _upsertChapter(index: cIndex),
+                            icon: const Icon(Icons.edit_outlined),
+                          ),
+                          IconButton(
+                            tooltip: l10n.deleteChapterTooltip,
+                            onPressed: () {
+                              final next = [..._chaptersDraft]
+                                ..removeAt(cIndex);
+                              _setChaptersDraft(next);
+                            },
+                            icon: const Icon(Icons.delete_outline),
+                          ),
+                        ],
                       ),
-                    TextButton.icon(
-                      onPressed: () => _upsertChapter(),
-                      icon: const Icon(Icons.add),
-                      label: Text(l10n.addChapter),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                if (_chaptersDraft.isEmpty)
-                  Text(
-                    l10n.noChaptersYetHelp,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  )
-                else
-                  ..._chaptersDraft.asMap().entries.map((entry) {
-                    final cIndex = entry.key;
-                    final chapter = entry.value;
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: AppPanel(
-                        padding: EdgeInsets.zero,
-                        child: ExpansionTile(
-                        // Avoid a wide Row in `trailing`: ListTile often gives it
-                        // zero width → zero-size IconButtons → hit-test / mouse_tracker
-                        // errors on desktop/web.
-                        tilePadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        title: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              chapter.title,
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              l10n.pageCount(chapter.pages.length),
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                            const SizedBox(height: 8),
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    tooltip: l10n.moveUpTooltip,
-                                    onPressed: cIndex == 0
-                                        ? null
-                                        : () => _moveChapter(cIndex, -1),
-                                    icon: const Icon(Icons.arrow_upward_rounded),
-                                  ),
-                                  IconButton(
-                                    tooltip: l10n.moveDownTooltip,
-                                    onPressed: cIndex ==
-                                            _chaptersDraft.length - 1
-                                        ? null
-                                        : () => _moveChapter(cIndex, 1),
-                                    icon:
-                                        const Icon(Icons.arrow_downward_rounded),
-                                  ),
-                                  IconButton(
-                                    tooltip: l10n.addPageTooltip,
-                                    onPressed: () => _upsertPage(cIndex),
-                                    icon: const Icon(Icons.note_add_outlined),
-                                  ),
-                                  IconButton(
-                                    tooltip: l10n.editChapterTooltip,
-                                    onPressed: () =>
-                                        _upsertChapter(index: cIndex),
-                                    icon: const Icon(Icons.edit_outlined),
-                                  ),
-                                  IconButton(
-                                    tooltip: l10n.deleteChapterTooltip,
-                                    onPressed: () {
-                                      final next = [..._chaptersDraft]
-                                        ..removeAt(cIndex);
-                                      _setChaptersDraft(next);
-                                    },
-                                    icon: const Icon(Icons.delete_outline),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        children: [
-                          if (chapter.pages.isEmpty)
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: Text(l10n.noPagesYet),
-                              ),
-                            ),
-                          ...chapter.pages.asMap().entries.map((pageEntry) {
-                            final pIndex = pageEntry.key;
-                            final page = pageEntry.value;
-                            return ListTile(
-                              title: Text(
-                                l10n.pageListTitle(
-                                  page.pageNumber,
-                                  page.title.trim().isEmpty
-                                      ? l10n.pageTitleFallback(page.pageNumber)
-                                      : page.title,
-                                ),
-                              ),
-                              isThreeLine: true,
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    plainTextFromStoredSummary(page.body),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        IconButton(
-                                          tooltip: l10n.moveUpTooltip,
-                                          onPressed: pIndex == 0
-                                              ? null
-                                              : () => _movePage(
-                                                    cIndex,
-                                                    pIndex,
-                                                    -1,
-                                                  ),
-                                          icon: const Icon(
-                                            Icons.arrow_upward_rounded,
-                                          ),
-                                        ),
-                                        IconButton(
-                                          tooltip: l10n.moveDownTooltip,
-                                          onPressed: pIndex ==
-                                                  chapter.pages.length - 1
-                                              ? null
-                                              : () => _movePage(
-                                                    cIndex,
-                                                    pIndex,
-                                                    1,
-                                                  ),
-                                          icon: const Icon(
-                                            Icons.arrow_downward_rounded,
-                                          ),
-                                        ),
-                                        IconButton(
-                                          tooltip: l10n.editPageTooltip,
-                                          onPressed: () => _upsertPage(
-                                            cIndex,
-                                            pageIndex: pIndex,
-                                          ),
-                                          icon: const Icon(Icons.edit_outlined),
-                                        ),
-                                        IconButton(
-                                          tooltip: l10n.deletePageTooltip,
-                                          onPressed: () {
-                                            final chapters = [..._chaptersDraft];
-                                            final pages = [
-                                              ...chapters[cIndex].pages
-                                            ]..removeAt(pIndex);
-                                            chapters[cIndex] = AdminDraftChapter(
-                                              chapterKey:
-                                                  chapters[cIndex].chapterKey,
-                                              title: chapters[cIndex].title,
-                                              pages: pages,
-                                            );
-                                            _setChaptersDraft(chapters);
-                                          },
-                                          icon:
-                                              const Icon(Icons.delete_outline),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }),
-                        ],
+                children: [
+                  if (chapter.pages.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(l10n.noPagesYet),
                       ),
+                    ),
+                  ...chapter.pages.asMap().entries.map((pageEntry) {
+                    final pIndex = pageEntry.key;
+                    final page = pageEntry.value;
+                    return ListTile(
+                      title: Text(
+                        l10n.pageListTitle(
+                          page.pageNumber,
+                          page.title.trim().isEmpty
+                              ? l10n.pageTitleFallback(page.pageNumber)
+                              : page.title,
+                        ),
+                      ),
+                      isThreeLine: true,
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            plainTextFromStoredSummary(page.body),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  tooltip: l10n.moveUpTooltip,
+                                  onPressed: pIndex == 0
+                                      ? null
+                                      : () => _movePage(cIndex, pIndex, -1),
+                                  icon: const Icon(Icons.arrow_upward_rounded),
+                                ),
+                                IconButton(
+                                  tooltip: l10n.moveDownTooltip,
+                                  onPressed: pIndex == chapter.pages.length - 1
+                                      ? null
+                                      : () => _movePage(cIndex, pIndex, 1),
+                                  icon: const Icon(
+                                    Icons.arrow_downward_rounded,
+                                  ),
+                                ),
+                                IconButton(
+                                  tooltip: l10n.editPageTooltip,
+                                  onPressed: () =>
+                                      _upsertPage(cIndex, pageIndex: pIndex),
+                                  icon: const Icon(Icons.edit_outlined),
+                                ),
+                                IconButton(
+                                  tooltip: l10n.deletePageTooltip,
+                                  onPressed: () {
+                                    final chapters = [..._chaptersDraft];
+                                    final pages = [...chapters[cIndex].pages]
+                                      ..removeAt(pIndex);
+                                    chapters[cIndex] = AdminDraftChapter(
+                                      chapterKey: chapters[cIndex].chapterKey,
+                                      title: chapters[cIndex].title,
+                                      pages: pages,
+                                    );
+                                    _setChaptersDraft(chapters);
+                                  },
+                                  icon: const Icon(Icons.delete_outline),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   }),
+                ],
+              ),
+            ),
+          );
+        }),
     ];
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<double>>(commissionRateProvider, (prev, next) {
+      final percent = next.valueOrNull;
+      if (percent == null || !_priceIsListedAmount) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _convertListedPriceIfNeeded(percent);
+        setState(() {});
+      });
+    });
     final l10n = AppLocalizations.of(context)!;
     final isNew = widget.isNew;
-    final currentUserId =
-        ref.watch(sessionNotifierProvider).valueOrNull?.user?.id;
-    final isCreator = isNew ||
+    final currentUserId = ref
+        .watch(sessionNotifierProvider)
+        .valueOrNull
+        ?.user
+        ?.id;
+    final isCreator =
+        isNew ||
         (currentUserId != null &&
             _createdById != null &&
             _createdById == currentUserId);
@@ -1370,350 +1452,334 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     final editBody = (!isNew && !_loaded)
         ? const Center(child: CircularProgressIndicator())
         : (!isNew && _visibility == 'published')
-            ? AppStateView(
-                title: l10n.adminPublishedBookLockedTitle,
-                message: l10n.adminPublishedBookLockedMessage,
-                icon: Icons.lock_outline_rounded,
-                actionLabel: l10n.goBack,
-                onAction: () => context.pop(),
-              )
-            : (!isNew && _reviewStatus == 'in_review')
-                ? AppStateView(
-                    title: l10n.adminBookInReviewLockedTitle,
-                    message: l10n.adminBookInReviewLockedMessage,
-                    icon: Icons.rate_review_outlined,
-                    actionLabel: l10n.goBack,
-                    onAction: () => context.pop(),
-                  )
-                : (!isNew && !isCreator)
-                    ? AppStateView(
-                        title: l10n.adminNotBookCreatorTitle,
-                        message: l10n.adminNotBookCreatorMessage,
-                        icon: Icons.lock_outline_rounded,
-                        actionLabel: l10n.goBack,
-                        onAction: () => context.pop(),
-                      )
-                    : LayoutBuilder(
-                        builder: (context, constraints) {
-                          final wide = constraints.maxWidth >= 760;
-                          // Two-pane on desktop: details left, content right. Treat
-                          // unbounded width (which the shell can hand us) as wide;
-                          // the two-pane branch bounds the size explicitly.
-                          final twoPane = !constraints.maxWidth.isFinite ||
-                              constraints.maxWidth >= 1040;
-                          Widget pair(Widget a, Widget b) => (wide && !twoPane)
-                              ? Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(child: a),
-                                    const SizedBox(width: 16),
-                                    Expanded(child: b),
-                                  ],
-                                )
-                              : Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    a,
-                                    const SizedBox(height: 12),
-                                    b,
-                                  ],
-                                );
-                          final formContent = Form(
-                            key: _formKey,
-                            child: ListView(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: wide ? 32 : 16,
-                                vertical: 24,
+        ? AppStateView(
+            title: l10n.adminPublishedBookLockedTitle,
+            message: l10n.adminPublishedBookLockedMessage,
+            icon: Icons.lock_outline_rounded,
+            actionLabel: l10n.goBack,
+            onAction: () => context.pop(),
+          )
+        : (!isNew && _reviewStatus == 'in_review')
+        ? AppStateView(
+            title: l10n.adminBookInReviewLockedTitle,
+            message: l10n.adminBookInReviewLockedMessage,
+            icon: Icons.rate_review_outlined,
+            actionLabel: l10n.goBack,
+            onAction: () => context.pop(),
+          )
+        : (!isNew && !isCreator)
+        ? AppStateView(
+            title: l10n.adminNotBookCreatorTitle,
+            message: l10n.adminNotBookCreatorMessage,
+            icon: Icons.lock_outline_rounded,
+            actionLabel: l10n.goBack,
+            onAction: () => context.pop(),
+          )
+        : LayoutBuilder(
+            builder: (context, constraints) {
+              final wide = constraints.maxWidth >= 760;
+              // Two-pane on desktop: details left, content right. Treat
+              // unbounded width (which the shell can hand us) as wide;
+              // the two-pane branch bounds the size explicitly.
+              final twoPane =
+                  !constraints.maxWidth.isFinite ||
+                  constraints.maxWidth >= 1040;
+              Widget pair(Widget a, Widget b) => (wide && !twoPane)
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: a),
+                        const SizedBox(width: 16),
+                        Expanded(child: b),
+                      ],
+                    )
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [a, const SizedBox(height: 12), b],
+                    );
+              final formContent = Form(
+                key: _formKey,
+                child: ListView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: wide ? 32 : 16,
+                    vertical: 24,
+                  ),
+                  children: [
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 880),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (_latestReviewNote?.isChangesRequested == true &&
+                                _reviewStatus == 'draft') ...[
+                              _ChangesRequestedBanner(
+                                note: _latestReviewNote!,
+                                onViewHistory: () => context.push(
+                                  '/admin/books/${widget.bookId}/review',
+                                ),
                               ),
-                              children: [
-                                Center(
-                                  child: ConstrainedBox(
-                                    constraints:
-                                        const BoxConstraints(maxWidth: 880),
+                              const SizedBox(height: 16),
+                            ],
+                            AppSectionHeader(title: l10n.metadataSection),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _title,
+                              decoration: InputDecoration(
+                                labelText: l10n.titleLabelRequired,
+                              ),
+                              textCapitalization: TextCapitalization.sentences,
+                              validator: (value) {
+                                if ((value ?? '').trim().isEmpty)
+                                  return l10n.titleRequired;
+                                return null;
+                              },
+                              onChanged: (_) => _markDirty(),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _subtitle,
+                              decoration: InputDecoration(
+                                labelText: l10n.subtitleLabel,
+                              ),
+                              onChanged: (_) => _markDirty(),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _summary,
+                              decoration: InputDecoration(
+                                labelText: l10n.adminSummaryLabel,
+                                alignLabelWithHint: true,
+                              ),
+                              minLines: 2,
+                              maxLines: 5,
+                              textCapitalization: TextCapitalization.sentences,
+                              onChanged: (_) => _markDirty(),
+                            ),
+                            const SizedBox(height: 16),
+                            if (kAdminCoverUploadEnabled) ...[
+                              Text(
+                                l10n.thumbnailCover,
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      width: 96,
+                                      height: 128,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainerHigh,
+                                      child: _pendingCoverBytes != null
+                                          ? Image.memory(
+                                              _pendingCoverBytes!,
+                                              fit: BoxFit.cover,
+                                            )
+                                          : (!_clearCoverOnSave &&
+                                                _serverCoverGetUrl != null &&
+                                                _serverCoverGetUrl!.isNotEmpty)
+                                          ? Image.network(
+                                              _serverCoverGetUrl!,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, __, ___) =>
+                                                  const Center(
+                                                    child: Icon(
+                                                      Icons
+                                                          .broken_image_outlined,
+                                                    ),
+                                                  ),
+                                            )
+                                          : const Center(
+                                              child: Icon(
+                                                Icons.image_outlined,
+                                                size: 36,
+                                              ),
+                                            ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.stretch,
                                       children: [
-                if (_latestReviewNote?.isChangesRequested == true &&
-                    _reviewStatus == 'draft') ...[
-                  _ChangesRequestedBanner(
-                    note: _latestReviewNote!,
-                    onViewHistory: () =>
-                        context.push('/admin/books/${widget.bookId}/review'),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                AppSectionHeader(title: l10n.metadataSection),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _title,
-                  decoration: InputDecoration(labelText: l10n.titleLabelRequired),
-                  textCapitalization: TextCapitalization.sentences,
-                  validator: (value) {
-                    if ((value ?? '').trim().isEmpty) return l10n.titleRequired;
-                    return null;
-                  },
-                  onChanged: (_) => _markDirty(),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _subtitle,
-                  decoration: InputDecoration(labelText: l10n.subtitleLabel),
-                  onChanged: (_) => _markDirty(),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _summary,
-                  decoration: InputDecoration(
-                    labelText: l10n.adminSummaryLabel,
-                    alignLabelWithHint: true,
-                  ),
-                  minLines: 2,
-                  maxLines: 5,
-                  textCapitalization: TextCapitalization.sentences,
-                  onChanged: (_) => _markDirty(),
-                ),
-                const SizedBox(height: 16),
-                if (kAdminCoverUploadEnabled) ...[
-                  Text(
-                    l10n.thumbnailCover,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          width: 96,
-                          height: 128,
-                          color:
-                              Theme.of(context).colorScheme.surfaceContainerHigh,
-                          child: _pendingCoverBytes != null
-                              ? Image.memory(
-                                  _pendingCoverBytes!,
-                                  fit: BoxFit.cover,
-                                )
-                              : (!_clearCoverOnSave &&
-                                      _serverCoverGetUrl != null &&
-                                      _serverCoverGetUrl!.isNotEmpty)
-                                  ? Image.network(
-                                      _serverCoverGetUrl!,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => const Center(
-                                        child: Icon(Icons.broken_image_outlined),
-                                      ),
-                                    )
-                                  : const Center(
-                                      child: Icon(Icons.image_outlined, size: 36),
+                                        OutlinedButton.icon(
+                                          onPressed: _pickCoverImage,
+                                          icon: const Icon(
+                                            Icons.photo_library_outlined,
+                                          ),
+                                          label: Text(l10n.chooseImage),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        TextButton(
+                                          onPressed:
+                                              (_pendingCoverBytes != null ||
+                                                  (!_clearCoverOnSave &&
+                                                      (_serverCoverGetUrl !=
+                                                              null &&
+                                                          _serverCoverGetUrl!
+                                                              .isNotEmpty)))
+                                              ? _clearCover
+                                              : null,
+                                          child: Text(l10n.removeCover),
+                                        ),
+                                        Text(
+                                          l10n.coverFormatHelp,
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodySmall,
+                                        ),
+                                      ],
                                     ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            OutlinedButton.icon(
-                              onPressed: _pickCoverImage,
-                              icon: const Icon(Icons.photo_library_outlined),
-                              label: Text(l10n.chooseImage),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                            pair(
+                              TextField(
+                                controller: _author,
+                                decoration: InputDecoration(
+                                  labelText: l10n.authorCompilerLabel,
+                                ),
+                                onChanged: (_) => _markDirty(),
+                              ),
+                              _buildLanguageDropdown(l10n),
+                            ),
+                            const SizedBox(height: 12),
+                            _ChipsField(
+                              label: l10n.scriptTagsLabel,
+                              values: _scriptTagsList,
+                              onChanged: (v) {
+                                setState(() => _scriptTagsList = v);
+                                _markDirty();
+                              },
+                            ),
+                            const SizedBox(height: 18),
+                            AppSectionHeader(title: l10n.adminGenreLabel),
+                            const SizedBox(height: 12),
+                            pair(
+                              _buildGenreDropdown(l10n),
+                              _buildYearDropdown(l10n),
                             ),
                             const SizedBox(height: 8),
-                            TextButton(
-                              onPressed: (_pendingCoverBytes != null ||
-                                      (!_clearCoverOnSave &&
-                                          (_serverCoverGetUrl != null &&
-                                              _serverCoverGetUrl!.isNotEmpty)))
-                                  ? _clearCover
-                                  : null,
-                              child: Text(l10n.removeCover),
+                            _buildBibleControls(l10n, isNew, twoPane),
+                            const SizedBox(height: 12),
+                            pair(
+                              SwitchListTile.adaptive(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(l10n.adminIsPremiumLabel),
+                                subtitle: Text(l10n.adminIsPremiumSubtitle),
+                                value: _isPremium,
+                                onChanged: (v) {
+                                  setState(() => _isPremium = v);
+                                  _markDirty();
+                                },
+                              ),
+                              SwitchListTile.adaptive(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(l10n.adminIsFeaturedLabel),
+                                subtitle: Text(l10n.adminIsFeaturedSubtitle),
+                                value: _isFeatured,
+                                onChanged: (v) {
+                                  setState(() => _isFeatured = v);
+                                  _markDirty();
+                                },
+                              ),
                             ),
-                            Text(
-                              l10n.coverFormatHelp,
-                              style: Theme.of(context).textTheme.bodySmall,
+                            if (_isPremium) ...[
+                              const SizedBox(height: 18),
+                              AppSectionHeader(title: l10n.adminPricingSection),
+                              const SizedBox(height: 12),
+                              _buildCurrencyDropdown(l10n),
+                              const SizedBox(height: 12),
+                              _buildServiceFeeRow(
+                                l10n,
+                                sideBySide: wide || twoPane,
+                              ),
+                            ],
+                            if (!twoPane && !_isBible && !_isPdfBook) ...[
+                              const SizedBox(height: 18),
+                              ..._pagesSectionChildren(context, l10n, isNew),
+                            ],
+                            if (!twoPane && !_isBible && _isPdfBook) ...[
+                              const SizedBox(height: 18),
+                              ..._pdfSectionChildren(context, l10n, isNew),
+                            ],
+                            if (_error != null) ...[
+                              const SizedBox(height: 16),
+                              Text(
+                                _error!,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 24),
+                            FilledButton(
+                              onPressed: _busy || (!_loaded && !isNew)
+                                  ? null
+                                  : _save,
+                              child: _busy
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(
+                                      isNew ? l10n.create : l10n.saveChanges,
+                                    ),
                             ),
                           ],
                         ),
                       ),
+                    ),
+                  ],
+                ),
+              );
+              if (twoPane) {
+                // The shell can hand this screen fully unconstrained
+                // constraints; Row/Expanded/ListView need BOTH axes
+                // bounded, so fall back to the real screen size.
+                final screen = MediaQuery.sizeOf(context);
+                var w = constraints.maxWidth.isFinite
+                    ? constraints.maxWidth
+                    : screen.width;
+                var h = constraints.maxHeight.isFinite
+                    ? constraints.maxHeight
+                    : screen.height;
+                // Last resort: the shell can report an infinite size
+                // via BOTH constraints and MediaQuery. A finite value
+                // is mandatory for Row/Expanded to lay out.
+                if (!w.isFinite || w <= 0) w = 1400;
+                if (!h.isFinite || h <= 0) h = 900;
+                return SizedBox(
+                  width: w,
+                  height: h,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(flex: 4, child: formContent),
+                      const VerticalDivider(width: 1, color: AppColors.border),
+                      Expanded(
+                        flex: 5,
+                        child: _rightContentPane(context, l10n, isNew),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                ],
-                pair(
-                  TextField(
-                    controller: _author,
-                    decoration:
-                        InputDecoration(labelText: l10n.authorCompilerLabel),
-                    onChanged: (_) => _markDirty(),
-                  ),
-                  _buildLanguageDropdown(l10n),
-                ),
-                const SizedBox(height: 12),
-                _ChipsField(
-                  label: l10n.scriptTagsLabel,
-                  values: _scriptTagsList,
-                  onChanged: (v) {
-                    setState(() => _scriptTagsList = v);
-                    _markDirty();
-                  },
-                ),
-                const SizedBox(height: 18),
-                AppSectionHeader(title: l10n.adminGenreLabel),
-                const SizedBox(height: 12),
-                pair(
-                  _buildGenreDropdown(l10n),
-                  _buildYearDropdown(l10n),
-                ),
-                const SizedBox(height: 8),
-                _buildBibleControls(l10n, isNew, twoPane),
-                const SizedBox(height: 12),
-                _ChipsField(
-                  label: l10n.tagsLabel,
-                  values: _selectedTags,
-                  suggestions:
-                      ref.watch(tagsProvider).valueOrNull?.map((t) => t.slug).toList() ??
-                          const [],
-                  onChanged: (v) {
-                    setState(() => _selectedTags = v);
-                    _markDirty();
-                  },
-                ),
-                const SizedBox(height: 8),
-                pair(
-                  SwitchListTile.adaptive(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(l10n.adminIsPremiumLabel),
-                    subtitle: Text(l10n.adminIsPremiumSubtitle),
-                    value: _isPremium,
-                    onChanged: (v) {
-                      setState(() => _isPremium = v);
-                      _markDirty();
-                    },
-                  ),
-                  SwitchListTile.adaptive(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(l10n.adminIsFeaturedLabel),
-                    subtitle: Text(l10n.adminIsFeaturedSubtitle),
-                    value: _isFeatured,
-                    onChanged: (v) {
-                      setState(() => _isFeatured = v);
-                      _markDirty();
-                    },
-                  ),
-                ),
-                const SizedBox(height: 18),
-                AppSectionHeader(title: l10n.adminPricingSection),
-                const SizedBox(height: 12),
-                pair(
-                  _buildCurrencyDropdown(l10n),
-                  TextField(
-                    controller: _price,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(
-                      labelText: l10n.adminPriceLabel,
-                      prefixText: '$_currency ',
-                    ),
-                    onChanged: (_) => _markDirty(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                pair(
-                  TextField(
-                    controller: _salePrice,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    decoration:
-                        InputDecoration(labelText: l10n.adminSalePriceLabel),
-                    onChanged: (_) => _markDirty(),
-                  ),
-                  TextField(
-                    controller: _commissionPercent,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(
-                      labelText: l10n.adminCommissionPercentLabel,
-                      helperText: l10n.adminCommissionHelp,
-                      suffixText: '%',
-                    ),
-                    onChanged: (_) => _markDirty(),
-                  ),
-                ),
-                if (!twoPane && !_isBible && !_isPdfBook) ...[
-                const SizedBox(height: 18),
-                  ..._pagesSectionChildren(context, l10n, isNew),
-                ],
-                if (!twoPane && !_isBible && _isPdfBook) ...[
-                  const SizedBox(height: 18),
-                  ..._pdfSectionChildren(context, l10n, isNew),
-                ],
-                if (_error != null) ...[
-                  const SizedBox(height: 16),
-                  Text(_error!,
-                      style: TextStyle(
-                          color: Theme.of(context).colorScheme.error)),
-                ],
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: _busy || (!_loaded && !isNew) ? null : _save,
-                  child: _busy
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(isNew ? l10n.create : l10n.saveChanges),
-                ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                        if (twoPane) {
-                          // The shell can hand this screen fully unconstrained
-                          // constraints; Row/Expanded/ListView need BOTH axes
-                          // bounded, so fall back to the real screen size.
-                          final screen = MediaQuery.sizeOf(context);
-                          var w = constraints.maxWidth.isFinite
-                              ? constraints.maxWidth
-                              : screen.width;
-                          var h = constraints.maxHeight.isFinite
-                              ? constraints.maxHeight
-                              : screen.height;
-                          // Last resort: the shell can report an infinite size
-                          // via BOTH constraints and MediaQuery. A finite value
-                          // is mandatory for Row/Expanded to lay out.
-                          if (!w.isFinite || w <= 0) w = 1400;
-                          if (!h.isFinite || h <= 0) h = 900;
-                          return SizedBox(
-                            width: w,
-                            height: h,
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(flex: 4, child: formContent),
-                                const VerticalDivider(
-                                    width: 1, color: AppColors.border),
-                                Expanded(
-                                  flex: 5,
-                                  child:
-                                      _rightContentPane(context, l10n, isNew),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-                        return formContent;
-                      },
-                    );
+                );
+              }
+              return formContent;
+            },
+          );
 
     void handleBack() => Navigator.of(context).maybePop();
 
@@ -1723,20 +1789,14 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
         title: appBarTitle,
         currentLocation: GoRouterState.of(context).matchedLocation,
         onBack: handleBack,
-        body: ColoredBox(
-          color: AppColors.referencePageBg,
-          child: editBody,
-        ),
+        body: ColoredBox(color: AppColors.referencePageBg, child: editBody),
       );
     } else if (useDesktopShell(context)) {
       chrome = DesktopOverlayScaffold(
         title: appBarTitle,
         currentLocation: GoRouterState.of(context).matchedLocation,
         onBack: handleBack,
-        body: ColoredBox(
-          color: AppColors.referencePageBg,
-          child: editBody,
-        ),
+        body: ColoredBox(color: AppColors.referencePageBg, child: editBody),
       );
     } else {
       chrome = Scaffold(
@@ -1842,14 +1902,17 @@ class _ChipsFieldState extends State<_ChipsField> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final available =
-        widget.suggestions.where((s) => !widget.values.contains(s)).toList();
+    final available = widget.suggestions
+        .where((s) => !widget.values.contains(s))
+        .toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           widget.label,
-          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
         ),
         const SizedBox(height: 8),
         if (widget.values.isNotEmpty)
@@ -1975,14 +2038,8 @@ class _ChapterEditorDialogState extends State<_ChapterEditorDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: _cancel,
-          child: Text(l10n.cancel),
-        ),
-        FilledButton(
-          onPressed: _save,
-          child: Text(l10n.save),
-        ),
+        TextButton(onPressed: _cancel, child: Text(l10n.cancel)),
+        FilledButton(onPressed: _save, child: Text(l10n.save)),
       ],
     );
   }
@@ -2009,6 +2066,7 @@ class _DraftPageEditorDialogState extends State<_DraftPageEditorDialog> {
   late final TextEditingController _title;
   late final QuillController _bodyQuill;
   late final FormDraftController _draft;
+
   /// Full Quill toolbar lives in the bottom sheet; collapsed by default for typing space.
   bool _toolbarExpanded = false;
 
@@ -2101,13 +2159,9 @@ class _DraftPageEditorDialogState extends State<_DraftPageEditorDialog> {
     final body = jsonEncode(_bodyQuill.document.toDelta().toJson());
     await _draft.clear();
     if (!mounted) return;
-    Navigator.of(context).pop(
-      AdminDraftPage(
-        pageNumber: 0,
-        title: t,
-        body: body,
-      ),
-    );
+    Navigator.of(
+      context,
+    ).pop(AdminDraftPage(pageNumber: 0, title: t, body: body));
   }
 
   @override
@@ -2122,201 +2176,204 @@ class _DraftPageEditorDialogState extends State<_DraftPageEditorDialog> {
         await _cancel();
       },
       child: Scaffold(
-      resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        centerTitle: true,
-        title: Text(
-          widget.isNewPage ? l10n.addPageTooltip : l10n.editPageTitle,
-        ),
-        actions: [
-          IconButton(
-            tooltip: l10n.cancel,
-            icon: const Icon(Icons.close),
-            onPressed: _cancel,
+        resizeToAvoidBottomInset: true,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          centerTitle: true,
+          title: Text(
+            widget.isNewPage ? l10n.addPageTooltip : l10n.editPageTitle,
           ),
-        ],
-      ),
-      body: SafeArea(
-        bottom: false,
-        child: CustomScrollView(
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-              sliver: SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TextField(
-                      controller: _title,
-                      decoration:
-                          InputDecoration(labelText: l10n.pageTitleFieldLabel),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      l10n.pageContentHeading,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                ),
-              ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-              sliver: SliverFillRemaining(
-                hasScrollBody: true,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: theme.colorScheme.outlineVariant,
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(11),
-                    child: Consumer(
-                      builder: (context, ref, _) {
-                        final geez = ref.watch(useGeezNumeralsProvider);
-                        return QuillEditor.basic(
-                          controller: _bodyQuill,
-                          config: QuillEditorConfig(
-                            placeholder: l10n.pageEditorPlaceholder,
-                            expands: false,
-                            scrollable: true,
-                            padding: const EdgeInsets.all(12),
-                            embedBuilders: const [],
-                            unknownEmbedBuilder:
-                                const _UnsupportedEmbedBuilder(),
-                            // Render ordered-list numbers in Ge'ez when enabled.
-                            customLeadingBlockBuilder:
-                                geez ? _geezOrderedLeadingBuilder : null,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ),
+          actions: [
+            IconButton(
+              tooltip: l10n.cancel,
+              icon: const Icon(Icons.close),
+              onPressed: _cancel,
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Material(
-          elevation: 10,
-          color: theme.colorScheme.surface,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Material(
-                color: theme.colorScheme.surfaceContainerHighest
-                    .withValues(alpha: 0.55),
-                child: InkWell(
-                  onTap: () =>
-                      setState(() => _toolbarExpanded = !_toolbarExpanded),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.edit_note_outlined,
-                          color: theme.colorScheme.primary,
+        body: SafeArea(
+          bottom: false,
+          child: CustomScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        controller: _title,
+                        decoration: InputDecoration(
+                          labelText: l10n.pageTitleFieldLabel,
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            _toolbarExpanded
-                                ? l10n.pageEditorFormattingHide
-                                : l10n.pageEditorFormattingToggle,
-                            style: theme.textTheme.titleSmall,
-                          ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        l10n.pageContentHeading,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
                         ),
-                        Icon(
-                          _toolbarExpanded
-                              ? Icons.expand_less
-                              : Icons.expand_more,
-                        ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                   ),
                 ),
               ),
-              AnimatedSize(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeInOut,
-                alignment: Alignment.topCenter,
-                child: _toolbarExpanded
-                    ? ColoredBox(
-                        color: theme.colorScheme.surfaceContainerHigh,
-                        child: QuillSimpleToolbar(
-                          controller: _bodyQuill,
-                          config: QuillSimpleToolbarConfig(
-                            multiRowsDisplay: true,
-                            embedButtons: const [],
-                            customButtons: [
-                              QuillToolbarCustomButtonOptions(
-                                icon: const Text(
-                                  '፩',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                tooltip: l10n.geezConvertTooltip,
-                                onPressed: _convertSelectionToGeez,
-                              ),
-                            ],
-                            showUndo: true,
-                            showRedo: true,
-                            showBoldButton: true,
-                            showItalicButton: true,
-                            showUnderLineButton: true,
-                            showStrikeThrough: true,
-                            showHeaderStyle: true,
-                            headerStyleType: HeaderStyleType.buttons,
-                            showListBullets: true,
-                            showListNumbers: true,
-                            showQuote: true,
-                            showLink: true,
-                            showCodeBlock: true,
-                            showAlignmentButtons: true,
-                            showSubscript: false,
-                            showSuperscript: false,
-                            showSearchButton: false,
-                            showFontFamily: false,
-                            showFontSize: true,
-                            showDirection: false,
-                            showInlineCode: true,
-                            showIndent: true,
-                          ),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: _saveAndPop,
-                    child: Text(l10n.save),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                sliver: SliverFillRemaining(
+                  hasScrollBody: true,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHigh,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant,
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(11),
+                      child: Consumer(
+                        builder: (context, ref, _) {
+                          final geez = ref.watch(useGeezNumeralsProvider);
+                          return QuillEditor.basic(
+                            controller: _bodyQuill,
+                            config: QuillEditorConfig(
+                              placeholder: l10n.pageEditorPlaceholder,
+                              expands: false,
+                              scrollable: true,
+                              padding: const EdgeInsets.all(12),
+                              embedBuilders: const [],
+                              unknownEmbedBuilder:
+                                  const _UnsupportedEmbedBuilder(),
+                              // Render ordered-list numbers in Ge'ez when enabled.
+                              customLeadingBlockBuilder: geez
+                                  ? _geezOrderedLeadingBuilder
+                                  : null,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   ),
                 ),
               ),
             ],
           ),
         ),
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: Material(
+            elevation: 10,
+            color: theme.colorScheme.surface,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Material(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.55,
+                  ),
+                  child: InkWell(
+                    onTap: () =>
+                        setState(() => _toolbarExpanded = !_toolbarExpanded),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.edit_note_outlined,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _toolbarExpanded
+                                  ? l10n.pageEditorFormattingHide
+                                  : l10n.pageEditorFormattingToggle,
+                              style: theme.textTheme.titleSmall,
+                            ),
+                          ),
+                          Icon(
+                            _toolbarExpanded
+                                ? Icons.expand_less
+                                : Icons.expand_more,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeInOut,
+                  alignment: Alignment.topCenter,
+                  child: _toolbarExpanded
+                      ? ColoredBox(
+                          color: theme.colorScheme.surfaceContainerHigh,
+                          child: QuillSimpleToolbar(
+                            controller: _bodyQuill,
+                            config: QuillSimpleToolbarConfig(
+                              multiRowsDisplay: true,
+                              embedButtons: const [],
+                              customButtons: [
+                                QuillToolbarCustomButtonOptions(
+                                  icon: const Text(
+                                    '፩',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  tooltip: l10n.geezConvertTooltip,
+                                  onPressed: _convertSelectionToGeez,
+                                ),
+                              ],
+                              showUndo: true,
+                              showRedo: true,
+                              showBoldButton: true,
+                              showItalicButton: true,
+                              showUnderLineButton: true,
+                              showStrikeThrough: true,
+                              showHeaderStyle: true,
+                              headerStyleType: HeaderStyleType.buttons,
+                              showListBullets: true,
+                              showListNumbers: true,
+                              showQuote: true,
+                              showLink: true,
+                              showCodeBlock: true,
+                              showAlignmentButtons: true,
+                              showSubscript: false,
+                              showSuperscript: false,
+                              showSearchButton: false,
+                              showFontFamily: false,
+                              showFontSize: true,
+                              showDirection: false,
+                              showInlineCode: true,
+                              showIndent: true,
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: _saveAndPop,
+                      child: Text(l10n.save),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
-    ),
     );
   }
 }
@@ -2333,10 +2390,7 @@ Widget? _geezOrderedLeadingBuilder(Node node, LeadingConfig config) {
     alignment: AlignmentDirectional.centerEnd,
     width: config.width,
     padding: EdgeInsetsDirectional.only(end: config.padding ?? 0),
-    child: Text(
-      config.withDot ? '$label.' : label,
-      style: config.style,
-    ),
+    child: Text(config.withDot ? '$label.' : label, style: config.style),
   );
 }
 
@@ -2396,14 +2450,18 @@ class _ChangesRequestedBanner extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.rate_review_outlined,
-                  size: 18, color: AppColors.accent),
+              const Icon(
+                Icons.rate_review_outlined,
+                size: 18,
+                color: AppColors.accent,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   l10n.changesRequestedBannerTitle,
-                  style: theme.textTheme.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w700),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
               TextButton(
