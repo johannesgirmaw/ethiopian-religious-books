@@ -12,8 +12,9 @@ final adminPaymentDashboardProvider =
   return AdminPaymentDashboard.fromJson(res.data ?? const {});
 });
 
-/// All payment transactions for admin review, optionally filtered by status
-/// (`''` = all). The argument is the status `apiValue` (e.g. `on_review`).
+/// Payment transactions for admin review, optionally filtered by status.
+/// `''` is the open queue (pending and on review). The argument is the status
+/// `apiValue` (e.g. `on_review`).
 final adminTransactionsProvider = FutureProvider.autoDispose
     .family<List<PaymentTransaction>, String>((ref, statusFilter) async {
   final dio = ref.watch(apiDioProvider);

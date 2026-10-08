@@ -43,13 +43,40 @@ class _AdminView(APIView):
 
 class AdminPaymentDashboardView(_AdminView):
     def get(self, request):
-        from apps.payments.models import RevenueLedger
-
-        ledger = RevenueLedger.objects.aggregate(
-            gross_revenue=Sum("sale_amount"),
-            platform_revenue=Sum("commission_amount"),
-            author_revenue=Sum("author_amount"),
+        # Totals follow completed orders only. A ledger row can outlive a
+        # rejection, so the transaction status is the source of truth.
+        completed = PaymentTransaction.objects.filter(status=TransactionStatus.COMPLETED)
+        grouped = (
+            completed.values("currency")
+            .annotate(
+                gross_revenue=Sum("amount"),
+                platform_revenue=Sum("commission_amount"),
+            )
+            .order_by("currency")
         )
+        by_currency = []
+        for row in grouped:
+            gross = row["gross_revenue"] or 0
+            platform = row["platform_revenue"] or 0
+            by_currency.append(
+                {
+                    "currency": (row["currency"] or "USD").upper(),
+                    "gross_revenue": str(gross),
+                    "platform_revenue": str(platform),
+                    "author_revenue": str(gross - platform),
+                }
+            )
+        if len(by_currency) == 1:
+            totals = by_currency[0]
+            currency = totals["currency"]
+        else:
+            # Different currencies are not added together.
+            currency = ""
+            totals = {
+                "gross_revenue": "0",
+                "platform_revenue": "0",
+                "author_revenue": "0",
+            }
         txns = PaymentTransaction.objects.aggregate(
             completed=Count("id", filter=_qfilter(status=TransactionStatus.COMPLETED)),
             pending_reviews=Count("id", filter=_qfilter(status=TransactionStatus.ON_REVIEW)),
@@ -57,9 +84,11 @@ class AdminPaymentDashboardView(_AdminView):
         return Response(
             {
                 "total_sales": txns["completed"] or 0,
-                "gross_revenue": str(ledger["gross_revenue"] or 0),
-                "platform_revenue": str(ledger["platform_revenue"] or 0),
-                "author_revenue": str(ledger["author_revenue"] or 0),
+                "currency": currency,
+                "gross_revenue": totals["gross_revenue"],
+                "platform_revenue": totals["platform_revenue"],
+                "author_revenue": totals["author_revenue"],
+                "by_currency": by_currency,
                 "pending_reviews": txns["pending_reviews"] or 0,
                 "completed_transactions": txns["completed"] or 0,
             }
@@ -74,6 +103,12 @@ class AdminTransactionsView(_AdminView):
         method_filter = request.query_params.get("method")
         if status_filter:
             qs = qs.filter(status=status_filter)
+        else:
+            # "All" is the review queue: orders still waiting on the buyer or
+            # an admin. Completed and rejected stay on their own filters.
+            qs = qs.filter(
+                status__in=(TransactionStatus.PENDING, TransactionStatus.ON_REVIEW)
+            )
         if method_filter:
             qs = qs.filter(payment_method=method_filter)
         return Response({"items": PaymentTransactionSerializer(qs, many=True, context={"request": request}).data})

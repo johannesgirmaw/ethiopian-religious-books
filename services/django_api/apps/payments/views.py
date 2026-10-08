@@ -362,7 +362,10 @@ class AuthorDashboardView(APIView):
         disabled = _feature_disabled_response()
         if disabled is not None:
             return disabled
-        rows = RevenueLedger.objects.filter(author=request.user)
+        rows = RevenueLedger.objects.filter(
+            author=request.user,
+            transaction__status=TransactionStatus.COMPLETED,
+        )
         agg = rows.aggregate(
             total_sales=Count("id"),
             gross_revenue=Sum("sale_amount"),

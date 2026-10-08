@@ -471,6 +471,64 @@ class AdminPaymentApiTests(TestCase):
         self.assertEqual(Decimal(res.data["gross_revenue"]), Decimal("100.00"))
         self.assertEqual(Decimal(res.data["platform_revenue"]), Decimal("10.00"))
         self.assertEqual(Decimal(res.data["author_revenue"]), Decimal("90.00"))
+        self.assertEqual(res.data["currency"], "USD")
+
+    def test_dashboard_ignores_rejected_orders_even_with_a_ledger(self):
+        completed = self._on_review_txn()
+        self.client.post(f"/v1/admin/payments/transactions/{completed.id}/approve")
+        rejected = PaymentTransaction.objects.create(
+            user=self.buyer,
+            book=self.book,
+            amount=Decimal("220.00"),
+            commission_amount=Decimal("22.00"),
+            payment_method=PaymentMethod.BANK_TRANSFER,
+            currency="USD",
+            transaction_reference="REF-REJECTED",
+            status=TransactionStatus.REJECTED,
+        )
+        create_revenue_ledger(rejected)
+        res = self.client.get("/v1/admin/payments/dashboard")
+        self.assertEqual(res.data["completed_transactions"], 1)
+        self.assertEqual(Decimal(res.data["gross_revenue"]), Decimal("100.00"))
+        self.assertEqual(Decimal(res.data["platform_revenue"]), Decimal("10.00"))
+        self.assertEqual(Decimal(res.data["author_revenue"]), Decimal("90.00"))
+
+    def test_unfiltered_transaction_list_is_the_open_queue(self):
+        self._on_review_txn()
+        PaymentTransaction.objects.create(
+            user=self.buyer,
+            book=self.book,
+            amount=Decimal("50.00"),
+            commission_amount=Decimal("5.00"),
+            payment_method=PaymentMethod.BANK_TRANSFER,
+            currency="USD",
+            transaction_reference="REF-PENDING",
+            status=TransactionStatus.PENDING,
+        )
+        PaymentTransaction.objects.create(
+            user=self.buyer,
+            book=self.book,
+            amount=Decimal("80.00"),
+            commission_amount=Decimal("8.00"),
+            payment_method=PaymentMethod.BANK_TRANSFER,
+            currency="USD",
+            transaction_reference="REF-DONE",
+            status=TransactionStatus.COMPLETED,
+        )
+        PaymentTransaction.objects.create(
+            user=self.buyer,
+            book=self.book,
+            amount=Decimal("70.00"),
+            commission_amount=Decimal("7.00"),
+            payment_method=PaymentMethod.BANK_TRANSFER,
+            currency="USD",
+            transaction_reference="REF-NO",
+            status=TransactionStatus.REJECTED,
+        )
+        res = self.client.get("/v1/admin/payments/transactions")
+        self.assertEqual(res.status_code, 200)
+        statuses = {item["status"] for item in res.data["items"]}
+        self.assertEqual(statuses, {TransactionStatus.ON_REVIEW, TransactionStatus.PENDING})
 
     def test_bank_crud(self):
         # Create

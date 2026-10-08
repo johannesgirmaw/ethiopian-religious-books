@@ -160,7 +160,42 @@ class PaymentTransaction {
   }
 }
 
+/// One currency's completed-order totals on the admin payments dashboard.
+class DashboardCurrencyTotal {
+  const DashboardCurrencyTotal({
+    required this.currency,
+    required this.gross,
+    required this.platform,
+    required this.author,
+  });
+
+  final String currency;
+  final double gross;
+  final double platform;
+  final double author;
+
+  factory DashboardCurrencyTotal.fromJson(Map<String, dynamic> j) {
+    double n(dynamic value) {
+      if (value is num) return value.toDouble();
+      if (value is String) return double.tryParse(value) ?? 0;
+      return 0;
+    }
+
+    return DashboardCurrencyTotal(
+      currency: (j['currency'] as String?)?.trim().isNotEmpty == true
+          ? j['currency'] as String
+          : 'USD',
+      gross: n(j['gross_revenue']),
+      platform: n(j['platform_revenue']),
+      author: n(j['author_revenue']),
+    );
+  }
+}
+
 /// Admin payment dashboard totals (GET /v1/admin/payments/dashboard).
+///
+/// Revenue is completed orders only, split by currency so birr and dollars
+/// are never added together.
 class AdminPaymentDashboard {
   const AdminPaymentDashboard({
     required this.totalSales,
@@ -169,6 +204,8 @@ class AdminPaymentDashboard {
     required this.authorRevenue,
     required this.pendingReviews,
     required this.completedTransactions,
+    this.currency = '',
+    this.byCurrency = const [],
   });
 
   final int totalSales;
@@ -177,17 +214,33 @@ class AdminPaymentDashboard {
   final String authorRevenue;
   final int pendingReviews;
   final int completedTransactions;
+  final String currency;
+  final List<DashboardCurrencyTotal> byCurrency;
 
-  factory AdminPaymentDashboard.fromJson(Map<String, dynamic> j) =>
-      AdminPaymentDashboard(
-        totalSales: (j['total_sales'] as num?)?.toInt() ?? 0,
-        grossRevenue: '${j['gross_revenue'] ?? 0}',
-        platformRevenue: '${j['platform_revenue'] ?? 0}',
-        authorRevenue: '${j['author_revenue'] ?? 0}',
-        pendingReviews: (j['pending_reviews'] as num?)?.toInt() ?? 0,
-        completedTransactions:
-            (j['completed_transactions'] as num?)?.toInt() ?? 0,
-      );
+  factory AdminPaymentDashboard.fromJson(Map<String, dynamic> j) {
+    final raw = j['by_currency'];
+    final slices = raw is List
+        ? raw
+            .whereType<Map>()
+            .map(
+              (e) => DashboardCurrencyTotal.fromJson(
+                Map<String, dynamic>.from(e),
+              ),
+            )
+            .toList()
+        : <DashboardCurrencyTotal>[];
+    return AdminPaymentDashboard(
+      totalSales: (j['total_sales'] as num?)?.toInt() ?? 0,
+      grossRevenue: '${j['gross_revenue'] ?? 0}',
+      platformRevenue: '${j['platform_revenue'] ?? 0}',
+      authorRevenue: '${j['author_revenue'] ?? 0}',
+      pendingReviews: (j['pending_reviews'] as num?)?.toInt() ?? 0,
+      completedTransactions:
+          (j['completed_transactions'] as num?)?.toInt() ?? 0,
+      currency: (j['currency'] as String?) ?? '',
+      byCurrency: slices,
+    );
+  }
 }
 
 /// Result of initiating a purchase. For the manual flow [banks] is populated;

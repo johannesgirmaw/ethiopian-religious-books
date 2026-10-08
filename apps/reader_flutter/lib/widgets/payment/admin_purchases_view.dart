@@ -141,7 +141,8 @@ class AdminPurchasesView extends ConsumerStatefulWidget {
 }
 
 class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
-  // Default to All so an order stays visible (with its new status) after review.
+  // Empty filter is the open queue: on review and pending. Completed and
+  // rejected orders stay on their own chips.
   String _filter = '';
   final _searchCtrl = TextEditingController();
   String _query = '';
@@ -758,6 +759,23 @@ class _RemovableChip extends StatelessWidget {
   }
 }
 
+/// Completed-order revenue, formatted per currency. Birr and dollars stay
+/// separate when both are present.
+String _completedRevenue(
+  AdminPaymentDashboard dashboard,
+  double Function(DashboardCurrencyTotal slice) pick,
+  String fallback,
+) {
+  final slices = dashboard.byCurrency;
+  if (slices.isEmpty) {
+    final amount = double.tryParse(fallback) ?? 0;
+    final currency = dashboard.currency.trim();
+    if (currency.isEmpty) return amount.toStringAsFixed(2);
+    return formatMoney(amount, currency);
+  }
+  return slices.map((slice) => formatMoney(pick(slice), slice.currency)).join('\n');
+}
+
 // ---------------------------------------------------------------------------
 // Dashboard summary
 // ---------------------------------------------------------------------------
@@ -785,17 +803,29 @@ class _DashboardSummary extends StatelessWidget {
         ),
         _StatCard(
           label: l10n.adminGrossRevenue,
-          value: dashboard.grossRevenue,
+          value: _completedRevenue(
+            dashboard,
+            (slice) => slice.gross,
+            dashboard.grossRevenue,
+          ),
           accent: AppColors.primary,
         ),
         _StatCard(
           label: l10n.adminPlatformRevenue,
-          value: dashboard.platformRevenue,
+          value: _completedRevenue(
+            dashboard,
+            (slice) => slice.platform,
+            dashboard.platformRevenue,
+          ),
           accent: AppColors.primary,
         ),
         _StatCard(
           label: l10n.adminAuthorRevenue,
-          value: dashboard.authorRevenue,
+          value: _completedRevenue(
+            dashboard,
+            (slice) => slice.author,
+            dashboard.authorRevenue,
+          ),
           accent: AppColors.primary,
         ),
       ],
@@ -827,12 +857,16 @@ class _StatCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: accent,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: accent,
+              ),
             ),
           ),
           const SizedBox(height: 2),
