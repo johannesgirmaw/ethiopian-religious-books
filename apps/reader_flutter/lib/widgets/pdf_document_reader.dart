@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
@@ -384,15 +385,19 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
         key: ValueKey(widget.filePath),
         controller: _controller,
         params: params,
+        useProgressiveLoading: true,
       );
     }
+    // Web: stream the whole file once (with progress) through the same-origin
+    // proxy, then open from memory. Live Range/GetBlock leaves page 1 blank on
+    // scanned books while every page structure is fetched. Native keeps ranges.
     return PdfViewer.uri(
       widget.uri!,
       key: ValueKey('${widget.uri}|${widget.headers}'),
       controller: _controller,
       params: params,
       preferRangeAccess: true,
-      useProgressiveLoading: true,
+      useProgressiveLoading: !kIsWeb,
       headers: widget.headers,
       timeout: const Duration(seconds: 60),
     );
