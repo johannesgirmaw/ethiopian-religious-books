@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/dev_object_storage_origin.dart';
@@ -331,8 +332,11 @@ final downloadInfoProvider =
 final pdfBookAccessProvider =
     FutureProvider.autoDispose.family<PdfBookAccess, String>((ref, id) async {
   final dio = ref.watch(apiDioProvider);
+  // Web: metadata only (no shareable MinIO URL). Native: short-lived presign.
+  final query = kIsWeb ? const {'delivery': 'proxy'} : null;
   final res = await dio.get<Map<String, dynamic>>(
     'books/$id/pdf',
+    queryParameters: query,
     options: Options(headers: devObjectStorageOriginHeaders()),
   );
   return PdfBookAccess.fromJson(res.data!);

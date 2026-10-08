@@ -48,35 +48,43 @@ bool isCompletePdfCache(int length, int expectedBytes) =>
     expectedBytes > 0 && length == expectedBytes;
 
 /// Same-origin path the web app nginx proxies to ``GET /books/{id}/pdf/bytes``.
-Uri webPdfProxyUri(String bookId) {
+///
+/// [revisionId] is only for Cache API keying (stale-revision avoidance); the
+/// API ignores it. Auth stays in the ``Authorization`` header, never the URL.
+Uri webPdfProxyUri(String bookId, {String revisionId = ''}) {
+  final rev = revisionId.trim();
   return Uri.base.replace(
     path: '/pdf-proxy/$bookId',
-    query: '',
+    queryParameters: rev.isEmpty ? const <String, String>{} : {'r': rev},
     fragment: '',
   );
 }
 
 /// Resolves a local file when one is already complete, otherwise a URL the
-/// viewer can fetch by byte range (page 1 before the rest of the file).
+/// viewer can fetch.
 ///
-/// On web, prefer the same-origin proxy so the WASM engine can issue
-/// synchronous Range requests (cross-origin sync XHR is blocked by browsers).
+/// Web always uses the authenticated same-origin proxy (never a MinIO URL).
+/// Native prefers a complete local cache, else a short-lived presigned URL.
 Future<PdfViewerSource> resolvePdfViewerSource(
   PdfBookAccess access, {
   String? accessToken,
 }) async {
   if (kIsWeb) {
     final token = (accessToken ?? '').trim();
-    if (token.isNotEmpty && access.bookId.isNotEmpty) {
-      return PdfViewerSource.uri(
-        webPdfProxyUri(access.bookId),
-        headers: {'Authorization': 'Bearer $token'},
-      );
+    if (token.isEmpty || access.bookId.isEmpty) {
+      throw StateError('PDF open requires a signed-in session on web.');
     }
-    return PdfViewerSource.uri(Uri.parse(access.url));
+    return PdfViewerSource.uri(
+      webPdfProxyUri(access.bookId, revisionId: access.revisionId),
+      headers: {'Authorization': 'Bearer $token'},
+    );
   }
 
   final cached = await pdf_cache.cachedPdfPath(access);
   if (cached != null) return PdfViewerSource.file(cached);
-  return PdfViewerSource.uri(Uri.parse(access.url));
+  final url = access.url.trim();
+  if (url.isEmpty) {
+    throw StateError('PDF open requires a download URL on this platform.');
+  }
+  return PdfViewerSource.uri(Uri.parse(url));
 }

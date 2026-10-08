@@ -391,15 +391,19 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
     // Web: stream the whole file once (with progress) through the same-origin
     // proxy, then open from memory. Live Range/GetBlock leaves page 1 blank on
     // scanned books while every page structure is fetched. Native keeps ranges.
+    // Do not put Authorization headers in the widget key (token must not live
+    // in the element tree / debug inspector).
+    final authPresent = widget.headers?.containsKey('Authorization') ?? false;
     return PdfViewer.uri(
       widget.uri!,
-      key: ValueKey('${widget.uri}|${widget.headers}'),
+      key: ValueKey('${widget.uri}|auth=$authPresent'),
       controller: _controller,
       params: params,
       preferRangeAccess: true,
       useProgressiveLoading: !kIsWeb,
       headers: widget.headers,
-      timeout: const Duration(seconds: 60),
+      // Full-file web downloads of scanned books can exceed 60s on slow links.
+      timeout: const Duration(minutes: 5),
     );
   }
 

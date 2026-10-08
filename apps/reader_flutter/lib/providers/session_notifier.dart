@@ -8,6 +8,8 @@ import '../models/user_profile.dart';
 import '../security/book_crypto.dart';
 import '../storage/secure_book_store.dart';
 import '../storage/token_storage.dart';
+import '../utils/pdf_full_cache_stub.dart'
+    if (dart.library.html) '../utils/pdf_full_cache_web.dart' as pdf_full_cache;
 
 class Session {
   Session({
@@ -202,6 +204,10 @@ class SessionNotifier extends AsyncNotifier<Session?> {
     } catch (_) {
       // Best-effort: never block sign-out on vault cleanup.
     }
+    // Web: also wipe Cache Storage PDFs (unencrypted browser blobs).
+    try {
+      await pdf_full_cache.clearPdfFullCache();
+    } catch (_) {}
     state = const AsyncData(null);
   }
 }

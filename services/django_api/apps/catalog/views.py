@@ -1,11 +1,13 @@
 import json
 import logging
+import re
 
 from django.conf import settings
 from django.db.models import F, Q
 from django.http import Http404, HttpResponse, StreamingHttpResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+from django.utils.text import get_valid_filename
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -673,8 +675,34 @@ def _entitled_pdf_revision(request, book_id):
     return (book, rev), None
 
 
+# Native apps open MinIO directly; keep the capability short-lived so a leaked
+# URL cannot be shared for hours. Web uses delivery=proxy (no MinIO URL).
+_PDF_PRESIGN_TTL_SECONDS = 15 * 60
+_PDF_RANGE_RE = re.compile(r"^bytes=\d+(?:-\d*)?$")
+
+
+def _pdf_filename_for_revision(rev) -> str:
+    filename = "content.pdf"
+    if rev.manifest_object_key:
+        try:
+            raw = get_object_bytes(rev.manifest_object_key)
+            data = json.loads(raw.decode("utf-8"))
+            if isinstance(data, dict) and data.get("filename"):
+                filename = str(data["filename"])
+        except Exception:
+            pass
+    safe = get_valid_filename(filename) or "content.pdf"
+    if not safe.lower().endswith(".pdf"):
+        safe = f"{safe}.pdf"
+    return safe
+
+
 class BookPdfView(APIView):
-    """Short-lived presigned URL for an entitled reader to open a PDF book online."""
+    """PDF access metadata for an entitled reader.
+
+    ``?delivery=proxy`` (web): book/revision/size only — no shareable MinIO URL.
+    Default (native): short-lived presigned GET for range-capable open.
+    """
 
     permission_classes = [IsAuthenticated]
 
@@ -683,18 +711,33 @@ class BookPdfView(APIView):
         if error is not None:
             return error
         book, rev = resolved
+        size_bytes = int(rev.total_bytes or 0)
+        try:
+            size_bytes = int(head_object(rev.content_object_key)["ContentLength"])
+        except Exception:
+            pass
+        filename = _pdf_filename_for_revision(rev)
+        delivery = (request.query_params.get("delivery") or "").strip().lower()
+        if delivery == "proxy":
+            return Response(
+                {
+                    "book_id": str(book.id),
+                    "content_format": "pdf",
+                    "url": "",
+                    "size_bytes": size_bytes,
+                    "filename": filename,
+                    "revision_id": str(rev.id),
+                    "delivery": "proxy",
+                }
+            )
+
         presign_endpoint = dev_presign_endpoint_from_request(request)
         try:
             url = presign_get(
                 rev.content_object_key,
-                expires_in=60 * 60 * 4,
+                expires_in=_PDF_PRESIGN_TTL_SECONDS,
                 presign_endpoint_url=presign_endpoint,
             )
-            size_bytes = int(rev.total_bytes or 0)
-            try:
-                size_bytes = int(head_object(rev.content_object_key)["ContentLength"])
-            except Exception:
-                pass
         except Exception as exc:
             logger.exception("pdf presign failed: %s", exc)
             return Response(
@@ -706,15 +749,6 @@ class BookPdfView(APIView):
                 },
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
-        filename = "content.pdf"
-        if rev.manifest_object_key:
-            try:
-                raw = get_object_bytes(rev.manifest_object_key)
-                data = json.loads(raw.decode("utf-8"))
-                if isinstance(data, dict) and data.get("filename"):
-                    filename = str(data["filename"])
-            except Exception:
-                pass
         return Response(
             {
                 "book_id": str(book.id),
@@ -723,6 +757,7 @@ class BookPdfView(APIView):
                 "size_bytes": size_bytes,
                 "filename": filename,
                 "revision_id": str(rev.id),
+                "expires_in": _PDF_PRESIGN_TTL_SECONDS,
             }
         )
 
@@ -730,9 +765,8 @@ class BookPdfView(APIView):
 class BookPdfBytesView(APIView):
     """Stream PDF bytes (with Range) for the web reader via a same-origin proxy.
 
-    The WASM PDF engine needs synchronous Range reads. Those only work
-    same-origin, so app.felegemetsahft.com proxies here instead of sending the
-    browser straight to MinIO.
+    Requires JWT + entitlement on every request. The proxy URL alone is not a
+    capability token — Authorization must be present.
     """
 
     permission_classes = [IsAuthenticated]
@@ -743,12 +777,18 @@ class BookPdfBytesView(APIView):
             return error
         _book, rev = resolved
         range_header = (request.META.get("HTTP_RANGE") or "").strip() or None
+        if range_header and not _PDF_RANGE_RE.fullmatch(range_header):
+            return HttpResponse(status=416)
         try:
             obj = open_object_stream(rev.content_object_key, byte_range=range_header)
         except Exception as exc:
             err = str(exc)
             if "InvalidRange" in err or "416" in err:
-                return HttpResponse(status=416)
+                size = int(rev.total_bytes or 0)
+                resp = HttpResponse(status=416)
+                if size > 0:
+                    resp["Content-Range"] = f"bytes */{size}"
+                return resp
             logger.exception("pdf byte stream failed: %s", exc)
             return Response(
                 {
@@ -790,5 +830,9 @@ class BookPdfBytesView(APIView):
         content_range = obj.get("ContentRange")
         if content_range:
             response["Content-Range"] = content_range
-        response["Cache-Control"] = "private, max-age=300"
+        filename = _pdf_filename_for_revision(rev)
+        response["Content-Disposition"] = f'inline; filename="{filename}"'
+        response["Cache-Control"] = "private, no-store"
+        response["X-Content-Type-Options"] = "nosniff"
+        response["Vary"] = "Authorization"
         return response

@@ -13,4 +13,13 @@ void main() {
     expect(uri.path, '/pdf-proxy/11111111-1111-1111-1111-111111111111');
     expect(uri.query, isEmpty);
   });
+
+  test('web PDF proxy includes revision only for cache keying', () {
+    final uri = webPdfProxyUri(
+      '11111111-1111-1111-1111-111111111111',
+      revisionId: '22222222-2222-2222-2222-222222222222',
+    );
+    expect(uri.path, '/pdf-proxy/11111111-1111-1111-1111-111111111111');
+    expect(uri.queryParameters['r'], '22222222-2222-2222-2222-222222222222');
+  });
 }
