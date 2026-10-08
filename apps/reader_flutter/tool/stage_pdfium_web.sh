@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copy pdfrx's pdfium.wasm next to the range-loading worker in web/pdfium/.
+# Copy pdfrx WASM client + wasm next to the range-loading worker in web/pdfium/.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CONFIG="$ROOT/.dart_tool/package_config.json"
@@ -18,9 +18,11 @@ if uri.startswith("file://"):
     base = pathlib.Path(uri[7:])
 else:
     base = (config.parent / uri).resolve()
-wasm = base / "assets" / "pdfium.wasm"
-if not wasm.is_file():
-    raise SystemExit(f"pdfium.wasm not found at {wasm}")
-shutil.copy2(wasm, dest / "pdfium.wasm")
-print(f"staged {wasm} -> {dest / 'pdfium.wasm'}")
+assets = base / "assets"
+for name in ("pdfium.wasm", "pdfium_client.js"):
+    src = assets / name
+    if not src.is_file():
+        raise SystemExit(f"{name} not found at {src}")
+    shutil.copy2(src, dest / name)
+    print(f"staged {src} -> {dest / name}")
 PY
