@@ -1017,6 +1017,22 @@
   "reviewRequiresPurchase": "አስተያየት ከመስጠትዎ በፊት ይህን መጽሐፍ ይግዙ።",
   "reviewRequiresReading": "አስተያየት ከመስጠትዎ በፊት መጽሐፉን ማንበብ ይጀምሩ።",
   "reviewSubmitFailed": "አስተያየትዎን መላክ አልተቻለም።",
+  "installAppBannerTitle": "የአንድሮይድ መተግበሪያ ያግኙ",
+  "installAppBannerMessage": "በስልክዎ ላይ ፈጣን ንባብ እና ያለ ኢንተርኔት መጻሕፍት።",
+  "installAppBannerAction": "ጫን",
+  "installAppBannerDismiss": "አሁን አይደለም",
+  "installAppDownloading": "መተግበሪያው እየወረደ ነው…",
+  "installAppProgress": "{received} ከ {total} · {speed}",
+  "@installAppProgress": {
+    "placeholders": {
+      "received": {"type": "String"},
+      "total": {"type": "String"},
+      "speed": {"type": "String"}
+    }
+  },
+  "installAppReady": "ወርዷል — ፋይሉን ከፍተው ይጫኑ።",
+  "installAppRetry": "እንደገና ሞክር",
+  "installAppRetryHint": "መተግበሪያውን ማውረድ አልተቻለም። ኢንተርኔትዎን ይፈትሹ።",
   "ratingsCountLabel": "{count} ደረጃዎች",
   "@ratingsCountLabel": {
     "placeholders": {

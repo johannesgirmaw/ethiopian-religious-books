@@ -1893,6 +1893,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reviewSubmitFailed => 'Could not submit your review.';
 
   @override
+  String get installAppBannerTitle => 'Get the Android app';
+
+  @override
+  String get installAppBannerMessage =>
+      'Faster reading and offline books on your phone.';
+
+  @override
+  String get installAppBannerAction => 'Install';
+
+  @override
+  String get installAppBannerDismiss => 'Not now';
+
+  @override
+  String get installAppDownloading => 'Downloading the app…';
+
+  @override
+  String installAppProgress(String received, String total, String speed) {
+    return '$received of $total · $speed';
+  }
+
+  @override
+  String get installAppReady => 'Download complete — open the file to install.';
+
+  @override
+  String get installAppRetry => 'Try again';
+
+  @override
+  String get installAppRetryHint =>
+      'Could not download the app. Check your connection.';
+
+  @override
   String ratingsCountLabel(int count) {
     return '$count ratings';
   }

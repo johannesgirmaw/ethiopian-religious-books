@@ -869,6 +869,22 @@
   "reviewRequiresPurchase": "Purchase this book before leaving a review.",
   "reviewRequiresReading": "Start reading this book before leaving a review.",
   "reviewSubmitFailed": "Could not submit your review.",
+  "installAppBannerTitle": "Get the Android app",
+  "installAppBannerMessage": "Faster reading and offline books on your phone.",
+  "installAppBannerAction": "Install",
+  "installAppBannerDismiss": "Not now",
+  "installAppDownloading": "Downloading the app…",
+  "installAppProgress": "{received} of {total} · {speed}",
+  "@installAppProgress": {
+    "placeholders": {
+      "received": {"type": "String"},
+      "total": {"type": "String"},
+      "speed": {"type": "String"}
+    }
+  },
+  "installAppReady": "Download complete — open the file to install.",
+  "installAppRetry": "Try again",
+  "installAppRetryHint": "Could not download the app. Check your connection.",
   "ratingsCountLabel": "{count} ratings",
   "@ratingsCountLabel": {
     "placeholders": {"count": {"type": "int"}}

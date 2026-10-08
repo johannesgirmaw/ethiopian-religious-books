@@ -9,6 +9,7 @@ import '../providers/nav_visibility_providers.dart';
 import '../providers/session_notifier.dart';
 import '../web/layout/app_layout_scope.dart';
 import '../web/widgets/shell/web_shell_scaffold.dart';
+import '../mobile/widgets/shell/install_app_banner.dart';
 import '../mobile/widgets/shell/liquid_glass_nav_bar.dart';
 
 class MainShellScreen extends ConsumerWidget {
@@ -18,22 +19,18 @@ class MainShellScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final location = GoRouterState.of(context).matchedLocation;
     final user = ref.watch(sessionNotifierProvider).valueOrNull?.user;
     final isAdmin = user?.isPlatformAdmin ?? false;
     final canManageBooks = user?.canManageBooks ?? false;
 
     if (useWebShell(context)) {
-      return WebShellScaffold(
-        child: child,
-      );
+      return WebShellScaffold(child: child);
     }
 
     if (useDesktopShell(context)) {
-      return DesktopShellScaffold(
-        child: child,
-      );
+      return DesktopShellScaffold(child: child);
     }
 
     // Purchases tab only appears once the user has a transaction to look at.
@@ -57,6 +54,12 @@ class MainShellScreen extends ConsumerWidget {
             top: 0,
             bottom: LiquidGlassNavBar.bottomInset,
             child: child,
+          ),
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: InstallAppBanner(),
           ),
           Positioned(
             left: 0,
@@ -86,7 +89,9 @@ class MainShellScreen extends ConsumerWidget {
                   LiquidNavItem(
                     icon: Icons.menu_book_outlined,
                     selectedIcon: Icons.menu_book_rounded,
-                    label: isAdmin ? l10n.adminBooksMenuTitle : l10n.authorMyBooks,
+                    label: isAdmin
+                        ? l10n.adminBooksMenuTitle
+                        : l10n.authorMyBooks,
                   ),
               ],
             ),

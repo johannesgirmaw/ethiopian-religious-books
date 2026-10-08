@@ -3524,6 +3524,60 @@ abstract class AppLocalizations {
   /// **'Could not submit your review.'**
   String get reviewSubmitFailed;
 
+  /// No description provided for @installAppBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Get the Android app'**
+  String get installAppBannerTitle;
+
+  /// No description provided for @installAppBannerMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Faster reading and offline books on your phone.'**
+  String get installAppBannerMessage;
+
+  /// No description provided for @installAppBannerAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Install'**
+  String get installAppBannerAction;
+
+  /// No description provided for @installAppBannerDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get installAppBannerDismiss;
+
+  /// No description provided for @installAppDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading the app…'**
+  String get installAppDownloading;
+
+  /// No description provided for @installAppProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{received} of {total} · {speed}'**
+  String installAppProgress(String received, String total, String speed);
+
+  /// No description provided for @installAppReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Download complete — open the file to install.'**
+  String get installAppReady;
+
+  /// No description provided for @installAppRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get installAppRetry;
+
+  /// No description provided for @installAppRetryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not download the app. Check your connection.'**
+  String get installAppRetryHint;
+
   /// No description provided for @ratingsCountLabel.
   ///
   /// In en, this message translates to:

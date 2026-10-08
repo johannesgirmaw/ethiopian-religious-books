@@ -1854,6 +1854,35 @@ class AppLocalizationsAm extends AppLocalizations {
   String get reviewSubmitFailed => 'አስተያየትዎን መላክ አልተቻለም።';
 
   @override
+  String get installAppBannerTitle => 'የአንድሮይድ መተግበሪያ ያግኙ';
+
+  @override
+  String get installAppBannerMessage => 'በስልክዎ ላይ ፈጣን ንባብ እና ያለ ኢንተርኔት መጻሕፍት።';
+
+  @override
+  String get installAppBannerAction => 'ጫን';
+
+  @override
+  String get installAppBannerDismiss => 'አሁን አይደለም';
+
+  @override
+  String get installAppDownloading => 'መተግበሪያው እየወረደ ነው…';
+
+  @override
+  String installAppProgress(String received, String total, String speed) {
+    return '$received ከ $total · $speed';
+  }
+
+  @override
+  String get installAppReady => 'ወርዷል — ፋይሉን ከፍተው ይጫኑ።';
+
+  @override
+  String get installAppRetry => 'እንደገና ሞክር';
+
+  @override
+  String get installAppRetryHint => 'መተግበሪያውን ማውረድ አልተቻለም። ኢንተርኔትዎን ይፈትሹ።';
+
+  @override
   String ratingsCountLabel(int count) {
     return '$count ደረጃዎች';
   }
