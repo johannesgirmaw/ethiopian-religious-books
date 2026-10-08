@@ -1,14 +1,16 @@
 from uuid import UUID
 
+from django import forms
 from django.contrib import admin, messages
 from django.db import models
+from django.db.models import OuterRef, Subquery
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import path, reverse
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.contrib.forms.widgets import WysiwygWidget
-from unfold.widgets import UnfoldAdminTextareaWidget
+from unfold.widgets import UnfoldAdminSelectWidget, UnfoldAdminTextareaWidget
 
 from apps.catalog.models import (
     Book,
@@ -52,8 +54,40 @@ class BookTagInline(TabularInline):
     autocomplete_fields = ("tag",)
 
 
+class BookAdminForm(forms.ModelForm):
+    """Genre is a slug string. Offer the Genre table as a dropdown so a book
+    can be moved between categories without typing the slug."""
+
+    class Meta:
+        model = Book
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        genres = Genre.objects.order_by("ordinal", "label")
+        choices = [(g.slug, f"{g.label} ({g.slug})") for g in genres]
+        current = (self.initial.get("genre") or "").strip()
+        known = {slug for slug, _label in choices}
+        if current and current not in known:
+            choices.insert(0, (current, f"{current} (not in genre list)"))
+        elif not current:
+            choices.insert(0, ("", "—"))
+        self.fields["genre"] = forms.ChoiceField(
+            choices=choices,
+            required=False,
+            label="Genre",
+            help_text=(
+                "Category used by the reader filters. A chip appears only "
+                "after at least one book uses this genre. Add or rename "
+                "categories under Genres."
+            ),
+            widget=UnfoldAdminSelectWidget(),
+        )
+
+
 @admin.register(Book)
 class BookAdmin(ModelAdmin):
+    form = BookAdminForm
     change_form_after_template = "admin/catalog/book/publish_panel.html"
     formfield_overrides = {
         models.TextField: {"widget": WysiwygWidget()},
@@ -68,6 +102,7 @@ class BookAdmin(ModelAdmin):
     }
     list_display = (
         "title",
+        "genre_label",
         "catalog_visibility",
         "is_premium",
         "price",
@@ -76,7 +111,12 @@ class BookAdmin(ModelAdmin):
         "primary_language",
         "updated_at",
     )
-    list_filter = ("catalog_visibility", "primary_language", "is_premium")
+    list_filter = (
+        "catalog_visibility",
+        "primary_language",
+        "is_premium",
+        ("genre", admin.AllValuesFieldListFilter),
+    )
     search_fields = ("title", "subtitle", "author_compiler", "summary")
     ordering = ("title",)
     readonly_fields = ("id", "search_text_normalized", "created_at", "updated_at")
@@ -88,6 +128,7 @@ class BookAdmin(ModelAdmin):
             "Catalog",
             {
                 "fields": (
+                    "genre",
                     "primary_language",
                     "script_tags",
                     "catalog_visibility",
@@ -135,6 +176,14 @@ class BookAdmin(ModelAdmin):
             },
         ),
     )
+
+    def get_queryset(self, request):
+        label = Genre.objects.filter(slug=OuterRef("genre")).values("label")[:1]
+        return super().get_queryset(request).annotate(_genre_label=Subquery(label))
+
+    @admin.display(description="Genre", ordering="genre")
+    def genre_label(self, obj):
+        return getattr(obj, "_genre_label", None) or obj.genre or "—"
 
     @admin.display(description="Published revision")
     def published_revision_link(self, obj):

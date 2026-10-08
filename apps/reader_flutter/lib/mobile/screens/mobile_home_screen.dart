@@ -15,6 +15,7 @@ import '../../providers/session_notifier.dart';
 import '../../utils/catalog_categories.dart';
 import '../../utils/catalog_language_label.dart';
 import '../../widgets/app_state_view.dart';
+import '../../widgets/home/home_filters.dart';
 import '../widgets/shell/liquid_glass_nav_bar.dart';
 import '../../widgets/skeleton_loader.dart';
 import '../widgets/catalog/catalog_filter_tabs.dart';
@@ -265,22 +266,12 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
     return result;
   }
 
-  /// Genre filter chips: the dynamic genres lookup, limited to genres actually
-  /// present in the catalog, plus any legacy slugs not in the lookup.
+  /// Genre chips for categories that have at least one catalog book.
   List<GenreOption> _genreOptions(List<BookSummary> books) {
-    final lookup =
-        ref.watch(genresProvider).valueOrNull ?? const <GenreOption>[];
-    final present = <String>{for (final b in books) (b.genre ?? '').trim()}
-      ..removeWhere((s) => s.isEmpty);
-    final bySlug = {for (final g in lookup) g.slug: g};
-    final options = <GenreOption>[
-      for (final g in lookup)
-        if (present.contains(g.slug)) g,
-    ];
-    for (final s in present) {
-      if (!bySlug.containsKey(s)) options.add(GenreOption(slug: s, label: s));
-    }
-    return options;
+    return genreOptionsFor(
+      books,
+      ref.watch(genresProvider).valueOrNull ?? const <GenreOption>[],
+    );
   }
 
   @override

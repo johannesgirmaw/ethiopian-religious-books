@@ -38,8 +38,9 @@ void applyHomeSort(List<BookSummary> list, HomeSort sort) {
   }
 }
 
-/// Distinct genres present in [books], ordered by [lookup], labelled from it;
-/// any legacy slug not in the lookup is appended.
+/// Genres that at least one book uses, ordered by [lookup] and labelled from it.
+/// Categories with no books are omitted. A book slug missing from [lookup] is
+/// appended so a legacy category still appears as a filter.
 List<GenreOption> genreOptionsFor(
   List<BookSummary> books,
   List<GenreOption> lookup,

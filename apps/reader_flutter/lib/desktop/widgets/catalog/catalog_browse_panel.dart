@@ -8,6 +8,7 @@ import '../../../providers/catalog_providers.dart';
 import '../../../utils/catalog_categories.dart';
 import '../../../utils/catalog_language_label.dart';
 import '../../../widgets/app_state_view.dart';
+import '../../../widgets/home/home_filters.dart';
 import '../../../widgets/primitives/shell_primitives.dart';
 import 'catalog_grid_delegate.dart';
 import 'desktop_book_card.dart';
@@ -58,22 +59,11 @@ class _DesktopCatalogBrowsePanelState
     return key;
   }
 
-  /// Genres present in the catalog, ordered by the lookup, labelled from it.
   List<GenreOption> _genreOptions() {
-    final lookup =
-        ref.watch(genresProvider).valueOrNull ?? const <GenreOption>[];
-    final present = <String>{
-      for (final b in widget.books) (b.genre ?? '').trim(),
-    }..removeWhere((s) => s.isEmpty);
-    final bySlug = {for (final g in lookup) g.slug: g};
-    final options = <GenreOption>[
-      for (final g in lookup)
-        if (present.contains(g.slug)) g,
-    ];
-    for (final s in present) {
-      if (!bySlug.containsKey(s)) options.add(GenreOption(slug: s, label: s));
-    }
-    return options;
+    return genreOptionsFor(
+      widget.books,
+      ref.watch(genresProvider).valueOrNull ?? const <GenreOption>[],
+    );
   }
 
   String _genreLabel(BuildContext context, GenreOption g) {
