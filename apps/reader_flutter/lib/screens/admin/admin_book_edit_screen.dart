@@ -61,8 +61,8 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   final _author = TextEditingController();
   final _language = TextEditingController(text: 'am');
   final _publishedYear = TextEditingController();
-  final _price = TextEditingController();
-  String _currency = 'USD';
+  final _priceEtb = TextEditingController();
+  final _priceUsd = TextEditingController();
   List<String> _scriptTagsList = [];
   List<AdminDraftChapter> _chaptersDraft = const [];
   String _visibility = 'hidden';
@@ -92,9 +92,9 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   bool _clearCoverOnSave = false;
   late final FormDraftController _bookDraft;
 
-  /// True when [_price] currently holds the reader-facing (stored) amount and
-  /// still needs to be converted to the author's pre-fee price.
-  bool _priceIsListedAmount = false;
+  /// True when the price fields still hold reader-facing (stored) amounts and
+  /// need to be converted to the author's pre-fee prices.
+  bool _pricesAreListedAmounts = false;
 
   String? _draftUserId() =>
       ref.read(sessionNotifierProvider).valueOrNull?.user?.id;
@@ -127,7 +127,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     if (restored) {
       setState(() {
         _dirty = true;
-        _priceIsListedAmount = false;
+        _pricesAreListedAmounts = false;
       });
       showFormDraftRestoredSnackBar(context);
     }
@@ -142,8 +142,8 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
       'author': _author.text,
       'language': _language.text,
       'publishedYear': _publishedYear.text,
-      'price': _price.text,
-      'currency': _currency,
+      'priceEtb': _priceEtb.text,
+      'priceUsd': _priceUsd.text,
       'scriptTags': _scriptTagsList,
       'chaptersDraft': _chaptersDraft.map((e) => e.toJson()).toList(),
       'genre': _genre,
@@ -165,8 +165,15 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     _author.text = data['author'] as String? ?? '';
     _language.text = data['language'] as String? ?? 'am';
     _publishedYear.text = data['publishedYear'] as String? ?? '';
-    _price.text = data['price'] as String? ?? '';
-    _currency = data['currency'] as String? ?? 'USD';
+    if (data.containsKey('priceEtb') || data.containsKey('priceUsd')) {
+      _priceEtb.text = data['priceEtb'] as String? ?? '';
+      _priceUsd.text = data['priceUsd'] as String? ?? '';
+    } else {
+      final legacy = data['price'] as String? ?? '';
+      final currency = (data['currency'] as String? ?? 'USD').toUpperCase();
+      _priceEtb.text = currency == 'ETB' ? legacy : '';
+      _priceUsd.text = currency == 'USD' ? legacy : '';
+    }
     _scriptTagsList = [
       for (final tag in (data['scriptTags'] as List? ?? const []))
         tag.toString(),
@@ -208,12 +215,17 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     final hasCover =
         data['coverBytesB64'] is String &&
         (data['coverBytesB64'] as String).isNotEmpty;
+    final hasPrice =
+        (data['priceEtb'] as String? ?? '').trim().isNotEmpty ||
+        (data['priceUsd'] as String? ?? '').trim().isNotEmpty ||
+        (data['price'] as String? ?? '').trim().isNotEmpty;
     return title.isEmpty &&
         subtitle.isEmpty &&
         summary.isEmpty &&
         author.isEmpty &&
         !hasChapters &&
-        !hasCover;
+        !hasCover &&
+        !hasPrice;
   }
 
   void _onTitleChanged() {
@@ -240,9 +252,12 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
         : null;
     _isPremium = b.isPremium;
     _isFeatured = b.isFeatured;
-    _currency = b.currency.isNotEmpty ? b.currency : 'USD';
-    _price.text = b.price > 0 ? _trimNum(b.price) : '';
-    _priceIsListedAmount = b.price > 0;
+    final code = b.currency.toUpperCase();
+    final etbListed = code == 'ETB' && b.price > 0 ? b.price : b.priceEtb;
+    final usdListed = code == 'USD' && b.price > 0 ? b.price : b.priceUsd;
+    _priceEtb.text = etbListed > 0 ? _trimNum(etbListed) : '';
+    _priceUsd.text = usdListed > 0 ? _trimNum(usdListed) : '';
+    _pricesAreListedAmounts = etbListed > 0 || usdListed > 0;
     _chaptersDraft = _withConsecutivePageNumbers(b.chaptersDraft);
     _visibility = b.catalogVisibility;
     _reviewStatus = b.reviewStatus;
@@ -310,7 +325,8 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     _author.dispose();
     _language.dispose();
     _publishedYear.dispose();
-    _price.dispose();
+    _priceEtb.dispose();
+    _priceUsd.dispose();
     _bookDraft.dispose();
     super.dispose();
   }
@@ -335,18 +351,41 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     return listed / (1 + commissionPercent / 100);
   }
 
-  void _convertListedPriceIfNeeded(double commissionPercent) {
-    if (!_priceIsListedAmount) return;
-    _priceIsListedAmount = false;
-    final listed = double.tryParse(_price.text.trim());
-    if (listed == null || listed <= 0 || commissionPercent <= 0) return;
-    _price.text = _trimNum(_authorAmountFromListed(listed, commissionPercent));
+  void _convertListedPricesIfNeeded(double commissionPercent) {
+    if (!_pricesAreListedAmounts) return;
+    _pricesAreListedAmounts = false;
+    _priceEtb.text = _authorPriceText(_priceEtb.text, commissionPercent);
+    _priceUsd.text = _authorPriceText(_priceUsd.text, commissionPercent);
   }
 
-  double _pricePayload(double commissionPercent) {
+  /// Accepts `1000`, `1000.50`, and thousands commas (`1,000`).
+  double? _parsePriceInput(String raw) {
+    final text = raw.trim().replaceAll(',', '');
+    if (text.isEmpty) return null;
+    return double.tryParse(text);
+  }
+
+  String _authorPriceText(String raw, double commissionPercent) {
+    final listed = _parsePriceInput(raw);
+    if (listed == null || listed <= 0 || commissionPercent <= 0) return raw;
+    return _trimNum(_authorAmountFromListed(listed, commissionPercent));
+  }
+
+  double _pricePayload(
+    TextEditingController controller,
+    double commissionPercent,
+  ) {
     if (!_isPremium) return 0;
-    final authorAmount = double.tryParse(_price.text.trim()) ?? 0;
+    final authorAmount = _parsePriceInput(controller.text) ?? 0;
     return _listedPriceFromAuthor(authorAmount, commissionPercent);
+  }
+
+  String? _validateOptionalPrice(String? raw, AppLocalizations l10n) {
+    final text = raw?.trim() ?? '';
+    if (text.isEmpty) return null;
+    final value = _parsePriceInput(text);
+    if (value == null || value < 0) return l10n.adminPriceInvalid;
+    return null;
   }
 
   String _mimeFromPath(String path) {
@@ -737,7 +776,12 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
           .toList();
       final commissionPercent =
           ref.read(commissionRateProvider).valueOrNull ?? 0;
-      final listedPrice = _pricePayload(commissionPercent);
+      final listedEtb = _pricePayload(_priceEtb, commissionPercent);
+      final listedUsd = _pricePayload(_priceUsd, commissionPercent);
+      final listedPrice = listedUsd > 0 ? listedUsd : listedEtb;
+      final listedCurrency = listedUsd > 0
+          ? 'USD'
+          : (listedEtb > 0 ? 'ETB' : 'USD');
       if (widget.isNew) {
         final res = await dio.post<Map<String, dynamic>>(
           'admin/books',
@@ -757,8 +801,10 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
               'published_year': int.tryParse(_publishedYear.text.trim()),
             'is_premium': _isPremium,
             'is_featured': _isFeatured,
-            'currency': _currency,
+            'currency': listedCurrency,
             'price': listedPrice,
+            'price_etb': listedEtb,
+            'price_usd': listedUsd,
             'sale_price': null,
             'chapters_draft': chaptersDraftPayload,
           },
@@ -792,8 +838,10 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                 : int.tryParse(_publishedYear.text.trim()),
             'is_premium': _isPremium,
             'is_featured': _isFeatured,
-            'currency': _currency,
+            'currency': listedCurrency,
             'price': listedPrice,
+            'price_etb': listedEtb,
+            'price_usd': listedUsd,
             'sale_price': null,
             'chapters_draft': chaptersDraftPayload,
           },
@@ -887,28 +935,92 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     );
   }
 
-  static const _currencyCodes = ['USD', 'ETB', 'EUR', 'GBP'];
-
-  Widget _buildServiceFeeRow(
+  Widget _buildPricingFields(
     AppLocalizations l10n, {
     required bool sideBySide,
   }) {
     final commissionPercent =
         ref.watch(commissionRateProvider).valueOrNull ?? 0;
-    final authorAmount = double.tryParse(_price.text.trim()) ?? 0;
-    final listed = _listedPriceFromAuthor(authorAmount, commissionPercent);
+    final etbAuthor = _parsePriceInput(_priceEtb.text) ?? 0;
+    final usdAuthor = _parsePriceInput(_priceUsd.text) ?? 0;
+    final etbListed = _listedPriceFromAuthor(etbAuthor, commissionPercent);
+    final usdListed = _listedPriceFromAuthor(usdAuthor, commissionPercent);
     final percentLabel = commissionPercent == commissionPercent.roundToDouble()
         ? commissionPercent.toInt().toString()
         : commissionPercent.toString();
-    final description = authorAmount > 0 && commissionPercent > 0
-        ? l10n.adminServiceFeeDescription(
-            percentLabel,
-            formatMoney(listed, _currency),
+    final String description;
+    if (etbAuthor > 0 && usdAuthor > 0) {
+      description = l10n.adminServiceFeeDualDescription(
+        percentLabel,
+        formatMoney(etbListed, 'ETB'),
+        formatMoney(usdListed, 'USD'),
+      );
+    } else if (etbAuthor > 0 && commissionPercent > 0) {
+      description = l10n.adminServiceFeeDescription(
+        percentLabel,
+        formatMoney(etbListed, 'ETB'),
+      );
+    } else if (usdAuthor > 0 && commissionPercent > 0) {
+      description = l10n.adminServiceFeeDescription(
+        percentLabel,
+        formatMoney(usdListed, 'USD'),
+      );
+    } else {
+      description = l10n.adminServiceFeeEmptyDescription(percentLabel);
+    }
+    final etbField = TextFormField(
+      controller: _priceEtb,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      decoration: InputDecoration(
+        labelText: l10n.adminPriceEtbLabel,
+        prefixText: 'Br ',
+      ),
+      validator: (value) => _validateOptionalPrice(value, l10n),
+      onChanged: (_) {
+        setState(() {});
+        _markDirty();
+      },
+    );
+    final usdField = TextFormField(
+      controller: _priceUsd,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      decoration: InputDecoration(
+        labelText: l10n.adminPriceUsdLabel,
+        prefixText: r'$ ',
+      ),
+      validator: (value) => _validateOptionalPrice(value, l10n),
+      onChanged: (_) {
+        setState(() {});
+        _markDirty();
+      },
+    );
+    final fields = sideBySide
+        ? Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: etbField),
+              const SizedBox(width: 16),
+              Expanded(child: usdField),
+            ],
           )
-        : l10n.adminServiceFeeEmptyDescription(percentLabel);
-    final copy = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [etbField, const SizedBox(height: 12), usdField],
+          );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Text(
+          l10n.adminDualPriceHint,
+          style: const TextStyle(
+            fontSize: 13,
+            height: 1.45,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        fields,
+        const SizedBox(height: 12),
         Text(
           l10n.adminServiceFeeTitle,
           style: const TextStyle(
@@ -927,52 +1039,6 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
           ),
         ),
       ],
-    );
-    final field = TextField(
-      controller: _price,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      decoration: InputDecoration(
-        labelText: l10n.adminPriceLabel,
-        prefixText: '$_currency ',
-      ),
-      onChanged: (_) {
-        setState(() {});
-        _markDirty();
-      },
-    );
-    if (sideBySide) {
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(flex: 5, child: copy),
-          const SizedBox(width: 16),
-          Expanded(flex: 6, child: field),
-        ],
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [copy, const SizedBox(height: 12), field],
-    );
-  }
-
-  Widget _buildCurrencyDropdown(AppLocalizations l10n) {
-    final codes = [
-      ..._currencyCodes,
-      if (!_currencyCodes.contains(_currency)) _currency,
-    ];
-    return DropdownButtonFormField<String>(
-      initialValue: _currency,
-      isExpanded: true,
-      decoration: InputDecoration(labelText: l10n.adminCurrencyLabel),
-      items: [
-        for (final c in codes)
-          DropdownMenuItem<String>(value: c, child: Text(c)),
-      ],
-      onChanged: (v) {
-        setState(() => _currency = v ?? 'USD');
-        _markDirty();
-      },
     );
   }
 
@@ -1426,10 +1492,10 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   Widget build(BuildContext context) {
     ref.listen<AsyncValue<double>>(commissionRateProvider, (prev, next) {
       final percent = next.valueOrNull;
-      if (percent == null || !_priceIsListedAmount) return;
+      if (percent == null || !_pricesAreListedAmounts) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        _convertListedPriceIfNeeded(percent);
+        _convertListedPricesIfNeeded(percent);
         setState(() {});
       });
     });
@@ -1697,9 +1763,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                               const SizedBox(height: 18),
                               AppSectionHeader(title: l10n.adminPricingSection),
                               const SizedBox(height: 12),
-                              _buildCurrencyDropdown(l10n),
-                              const SizedBox(height: 12),
-                              _buildServiceFeeRow(
+                              _buildPricingFields(
                                 l10n,
                                 sideBySide: wide || twoPane,
                               ),

@@ -484,6 +484,16 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
                   color: AppColors.textSecondary,
                 ),
               ),
+              if (book.priceLabel.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  book.priceLabel,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -503,7 +513,9 @@ class _AdminBookCardState extends ConsumerState<_AdminBookCard> {
         children: [
           Icon(icon, size: 20, color: color),
           const SizedBox(width: 12),
-          Expanded(child: Text(label, style: TextStyle(color: color))),
+          Expanded(
+            child: Text(label, style: TextStyle(color: color)),
+          ),
         ],
       ),
     );

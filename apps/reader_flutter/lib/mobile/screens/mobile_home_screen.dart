@@ -676,10 +676,8 @@ class _BookGrid extends StatelessWidget {
         ),
         itemCount: books.length,
         separatorBuilder: (_, _) => const Divider(height: 1),
-        itemBuilder: (context, i) => MobileBookListRow(
-          book: books[i],
-          index: _globalIndex(i),
-        ),
+        itemBuilder: (context, i) =>
+            MobileBookListRow(book: books[i], index: _globalIndex(i)),
       );
     }
     return GridView.builder(
@@ -695,7 +693,7 @@ class _BookGrid extends StatelessWidget {
         crossAxisCount: 2,
         crossAxisSpacing: 14,
         mainAxisSpacing: 18,
-        childAspectRatio: 0.62,
+        childAspectRatio: 0.52,
       ),
       itemCount: books.length,
       itemBuilder: (context, i) {

@@ -56,6 +56,8 @@ class BookListSerializer(serializers.ModelSerializer):
             "cover_url",
             "currency",
             "price",
+            "price_etb",
+            "price_usd",
             "sale_price",
             "final_price",
             "content_format",

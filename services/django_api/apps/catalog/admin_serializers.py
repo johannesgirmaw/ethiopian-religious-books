@@ -1,5 +1,6 @@
 import logging
 import re
+from decimal import Decimal
 
 from rest_framework import serializers
 
@@ -27,7 +28,84 @@ def _validate_percent(value):
     return value
 
 
-class AdminBookCreateSerializer(serializers.ModelSerializer):
+def _non_negative_money(value):
+    if value is not None and value < 0:
+        raise serializers.ValidationError("Price cannot be negative.")
+    return value
+
+
+def _as_decimal(value) -> Decimal:
+    if value is None:
+        return Decimal("0")
+    return Decimal(value)
+
+
+def apply_dual_currency_prices(attrs, instance=None):
+    """Keep ``price``/``currency`` aligned with ``price_etb`` and ``price_usd``.
+
+    When a writer sends either dual-currency field, those amounts win and the
+    primary checkout price becomes the USD amount when it is set, otherwise
+    the ETB amount. A legacy write that only sends ``price`` + ``currency`` is
+    copied into the matching bucket.
+    """
+    has_etb = "price_etb" in attrs
+    has_usd = "price_usd" in attrs
+    if has_etb or has_usd:
+        etb = _as_decimal(attrs["price_etb"]) if has_etb else _as_decimal(
+            getattr(instance, "price_etb", 0) if instance is not None else 0
+        )
+        usd = _as_decimal(attrs["price_usd"]) if has_usd else _as_decimal(
+            getattr(instance, "price_usd", 0) if instance is not None else 0
+        )
+        if has_etb:
+            attrs["price_etb"] = etb
+        if has_usd:
+            attrs["price_usd"] = usd
+        if usd > 0:
+            attrs["currency"] = "USD"
+            attrs["price"] = usd
+        elif etb > 0:
+            attrs["currency"] = "ETB"
+            attrs["price"] = etb
+        else:
+            attrs["price"] = Decimal("0")
+        return attrs
+
+    if "price" not in attrs and "currency" not in attrs:
+        return attrs
+    price = attrs.get("price", getattr(instance, "price", 0) if instance is not None else 0)
+    currency = (
+        attrs.get("currency")
+        or (getattr(instance, "currency", None) if instance is not None else None)
+        or "USD"
+    ).upper()
+    attrs["currency"] = currency
+    if currency == "ETB":
+        attrs["price_etb"] = price or Decimal("0")
+    elif currency == "USD":
+        attrs["price_usd"] = price or Decimal("0")
+    return attrs
+
+
+class _DualPriceSerializer(serializers.ModelSerializer):
+    def validate_price(self, value):
+        return _non_negative_money(value)
+
+    def validate_sale_price(self, value):
+        return _non_negative_money(value)
+
+    def validate_price_etb(self, value):
+        return _non_negative_money(value)
+
+    def validate_price_usd(self, value):
+        return _non_negative_money(value)
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        return apply_dual_currency_prices(attrs, self.instance)
+
+
+class AdminBookCreateSerializer(_DualPriceSerializer):
     tag_slugs = serializers.ListField(
         child=serializers.SlugField(),
         required=False,
@@ -52,6 +130,8 @@ class AdminBookCreateSerializer(serializers.ModelSerializer):
             "author",
             "currency",
             "price",
+            "price_etb",
+            "price_usd",
             "sale_price",
             "commission_percent",
             "chapters_draft",
@@ -179,6 +259,8 @@ class AdminBookSerializer(serializers.ModelSerializer):
             "author",
             "currency",
             "price",
+            "price_etb",
+            "price_usd",
             "sale_price",
             "commission_percent",
             "final_price",
@@ -218,7 +300,7 @@ class AdminBookSerializer(serializers.ModelSerializer):
         )
 
 
-class AdminBookPatchSerializer(serializers.ModelSerializer):
+class AdminBookPatchSerializer(_DualPriceSerializer):
     cover_object_key = serializers.CharField(max_length=500, allow_blank=True, required=False)
     tag_slugs = serializers.ListField(
         child=serializers.SlugField(),
@@ -271,6 +353,8 @@ class AdminBookPatchSerializer(serializers.ModelSerializer):
             "author",
             "currency",
             "price",
+            "price_etb",
+            "price_usd",
             "sale_price",
             "commission_percent",
             "chapters_draft",

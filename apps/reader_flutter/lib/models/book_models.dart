@@ -1,3 +1,4 @@
+import '../utils/book_prices.dart';
 import '../utils/rich_text_codec.dart';
 import '../utils/resolve_cover_url.dart';
 
@@ -24,11 +25,7 @@ class PublishedRevision {
 
   factory PublishedRevision.fromJson(Map<String, dynamic>? j) {
     if (j == null) {
-      return PublishedRevision(
-        id: '',
-        revisionNumber: 0,
-        contentFormat: '',
-      );
+      return PublishedRevision(id: '', revisionNumber: 0, contentFormat: '');
     }
     return PublishedRevision(
       id: j['id'] as String,
@@ -63,6 +60,8 @@ class BookSummary {
     this.isFeatured = false,
     this.currency = 'USD',
     this.price = 0,
+    this.priceEtb = 0,
+    this.priceUsd = 0,
     this.salePrice,
     this.finalPrice = 0,
     this.createdAt,
@@ -94,8 +93,7 @@ class BookSummary {
 
   /// True when the published package is a PDF document (not chapter text).
   bool get isPdf =>
-      (contentFormat ?? publishedRevision?.contentFormat ?? '')
-          .toLowerCase() ==
+      (contentFormat ?? publishedRevision?.contentFormat ?? '').toLowerCase() ==
       'pdf';
 
   /// "old" | "new" | null — only meaningful when [isBible].
@@ -107,23 +105,42 @@ class BookSummary {
   final bool isPremium;
   final bool isFeatured;
 
-  /// ISO currency code for [price] / [salePrice] / [finalPrice].
+  /// ISO currency code for the primary [price] / [salePrice] / [finalPrice].
   final String currency;
 
-  /// Regular selling price.
+  /// Regular selling price in [currency].
   final double price;
+
+  /// List price in Ethiopian birr. Zero when the book is not sold in ETB.
+  final double priceEtb;
+
+  /// List price in US dollars. Zero when the book is not sold in USD.
+  final double priceUsd;
 
   /// Optional discounted price (null when not on sale).
   final double? salePrice;
 
-  /// What a buyer actually pays: [salePrice] when set, else [price].
+  /// What a buyer actually pays in [currency]: [salePrice] when set, else [price].
   final double finalPrice;
   final DateTime? createdAt;
 
   bool get hasRating => ratingCount > 0;
 
+  /// ETB then USD amounts readers see. Includes a legacy single-currency price.
+  List<BookPriceQuote> get priceQuotes => bookPriceQuotes(
+    currency: currency,
+    price: price,
+    salePrice: salePrice,
+    finalPrice: finalPrice,
+    priceEtb: priceEtb,
+    priceUsd: priceUsd,
+  );
+
+  /// `Br 550.00 · $10.00`, or empty when the book is free.
+  String get priceLabel => formatBookPriceQuotes(priceQuotes);
+
   /// Whether this title requires a purchase to read.
-  bool get requiresPurchase => isPremium && finalPrice > 0;
+  bool get requiresPurchase => isPremium && priceQuotes.isNotEmpty;
 
   /// Unpublished titles are only returned to managers previewing a draft.
   bool get isCatalogPublished => catalogVisibility == 'published';
@@ -161,6 +178,8 @@ class BookSummary {
           ? j['currency'] as String
           : 'USD',
       price: _toDouble(j['price']),
+      priceEtb: _toDouble(j['price_etb']),
+      priceUsd: _toDouble(j['price_usd']),
       salePrice: j['sale_price'] == null ? null : _toDouble(j['sale_price']),
       finalPrice: _toDouble(j['final_price']),
       createdAt: DateTime.tryParse(j['created_at'] as String? ?? ''),
@@ -169,10 +188,7 @@ class BookSummary {
 }
 
 class CatalogPage {
-  CatalogPage({
-    required this.items,
-    this.catalogEtag,
-  });
+  CatalogPage({required this.items, this.catalogEtag});
 
   final List<BookSummary> items;
   final String? catalogEtag;
@@ -278,10 +294,7 @@ class BookContentChapter {
 }
 
 class BookContentTree {
-  BookContentTree({
-    required this.chapters,
-    required this.totalPages,
-  });
+  BookContentTree({required this.chapters, required this.totalPages});
 
   final List<BookContentChapter> chapters;
   final int totalPages;

@@ -105,8 +105,8 @@ class BookAdmin(ModelAdmin):
         "genre_label",
         "catalog_visibility",
         "is_premium",
-        "price",
-        "currency",
+        "price_etb",
+        "price_usd",
         "published_revision_link",
         "primary_language",
         "updated_at",
@@ -142,13 +142,18 @@ class BookAdmin(ModelAdmin):
                 "fields": (
                     "author",
                     "is_premium",
+                    "price_etb",
+                    "price_usd",
                     "currency",
                     "price",
                     "sale_price",
                     "commission_percent",
                 ),
                 "description": (
-                    "Premium titles with a price require a purchase to read. "
+                    "Enter the ETB and USD list prices readers see. Premium "
+                    "titles with a price require a purchase to read. "
+                    "<code>price</code> and <code>currency</code> are the primary "
+                    "checkout amount and stay aligned with those prices. "
                     "Leave commission blank to fall back to the author override, "
                     "then the platform default. <code>author</code> is the User "
                     "(with the author role) who receives the author share."

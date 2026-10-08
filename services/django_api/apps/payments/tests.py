@@ -18,9 +18,12 @@ from apps.payments.models import (
     RevenueLedger,
 )
 from apps.payments.services import (
+    book_is_priced,
+    buyer_amount,
     compute_amounts,
     create_revenue_ledger,
     final_price,
+    quote_for_payment,
     resolve_commission_percent,
     resolve_commission_percent_for_author,
 )
@@ -602,6 +605,109 @@ class AdminBookPricingApiTests(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data["final_price"], "80.00")
         self.assertEqual(res.data["price"], "100.00")
+
+    def test_create_book_with_etb_and_usd_prices(self):
+        res = self.client.post(
+            "/v1/admin/books",
+            {
+                "title": "Dual Price Book",
+                "is_premium": True,
+                "price_etb": "550.00",
+                "price_usd": "10.00",
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, 201, res.data)
+        book = Book.objects.get(title="Dual Price Book")
+        self.assertEqual(book.price_etb, Decimal("550.00"))
+        self.assertEqual(book.price_usd, Decimal("10.00"))
+        # USD is the primary checkout amount when both are set.
+        self.assertEqual(book.currency, "USD")
+        self.assertEqual(book.price, Decimal("10.00"))
+        self.assertEqual(res.data["price_etb"], "550.00")
+        self.assertEqual(res.data["price_usd"], "10.00")
+
+    def test_patch_updates_both_prices(self):
+        book = make_book(price="50.00", price_usd=Decimal("50.00"), created_by=self.admin)
+        res = self.client.patch(
+            f"/v1/admin/books/{book.id}",
+            {"price_etb": "800.00", "price_usd": "15.50"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 200, res.data)
+        book.refresh_from_db()
+        self.assertEqual(book.price_etb, Decimal("800.00"))
+        self.assertEqual(book.price_usd, Decimal("15.50"))
+        self.assertEqual(book.price, Decimal("15.50"))
+        self.assertEqual(book.currency, "USD")
+
+    def test_legacy_price_is_copied_into_currency_bucket(self):
+        book = make_book(price="50.00", created_by=self.admin)
+        res = self.client.patch(
+            f"/v1/admin/books/{book.id}",
+            {"price": "70.00", "currency": "ETB"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 200, res.data)
+        book.refresh_from_db()
+        self.assertEqual(book.price_etb, Decimal("70.00"))
+        self.assertEqual(book.currency, "ETB")
+
+    def test_public_catalog_exposes_both_prices(self):
+        book = make_book(
+            price="10.00",
+            price_usd=Decimal("10.00"),
+            price_etb=Decimal("550.00"),
+            currency="USD",
+            is_premium=True,
+            catalog_visibility=Book.Visibility.PUBLISHED,
+        )
+        self.client.force_authenticate(make_user("reader3@example.com"))
+        res = self.client.get(f"/v1/books/{book.id}")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(Decimal(res.data["price_etb"]), Decimal("550.00"))
+        self.assertEqual(Decimal(res.data["price_usd"]), Decimal("10.00"))
+
+
+class DualCurrencyQuoteTests(TestCase):
+    def test_bank_transfer_charges_etb_when_both_prices_exist(self):
+        book = make_book(
+            price="10.00",
+            price_usd=Decimal("10.00"),
+            price_etb=Decimal("550.00"),
+            currency="USD",
+            commission_percent=Decimal("10.00"),
+        )
+        currency, amount = quote_for_payment(book, PaymentMethod.BANK_TRANSFER)
+        self.assertEqual(currency, "ETB")
+        self.assertEqual(amount, Decimal("550.00"))
+        amounts = compute_amounts(book, sale_amount=amount)
+        self.assertEqual(amounts["commission_amount"], Decimal("55.00"))
+
+    def test_card_checkout_charges_usd(self):
+        book = make_book(
+            price="10.00",
+            price_usd=Decimal("10.00"),
+            price_etb=Decimal("550.00"),
+            currency="USD",
+        )
+        currency, amount = quote_for_payment(book, PaymentMethod.STRIPE)
+        self.assertEqual(currency, "USD")
+        self.assertEqual(amount, Decimal("10.00"))
+
+    def test_single_currency_book_falls_back(self):
+        book = make_book(price="100.00", currency="USD")
+        self.assertEqual(buyer_amount(book, "ETB"), Decimal("0"))
+        currency, amount = quote_for_payment(book, PaymentMethod.BANK_TRANSFER)
+        self.assertEqual(currency, "USD")
+        self.assertEqual(amount, Decimal("100.00"))
+
+    def test_etb_only_book_is_priced(self):
+        book = make_book(price="0.00", price_etb=Decimal("200.00"), currency="USD")
+        self.assertTrue(book_is_priced(book))
+        currency, amount = quote_for_payment(book, PaymentMethod.TELEBIRR)
+        self.assertEqual(currency, "ETB")
+        self.assertEqual(amount, Decimal("200.00"))
 
 
 class EntitlementsApiTests(TestCase):

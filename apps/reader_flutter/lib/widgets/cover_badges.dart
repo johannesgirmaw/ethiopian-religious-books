@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../design/app_tokens.dart';
-import '../utils/resolve_cover_url.dart';
 import '../models/book_models.dart';
+import '../utils/book_prices.dart';
 import '../utils/money_format.dart';
+import '../utils/resolve_cover_url.dart';
 
 /// Shared cover overlays used by book cards on every platform.
 
@@ -51,7 +52,11 @@ class RatingBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.star_rounded, size: compact ? 11 : 13, color: AppColors.accent),
+          Icon(
+            Icons.star_rounded,
+            size: compact ? 11 : 13,
+            color: AppColors.accent,
+          ),
           const SizedBox(width: 3),
           Text(
             average.toStringAsFixed(1),
@@ -88,8 +93,11 @@ class PremiumBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.workspace_premium_rounded,
-              size: compact ? 9 : 11, color: Colors.white),
+          Icon(
+            Icons.workspace_premium_rounded,
+            size: compact ? 9 : 11,
+            color: Colors.white,
+          ),
           const SizedBox(width: 3),
           Text(
             'PREMIUM',
@@ -149,7 +157,10 @@ class PriceBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!book.requiresPurchase) return const SizedBox.shrink();
+    final quotes = book.priceQuotes;
+    if (!book.requiresPurchase || quotes.isEmpty) {
+      return const SizedBox.shrink();
+    }
     final fs = compact ? 9.5 : 11.0;
     return Container(
       padding: EdgeInsets.symmetric(
@@ -161,30 +172,16 @@ class PriceBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.pill),
         boxShadow: AppShadows.listRow,
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (book.isOnSale) ...[
-            Text(
-              formatMoney(book.price, book.currency),
-              style: TextStyle(
-                fontSize: fs - 1.5,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textTertiary,
-                decoration: TextDecoration.lineThrough,
-              ),
-            ),
-            const SizedBox(width: 4),
-          ],
-          Text(
-            formatMoney(book.finalPrice, book.currency),
-            style: TextStyle(
-              fontSize: fs,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primary,
-            ),
-          ),
-        ],
+      child: Text(
+        formatBookPriceQuotes(quotes),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: fs,
+          fontWeight: FontWeight.w800,
+          color: AppColors.primary,
+          height: 1.25,
+        ),
       ),
     );
   }
@@ -199,10 +196,43 @@ class BookPriceLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!book.requiresPurchase) return const SizedBox.shrink();
-    final onSale = book.isOnSale;
-    final discount = onSale && book.price > 0
-        ? (((book.price - book.finalPrice) / book.price) * 100).round()
+    final quotes = book.priceQuotes;
+    if (!book.requiresPurchase || quotes.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 8,
+      runSpacing: 4,
+      children: [
+        for (var i = 0; i < quotes.length; i++) ...[
+          if (i > 0) ...[
+            const Text(
+              '·',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textTertiary,
+              ),
+            ),
+          ],
+          _DetailQuote(quote: quotes[i]),
+        ],
+      ],
+    );
+  }
+}
+
+class _DetailQuote extends StatelessWidget {
+  const _DetailQuote({required this.quote});
+
+  final BookPriceQuote quote;
+
+  @override
+  Widget build(BuildContext context) {
+    final compareAt = quote.compareAt;
+    final discount = compareAt != null && compareAt > 0
+        ? (((compareAt - quote.amount) / compareAt) * 100).round()
         : 0;
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -210,17 +240,17 @@ class BookPriceLabel extends StatelessWidget {
       textBaseline: TextBaseline.alphabetic,
       children: [
         Text(
-          formatMoney(book.finalPrice, book.currency),
+          formatMoney(quote.amount, quote.currency),
           style: const TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w800,
             color: AppColors.primary,
           ),
         ),
-        if (onSale) ...[
+        if (compareAt != null) ...[
           const SizedBox(width: 8),
           Text(
-            formatMoney(book.price, book.currency),
+            formatMoney(compareAt, quote.currency),
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w500,

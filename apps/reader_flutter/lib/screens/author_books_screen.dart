@@ -78,7 +78,7 @@ class AuthorBooksScreen extends ConsumerWidget {
                   maxCrossAxisExtent: 220,
                   crossAxisSpacing: 14,
                   mainAxisSpacing: 18,
-                  childAspectRatio: 0.62,
+                  childAspectRatio: 0.52,
                 ),
                 itemCount: books.length,
                 itemBuilder: (context, i) =>

@@ -1,3 +1,5 @@
+import '../utils/book_prices.dart';
+
 double _toDouble(dynamic value) {
   if (value is num) return value.toDouble();
   if (value is String) return double.tryParse(value) ?? 0;
@@ -14,8 +16,10 @@ class AdminBooksPage {
     final raw = j['items'];
     final list = raw is List
         ? raw
-            .map((e) => AdminBook.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList()
+              .map(
+                (e) => AdminBook.fromJson(Map<String, dynamic>.from(e as Map)),
+              )
+              .toList()
         : <AdminBook>[];
     return AdminBooksPage(
       items: list,
@@ -47,6 +51,8 @@ class AdminBook {
     this.authorId,
     this.currency = 'USD',
     this.price = 0,
+    this.priceEtb = 0,
+    this.priceUsd = 0,
     this.salePrice,
     this.commissionPercent,
     this.coverObjectKey,
@@ -95,7 +101,24 @@ class AdminBook {
   final String? authorId;
   final String currency;
   final double price;
+  final double priceEtb;
+  final double priceUsd;
   final double? salePrice;
+
+  /// Buyer-facing amount in [currency].
+  double get finalPrice => salePrice ?? price;
+
+  /// ETB then USD, for the admin book list.
+  String get priceLabel => formatBookPriceQuotes(
+    bookPriceQuotes(
+      currency: currency,
+      price: price,
+      salePrice: salePrice,
+      finalPrice: finalPrice,
+      priceEtb: priceEtb,
+      priceUsd: priceUsd,
+    ),
+  );
   final double? commissionPercent;
   final String? coverObjectKey;
   final String? coverGetUrl;
@@ -140,7 +163,8 @@ class AdminBook {
       reviewStatus: j['review_status'] as String? ?? 'draft',
       latestReviewNote: j['latest_review_note'] is Map
           ? BookReviewNote.fromJson(
-              Map<String, dynamic>.from(j['latest_review_note'] as Map))
+              Map<String, dynamic>.from(j['latest_review_note'] as Map),
+            )
           : null,
       genre: j['genre'] as String?,
       isBible: j['is_bible'] as bool? ?? false,
@@ -153,6 +177,8 @@ class AdminBook {
           ? j['currency'] as String
           : 'USD',
       price: _toDouble(j['price']),
+      priceEtb: _toDouble(j['price_etb']),
+      priceUsd: _toDouble(j['price_usd']),
       salePrice: j['sale_price'] == null ? null : _toDouble(j['sale_price']),
       commissionPercent: j['commission_percent'] == null
           ? null
@@ -160,12 +186,13 @@ class AdminBook {
       coverObjectKey: j['cover_object_key'] as String?,
       coverGetUrl: j['cover_get_url'] as String?,
       publishedRevisionId: j['published_revision_id'] as String?,
-      publishedRevisionNumber:
-          (j['published_revision_number'] as num?)?.toInt(),
+      publishedRevisionNumber: (j['published_revision_number'] as num?)
+          ?.toInt(),
       publishedContentFormat: j['published_content_format'] as String?,
       pdfDraft: j['pdf_draft'] is Map
           ? AdminPdfDraft.fromJson(
-              Map<String, dynamic>.from(j['pdf_draft'] as Map))
+              Map<String, dynamic>.from(j['pdf_draft'] as Map),
+            )
           : null,
       createdById: j['created_by_id'] as String?,
       createdAt: j['created_at'] as String?,
@@ -300,9 +327,9 @@ class AdminDraftChapter {
     final rawPages = j['pages'];
     final pages = rawPages is List
         ? rawPages
-            .whereType<Map>()
-            .map((e) => AdminDraftPage.fromJson(Map<String, dynamic>.from(e)))
-            .toList()
+              .whereType<Map>()
+              .map((e) => AdminDraftPage.fromJson(Map<String, dynamic>.from(e)))
+              .toList()
         : <AdminDraftPage>[];
     return AdminDraftChapter(
       chapterKey: j['chapter_key'] as String? ?? '',
@@ -312,16 +339,16 @@ class AdminDraftChapter {
   }
 
   Map<String, dynamic> toJson() => {
-        'chapter_key': chapterKey,
-        'title': title,
-        'pages': pages.map((e) => e.toJson()).toList(),
-      };
+    'chapter_key': chapterKey,
+    'title': title,
+    'pages': pages.map((e) => e.toJson()).toList(),
+  };
 
   /// Payload for admin save — keys and page numbers are assigned by the API.
   Map<String, dynamic> toDraftPayload() => {
-        'title': title,
-        'pages': pages.map((e) => e.toDraftPayload()).toList(),
-      };
+    'title': title,
+    'pages': pages.map((e) => e.toDraftPayload()).toList(),
+  };
 }
 
 class AdminDraftPage {
@@ -344,14 +371,11 @@ class AdminDraftPage {
   }
 
   Map<String, dynamic> toJson() => {
-        'page_number': pageNumber,
-        'title': title,
-        'body': body,
-      };
+    'page_number': pageNumber,
+    'title': title,
+    'body': body,
+  };
 
   /// Payload for admin save — page numbers are assigned by the API.
-  Map<String, dynamic> toDraftPayload() => {
-        'title': title,
-        'body': body,
-      };
+  Map<String, dynamic> toDraftPayload() => {'title': title, 'body': body};
 }

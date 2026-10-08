@@ -378,6 +378,17 @@ class _AdminBookRowState extends ConsumerState<_AdminBookRow> {
                       color: AppColors.textTertiary,
                     ),
                   ),
+                  if (book.priceLabel.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      book.priceLabel,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

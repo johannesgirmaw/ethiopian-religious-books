@@ -89,6 +89,21 @@ class Book(models.Model):
     )
     currency = models.CharField(max_length=3, default="USD")
     price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    # Reader-facing list prices. A book can be offered in birr and dollars at
+    # the same time; ``price`` / ``currency`` stay in sync with whichever of
+    # these is the primary checkout amount.
+    price_etb = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text="List price in Ethiopian birr (ETB).",
+    )
+    price_usd = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text="List price in US dollars (USD).",
+    )
     sale_price = models.DecimalField(
         max_digits=12,
         decimal_places=2,

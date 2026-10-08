@@ -2,7 +2,7 @@ from django.conf import settings
 from django.db.models import Q
 
 from apps.catalog.models import Book
-from apps.payments.services import final_price, user_owns_book
+from apps.payments.services import book_is_priced, user_owns_book
 from apps.study.models import BookReview, ReaderEvent, UserReadingProgress
 
 REVIEW_REQUIRES_PURCHASE = "REVIEW_REQUIRES_PURCHASE"
@@ -26,7 +26,7 @@ def review_eligibility_error(user, book: Book) -> dict | None:
     reading. When study tools are disabled we cannot observe progress, so
     only the purchase gate applies.
     """
-    if book.is_premium and final_price(book) > 0 and not user_owns_book(user, book):
+    if book.is_premium and book_is_priced(book) and not user_owns_book(user, book):
         return {
             "code": REVIEW_REQUIRES_PURCHASE,
             "message": "Purchase this book before leaving a review.",

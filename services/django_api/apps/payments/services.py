@@ -38,15 +38,77 @@ def final_price(book: Book) -> Decimal:
     return _money(book.price or Decimal("0"))
 
 
+# Ethiopian methods charge birr; card/wallet methods charge dollars.
+_METHOD_CURRENCY = {
+    "stripe": "USD",
+    "paypal": "USD",
+    "telebirr": "ETB",
+    "bank_transfer": "ETB",
+}
+
+
+def buyer_amount(book: Book, currency: str) -> Decimal:
+    """List price a buyer pays in ``currency``.
+
+    ``price_etb`` / ``price_usd`` are the dual list prices. ``sale_price``
+    discounts only the book's primary currency. When the matching dual field
+    is still empty, the legacy ``price`` is used for that currency.
+    """
+    code = (currency or "").upper()
+    if code == "ETB":
+        listed = _money(book.price_etb or 0)
+    elif code == "USD":
+        listed = _money(book.price_usd or 0)
+    else:
+        listed = Decimal("0")
+
+    primary_code = (book.currency or "USD").upper()
+    if code == primary_code:
+        if book.sale_price is not None:
+            return final_price(book)
+        if listed > 0:
+            return listed
+        return final_price(book)
+    return listed
+
+
+def quote_for_payment(book: Book, method: str) -> tuple[str, Decimal]:
+    """Currency and amount to charge for ``method``.
+
+    Prefers the method's currency. A book priced in only one currency can
+    still be bought with the other methods, using the price that is set.
+    """
+    preferred = _METHOD_CURRENCY.get(method, (book.currency or "USD").upper())
+    amount = buyer_amount(book, preferred)
+    if amount > 0:
+        return preferred, amount
+    seen = {preferred}
+    for code in ((book.currency or "").upper(), "USD", "ETB"):
+        if not code or code in seen:
+            continue
+        seen.add(code)
+        other = buyer_amount(book, code)
+        if other > 0:
+            return code, other
+    return preferred, Decimal("0")
+
+
+def book_is_priced(book: Book) -> bool:
+    """True when a reader must pay in at least one currency."""
+    if final_price(book) > 0:
+        return True
+    return (book.price_etb or 0) > 0 or (book.price_usd or 0) > 0
+
+
 def user_owns_book(user, book: Book) -> bool:
     """Whether ``user`` is entitled to read ``book`` (including offline).
 
-    True when the book is free (``final_price`` <= 0) or the user has a COMPLETED
+    True when the book is free (no ETB or USD price) or the user has a COMPLETED
     purchase for it. This is the single gate shared by the download endpoint, the
     offline-license endpoint and the reader's buy-gate, so they never disagree.
     Mirrors the query in :class:`apps.payments.views.EntitlementsView`.
     """
-    if final_price(book) <= 0:
+    if not book_is_priced(book):
         return True
     if user is None or not getattr(user, "is_authenticated", False):
         return False
@@ -100,11 +162,18 @@ def resolve_commission_percent_for_author(
 
 
 def compute_amounts(
-    book: Book, settings_obj: PlatformSettings | None = None
+    book: Book,
+    settings_obj: PlatformSettings | None = None,
+    *,
+    sale_amount: Decimal | None = None,
 ) -> dict[str, Decimal]:
-    """Return sale/commission/author split for one purchase of ``book``."""
+    """Return sale/commission/author split for one purchase of ``book``.
+
+    ``sale_amount`` overrides the book's primary price so a charge in the
+    other currency (ETB vs USD) uses that list price.
+    """
     settings_obj = settings_obj or PlatformSettings.get_solo()
-    sale = final_price(book)
+    sale = final_price(book) if sale_amount is None else _money(sale_amount)
     percent = resolve_commission_percent(book, settings_obj)
     commission = _money(sale * percent / _HUNDRED)
     author = _money(sale - commission)

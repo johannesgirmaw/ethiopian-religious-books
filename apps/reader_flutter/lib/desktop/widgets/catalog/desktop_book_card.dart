@@ -14,11 +14,7 @@ import 'book_tile_hover.dart';
 
 /// Compact catalog card for desktop library grids.
 class DesktopBookCard extends ConsumerWidget {
-  const DesktopBookCard({
-    super.key,
-    required this.book,
-    required this.index,
-  });
+  const DesktopBookCard({super.key, required this.book, required this.index});
 
   final BookSummary book;
   final int index;
@@ -57,11 +53,7 @@ class DesktopBookCard extends ConsumerWidget {
                           color: Colors.white.withValues(alpha: 0.20),
                           borderRadius: BorderRadius.circular(9),
                         ),
-                        child: Icon(
-                          icon,
-                          color: Colors.white,
-                          size: 17,
-                        ),
+                        child: Icon(icon, color: Colors.white, size: 17),
                       ),
                     ),
                     if (book.coverUrl != null)
@@ -104,9 +96,13 @@ class DesktopBookCard extends ConsumerWidget {
                       ),
                     if (book.requiresPurchase)
                       Positioned(
-                        bottom: 8,
+                        left: 8,
                         right: 8,
-                        child: PriceBadge(book: book, compact: true),
+                        bottom: 8,
+                        child: Align(
+                          alignment: Alignment.bottomRight,
+                          child: PriceBadge(book: book, compact: true),
+                        ),
                       ),
                     if ((meta?.progress ?? 0) > 0)
                       Positioned(
@@ -151,6 +147,19 @@ class DesktopBookCard extends ConsumerWidget {
                         fontSize: 10,
                         height: 1.2,
                         color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                  if (book.priceLabel.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      book.priceLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
                       ),
                     ),
                   ],
@@ -237,6 +246,19 @@ class DesktopBookListRow extends ConsumerWidget {
                           color: AppColors.textSecondary,
                         ),
                       ),
+                    if (book.priceLabel.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        book.priceLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

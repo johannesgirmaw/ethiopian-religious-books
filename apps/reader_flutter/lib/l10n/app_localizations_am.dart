@@ -2162,7 +2162,26 @@ class AppLocalizationsAm extends AppLocalizations {
   String get adminPriceLabel => 'የእርስዎ ዋጋ';
 
   @override
+  String get adminPriceEtbLabel => 'የእርስዎ ዋጋ (ብር)';
+
+  @override
+  String get adminPriceUsdLabel => 'የእርስዎ ዋጋ (ዶላር)';
+
+  @override
+  String get adminDualPriceHint =>
+      'ዋጋውን በኢትዮጵያ ብር፣ በአሜሪካ ዶላር ወይም በሁለቱም ያስገቡ። አንባቢዎች ያስገቡትን እያንዳንዱን መጠን ያያሉ።';
+
+  @override
+  String get adminPriceInvalid => 'ትክክለኛ ዋጋ ያስገቡ';
+
+  @override
   String get adminSalePriceLabel => 'የቅናሽ ዋጋ (አማራጭ)';
+
+  @override
+  String get bookPriceEtb => 'ብር';
+
+  @override
+  String get bookPriceUsd => 'ዶላር';
 
   @override
   String get adminCommissionPercentLabel => 'ድርሻ %';
@@ -2176,6 +2195,15 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String adminServiceFeeDescription(String percent, String total) {
     return 'በዋጋዎ ላይ $percent% የመድረክ አገልግሎት ክፍያ ይጨመራል። አንባቢዎች $total ይከፍላሉ።';
+  }
+
+  @override
+  String adminServiceFeeDualDescription(
+    String percent,
+    String etbTotal,
+    String usdTotal,
+  ) {
+    return 'በእያንዳንዱ ዋጋ ላይ $percent% የመድረክ አገልግሎት ክፍያ ይጨመራል። አንባቢዎች $etbTotal እና $usdTotal ይከፍላሉ።';
   }
 
   @override

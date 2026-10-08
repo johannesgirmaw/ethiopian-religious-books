@@ -54,9 +54,9 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
   late final FormDraftController _draft;
 
   String _draftKey() => FormDraftKeys.scope(
-        userId: ref.read(sessionNotifierProvider).valueOrNull?.user?.id,
-        formKey: FormDraftKeys.payment(widget.book.id),
-      );
+    userId: ref.read(sessionNotifierProvider).valueOrNull?.user?.id,
+    formKey: FormDraftKeys.payment(widget.book.id),
+  );
 
   @override
   void initState() {
@@ -107,9 +107,7 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
 
       try {
         final banks = await ref.read(banksProvider.future);
-        if (mounted &&
-            _selectedBankId == null &&
-            banks.length == 1) {
+        if (mounted && _selectedBankId == null && banks.length == 1) {
           _selectedBankId = banks.first.id;
         }
       } catch (_) {}
@@ -117,13 +115,13 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
   }
 
   Map<String, dynamic> _captureDraft() => {
-        'step': _step.index,
-        'method': _selectedMethod?.name,
-        'bankId': _selectedBankId,
-        'reference': _referenceCtrl.text,
-        'receiptName': _receiptName,
-        'transactionId': _transaction?.id,
-      };
+    'step': _step.index,
+    'method': _selectedMethod?.name,
+    'bankId': _selectedBankId,
+    'reference': _referenceCtrl.text,
+    'receiptName': _receiptName,
+    'transactionId': _transaction?.id,
+  };
 
   void _applyDraft(Map<String, dynamic> data) {
     final stepIndex = (data['step'] as num?)?.toInt();
@@ -284,34 +282,34 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
             ],
             switch (_step) {
               _Step.method => _MethodStep(
-                  book: widget.book,
-                  selected: _selectedMethod,
-                  busy: _busy,
-                  onSelect: (m) => setState(() {
-                    _selectedMethod = m;
-                    _notifyDraftChanged();
-                  }),
-                  onContinue: _selectedMethod == null || _busy
-                      ? null
-                      : _continueFromMethod,
-                ),
+                book: widget.book,
+                selected: _selectedMethod,
+                busy: _busy,
+                onSelect: (m) => setState(() {
+                  _selectedMethod = m;
+                  _notifyDraftChanged();
+                }),
+                onContinue: _selectedMethod == null || _busy
+                    ? null
+                    : _continueFromMethod,
+              ),
               _Step.details => _ManualDetailsStep(
-                  book: widget.book,
-                  selectedBankId: _selectedBankId,
-                  receiptName: _receiptName,
-                  referenceController: _referenceCtrl,
-                  busy: _busy,
-                  onSelectBank: (id) => setState(() {
-                    _selectedBankId = id;
-                    _notifyDraftChanged();
-                  }),
-                  onPickReceipt: _pickReceipt,
-                  onSubmit: _busy ? null : _submitReceipt,
-                ),
+                book: widget.book,
+                selectedBankId: _selectedBankId,
+                receiptName: _receiptName,
+                referenceController: _referenceCtrl,
+                busy: _busy,
+                onSelectBank: (id) => setState(() {
+                  _selectedBankId = id;
+                  _notifyDraftChanged();
+                }),
+                onPickReceipt: _pickReceipt,
+                onSubmit: _busy ? null : _submitReceipt,
+              ),
               _Step.success => _SuccessStep(
-                  transaction: _transaction,
-                  onDone: widget.onClose,
-                ),
+                transaction: _transaction,
+                onDone: widget.onClose,
+              ),
             },
           ],
         ),
@@ -412,6 +410,7 @@ class _OrderSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final quotes = book.priceQuotes;
     return Container(
       padding: const EdgeInsets.all(AppSpace.md),
       decoration: BoxDecoration(
@@ -489,24 +488,26 @@ class _OrderSummary extends StatelessWidget {
           const SizedBox(height: AppSpace.md),
           const Divider(height: 1, color: AppColors.border),
           const SizedBox(height: AppSpace.sm),
-          if (book.isOnSale) ...[
+          for (var i = 0; i < quotes.length; i++) ...[
+            if (i > 0) const SizedBox(height: 6),
+            if (quotes[i].compareAt != null) ...[
+              _SummaryRow(
+                label: l10n.paymentPrice,
+                value: formatMoney(quotes[i].compareAt!, quotes[i].currency),
+                strikeThrough: true,
+              ),
+              const SizedBox(height: 4),
+            ],
             _SummaryRow(
-              label: l10n.paymentPrice,
-              value: formatMoney(book.price, book.currency),
-              strikeThrough: true,
+              label: quotes.length == 1
+                  ? l10n.paymentTotal
+                  : (quotes[i].currency == 'ETB'
+                        ? l10n.bookPriceEtb
+                        : l10n.bookPriceUsd),
+              value: formatMoney(quotes[i].amount, quotes[i].currency),
+              emphasize: true,
             ),
-            const SizedBox(height: 4),
-            _SummaryRow(
-              label: l10n.paymentSalePrice,
-              value: formatMoney(book.salePrice!, book.currency),
-            ),
-            const SizedBox(height: 6),
           ],
-          _SummaryRow(
-            label: l10n.paymentTotal,
-            value: formatMoney(book.finalPrice, book.currency),
-            emphasize: true,
-          ),
         ],
       ),
     );
@@ -545,8 +546,9 @@ class _SummaryRow extends StatelessWidget {
             fontSize: emphasize ? 17 : 13,
             fontWeight: emphasize ? FontWeight.w800 : FontWeight.w600,
             color: emphasize ? AppColors.primary : AppColors.textSecondary,
-            decoration:
-                strikeThrough ? TextDecoration.lineThrough : TextDecoration.none,
+            decoration: strikeThrough
+                ? TextDecoration.lineThrough
+                : TextDecoration.none,
           ),
         ),
       ],
@@ -789,10 +791,7 @@ class _ManualDetailsStep extends ConsumerWidget {
                   hint: Text(l10n.paymentSelectBank),
                   items: [
                     for (final bank in banks)
-                      DropdownMenuItem(
-                        value: bank.id,
-                        child: Text(bank.name),
-                      ),
+                      DropdownMenuItem(value: bank.id, child: Text(bank.name)),
                   ],
                   onChanged: onSelectBank,
                 ),
@@ -814,10 +813,7 @@ class _ManualDetailsStep extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: AppSpace.xs),
-        _ReceiptDropZone(
-          fileName: receiptName,
-          onTap: onPickReceipt,
-        ),
+        _ReceiptDropZone(fileName: receiptName, onTap: onPickReceipt),
         const SizedBox(height: AppSpace.lg),
         Text(
           l10n.paymentTransactionReference,
@@ -940,9 +936,9 @@ class _CopyableRow extends StatelessWidget {
           color: AppColors.primary,
           onPressed: () {
             Clipboard.setData(ClipboardData(text: value));
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(l10n.paymentCopied)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(l10n.paymentCopied)));
           },
         ),
       ],
@@ -967,9 +963,7 @@ class _ReceiptDropZone extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(AppSpace.lg),
         decoration: BoxDecoration(
-          color: hasFile
-              ? AppColors.successSurface
-              : AppColors.surfaceSoft,
+          color: hasFile ? AppColors.successSurface : AppColors.surfaceSoft,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
             color: hasFile ? AppColors.successBorder : AppColors.border,
@@ -986,11 +980,15 @@ class _ReceiptDropZone extends StatelessWidget {
             ),
             const SizedBox(height: AppSpace.xs),
             Text(
-              hasFile ? l10n.paymentReceiptSelected(fileName!) : l10n.paymentReceiptHint,
+              hasFile
+                  ? l10n.paymentReceiptSelected(fileName!)
+                  : l10n.paymentReceiptHint,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12.5,
-                color: hasFile ? AppColors.successText : AppColors.textSecondary,
+                color: hasFile
+                    ? AppColors.successText
+                    : AppColors.textSecondary,
               ),
             ),
             if (hasFile) ...[
@@ -1113,16 +1111,16 @@ class _ErrorBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline_rounded,
-              color: AppColors.errorText, size: 20),
+          const Icon(
+            Icons.error_outline_rounded,
+            color: AppColors.errorText,
+            size: 20,
+          ),
           const SizedBox(width: AppSpace.xs),
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.errorText,
-              ),
+              style: const TextStyle(fontSize: 13, color: AppColors.errorText),
             ),
           ),
         ],

@@ -14,11 +14,7 @@ import 'book_tile_hover.dart';
 
 /// Cover-first catalog card for web library grids.
 class WebBookCard extends ConsumerWidget {
-  const WebBookCard({
-    super.key,
-    required this.book,
-    required this.index,
-  });
+  const WebBookCard({super.key, required this.book, required this.index});
 
   final BookSummary book;
   final int index;
@@ -37,8 +33,7 @@ class WebBookCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            AspectRatio(
-              aspectRatio: 0.82,
+            Expanded(
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: gradient,
@@ -58,11 +53,7 @@ class WebBookCard extends ConsumerWidget {
                           color: Colors.white.withValues(alpha: 0.20),
                           borderRadius: BorderRadius.circular(11),
                         ),
-                        child: Icon(
-                          icon,
-                          color: Colors.white,
-                          size: 20,
-                        ),
+                        child: Icon(icon, color: Colors.white, size: 20),
                       ),
                     ),
                     if (book.coverUrl != null)
@@ -102,9 +93,13 @@ class WebBookCard extends ConsumerWidget {
                       ),
                     if (book.requiresPurchase)
                       Positioned(
-                        bottom: 10,
+                        left: 10,
                         right: 10,
-                        child: PriceBadge(book: book),
+                        bottom: 10,
+                        child: Align(
+                          alignment: Alignment.bottomRight,
+                          child: PriceBadge(book: book),
+                        ),
                       ),
                     if ((meta?.progress ?? 0) > 0)
                       Positioned(
@@ -151,6 +146,19 @@ class WebBookCard extends ConsumerWidget {
                       ),
                     ),
                   ],
+                  if (book.priceLabel.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      book.priceLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
                   if (meta?.chapterCount != null) ...[
                     const SizedBox(height: 6),
                     Text(
@@ -172,11 +180,7 @@ class WebBookCard extends ConsumerWidget {
 
 /// Table-style row for web list view.
 class WebBookListRow extends ConsumerWidget {
-  const WebBookListRow({
-    super.key,
-    required this.book,
-    required this.index,
-  });
+  const WebBookListRow({super.key, required this.book, required this.index});
 
   final BookSummary book;
   final int index;
@@ -203,7 +207,11 @@ class WebBookListRow extends ConsumerWidget {
                   gradient: gradient,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon, color: Colors.white.withValues(alpha: 0.85), size: 22),
+                child: Icon(
+                  icon,
+                  color: Colors.white.withValues(alpha: 0.85),
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 18),
               Expanded(
@@ -227,6 +235,19 @@ class WebBookListRow extends ConsumerWidget {
                           color: AppColors.textSecondary,
                         ),
                       ),
+                    if (book.priceLabel.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        book.priceLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -240,7 +261,11 @@ class WebBookListRow extends ConsumerWidget {
                 ),
               FavouriteHeartButton(bookId: book.id, size: 26),
               const SizedBox(width: 12),
-              const Icon(Icons.arrow_forward_rounded, size: 18, color: AppColors.textTertiary),
+              const Icon(
+                Icons.arrow_forward_rounded,
+                size: 18,
+                color: AppColors.textTertiary,
+              ),
             ],
           ),
         ),

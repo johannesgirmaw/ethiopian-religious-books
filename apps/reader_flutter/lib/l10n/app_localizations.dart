@@ -4112,11 +4112,47 @@ abstract class AppLocalizations {
   /// **'Your price'**
   String get adminPriceLabel;
 
+  /// No description provided for @adminPriceEtbLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your price (ETB)'**
+  String get adminPriceEtbLabel;
+
+  /// No description provided for @adminPriceUsdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your price (USD)'**
+  String get adminPriceUsdLabel;
+
+  /// No description provided for @adminDualPriceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a price in Ethiopian birr, US dollars, or both. Readers see each amount you set.'**
+  String get adminDualPriceHint;
+
+  /// No description provided for @adminPriceInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid price'**
+  String get adminPriceInvalid;
+
   /// No description provided for @adminSalePriceLabel.
   ///
   /// In en, this message translates to:
   /// **'Sale price (optional)'**
   String get adminSalePriceLabel;
+
+  /// No description provided for @bookPriceEtb.
+  ///
+  /// In en, this message translates to:
+  /// **'ETB'**
+  String get bookPriceEtb;
+
+  /// No description provided for @bookPriceUsd.
+  ///
+  /// In en, this message translates to:
+  /// **'USD'**
+  String get bookPriceUsd;
 
   /// No description provided for @adminCommissionPercentLabel.
   ///
@@ -4141,6 +4177,16 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A {percent}% platform service fee is added to your price to cover payments and hosting. Readers will pay {total}.'**
   String adminServiceFeeDescription(String percent, String total);
+
+  /// No description provided for @adminServiceFeeDualDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'A {percent}% platform service fee is added to each price you enter. Readers will pay {etbTotal} and {usdTotal}.'**
+  String adminServiceFeeDualDescription(
+    String percent,
+    String etbTotal,
+    String usdTotal,
+  );
 
   /// No description provided for @adminServiceFeeEmptyDescription.
   ///

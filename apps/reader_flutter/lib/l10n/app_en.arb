@@ -992,7 +992,13 @@
   "adminPricingSection": "Pricing",
   "adminCurrencyLabel": "Currency",
   "adminPriceLabel": "Your price",
+  "adminPriceEtbLabel": "Your price (ETB)",
+  "adminPriceUsdLabel": "Your price (USD)",
+  "adminDualPriceHint": "Enter a price in Ethiopian birr, US dollars, or both. Readers see each amount you set.",
+  "adminPriceInvalid": "Enter a valid price",
   "adminSalePriceLabel": "Sale price (optional)",
+  "bookPriceEtb": "ETB",
+  "bookPriceUsd": "USD",
   "adminCommissionPercentLabel": "Commission %",
   "adminCommissionHelp": "Leave blank to use the author or platform default",
   "adminServiceFeeTitle": "Service fee",
@@ -1001,6 +1007,14 @@
     "placeholders": {
       "percent": { "type": "String" },
       "total": { "type": "String" }
+    }
+  },
+  "adminServiceFeeDualDescription": "A {percent}% platform service fee is added to each price you enter. Readers will pay {etbTotal} and {usdTotal}.",
+  "@adminServiceFeeDualDescription": {
+    "placeholders": {
+      "percent": { "type": "String" },
+      "etbTotal": { "type": "String" },
+      "usdTotal": { "type": "String" }
     }
   },
   "adminServiceFeeEmptyDescription": "A {percent}% platform service fee is added to the price you enter. This covers payment processing and platform costs.",

@@ -16,6 +16,6 @@ SliverGridDelegate desktopCatalogGridDelegate(BuildContext context) {
     crossAxisCount: crossAxisCount,
     crossAxisSpacing: DesktopTokens.gridSpacing,
     mainAxisSpacing: DesktopTokens.gridMainSpacing,
-    childAspectRatio: 0.52,
+    childAspectRatio: 0.48,
   );
 }

@@ -1150,7 +1150,13 @@
   "adminPricingSection": "ዋጋ",
   "adminCurrencyLabel": "ምንዛሬ",
   "adminPriceLabel": "የእርስዎ ዋጋ",
+  "adminPriceEtbLabel": "የእርስዎ ዋጋ (ብር)",
+  "adminPriceUsdLabel": "የእርስዎ ዋጋ (ዶላር)",
+  "adminDualPriceHint": "ዋጋውን በኢትዮጵያ ብር፣ በአሜሪካ ዶላር ወይም በሁለቱም ያስገቡ። አንባቢዎች ያስገቡትን እያንዳንዱን መጠን ያያሉ።",
+  "adminPriceInvalid": "ትክክለኛ ዋጋ ያስገቡ",
   "adminSalePriceLabel": "የቅናሽ ዋጋ (አማራጭ)",
+  "bookPriceEtb": "ብር",
+  "bookPriceUsd": "ዶላር",
   "adminCommissionPercentLabel": "ድርሻ %",
   "adminCommissionHelp": "ባዶ ቢተዉ የደራሲው ወይም የመድረኩ መደበኛ ይሠራል",
   "adminServiceFeeTitle": "የአገልግሎት ክፍያ",
@@ -1159,6 +1165,14 @@
     "placeholders": {
       "percent": { "type": "String" },
       "total": { "type": "String" }
+    }
+  },
+  "adminServiceFeeDualDescription": "በእያንዳንዱ ዋጋ ላይ {percent}% የመድረክ አገልግሎት ክፍያ ይጨመራል። አንባቢዎች {etbTotal} እና {usdTotal} ይከፍላሉ።",
+  "@adminServiceFeeDualDescription": {
+    "placeholders": {
+      "percent": { "type": "String" },
+      "etbTotal": { "type": "String" },
+      "usdTotal": { "type": "String" }
     }
   },
   "adminServiceFeeEmptyDescription": "በሚያስገቡት ዋጋ ላይ {percent}% የመድረክ አገልግሎት ክፍያ ይጨመራል። ይህ የክፍያ ሂደትና የመድረክ ወጪን ይሸፍናል።",

@@ -2208,7 +2208,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminPriceLabel => 'Your price';
 
   @override
+  String get adminPriceEtbLabel => 'Your price (ETB)';
+
+  @override
+  String get adminPriceUsdLabel => 'Your price (USD)';
+
+  @override
+  String get adminDualPriceHint =>
+      'Enter a price in Ethiopian birr, US dollars, or both. Readers see each amount you set.';
+
+  @override
+  String get adminPriceInvalid => 'Enter a valid price';
+
+  @override
   String get adminSalePriceLabel => 'Sale price (optional)';
+
+  @override
+  String get bookPriceEtb => 'ETB';
+
+  @override
+  String get bookPriceUsd => 'USD';
 
   @override
   String get adminCommissionPercentLabel => 'Commission %';
@@ -2223,6 +2242,15 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String adminServiceFeeDescription(String percent, String total) {
     return 'A $percent% platform service fee is added to your price to cover payments and hosting. Readers will pay $total.';
+  }
+
+  @override
+  String adminServiceFeeDualDescription(
+    String percent,
+    String etbTotal,
+    String usdTotal,
+  ) {
+    return 'A $percent% platform service fee is added to each price you enter. Readers will pay $etbTotal and $usdTotal.';
   }
 
   @override

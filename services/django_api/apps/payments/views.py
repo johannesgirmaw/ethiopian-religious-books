@@ -52,6 +52,7 @@ from apps.payments.serializers import (
 )
 from apps.payments.services import (
     compute_amounts,
+    quote_for_payment,
     record_audit,
     resolve_commission_percent_for_author,
     submit_author_application,
@@ -153,18 +154,19 @@ class PaymentTransactionsView(_PaymentsView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        amounts = compute_amounts(book, ps)
-        if amounts["sale_amount"] <= 0:
+        currency, sale = quote_for_payment(book, method)
+        if sale <= 0:
             return Response(
                 {"error": {"code": "NOT_FOR_SALE", "message": "This book is not for sale."}},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        amounts = compute_amounts(book, ps, sale_amount=sale)
 
         txn = PaymentTransaction.objects.create(
             user=request.user,
             book=book,
             bank=bank if method in MANUAL_METHODS else None,
-            currency=book.currency,
+            currency=currency,
             amount=amounts["sale_amount"],
             commission_amount=amounts["commission_amount"],
             payment_method=method,

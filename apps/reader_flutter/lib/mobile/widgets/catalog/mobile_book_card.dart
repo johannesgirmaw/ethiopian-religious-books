@@ -49,6 +49,7 @@ class MobileBookCard extends ConsumerWidget {
               Positioned(
                 top: 8,
                 left: 8,
+                right: 40,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
@@ -116,6 +117,19 @@ class MobileBookCard extends ConsumerWidget {
             ),
           ),
         ],
+        if (book.priceLabel.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            book.priceLabel,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primary,
+            ),
+          ),
+        ],
       ],
     );
 
@@ -134,11 +148,7 @@ class MobileBookCard extends ConsumerWidget {
 
 /// Row-style book entry for the mobile catalog list view.
 class MobileBookListRow extends ConsumerWidget {
-  const MobileBookListRow({
-    super.key,
-    required this.book,
-    required this.index,
-  });
+  const MobileBookListRow({super.key, required this.book, required this.index});
 
   final BookSummary book;
   final int index;
@@ -192,6 +202,19 @@ class MobileBookListRow extends ConsumerWidget {
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: AppColors.textTertiary,
+                      ),
+                    ),
+                  ],
+                  if (book.priceLabel.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      book.priceLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
                       ),
                     ),
                   ],

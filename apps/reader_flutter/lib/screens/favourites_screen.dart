@@ -62,8 +62,9 @@ class FavouritesScreen extends ConsumerWidget {
           icon: Icons.favorite_border_rounded,
         ),
         data: (ids) {
-          final books =
-              (catalog?.items ?? []).where((b) => ids.contains(b.id)).toList();
+          final books = (catalog?.items ?? [])
+              .where((b) => ids.contains(b.id))
+              .toList();
           if (books.isEmpty) {
             return AppStateView(
               title: l10n.favouritesEmptyTitle,
@@ -80,7 +81,7 @@ class FavouritesScreen extends ConsumerWidget {
                   maxCrossAxisExtent: 220,
                   crossAxisSpacing: 14,
                   mainAxisSpacing: 18,
-                  childAspectRatio: 0.62,
+                  childAspectRatio: 0.52,
                 ),
                 itemCount: books.length,
                 itemBuilder: (context, i) =>
