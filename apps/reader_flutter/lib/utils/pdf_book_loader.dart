@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../config/dev_object_storage_origin.dart';
@@ -41,15 +40,18 @@ class PdfViewerSource {
   final Uri? uri;
 }
 
-/// Resolves a local file (native) or URI (web) for [access].
-Future<PdfViewerSource> resolvePdfViewerSource(
-  Dio dio,
-  PdfBookAccess access,
-) async {
+/// A cached file is usable only when it matches the published byte length.
+bool isCompletePdfCache(int length, int expectedBytes) =>
+    expectedBytes > 0 && length == expectedBytes;
+
+/// Resolves a local file when one is already complete, otherwise the presigned
+/// URL so the viewer can fetch page 1 by byte range.
+Future<PdfViewerSource> resolvePdfViewerSource(PdfBookAccess access) async {
   final uri = Uri.parse(access.url);
-  if (kIsWeb) {
-    return PdfViewerSource.uri(uri);
+  if (!kIsWeb) {
+    final cached = await pdf_cache.cachedPdfPath(access);
+    if (cached != null) return PdfViewerSource.file(cached);
   }
-  final path = await pdf_cache.cachePdfFile(dio, access);
-  return PdfViewerSource.file(path);
+  return PdfViewerSource.uri(uri);
 }
+

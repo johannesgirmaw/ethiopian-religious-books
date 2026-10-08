@@ -48,6 +48,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pdfOpenFailed => 'Could not open PDF';
 
   @override
+  String pdfDownloadProgress(int percent) {
+    return 'Loading PDF… $percent%';
+  }
+
+  @override
+  String get pdfConnectionFailed =>
+      'The connection was interrupted. Try again.';
+
+  @override
   String get pdfNotAPdfBook => 'This book is not a PDF document.';
 
   @override

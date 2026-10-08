@@ -176,6 +176,18 @@ abstract class AppLocalizations {
   /// **'Could not open PDF'**
   String get pdfOpenFailed;
 
+  /// No description provided for @pdfDownloadProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading PDF… {percent}%'**
+  String pdfDownloadProgress(int percent);
+
+  /// No description provided for @pdfConnectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection was interrupted. Try again.'**
+  String get pdfConnectionFailed;
+
   /// No description provided for @pdfNotAPdfBook.
   ///
   /// In en, this message translates to:

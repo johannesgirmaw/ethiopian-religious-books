@@ -35,6 +35,8 @@ deploy_api() {
 deploy_web() {
   echo "==> Building Flutter web (API_BASE_URL=$API_BASE_URL)"
   ( cd "$REPO_ROOT/apps/reader_flutter" && \
+    flutter pub get && \
+    bash tool/stage_pdfium_web.sh && \
     flutter build web --release --pwa-strategy=none --dart-define=API_BASE_URL="$API_BASE_URL" )
 
   echo "==> Syncing web build"

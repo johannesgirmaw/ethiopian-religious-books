@@ -677,7 +677,7 @@ class BookPdfView(APIView):
         try:
             url = presign_get(
                 rev.content_object_key,
-                expires_in=900,
+                expires_in=60 * 60 * 4,
                 presign_endpoint_url=presign_endpoint,
             )
             size_bytes = int(rev.total_bytes or 0)

@@ -17,6 +17,7 @@ class PdfDocumentReader extends StatefulWidget {
     this.padding = EdgeInsets.zero,
     this.loadingLabel = 'Loading PDF…',
     this.errorTitle = 'Could not open PDF',
+    this.onRetry,
   }) : assert(
           (filePath != null) ^ (uri != null),
           'Provide exactly one of filePath or uri',
@@ -27,6 +28,7 @@ class PdfDocumentReader extends StatefulWidget {
   final EdgeInsets padding;
   final String loadingLabel;
   final String errorTitle;
+  final VoidCallback? onRetry;
 
   @override
   State<PdfDocumentReader> createState() => _PdfDocumentReaderState();
@@ -262,6 +264,8 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
           : [searcher.pageTextMatchPaintCallback],
       calculateInitialZoom: (document, controller, fitZoom, coverZoom) => 1.0,
       loadingBannerBuilder: (context, bytesDownloaded, totalBytes) {
+        final l10n = AppLocalizations.of(context);
+        final label = _downloadLabel(l10n, bytesDownloaded, totalBytes);
         return Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -269,7 +273,7 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
               const CircularProgressIndicator(color: AppColors.primary),
               const SizedBox(height: AppSpace.sm),
               Text(
-                widget.loadingLabel,
+                label,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -279,6 +283,13 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
         );
       },
       errorBannerBuilder: (context, error, stackTrace, documentRef) {
+        final l10n = AppLocalizations.of(context);
+        final raw = '$error';
+        final message = raw.contains('Failed to download') ||
+                raw.contains('Timeout') ||
+                raw.contains('SocketException')
+            ? l10n.pdfConnectionFailed
+            : raw;
         return Center(
           child: Padding(
             padding: const EdgeInsets.all(AppSpace.xl),
@@ -300,12 +311,19 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
                 ),
                 const SizedBox(height: AppSpace.xs),
                 Text(
-                  '$error',
+                  message,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),
                 ),
+                if (widget.onRetry != null) ...[
+                  const SizedBox(height: AppSpace.md),
+                  FilledButton(
+                    onPressed: widget.onRetry,
+                    child: Text(l10n.retry),
+                  ),
+                ],
               ],
             ),
           ),
@@ -371,7 +389,18 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
       key: ValueKey(widget.uri.toString()),
       controller: _controller,
       params: params,
+      preferRangeAccess: true,
+      useProgressiveLoading: true,
+      timeout: const Duration(seconds: 60),
     );
+  }
+
+  String _downloadLabel(AppLocalizations l10n, int downloaded, int? total) {
+    if (total == null || total <= 0) return widget.loadingLabel;
+    var percent = ((downloaded * 100) / total).round();
+    if (percent < 0) percent = 0;
+    if (percent > 100) percent = 100;
+    return l10n.pdfDownloadProgress(percent);
   }
 
   @override

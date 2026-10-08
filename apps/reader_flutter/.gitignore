@@ -34,6 +34,9 @@ migrate_working_dir/
 .pub/
 /build/
 
+# Staged from pdfrx at web-build time. See tool/stage_pdfium_web.sh.
+web/pdfium/pdfium.wasm
+
 # Symbolication related
 app.*.symbols
 

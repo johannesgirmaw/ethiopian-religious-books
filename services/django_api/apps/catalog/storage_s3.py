@@ -62,10 +62,46 @@ def ensure_bucket() -> None:
     client = get_s3_client(for_presign=False)
     name = settings.AWS_STORAGE_BUCKET_NAME
     existing = client.list_buckets().get("Buckets", [])
-    if any(b["Name"] == name for b in existing):
-        return
-    client.create_bucket(Bucket=name)
-    logger.info("Created bucket %s", name)
+    if not any(b["Name"] == name for b in existing):
+        client.create_bucket(Bucket=name)
+        logger.info("Created bucket %s", name)
+    _ensure_pdf_read_cors(client, name)
+
+
+def _ensure_pdf_read_cors(client, name: str) -> None:
+    """Let the web reader send Range requests and read Content-Range.
+
+    Without the exposed headers the browser hides them and the PDF engine
+    falls back to downloading the whole file before the first page.
+    """
+    origins = [o for o in getattr(settings, "CORS_ALLOWED_ORIGINS", []) if o]
+    for extra in (
+        "https://app.felegemetsahft.com",
+        "http://localhost:8080",
+        "http://localhost:5000",
+        "http://127.0.0.1:8080",
+    ):
+        if extra not in origins:
+            origins.append(extra)
+    client.put_bucket_cors(
+        Bucket=name,
+        CORSConfiguration={
+            "CORSRules": [
+                {
+                    "AllowedOrigins": origins,
+                    "AllowedMethods": ["GET", "HEAD"],
+                    "AllowedHeaders": ["*"],
+                    "ExposeHeaders": [
+                        "Accept-Ranges",
+                        "Content-Range",
+                        "Content-Length",
+                        "ETag",
+                    ],
+                    "MaxAgeSeconds": 3600,
+                }
+            ]
+        },
+    )
 
 
 def dev_presign_endpoint_from_request(request: HttpRequest) -> str | None:

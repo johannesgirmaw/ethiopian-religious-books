@@ -340,7 +340,7 @@ final pdfBookAccessProvider =
 final pdfViewerSourceProvider =
     FutureProvider.autoDispose.family<PdfViewerSource, String>((ref, id) async {
   final access = await ref.watch(pdfBookAccessProvider(id).future);
-  return resolvePdfViewerSource(ref.watch(apiDioProvider), access);
+  return resolvePdfViewerSource(access);
 });
 
 final catalogCachedAtProvider = FutureProvider.autoDispose<DateTime?>((ref) {

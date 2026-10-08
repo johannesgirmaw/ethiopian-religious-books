@@ -4,6 +4,8 @@ import 'package:pdfrx/pdfrx.dart';
 
 import 'app.dart';
 import 'config/app_config.dart';
+import 'pdfium_modules_stub.dart'
+    if (dart.library.html) 'pdfium_modules_web.dart';
 import 'providers/app_locale_provider.dart';
 import 'providers/number_system_provider.dart';
 import 'storage/app_locale_storage.dart';
@@ -11,6 +13,7 @@ import 'storage/number_system_storage.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  configurePdfiumModules();
   await pdfrxFlutterInitialize(dismissPdfiumWasmWarnings: true);
   await AppConfig.ensureInitialized();
   final code = await AppLocaleStorage.readLanguageCode();

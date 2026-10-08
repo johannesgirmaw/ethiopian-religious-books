@@ -147,7 +147,15 @@ class _PdfReaderBody extends ConsumerWidget {
 
   String _errorText(Object e, AppLocalizations l10n) {
     if (e is DioException) {
-      return messageFromDioResponse(e.response?.data) ?? l10n.pdfOpenFailed;
+      final parsed = messageFromDioResponse(e.response?.data);
+      if (parsed != null) return parsed;
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.sendTimeout) {
+        return l10n.pdfConnectionFailed;
+      }
+      return l10n.pdfOpenFailed;
     }
     return l10n.pdfOpenFailed;
   }
@@ -203,6 +211,9 @@ class _PdfReaderBody extends ConsumerWidget {
                 uri: source.uri,
                 loadingLabel: l10n.pdfLoadingLabel,
                 errorTitle: l10n.pdfOpenFailed,
+                onRetry: () {
+                  ref.invalidate(pdfBookAccessProvider(bookId));
+                },
               ),
             ),
           ),

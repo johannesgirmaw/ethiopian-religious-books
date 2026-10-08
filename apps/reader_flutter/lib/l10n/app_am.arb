@@ -13,6 +13,15 @@
   "pdfReaderTitle": "የPDF አንባቢ",
   "pdfLoadingLabel": "PDF እየተከፈተ ነው…",
   "pdfOpenFailed": "PDF መክፈት አልተቻለም",
+  "pdfDownloadProgress": "PDF እየተከፈተ ነው… {percent}%",
+  "@pdfDownloadProgress": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "pdfConnectionFailed": "ግንኙነቱ ተቋርጧል። እንደገና ይሞክሩ።",
   "pdfNotAPdfBook": "ይህ መጽሐፍ PDF አይደለም።",
   "pdfDocumentSection": "የPDF መጽሐፍ",
   "pdfPickFile": "PDF ምረጥ",

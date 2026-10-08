@@ -13,6 +13,13 @@
   "pdfReaderTitle": "PDF reader",
   "pdfLoadingLabel": "Loading PDF…",
   "pdfOpenFailed": "Could not open PDF",
+  "pdfDownloadProgress": "Loading PDF… {percent}%",
+  "@pdfDownloadProgress": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "pdfConnectionFailed": "The connection was interrupted. Try again.",
   "pdfNotAPdfBook": "This book is not a PDF document.",
   "pdfDocumentSection": "PDF document",
   "pdfPickFile": "Choose PDF",
