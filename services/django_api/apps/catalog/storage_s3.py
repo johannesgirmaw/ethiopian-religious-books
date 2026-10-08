@@ -83,25 +83,30 @@ def _ensure_pdf_read_cors(client, name: str) -> None:
     ):
         if extra not in origins:
             origins.append(extra)
-    client.put_bucket_cors(
-        Bucket=name,
-        CORSConfiguration={
-            "CORSRules": [
-                {
-                    "AllowedOrigins": origins,
-                    "AllowedMethods": ["GET", "HEAD"],
-                    "AllowedHeaders": ["*"],
-                    "ExposeHeaders": [
-                        "Accept-Ranges",
-                        "Content-Range",
-                        "Content-Length",
-                        "ETag",
-                    ],
-                    "MaxAgeSeconds": 3600,
-                }
-            ]
-        },
-    )
+    try:
+        client.put_bucket_cors(
+            Bucket=name,
+            CORSConfiguration={
+                "CORSRules": [
+                    {
+                        "AllowedOrigins": origins,
+                        "AllowedMethods": ["GET", "HEAD"],
+                        "AllowedHeaders": ["*"],
+                        "ExposeHeaders": [
+                            "Accept-Ranges",
+                            "Content-Range",
+                            "Content-Length",
+                            "ETag",
+                        ],
+                        "MaxAgeSeconds": 3600,
+                    }
+                ]
+            },
+        )
+    except Exception as exc:
+        # Some MinIO builds reject PutBucketCors; the web reader uses the
+        # same-origin /pdf-proxy/ path and does not need bucket CORS.
+        logger.warning("Could not set bucket CORS on %s: %s", name, exc)
 
 
 def dev_presign_endpoint_from_request(request: HttpRequest) -> str | None:
