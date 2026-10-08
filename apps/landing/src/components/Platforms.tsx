@@ -40,17 +40,6 @@ export default function Platforms() {
         });
       });
 
-      mm.add('(max-width: 1023px)', () => {
-        gsap.from('[data-platform]', {
-          y: 36,
-          opacity: 0,
-          filter: 'blur(8px)',
-          stagger: 0.08,
-          duration: 0.7,
-          ease: 'power3.out',
-          scrollTrigger: { trigger: el, start: 'top 78%' },
-        });
-      });
     }, el);
     return () => ctx.revert();
   }, [lang]);
@@ -78,8 +67,8 @@ export default function Platforms() {
           </div>
         </div>
 
-        <div className="overflow-hidden pb-16 lg:pb-10">
-          <div data-track className="flex w-full flex-col gap-5 px-5 sm:px-8 md:grid md:grid-cols-2 lg:flex lg:w-max lg:flex-row lg:px-[12vw]">
+        <div className="pb-16 lg:overflow-hidden lg:pb-10">
+          <div data-track className="flex w-full min-w-0 flex-col gap-4 px-5 sm:px-8 md:grid md:grid-cols-2 lg:flex lg:w-max lg:flex-row lg:gap-5 lg:px-[12vw]">
             <a
               href={site.webApp}
               data-platform

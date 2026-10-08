@@ -31,6 +31,22 @@ function splitWords(text: string) {
   return text.split(/\s+/).filter(Boolean);
 }
 
+function HighlightPhrase({ text }: { text: string }) {
+  const words = splitWords(text);
+  const mid = Math.ceil(words.length / 2);
+  return (
+    <span data-highlight className="highlight">
+      {words.map((word, i) => (
+        <span key={`${word}-${i}`}>
+          {i > 0 ? ' ' : null}
+          {i === mid ? <br className="md:hidden" /> : null}
+          {word}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 export default function Hero() {
   const { t, lang } = useLang();
   const root = useRef<HTMLElement>(null);
@@ -173,35 +189,33 @@ export default function Hero() {
 
   return (
     <section ref={root} className="relative bg-white">
-      <div data-pin className="relative flex min-h-[100svh] flex-col pt-[calc(5.5rem+env(safe-area-inset-top))] lg:pt-24">
+      <div data-pin className="relative flex min-h-[100svh] min-w-0 flex-col pt-[calc(5.5rem+env(safe-area-inset-top))] lg:pt-24">
         <div className="hero-glow pointer-events-none absolute inset-0" />
         <div
           aria-hidden
-          className="pointer-events-none absolute left-1/2 top-[46%] size-[720px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-ink-900/[0.05]"
+          className="pointer-events-none absolute left-1/2 top-[46%] aspect-square w-[min(92%,720px)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-ink-900/[0.05]"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute left-1/2 top-[46%] size-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-ink-900/[0.05]"
+          className="pointer-events-none absolute left-1/2 top-[46%] aspect-square w-[min(68%,520px)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-ink-900/[0.05]"
         />
 
         <div
           data-copy
-          className="relative z-20 mx-auto flex w-full max-w-5xl flex-col items-center px-5 pt-8 text-center lg:pt-8"
+          className="relative z-20 mx-auto flex w-full min-w-0 max-w-5xl flex-col items-center px-5 pt-8 text-center lg:pt-8"
         >
-          <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-ink-900/10 bg-white px-3 py-1 text-xs font-medium text-ink-900/70 shadow-sm">
-            <span className="size-1.5 rounded-full bg-brand-400" />
-            {t.hero.eyebrow}
+          <p className="mb-5 flex max-w-full items-center justify-center gap-2 rounded-full border border-ink-900/10 bg-white px-3 py-1 text-center text-xs font-medium leading-snug text-ink-900/70 shadow-sm">
+            <span className="size-1.5 shrink-0 rounded-full bg-brand-400" />
+            <span className="min-w-0">{t.hero.eyebrow}</span>
           </p>
 
-          <h1 className="display-heading max-w-4xl text-ink-900">
+          <h1 className="display-heading max-w-full text-ink-900">
             {splitWords(t.hero.titleA).map((word, i) => (
               <span key={`a-${i}`} data-word className="mr-[0.22em] inline-block will-change-[opacity,filter,transform]">
                 {word}
               </span>
             ))}
-            <span data-highlight className="highlight">
-              {t.hero.titleB}
-            </span>
+            <HighlightPhrase text={t.hero.titleB} />
           </h1>
 
           <p className="mt-6 max-w-xl text-base text-slate-500 sm:text-lg">
@@ -220,7 +234,7 @@ export default function Hero() {
           </div>
         </div>
 
-        <div data-stage className="relative z-10 mx-auto mt-2 w-full flex-1 lg:flex lg:items-center">
+        <div data-stage className="relative z-10 mx-auto mt-2 w-full min-w-0 flex-1 lg:flex lg:items-center">
           <div className="pointer-events-none absolute inset-0 hidden lg:block">
             {FLOATING.map((card) => (
               <div key={card.rotate} data-float className={`absolute ${card.className}`}>
@@ -247,7 +261,7 @@ export default function Hero() {
             </div>
           </div>
 
-          <div className="relative mx-auto mt-6 w-full max-w-lg px-5 pb-6 lg:hidden">
+          <div className="relative mx-auto mt-6 w-full min-w-0 max-w-lg overflow-x-clip px-5 pb-6 lg:hidden">
             <BookStack books={books} />
             <div className="relative z-10 -mt-16 scale-[0.92]">
               <ReaderScreen />

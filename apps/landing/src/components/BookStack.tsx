@@ -42,7 +42,7 @@ export default function BookStack({
 
   return (
     <div
-      className="book-stage relative mx-auto flex h-[22rem] w-full max-w-xl items-center justify-center sm:h-[24rem]"
+      className="book-stage relative mx-auto flex h-[17.5rem] w-full max-w-xl items-center justify-center min-[421px]:h-[22rem] sm:h-[24rem]"
       onMouseMove={onMove}
       onMouseLeave={onLeave}
     >
@@ -60,7 +60,7 @@ export default function BookStack({
               data-book={i}
               className={`book absolute left-1/2 top-1/2 ${variants[i]}`}
               style={{
-                transform: `translate3d(calc(-50% + ${o.x}rem), calc(-50% + ${o.y}rem), ${o.z}px) rotateY(${o.rot}deg)`,
+                transform: `translate3d(calc(-50% + ${o.x} * var(--spread) * 1rem), calc(-50% + ${o.y} * var(--spread) * 1rem), ${o.z}px) rotateY(${o.rot}deg)`,
                 zIndex: front ? 3 : 2,
               }}
             >

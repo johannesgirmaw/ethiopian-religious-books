@@ -10,7 +10,7 @@ export default function ReaderScreen() {
   return (
     <div
       data-reader
-      className="reader-screen pointer-events-none relative w-[min(92vw,52rem)] overflow-hidden rounded-[28px] bg-ink-900 text-white shadow-[0_40px_90px_-28px_rgb(4_24_32/0.55)]"
+      className="reader-screen pointer-events-none relative w-full max-w-[52rem] overflow-hidden rounded-[28px] bg-ink-900 text-white shadow-[0_40px_90px_-28px_rgb(4_24_32/0.55)]"
     >
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-5">
         <div className="flex items-center gap-2">
