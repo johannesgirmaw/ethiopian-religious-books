@@ -225,3 +225,15 @@ def get_object_range(object_key: str, start: int, end: int) -> bytes:
     if body is None:
         return b""
     return body.read()
+
+
+def open_object_stream(object_key: str, *, byte_range: str | None = None) -> dict[str, Any]:
+    """Open an object for streaming. [byte_range] is an S3 Range value like ``bytes=0-1023``."""
+    client = get_s3_client(for_presign=False)
+    kwargs: dict[str, Any] = {
+        "Bucket": settings.AWS_STORAGE_BUCKET_NAME,
+        "Key": object_key,
+    }
+    if byte_range:
+        kwargs["Range"] = byte_range
+    return client.get_object(**kwargs)

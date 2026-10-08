@@ -3,7 +3,7 @@ import logging
 
 from django.conf import settings
 from django.db.models import F, Q
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, StreamingHttpResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from rest_framework import status
@@ -34,6 +34,7 @@ from apps.catalog.storage_s3 import (
     get_object_bytes,
     head_object,
     is_object_storage_configured,
+    open_object_stream,
     presign_get,
 )
 
@@ -628,51 +629,60 @@ class BookContentView(APIView):
         return Response(_content_payload_from_draft(book))
 
 
+def _entitled_pdf_revision(request, book_id):
+    """Return (book, rev) for an entitled PDF reader, or a DRF error Response."""
+    book = _readable_book(request, book_id)
+    if book is None:
+        return None, _book_not_found_response()
+    is_published = book.catalog_visibility == Book.Visibility.PUBLISHED
+    if is_published and not user_owns_book(request.user, book):
+        return None, Response(
+            {
+                "error": {
+                    "code": "NOT_ENTITLED",
+                    "message": "Purchase this book to read it.",
+                }
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    rev = book.published_revision
+    from apps.catalog.pdf_books import is_pdf_revision, latest_pdf_draft
+
+    if not is_pdf_revision(rev):
+        rev = latest_pdf_draft(book)
+    if not is_pdf_revision(rev):
+        return None, Response(
+            {
+                "error": {
+                    "code": "NOT_PDF",
+                    "message": "This book is not a PDF document.",
+                }
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if not rev.content_object_key or not is_object_storage_configured():
+        return None, Response(
+            {
+                "error": {
+                    "code": "STORAGE_UNAVAILABLE",
+                    "message": "PDF is not available from object storage.",
+                }
+            },
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+    return (book, rev), None
+
+
 class BookPdfView(APIView):
     """Short-lived presigned URL for an entitled reader to open a PDF book online."""
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request, book_id):
-        book = _readable_book(request, book_id)
-        if book is None:
-            return _book_not_found_response()
-        is_published = book.catalog_visibility == Book.Visibility.PUBLISHED
-        if is_published and not user_owns_book(request.user, book):
-            return Response(
-                {
-                    "error": {
-                        "code": "NOT_ENTITLED",
-                        "message": "Purchase this book to read it.",
-                    }
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        rev = book.published_revision
-        from apps.catalog.pdf_books import is_pdf_revision, latest_pdf_draft
-
-        if not is_pdf_revision(rev):
-            rev = latest_pdf_draft(book)
-        if not is_pdf_revision(rev):
-            return Response(
-                {
-                    "error": {
-                        "code": "NOT_PDF",
-                        "message": "This book is not a PDF document.",
-                    }
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if not rev.content_object_key or not is_object_storage_configured():
-            return Response(
-                {
-                    "error": {
-                        "code": "STORAGE_UNAVAILABLE",
-                        "message": "PDF is not available from object storage.",
-                    }
-                },
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
+        resolved, error = _entitled_pdf_revision(request, book_id)
+        if error is not None:
+            return error
+        book, rev = resolved
         presign_endpoint = dev_presign_endpoint_from_request(request)
         try:
             url = presign_get(
@@ -715,3 +725,70 @@ class BookPdfView(APIView):
                 "revision_id": str(rev.id),
             }
         )
+
+
+class BookPdfBytesView(APIView):
+    """Stream PDF bytes (with Range) for the web reader via a same-origin proxy.
+
+    The WASM PDF engine needs synchronous Range reads. Those only work
+    same-origin, so app.felegemetsahft.com proxies here instead of sending the
+    browser straight to MinIO.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, book_id):
+        resolved, error = _entitled_pdf_revision(request, book_id)
+        if error is not None:
+            return error
+        _book, rev = resolved
+        range_header = (request.META.get("HTTP_RANGE") or "").strip() or None
+        try:
+            obj = open_object_stream(rev.content_object_key, byte_range=range_header)
+        except Exception as exc:
+            err = str(exc)
+            if "InvalidRange" in err or "416" in err:
+                return HttpResponse(status=416)
+            logger.exception("pdf byte stream failed: %s", exc)
+            return Response(
+                {
+                    "error": {
+                        "code": "STORAGE_UNAVAILABLE",
+                        "message": "Could not read PDF bytes.",
+                    }
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        body = obj.get("Body")
+        if body is None:
+            return HttpResponse(status=404)
+
+        def chunks():
+            try:
+                while True:
+                    chunk = body.read(64 * 1024)
+                    if not chunk:
+                        break
+                    yield chunk
+            finally:
+                try:
+                    body.close()
+                except Exception:
+                    pass
+
+        status_code = 206 if range_header else 200
+        response = StreamingHttpResponse(
+            chunks(),
+            status=status_code,
+            content_type=obj.get("ContentType") or "application/pdf",
+        )
+        response["Accept-Ranges"] = "bytes"
+        content_length = obj.get("ContentLength")
+        if content_length is not None:
+            response["Content-Length"] = str(content_length)
+        content_range = obj.get("ContentRange")
+        if content_range:
+            response["Content-Range"] = content_range
+        response["Cache-Control"] = "private, max-age=300"
+        return response

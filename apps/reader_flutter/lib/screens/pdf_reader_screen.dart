@@ -209,6 +209,7 @@ class _PdfReaderBody extends ConsumerWidget {
               child: PdfDocumentReader(
                 filePath: source.filePath,
                 uri: source.uri,
+                headers: source.headers,
                 loadingLabel: l10n.pdfLoadingLabel,
                 errorTitle: l10n.pdfOpenFailed,
                 onRetry: () {

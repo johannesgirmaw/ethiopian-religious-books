@@ -12,6 +12,7 @@ import '../storage/reader_prefs_storage.dart';
 import '../storage/secure_book_store.dart';
 import '../utils/pdf_book_loader.dart';
 import 'api_client.dart';
+import 'session_notifier.dart';
 
 class CatalogBookMeta {
   const CatalogBookMeta({
@@ -340,7 +341,9 @@ final pdfBookAccessProvider =
 final pdfViewerSourceProvider =
     FutureProvider.autoDispose.family<PdfViewerSource, String>((ref, id) async {
   final access = await ref.watch(pdfBookAccessProvider(id).future);
-  return resolvePdfViewerSource(access);
+  final token =
+      ref.watch(sessionNotifierProvider).valueOrNull?.accessToken;
+  return resolvePdfViewerSource(access, accessToken: token);
 });
 
 final catalogCachedAtProvider = FutureProvider.autoDispose<DateTime?>((ref) {

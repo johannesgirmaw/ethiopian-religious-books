@@ -14,6 +14,7 @@ class PdfDocumentReader extends StatefulWidget {
     super.key,
     this.filePath,
     this.uri,
+    this.headers,
     this.padding = EdgeInsets.zero,
     this.loadingLabel = 'Loading PDF…',
     this.errorTitle = 'Could not open PDF',
@@ -25,6 +26,7 @@ class PdfDocumentReader extends StatefulWidget {
 
   final String? filePath;
   final Uri? uri;
+  final Map<String, String>? headers;
   final EdgeInsets padding;
   final String loadingLabel;
   final String errorTitle;
@@ -386,11 +388,12 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
     }
     return PdfViewer.uri(
       widget.uri!,
-      key: ValueKey(widget.uri.toString()),
+      key: ValueKey('${widget.uri}|${widget.headers}'),
       controller: _controller,
       params: params,
       preferRangeAccess: true,
       useProgressiveLoading: true,
+      headers: widget.headers,
       timeout: const Duration(seconds: 60),
     );
   }

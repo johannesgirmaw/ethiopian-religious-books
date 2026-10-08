@@ -50,6 +50,7 @@ from apps.catalog.views import (
     BookCoverView,
     BookLicenseView,
     BookListView,
+    BookPdfBytesView,
     BookPdfView,
     BookSearchView,
     GenreListView,
@@ -140,6 +141,7 @@ urlpatterns = [
     path("books/<uuid:book_id>/chapters", BookChapterListView.as_view()),
     path("books/<uuid:book_id>/content", BookContentView.as_view()),
     path("books/<uuid:book_id>/pdf", BookPdfView.as_view()),
+    path("books/<uuid:book_id>/pdf/bytes", BookPdfBytesView.as_view()),
     path("books/<uuid:book_id>/search", BookSearchView.as_view()),
     # --- Bible (verse-addressable open content) ---
     path("bible/books", BibleBookListView.as_view()),

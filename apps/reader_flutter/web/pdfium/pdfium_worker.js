@@ -2,7 +2,8 @@
 //
 // pdfrx's stock worker downloads the entire file before the first page can
 // paint. This wrapper keeps that path as a fallback and, when the viewer asks
-// for range access, lets pdfium read only the blocks it needs.
+// for range access, lets pdfium read only the blocks it needs via same-origin
+// Range requests (proxied through app.felegemetsahft.com/pdf-proxy/...).
 importScripts(new URL('/assets/packages/pdfrx/assets/pdfium_worker.js', self.location.origin).href);
 
 const loadDocumentFromUrlFull = loadDocumentFromUrl;
@@ -10,10 +11,15 @@ functions.loadDocumentFromUrl = async function (params) {
   if (!params || !params.preferRangeAccess) {
     return loadDocumentFromUrlFull(params);
   }
-  return loadDocumentFromUrlByRange(params);
+  try {
+    return await loadDocumentFromUrlByRange(params);
+  } catch (err) {
+    console.warn('PDF range open failed; falling back to full download', err);
+    return loadDocumentFromUrlFull(params);
+  }
 };
 
-const PDF_BLOCK_BYTES = 512 * 1024;
+const PDF_BLOCK_BYTES = 256 * 1024;
 
 async function loadDocumentFromUrlByRange(params) {
   const url = params.url;
@@ -28,7 +34,9 @@ async function loadDocumentFromUrlByRange(params) {
 
   const blocks = new Map();
   await restorePdfBlocks(url, blocks);
-  const probe = syncFetchRange(url, headers, 0, PDF_BLOCK_BYTES - 1);
+
+  // Probe with async fetch (CORS-safe). Same-origin proxy returns 206 + Content-Range.
+  const probe = await fetchRange(url, headers, 0, PDF_BLOCK_BYTES - 1);
   if (!probe.supportsRange || !probe.fileSize) {
     if (probe.bytes && probe.bytes.length > 8) {
       const copy = probe.bytes.slice();
@@ -44,8 +52,29 @@ async function loadDocumentFromUrlByRange(params) {
   const fileSize = probe.fileSize;
   if (isCompleteBlock(probe.bytes, 0, fileSize)) {
     blocks.set(0, probe.bytes);
-    rememberPdfBlock(url, 0, probe.bytes.length - 1, probe.bytes);
+    rememberPdfBlock(url, 0, Math.min(fileSize, PDF_BLOCK_BYTES) - 1, probe.bytes);
   }
+
+  // Prefetch the trailer / xref (usually near the end) before opening.
+  const lastBlock = Math.max(0, Math.floor((fileSize - 1) / PDF_BLOCK_BYTES));
+  const warm = [];
+  for (let id = Math.max(0, lastBlock - 3); id <= lastBlock; id++) {
+    if (!isCompleteBlock(blocks.get(id), id, fileSize)) warm.push(id);
+  }
+  if (lastBlock >= 1 && !isCompleteBlock(blocks.get(1), 1, fileSize)) {
+    warm.push(1);
+  }
+  await Promise.all(
+    warm.map(async (blockId) => {
+      const start = blockId * PDF_BLOCK_BYTES;
+      const end = Math.min(fileSize, start + PDF_BLOCK_BYTES) - 1;
+      const fetched = await fetchRange(url, headers, start, end);
+      if (isCompleteBlock(fetched.bytes, blockId, fileSize)) {
+        blocks.set(blockId, fetched.bytes);
+        rememberPdfBlock(url, start, end, fetched.bytes);
+      }
+    }),
+  );
   reportPdfProgress(progressCallbackId, bytesHeld(blocks), fileSize);
 
   const getBlock = (param, position, pBuf, size) => {
@@ -97,9 +126,11 @@ async function loadDocumentFromUrlByRange(params) {
     const passwordPtr = StringUtils.allocateUTF8(password);
     const docHandle = Pdfium.wasmExports.FPDF_LoadCustomDocument(fileAccessPtr, passwordPtr);
     StringUtils.freeUTF8(passwordPtr);
-    const doc = _loadDocument(docHandle, useProgressiveLoading, cleanup);
-    if (!docHandle) cleanup();
-    return doc;
+    if (!docHandle) {
+      cleanup();
+      throw new Error('FPDF_LoadCustomDocument failed');
+    }
+    return _loadDocument(docHandle, useProgressiveLoading, cleanup);
   } catch (err) {
     cleanup();
     throw err;
@@ -109,6 +140,7 @@ async function loadDocumentFromUrlByRange(params) {
 function ensurePdfBlock(url, headers, blocks, fileSize, blockId, progressCallbackId) {
   const existing = blocks.get(blockId);
   if (isCompleteBlock(existing, blockId, fileSize)) return existing;
+  // Sync XHR is allowed for same-origin (pdf-proxy). Cross-origin sync is blocked.
   const start = blockId * PDF_BLOCK_BYTES;
   const end = Math.min(fileSize, start + PDF_BLOCK_BYTES) - 1;
   const fetched = syncFetchRange(url, headers, start, end);
@@ -135,6 +167,30 @@ function bytesHeld(blocks) {
 function reportPdfProgress(callbackId, downloaded, total) {
   if (!callbackId) return;
   invokeCallback(callbackId, downloaded, total);
+}
+
+async function fetchRange(url, headers, start, end) {
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      ...(headers || {}),
+      Range: 'bytes=' + start + '-' + end,
+    },
+    credentials: 'same-origin',
+    mode: 'cors',
+  });
+  if (response.status !== 200 && response.status !== 206) {
+    throw new Error('Failed to download PDF file: ' + response.status + ' ' + response.statusText);
+  }
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  const range = response.headers.get('content-range') || response.headers.get('Content-Range');
+  const match = range ? /bytes\s+(\d+)-(\d+)\/(\d+|\*)/i.exec(range) : null;
+  const supportsRange = response.status === 206 && !!match && match[3] !== '*';
+  return {
+    supportsRange: supportsRange,
+    fileSize: supportsRange ? parseInt(match[3], 10) : bytes.length,
+    bytes: bytes,
+  };
 }
 
 function syncFetchRange(url, headers, start, end) {
@@ -170,8 +226,12 @@ function toBytes(response) {
 }
 
 function pdfCacheKey(url, start, end) {
-  const path = new URL(url).pathname;
-  return 'https://fm-pdf-cache.local' + path + '?b=' + start + '-' + end;
+  try {
+    const path = new URL(url, self.location.origin).pathname;
+    return 'https://fm-pdf-cache.local' + path + '?b=' + start + '-' + end;
+  } catch (_) {
+    return 'https://fm-pdf-cache.local/pdf?b=' + start + '-' + end;
+  }
 }
 
 function rememberPdfBlock(url, start, end, bytes) {
@@ -183,7 +243,7 @@ function rememberPdfBlock(url, start, end, bytes) {
 
 async function restorePdfBlocks(url, blocks) {
   try {
-    const path = new URL(url).pathname;
+    const path = new URL(url, self.location.origin).pathname;
     const prefix = 'https://fm-pdf-cache.local' + path + '?b=';
     const cache = await caches.open('fm-pdf-v1');
     const keys = await cache.keys();
