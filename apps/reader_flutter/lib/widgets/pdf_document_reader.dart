@@ -222,25 +222,23 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
   Future<void> _fitWidth() async {
     if (!_controller.isReady) return;
     final page = _controller.pageNumber ?? 1;
-    final fits = _controller.calcFitZoomMatrices();
-    if (fits.isNotEmpty) {
-      await _controller.goTo(fits.first.matrix);
-      return;
-    }
-    final zoom = _controller.alternativeFitScale ?? _controller.coverScale;
-    await _setZoomPercent(zoom);
-    await _controller.goToPage(pageNumber: page);
+    // Scales the current page so its width fills the viewport (may crop height).
+    // Do not use calcMatrixForPage / calcMatrixForFit — those pass zoomMax:
+    // currentZoom and refuse to enlarge from 100%.
+    final matrix = _controller.calcMatrixFitWidthForPage(pageNumber: page);
+    if (matrix == null) return;
+    await _controller.goTo(matrix);
   }
 
   Future<void> _fitPage() async {
     if (!_controller.isReady) return;
     final page = _controller.pageNumber ?? 1;
-    await _controller.goTo(
-      _controller.calcMatrixForPage(
-        pageNumber: page,
-        anchor: PdfPageAnchor.all,
-      ),
-    );
+    // Contain the whole page in the viewport (letterbox if needed).
+    final zoom = _controller.alternativeFitScale;
+    if (zoom == null) return;
+    final pageRect = _controller.layout.pageLayouts[page - 1];
+    final matrix = _controller.calcMatrixFor(pageRect.center, zoom: zoom);
+    await _controller.goTo(matrix);
   }
 
   Future<void> _resetZoom() async {
@@ -747,12 +745,12 @@ class _PdfToolbar extends StatelessWidget {
           children: [
             _ToolbarIcon(
               tooltip: 'Fit width',
-              icon: Icons.fit_screen_outlined,
+              icon: Icons.width_wide_outlined,
               onPressed: enabled ? onFitWidth : null,
             ),
             _ToolbarIcon(
               tooltip: 'Fit page',
-              icon: Icons.fullscreen_rounded,
+              icon: Icons.fit_screen_outlined,
               onPressed: enabled ? onFitPage : null,
             ),
           ],
