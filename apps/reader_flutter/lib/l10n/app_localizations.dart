@@ -4022,6 +4022,12 @@ abstract class AppLocalizations {
   /// **'Purchase book'**
   String get purchaseBook;
 
+  /// No description provided for @purchasePending.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase pending'**
+  String get purchasePending;
+
   /// No description provided for @paymentMyPurchases.
   ///
   /// In en, this message translates to:

@@ -179,31 +179,25 @@ class MobileBookDetailScreen extends ConsumerWidget {
                               if (book.authorCompiler != null &&
                                   book.authorCompiler!.isNotEmpty) ...[
                                 const SizedBox(height: 10),
-                                GestureDetector(
-                                  onTap: () => context.push(
-                                    '/author/${Uri.encodeComponent(book.authorCompiler!.trim())}',
-                                  ),
-                                  behavior: HitTestBehavior.opaque,
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.person_outline_rounded,
-                                        size: 15,
-                                        color: AppColors.primary,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(
-                                          book.authorCompiler!,
-                                          style: const TextStyle(
-                                            color: AppColors.primary,
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 13,
-                                          ),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.person_outline_rounded,
+                                      size: 15,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        book.authorCompiler!,
+                                        style: const TextStyle(
+                                          color: AppColors.textSecondary,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13,
                                         ),
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ],
@@ -328,23 +322,50 @@ class MobileBookDetailScreen extends ConsumerWidget {
                               .valueOrNull
                               ?.contains(bookId) ??
                           false;
-                      final mustBuy = book.requiresPurchase && !owned;
+                      final purchasePending =
+                          !owned &&
+                          (ref
+                                  .watch(pendingPurchaseBookIdsProvider)
+                                  .valueOrNull
+                                  ?.contains(bookId) ??
+                              false);
+                      final mustBuy =
+                          book.requiresPurchase && !owned && !purchasePending;
+                      final label = purchasePending
+                          ? l10n.purchasePending
+                          : (mustBuy ? l10n.purchaseBook : l10n.readNow);
+                      final icon = purchasePending
+                          ? Icons.hourglass_top_rounded
+                          : (mustBuy
+                                ? Icons.shopping_cart_outlined
+                                : (book.isPdf
+                                      ? Icons.picture_as_pdf_outlined
+                                      : Icons.menu_book_rounded));
                       return FilledButton.icon(
-                        onPressed: () async {
-                          if (await ensureBookUnlocked(context, ref, book) &&
-                              context.mounted) {
-                            context.push(
-                              readingPathForBook(
-                                bookId,
-                                isPdf: book.isPdf,
-                                query: 'pickChapter=1',
-                              ),
-                            );
-                          }
-                        },
+                        onPressed: purchasePending
+                            ? null
+                            : () async {
+                                if (await ensureBookUnlocked(
+                                      context,
+                                      ref,
+                                      book,
+                                    ) &&
+                                    context.mounted) {
+                                  context.push(
+                                    readingPathForBook(
+                                      bookId,
+                                      isPdf: book.isPdf,
+                                      query: 'pickChapter=1',
+                                    ),
+                                  );
+                                }
+                              },
                         style: FilledButton.styleFrom(
                           backgroundColor: AppColors.referencePrimary,
                           foregroundColor: Colors.white,
+                          disabledBackgroundColor: AppColors.referencePrimary
+                              .withValues(alpha: 0.4),
+                          disabledForegroundColor: Colors.white70,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(
@@ -352,15 +373,8 @@ class MobileBookDetailScreen extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        icon: Icon(
-                          mustBuy
-                              ? Icons.shopping_cart_outlined
-                              : (book.isPdf
-                                    ? Icons.picture_as_pdf_outlined
-                                    : Icons.menu_book_rounded),
-                          size: 20,
-                        ),
-                        label: Text(mustBuy ? l10n.purchaseBook : l10n.readNow),
+                        icon: Icon(icon, size: 20),
+                        label: Text(label),
                       );
                     },
                   ),

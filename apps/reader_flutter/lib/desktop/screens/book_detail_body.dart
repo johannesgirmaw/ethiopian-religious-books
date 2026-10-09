@@ -85,28 +85,37 @@ class DesktopBookDetailBody extends ConsumerWidget {
             !book.isPdf && (contentAsync.isLoading || chapters.isNotEmpty);
         final showReviews = reviews.isNotEmpty;
 
+        final owned =
+            ref.watch(entitledBookIdsProvider).valueOrNull?.contains(bookId) ??
+            false;
+        final purchasePending =
+            !owned &&
+            (ref
+                    .watch(pendingPurchaseBookIdsProvider)
+                    .valueOrNull
+                    ?.contains(bookId) ??
+                false);
+        final mustBuy = book.requiresPurchase && !owned && !purchasePending;
+
         final rail = _LeftRail(
           book: book,
           downloadJob: currentJob,
-          mustBuy:
-              book.requiresPurchase &&
-              !(ref
-                      .watch(entitledBookIdsProvider)
-                      .valueOrNull
-                      ?.contains(bookId) ??
-                  false),
-          onRead: () async {
-            if (await ensureBookUnlocked(context, ref, book) &&
-                context.mounted) {
-              context.push(
-                readingPathForBook(
-                  bookId,
-                  isPdf: book.isPdf,
-                  query: 'pickChapter=1',
-                ),
-              );
-            }
-          },
+          mustBuy: mustBuy,
+          purchasePending: purchasePending,
+          onRead: purchasePending
+              ? null
+              : () async {
+                  if (await ensureBookUnlocked(context, ref, book) &&
+                      context.mounted) {
+                    context.push(
+                      readingPathForBook(
+                        bookId,
+                        isPdf: book.isPdf,
+                        query: 'pickChapter=1',
+                      ),
+                    );
+                  }
+                },
           onDownload: () => _downloadSample(context, ref),
           onShare: () => onShare(book),
         );
@@ -236,14 +245,16 @@ class _LeftRail extends StatelessWidget {
     required this.onDownload,
     required this.onShare,
     required this.mustBuy,
+    required this.purchasePending,
   });
 
   final BookSummary book;
   final DownloadJob? downloadJob;
-  final VoidCallback onRead;
+  final VoidCallback? onRead;
   final VoidCallback onDownload;
   final VoidCallback onShare;
   final bool mustBuy;
+  final bool purchasePending;
 
   @override
   Widget build(BuildContext context) {
@@ -269,6 +280,7 @@ class _LeftRail extends StatelessWidget {
           onDownload: onDownload,
           onShare: onShare,
           mustBuy: mustBuy,
+          purchasePending: purchasePending,
         ),
         if (downloadJob != null) ...[
           const SizedBox(height: 16),
@@ -356,16 +368,26 @@ class _ActionButtons extends StatelessWidget {
     required this.onDownload,
     required this.onShare,
     required this.mustBuy,
+    required this.purchasePending,
   });
 
   final AppLocalizations l10n;
-  final VoidCallback onRead;
+  final VoidCallback? onRead;
   final VoidCallback onDownload;
   final VoidCallback onShare;
   final bool mustBuy;
+  final bool purchasePending;
 
   @override
   Widget build(BuildContext context) {
+    final primaryLabel = purchasePending
+        ? l10n.purchasePending
+        : (mustBuy ? l10n.purchaseBook : l10n.startReading);
+    final primaryIcon = purchasePending
+        ? Icons.hourglass_top_rounded
+        : (mustBuy
+              ? Icons.shopping_cart_outlined
+              : Icons.auto_stories_rounded);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -374,6 +396,10 @@ class _ActionButtons extends StatelessWidget {
           style: FilledButton.styleFrom(
             backgroundColor: AppColors.referencePrimary,
             foregroundColor: Colors.white,
+            disabledBackgroundColor: AppColors.referencePrimary.withValues(
+              alpha: 0.4,
+            ),
+            disabledForegroundColor: Colors.white70,
             minimumSize: const Size.fromHeight(48),
             padding: const EdgeInsets.symmetric(vertical: 15),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -385,11 +411,8 @@ class _ActionButtons extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          icon: Icon(
-            mustBuy ? Icons.shopping_cart_outlined : Icons.auto_stories_rounded,
-            size: 19,
-          ),
-          label: Text(mustBuy ? l10n.purchaseBook : l10n.startReading),
+          icon: Icon(primaryIcon, size: 19),
+          label: Text(primaryLabel),
         ),
         const SizedBox(height: 10),
         Row(
@@ -504,34 +527,27 @@ class _ContentHeader extends StatelessWidget {
         ],
         if (book.authorCompiler?.isNotEmpty == true) ...[
           const SizedBox(height: 14),
-          InkWell(
-            onTap: () => context.push(
-              '/author/${Uri.encodeComponent(book.authorCompiler!.trim())}',
-            ),
-            borderRadius: BorderRadius.circular(6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.edit_note_rounded,
-                  size: 18,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    l10n.authoredBy(book.authorCompiler!),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
-                    ),
+          Row(
+            children: [
+              const Icon(
+                Icons.edit_note_rounded,
+                size: 18,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  l10n.authoredBy(book.authorCompiler!),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
         if (book.requiresPurchase) ...[

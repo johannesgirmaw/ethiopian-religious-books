@@ -71,9 +71,20 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
         return reference.isEmpty && (method == null || method.isEmpty);
       },
     );
-    _referenceCtrl.addListener(_draft.onChanged);
+    _referenceCtrl.addListener(_onReferenceChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
   }
+
+  void _onReferenceChanged() {
+    _draft.onChanged();
+    if (mounted) setState(() {});
+  }
+
+  bool get _canSubmitReceipt =>
+      !_busy &&
+      _receiptBytes != null &&
+      (_receiptName?.trim().isNotEmpty ?? false) &&
+      _referenceCtrl.text.trim().isNotEmpty;
 
   Future<void> _bootstrap() async {
     unawaited(ref.read(paymentMethodsProvider.future));
@@ -152,7 +163,7 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
     if (_step != _Step.success) {
       unawaited(_draft.persistNow());
     }
-    _referenceCtrl.removeListener(_draft.onChanged);
+    _referenceCtrl.removeListener(_onReferenceChanged);
     _referenceCtrl.dispose();
     _draft.dispose();
     super.dispose();
@@ -296,15 +307,17 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
               _Step.details => _ManualDetailsStep(
                 book: widget.book,
                 selectedBankId: _selectedBankId,
+                receiptBytes: _receiptBytes,
                 receiptName: _receiptName,
                 referenceController: _referenceCtrl,
                 busy: _busy,
+                canSubmit: _canSubmitReceipt,
                 onSelectBank: (id) => setState(() {
                   _selectedBankId = id;
                   _notifyDraftChanged();
                 }),
                 onPickReceipt: _pickReceipt,
-                onSubmit: _busy ? null : _submitReceipt,
+                onSubmit: _canSubmitReceipt ? _submitReceipt : null,
               ),
               _Step.success => _SuccessStep(
                 transaction: _transaction,
@@ -714,9 +727,11 @@ class _ManualDetailsStep extends ConsumerWidget {
   const _ManualDetailsStep({
     required this.book,
     required this.selectedBankId,
+    required this.receiptBytes,
     required this.receiptName,
     required this.referenceController,
     required this.busy,
+    required this.canSubmit,
     required this.onSelectBank,
     required this.onPickReceipt,
     required this.onSubmit,
@@ -724,9 +739,11 @@ class _ManualDetailsStep extends ConsumerWidget {
 
   final BookSummary book;
   final String? selectedBankId;
+  final Uint8List? receiptBytes;
   final String? receiptName;
   final TextEditingController referenceController;
   final bool busy;
+  final bool canSubmit;
   final ValueChanged<String?> onSelectBank;
   final VoidCallback onPickReceipt;
   final VoidCallback? onSubmit;
@@ -813,7 +830,11 @@ class _ManualDetailsStep extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: AppSpace.xs),
-        _ReceiptDropZone(fileName: receiptName, onTap: onPickReceipt),
+        _ReceiptDropZone(
+          fileName: receiptName,
+          bytes: receiptBytes,
+          onTap: onPickReceipt,
+        ),
         const SizedBox(height: AppSpace.lg),
         Text(
           l10n.paymentTransactionReference,
@@ -832,10 +853,12 @@ class _ManualDetailsStep extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpace.lg),
         FilledButton.icon(
-          onPressed: onSubmit,
+          onPressed: canSubmit ? onSubmit : null,
           style: FilledButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
+            disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.35),
+            disabledForegroundColor: Colors.white70,
             minimumSize: const Size.fromHeight(50),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.md),
@@ -946,22 +969,50 @@ class _CopyableRow extends StatelessWidget {
   }
 }
 
+bool _looksLikeImageBytes(Uint8List bytes, String? fileName) {
+  if (bytes.length >= 3 &&
+      bytes[0] == 0xff &&
+      bytes[1] == 0xd8 &&
+      bytes[2] == 0xff) {
+    return true; // JPEG
+  }
+  if (bytes.length >= 8 &&
+      bytes[0] == 0x89 &&
+      bytes[1] == 0x50 &&
+      bytes[2] == 0x4e &&
+      bytes[3] == 0x47) {
+    return true; // PNG
+  }
+  final name = (fileName ?? '').toLowerCase();
+  return name.endsWith('.jpg') ||
+      name.endsWith('.jpeg') ||
+      name.endsWith('.png');
+}
+
 class _ReceiptDropZone extends StatelessWidget {
-  const _ReceiptDropZone({required this.fileName, required this.onTap});
+  const _ReceiptDropZone({
+    required this.fileName,
+    required this.bytes,
+    required this.onTap,
+  });
 
   final String? fileName;
+  final Uint8List? bytes;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final hasFile = fileName != null;
+    final hasFile = fileName != null && bytes != null && bytes!.isNotEmpty;
+    final showImagePreview =
+        hasFile && _looksLikeImageBytes(bytes!, fileName);
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(AppSpace.lg),
+        padding: const EdgeInsets.all(AppSpace.md),
         decoration: BoxDecoration(
           color: hasFile ? AppColors.successSurface : AppColors.surfaceSoft,
           borderRadius: BorderRadius.circular(AppRadius.md),
@@ -971,14 +1022,37 @@ class _ReceiptDropZone extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Icon(
-              hasFile
-                  ? Icons.check_circle_outline_rounded
-                  : Icons.cloud_upload_outlined,
-              size: 32,
-              color: hasFile ? AppColors.successText : AppColors.primary,
-            ),
-            const SizedBox(height: AppSpace.xs),
+            if (showImagePreview) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxHeight: 220,
+                    maxWidth: double.infinity,
+                  ),
+                  child: Image.memory(
+                    bytes!,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.broken_image_outlined,
+                      size: 48,
+                      color: AppColors.successText,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpace.sm),
+            ] else
+              Icon(
+                hasFile
+                    ? (fileName!.toLowerCase().endsWith('.pdf')
+                        ? Icons.picture_as_pdf_outlined
+                        : Icons.check_circle_outline_rounded)
+                    : Icons.cloud_upload_outlined,
+                size: 32,
+                color: hasFile ? AppColors.successText : AppColors.primary,
+              ),
+            if (!showImagePreview) const SizedBox(height: AppSpace.xs),
             Text(
               hasFile
                   ? l10n.paymentReceiptSelected(fileName!)

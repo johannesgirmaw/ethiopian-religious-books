@@ -982,6 +982,7 @@
   "paymentNoBanks": "No banks are available for bank transfer right now.",
   "paymentBuyToRead": "Buy to read",
   "purchaseBook": "Purchase book",
+  "purchasePending": "Purchase pending",
   "paymentMyPurchases": "Purchases",
   "paymentStatusPending": "Pending",
   "paymentStatusOnReview": "On review",

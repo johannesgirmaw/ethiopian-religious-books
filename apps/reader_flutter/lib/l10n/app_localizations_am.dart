@@ -2118,6 +2118,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get purchaseBook => 'መጽሐፉን ግዛ';
 
   @override
+  String get purchasePending => 'ግዢ በመጠባበቅ ላይ';
+
+  @override
   String get paymentMyPurchases => 'ግዢዎች';
 
   @override

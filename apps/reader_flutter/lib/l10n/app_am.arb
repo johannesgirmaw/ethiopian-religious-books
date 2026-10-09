@@ -1142,6 +1142,7 @@
   "paymentNoBanks": "አሁን ለባንክ ማስተላለፍ ባንክ የለም።",
   "paymentBuyToRead": "ገዝተው ያንብቡ",
   "purchaseBook": "መጽሐፉን ግዛ",
+  "purchasePending": "ግዢ በመጠባበቅ ላይ",
   "paymentMyPurchases": "ግዢዎች",
   "paymentStatusPending": "በመጠባበቅ",
   "paymentStatusOnReview": "በምርመራ ላይ",

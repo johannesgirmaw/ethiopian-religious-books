@@ -56,6 +56,17 @@ final myTransactionsProvider =
       .toList();
 });
 
+/// Book ids with a submitted payment still waiting on admin (or approved but
+/// not yet completed). Used to disable "Purchase" on the book detail page.
+final pendingPurchaseBookIdsProvider =
+    FutureProvider.autoDispose<Set<String>>((ref) async {
+  final txns = await ref.watch(myTransactionsProvider.future);
+  return {
+    for (final t in txns)
+      if (t.status.isAwaitingReview && t.bookId.isNotEmpty) t.bookId,
+  };
+});
+
 /// A single transaction by id (polled for status updates).
 final transactionProvider = FutureProvider.autoDispose
     .family<PaymentTransaction, String>((ref, id) async {

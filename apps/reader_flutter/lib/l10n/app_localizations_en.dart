@@ -2165,6 +2165,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get purchaseBook => 'Purchase book';
 
   @override
+  String get purchasePending => 'Purchase pending';
+
+  @override
   String get paymentMyPurchases => 'Purchases';
 
   @override

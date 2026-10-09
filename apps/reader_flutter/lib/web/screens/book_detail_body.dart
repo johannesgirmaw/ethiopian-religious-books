@@ -83,15 +83,20 @@ class BookDetailBody extends ConsumerWidget {
         final showToc =
             !book.isPdf && (contentAsync.isLoading || chapters.isNotEmpty);
         final showReviews = reviews.isNotEmpty;
-        final mustBuy =
-            book.requiresPurchase &&
-            !(ref
-                    .watch(entitledBookIdsProvider)
+        final owned =
+            ref.watch(entitledBookIdsProvider).valueOrNull?.contains(bookId) ??
+            false;
+        final purchasePending =
+            !owned &&
+            (ref
+                    .watch(pendingPurchaseBookIdsProvider)
                     .valueOrNull
                     ?.contains(bookId) ??
                 false);
+        final mustBuy = book.requiresPurchase && !owned && !purchasePending;
 
         Future<void> onRead() async {
+          if (purchasePending) return;
           if (await ensureBookUnlocked(context, ref, book) && context.mounted) {
             context.push(
               readingPathForBook(
@@ -106,8 +111,9 @@ class BookDetailBody extends ConsumerWidget {
         final actions = _ActionCluster(
           l10n: l10n,
           mustBuy: mustBuy,
+          purchasePending: purchasePending,
           stretch: expanded,
-          onRead: onRead,
+          onRead: purchasePending ? null : onRead,
           onDownload: () => _downloadSample(context, ref),
           onShare: () => onShare(book),
         );
@@ -503,7 +509,7 @@ class _TitleBlock extends StatelessWidget {
         ],
         if (book.authorCompiler?.isNotEmpty == true) ...[
           const SizedBox(height: 14),
-          _AuthorLink(name: book.authorCompiler!, l10n: l10n),
+          _AuthorLabel(name: book.authorCompiler!, l10n: l10n),
         ],
         if (book.hasRating) ...[
           const SizedBox(height: 12),
@@ -561,6 +567,7 @@ class _ActionCluster extends StatelessWidget {
   const _ActionCluster({
     required this.l10n,
     required this.mustBuy,
+    required this.purchasePending,
     required this.stretch,
     required this.onRead,
     required this.onDownload,
@@ -569,8 +576,9 @@ class _ActionCluster extends StatelessWidget {
 
   final AppLocalizations l10n;
   final bool mustBuy;
+  final bool purchasePending;
   final bool stretch;
-  final VoidCallback onRead;
+  final VoidCallback? onRead;
   final VoidCallback onDownload;
   final VoidCallback onShare;
 
@@ -578,11 +586,23 @@ class _ActionCluster extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryLabel = purchasePending
+        ? l10n.purchasePending
+        : (mustBuy ? l10n.purchaseBook : l10n.readNow);
+    final primaryIcon = purchasePending
+        ? Icons.hourglass_top_rounded
+        : (mustBuy
+              ? Icons.shopping_cart_outlined
+              : Icons.auto_stories_rounded);
     final primary = FilledButton.icon(
       onPressed: onRead,
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.referencePrimary,
         foregroundColor: Colors.white,
+        disabledBackgroundColor: AppColors.referencePrimary.withValues(
+          alpha: 0.4,
+        ),
+        disabledForegroundColor: Colors.white70,
         minimumSize: stretch ? const Size.fromHeight(48) : const Size(0, 48),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         elevation: 0,
@@ -590,11 +610,8 @@ class _ActionCluster extends StatelessWidget {
         textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
         shape: const RoundedRectangleBorder(borderRadius: _radius),
       ),
-      icon: Icon(
-        mustBuy ? Icons.shopping_cart_outlined : Icons.auto_stories_rounded,
-        size: 19,
-      ),
-      label: Text(mustBuy ? l10n.purchaseBook : l10n.readNow),
+      icon: Icon(primaryIcon, size: 19),
+      label: Text(primaryLabel),
     );
 
     final download = OutlinedButton.icon(
@@ -1027,47 +1044,35 @@ class _RatingRow extends StatelessWidget {
   }
 }
 
-class _AuthorLink extends StatelessWidget {
-  const _AuthorLink({required this.name, required this.l10n});
+class _AuthorLabel extends StatelessWidget {
+  const _AuthorLabel({required this.name, required this.l10n});
 
   final String name;
   final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: AlignmentDirectional.centerStart,
-      child: InkWell(
-        onTap: () =>
-            context.push('/author/${Uri.encodeComponent(name.trim())}'),
-        borderRadius: BorderRadius.circular(6),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.edit_note_rounded,
-                size: 18,
-                color: AppColors.primary,
-              ),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  l10n.authoredBy(name),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-            ],
+    return Row(
+      children: [
+        const Icon(
+          Icons.edit_note_rounded,
+          size: 18,
+          color: AppColors.textSecondary,
+        ),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            l10n.authoredBy(name),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 }
