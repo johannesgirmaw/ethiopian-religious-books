@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { site } from '@/config/site';
 import { useLang } from '@/i18n/LanguageProvider';
 import BrandMark from './BrandMark';
-import { ArrowUp } from './icons';
+import { ArrowUp, TelegramIcon } from './icons';
 import { gsap, registerGsap, prefersReducedMotion } from '@/lib/gsap';
 import { scrollTo } from '@/lib/scroll';
 
@@ -50,6 +50,15 @@ export default function Footer() {
             <Link href="/#platforms" className="rounded-full px-3 py-1.5 text-[13px] text-white/70 hover:text-white">{t.nav.platforms}</Link>
             <Link href="/download" className="rounded-full px-3 py-1.5 text-[13px] text-white/70 hover:text-white">{t.nav.download}</Link>
             <a href={site.webApp} className="rounded-full px-3 py-1.5 text-[13px] text-white/70 hover:text-white">{t.footer.webApp}</a>
+            <a
+              href={site.telegram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] text-white/70 hover:text-white"
+            >
+              <TelegramIcon className="size-3.5 text-[#229ED9]" />
+              {t.footer.telegram}
+            </a>
             <a href={site.login} className="rounded-full px-3 py-1.5 text-[13px] text-white/70 hover:text-white">{t.cta.login}</a>
           </nav>
         </div>
@@ -61,6 +70,18 @@ export default function Footer() {
           <span className="size-2.5 rounded-full bg-brand-400" />
           {t.ctaSection.createAccount}
           <span className="size-2.5 rounded-full bg-brand-400" />
+        </a>
+
+        <a
+          href={site.telegram}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mx-auto mt-6 flex max-w-xl items-center justify-center gap-3 rounded-2xl border border-[#229ED9]/35 bg-[#229ED9]/15 px-5 py-3.5 text-sm font-semibold text-[#7dd3fc] transition-colors hover:border-[#229ED9]/60 hover:bg-[#229ED9]/25"
+        >
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#229ED9] text-white">
+            <TelegramIcon className="size-5" />
+          </span>
+          {t.footer.telegramSupport.replace('{handle}', site.telegramHandle)}
         </a>
 
         <p className="mx-auto mt-8 max-w-sm text-sm text-white/55">{t.footer.builtFor}</p>

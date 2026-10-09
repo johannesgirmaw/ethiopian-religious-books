@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../design/app_tokens.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../providers/nav_visibility_providers.dart';
 import '../../../providers/session_notifier.dart';
-import '../../../l10n/app_localizations.dart';
+import '../../../utils/open_support_link.dart';
 import '../../../widgets/primitives/shared_widgets.dart';
+import '../../../widgets/telegram_icon.dart';
 import '../../design/web_tokens.dart';
 
 class WebSidebarItem {
@@ -105,9 +107,27 @@ class WebSidebar extends ConsumerWidget {
               const Divider(height: 1, color: WebTokens.borderColor),
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 8, 14, 18),
-                child: _SignOutLink(
-                  label: l10n.signOut,
-                  onTap: () => _signOut(context, ref),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _SidebarFooterLink(
+                      leading: const TelegramIcon(size: 20),
+                      label: l10n.telegramSupportNav,
+                      color: const Color(0xFF229ED9),
+                      onTap: () => openTelegramSupport(),
+                    ),
+                    const SizedBox(height: 4),
+                    _SidebarFooterLink(
+                      leading: const Icon(
+                        Icons.logout_rounded,
+                        size: 20,
+                        color: AppColors.textSecondary,
+                      ),
+                      label: l10n.signOut,
+                      color: AppColors.textSecondary,
+                      onTap: () => _signOut(context, ref),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -173,13 +193,17 @@ class _SidebarLink extends StatelessWidget {
   }
 }
 
-class _SignOutLink extends StatelessWidget {
-  const _SignOutLink({
+class _SidebarFooterLink extends StatelessWidget {
+  const _SidebarFooterLink({
+    required this.leading,
     required this.label,
+    required this.color,
     required this.onTap,
   });
 
+  final Widget leading;
   final String label;
+  final Color color;
   final VoidCallback onTap;
 
   @override
@@ -193,18 +217,16 @@ class _SignOutLink extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Row(
             children: [
-              const Icon(
-                Icons.logout_rounded,
-                size: 20,
-                color: AppColors.textSecondary,
-              ),
+              leading,
               const SizedBox(width: 12),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondary,
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: color,
+                  ),
                 ),
               ),
             ],

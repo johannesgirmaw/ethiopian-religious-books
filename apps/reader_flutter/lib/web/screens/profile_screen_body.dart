@@ -4,11 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../design/app_tokens.dart';
-import '../design/web_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/user_profile.dart';
 import '../../providers/api_client.dart';
 import '../../providers/session_notifier.dart';
+import '../../utils/open_support_link.dart';
+import '../../widgets/telegram_icon.dart';
+import '../design/web_tokens.dart';
 import '../layout/app_layout_scope.dart';
 import '../widgets/common/web_page_header.dart';
 import '../widgets/common/web_section.dart';
@@ -189,6 +191,16 @@ class ProfileScreenBody extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 32),
+          OutlinedButton.icon(
+            onPressed: () => openTelegramSupport(),
+            icon: const TelegramIcon(size: 22),
+            label: Text(l10n.telegramSupportNav),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF229ED9),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+          ),
+          const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: () => _signOut(context, ref),
             icon: const Icon(Icons.logout_rounded),

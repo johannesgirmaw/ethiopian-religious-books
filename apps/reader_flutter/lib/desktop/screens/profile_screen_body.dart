@@ -8,6 +8,8 @@ import '../../l10n/app_localizations.dart';
 import '../../models/user_profile.dart';
 import '../../providers/api_client.dart';
 import '../../providers/session_notifier.dart';
+import '../../utils/open_support_link.dart';
+import '../../widgets/telegram_icon.dart';
 import '../design/desktop_tokens.dart';
 import '../layout/desktop_layout_scope.dart';
 import '../widgets/common/desktop_page_header.dart';
@@ -195,6 +197,16 @@ class DesktopProfileScreenBody extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 24),
+          OutlinedButton.icon(
+            onPressed: () => openTelegramSupport(),
+            icon: const TelegramIcon(size: 18),
+            label: Text(l10n.telegramSupportNav),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF229ED9),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+          const SizedBox(height: 10),
           OutlinedButton.icon(
             onPressed: () => _signOut(context, ref),
             icon: const Icon(Icons.logout_rounded, size: 18),

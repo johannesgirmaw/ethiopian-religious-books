@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/about_section_card.dart';
 import '../../widgets/primitives/shared_widgets.dart';
+import '../../widgets/telegram_support_banner.dart';
 
 class MobileAboutScreen extends StatelessWidget {
   const MobileAboutScreen({super.key});
@@ -26,6 +27,8 @@ class MobileAboutScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
+            const TelegramSupportBanner(),
+            const SizedBox(height: 16),
             AboutSectionCard(
               title: l10n.aboutAppSectionTitle,
               content: l10n.aboutAppSectionBody,

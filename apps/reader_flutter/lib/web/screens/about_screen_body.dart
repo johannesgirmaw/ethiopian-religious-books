@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/primitives/shared_widgets.dart';
+import '../../widgets/telegram_support_banner.dart';
 import '../design/web_tokens.dart';
 import '../layout/app_layout_scope.dart';
 import '../widgets/common/web_page_header.dart';
@@ -44,6 +45,8 @@ class AboutScreenBody extends StatelessWidget {
             title: l10n.aboutTitle,
             subtitle: l10n.aboutAppSectionBody,
           ),
+          const SizedBox(height: 20),
+          const TelegramSupportBanner(),
           const SizedBox(height: 28),
           WebPanel(
             child: Row(

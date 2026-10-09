@@ -211,6 +211,26 @@ class AppLocalizationsEn extends AppLocalizations {
       'ፈለገ መጻሕፍት helps you browse, read, and study religious texts with offline support and reading progress.';
 
   @override
+  String get telegramSupportTitle => 'Need help? Join our Telegram';
+
+  @override
+  String telegramSupportBody(String handle) {
+    return 'Ask questions and get support in $handle.';
+  }
+
+  @override
+  String get telegramSupportJoin => 'Join';
+
+  @override
+  String get telegramSupportFab => 'Support';
+
+  @override
+  String get telegramSupportNav => 'Telegram support';
+
+  @override
+  String get paymentReceiptViewFull => 'Tap to enlarge';
+
+  @override
   String get aboutVersionSectionTitle => 'Version';
 
   @override

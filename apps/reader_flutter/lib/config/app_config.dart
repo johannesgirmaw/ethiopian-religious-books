@@ -25,6 +25,10 @@ import 'resolve_api_host_stub.dart'
 class AppConfig {
   AppConfig._();
 
+  /// Public Telegram community for support and questions.
+  static const String telegramSupportUrl = 'https://t.me/felegemetsahft';
+  static const String telegramSupportHandle = '@felegemetsahft';
+
   static const String _productionApiBaseUrl =
       'https://api.felegemetsahft.com/v1/';
 

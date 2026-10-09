@@ -73,6 +73,13 @@ export const ArrowUp = (p: P) => (
   </svg>
 );
 
+/** Official-style Telegram mark (circle + paper plane). */
+export const TelegramIcon = (p: P) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...p} aria-hidden>
+    <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm4.8 6.9-1.5 7.1c-.1.5-.4.6-.8.4l-2.3-1.7-1.1 1.1c-.1.1-.3.2-.5.2l.2-2.6 4.7-4.2c.2-.2 0-.3-.3-.1l-5.8 3.7-2.5-.8c-.5-.2-.5-.5.1-.7l9.7-3.7c.5-.2.8.1.7.6Z" />
+  </svg>
+);
+
 export const DownloadIcon = (p: P) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...p}>
     <path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14" strokeLinecap="round" strokeLinejoin="round" />

@@ -852,19 +852,18 @@ class _PdfToolbar extends StatelessWidget {
           ],
         );
 
-        // Use open_in_full / close_fullscreen — always present in Material Icons.
-        // width_wide_outlined was rendering blank (missing glyph) on web.
+        // Text-only — Material Icons can tree-shake to blank glyphs on Flutter web.
         final fitControls = _ToolbarGroup(
           children: [
-            _ToolbarIcon(
+            _FitToolButton(
               tooltip: 'Fit width (maximize)',
-              icon: Icons.open_in_full_rounded,
+              label: 'Max',
               selected: fitWidthActive,
               onPressed: enabled ? onFitWidth : null,
             ),
-            _ToolbarIcon(
+            _FitToolButton(
               tooltip: 'Fit page (minimize)',
-              icon: Icons.close_fullscreen_rounded,
+              label: 'Min',
               selected: fitPageActive,
               onPressed: enabled ? onFitPage : null,
             ),
@@ -1004,6 +1003,55 @@ class _ToolbarIcon extends StatelessWidget {
             )
           : null,
       icon: Icon(icon, color: color),
+    );
+  }
+}
+
+class _FitToolButton extends StatelessWidget {
+  const _FitToolButton({
+    required this.label,
+    required this.tooltip,
+    required this.selected,
+    this.onPressed,
+  });
+
+  final String label;
+  final String tooltip;
+  final bool selected;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = onPressed != null;
+    final color = !active
+        ? AppColors.textTertiary
+        : selected
+            ? AppColors.primary
+            : AppColors.textPrimary;
+    return Tooltip(
+      message: tooltip,
+      child: TextButton(
+        onPressed: onPressed,
+        style: TextButton.styleFrom(
+          foregroundColor: color,
+          backgroundColor: selected
+              ? AppColors.primary.withValues(alpha: 0.12)
+              : Colors.transparent,
+          minimumSize: const Size(44, 36),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          visualDensity: VisualDensity.compact,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.2,
+            color: color,
+          ),
+        ),
+      ),
     );
   }
 }

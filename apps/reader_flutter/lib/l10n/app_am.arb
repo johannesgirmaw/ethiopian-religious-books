@@ -110,6 +110,17 @@
   "profileTitle": "መገለጫ",
   "settingsTitle": "ቅንብሮች",
   "settingsCacheSection": "የተቀመጡ መጻሕፍት",
+  "telegramSupportTitle": "እገዛ ይፈልጋሉ? ቴሌግራም ይቀላቀሉ",
+  "telegramSupportBody": "ጥያቄዎችንና እገዛን በ{handle} ያግኙ።",
+  "@telegramSupportBody": {
+    "placeholders": {
+      "handle": { "type": "String" }
+    }
+  },
+  "telegramSupportJoin": "ይቀላቀሉ",
+  "telegramSupportFab": "እገዛ",
+  "telegramSupportNav": "የቴሌግራም እገዛ",
+  "paymentReceiptViewFull": "ለማጉላት ይንኩ",
   "aboutTitle": "ስለ ፈለገ መጻሕፍት",
   "aboutAppSectionTitle": "ስለ ፈለገ መጻሕፍት",
   "aboutAppSectionBody": "ፈለገ መጻሕፍት የኢትዮጵያ ኦርቶዶክስ ተዋሕዶ ቅዱሳት መጻሕፍትን ለማንበብ፣ ለማጥናትና በጸሎት ለመከተል የተዘጋጀ ቤተ መጻሕፍት ነው። ኢንተርኔት ቢኖርም ባይኖርም ንባብዎ አይቋረጥም።",

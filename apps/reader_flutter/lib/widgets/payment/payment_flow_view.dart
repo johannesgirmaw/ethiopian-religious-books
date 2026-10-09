@@ -1000,6 +1000,49 @@ class _ReceiptDropZone extends StatelessWidget {
   final Uint8List? bytes;
   final VoidCallback onTap;
 
+  void _openFullscreen(BuildContext context, Uint8List imageBytes) {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.92),
+      builder: (ctx) {
+        return Dialog.fullscreen(
+          backgroundColor: Colors.black,
+          child: SafeArea(
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 6,
+                    child: Center(
+                      child: Image.memory(
+                        imageBytes,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: IconButton(
+                    tooltip: MaterialLocalizations.of(ctx).closeButtonTooltip,
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white.withValues(alpha: 0.12),
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -1007,77 +1050,172 @@ class _ReceiptDropZone extends StatelessWidget {
     final showImagePreview =
         hasFile && _looksLikeImageBytes(bytes!, fileName);
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(AppSpace.md),
-        decoration: BoxDecoration(
-          color: hasFile ? AppColors.successSurface : AppColors.surfaceSoft,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(
-            color: hasFile ? AppColors.successBorder : AppColors.border,
+    if (!hasFile) {
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppSpace.lg),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceSoft,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: AppColors.border),
           ),
-        ),
-        child: Column(
-          children: [
-            if (showImagePreview) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxHeight: 220,
-                    maxWidth: double.infinity,
-                  ),
-                  child: Image.memory(
-                    bytes!,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => const Icon(
-                      Icons.broken_image_outlined,
-                      size: 48,
-                      color: AppColors.successText,
-                    ),
-                  ),
-                ),
+          child: Column(
+            children: [
+              const Icon(
+                Icons.cloud_upload_outlined,
+                size: 36,
+                color: AppColors.primary,
               ),
               const SizedBox(height: AppSpace.sm),
-            ] else
-              Icon(
-                hasFile
-                    ? (fileName!.toLowerCase().endsWith('.pdf')
-                        ? Icons.picture_as_pdf_outlined
-                        : Icons.check_circle_outline_rounded)
-                    : Icons.cloud_upload_outlined,
-                size: 32,
-                color: hasFile ? AppColors.successText : AppColors.primary,
-              ),
-            if (!showImagePreview) const SizedBox(height: AppSpace.xs),
-            Text(
-              hasFile
-                  ? l10n.paymentReceiptSelected(fileName!)
-                  : l10n.paymentReceiptHint,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12.5,
-                color: hasFile
-                    ? AppColors.successText
-                    : AppColors.textSecondary,
-              ),
-            ),
-            if (hasFile) ...[
-              const SizedBox(height: 6),
               Text(
-                l10n.paymentChangeFile,
+                l10n.paymentReceiptHint,
+                textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
-          ],
+          ),
         ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpace.md),
+      decoration: BoxDecoration(
+        color: AppColors.successSurface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.successBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (showImagePreview) ...[
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _openFullscreen(context, bytes!),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                child: Ink(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    border: Border.all(
+                      color: AppColors.successBorder.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            minHeight: 180,
+                            maxHeight: 360,
+                          ),
+                          child: Stack(
+                            alignment: Alignment.bottomRight,
+                            children: [
+                              SizedBox(
+                                width: double.infinity,
+                                child: Image.memory(
+                                  bytes!,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => const Padding(
+                                    padding: EdgeInsets.all(24),
+                                    child: Icon(
+                                      Icons.broken_image_outlined,
+                                      size: 48,
+                                      color: AppColors.successText,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.55),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.xs,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.zoom_in_rounded,
+                                        size: 14,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        l10n.paymentReceiptViewFull,
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpace.sm),
+          ] else
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpace.sm),
+              child: Icon(
+                fileName!.toLowerCase().endsWith('.pdf')
+                    ? Icons.picture_as_pdf_outlined
+                    : Icons.check_circle_outline_rounded,
+                size: 36,
+                color: AppColors.successText,
+              ),
+            ),
+          Text(
+            l10n.paymentReceiptSelected(fileName!),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 12.5,
+              color: AppColors.successText,
+            ),
+          ),
+          const SizedBox(height: AppSpace.sm),
+          OutlinedButton.icon(
+            onPressed: onTap,
+            icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+            label: Text(l10n.paymentChangeFile),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: BorderSide(
+                color: AppColors.primary.withValues(alpha: 0.45),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

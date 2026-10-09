@@ -208,6 +208,26 @@ class AppLocalizationsAm extends AppLocalizations {
       'ፈለገ መጻሕፍት የኢትዮጵያ ኦርቶዶክስ ተዋሕዶ ቅዱሳት መጻሕፍትን ለማንበብ፣ ለማጥናትና በጸሎት ለመከተል የተዘጋጀ ቤተ መጻሕፍት ነው። ኢንተርኔት ቢኖርም ባይኖርም ንባብዎ አይቋረጥም።';
 
   @override
+  String get telegramSupportTitle => 'እገዛ ይፈልጋሉ? ቴሌግራም ይቀላቀሉ';
+
+  @override
+  String telegramSupportBody(String handle) {
+    return 'ጥያቄዎችንና እገዛን በ$handle ያግኙ።';
+  }
+
+  @override
+  String get telegramSupportJoin => 'ይቀላቀሉ';
+
+  @override
+  String get telegramSupportFab => 'እገዛ';
+
+  @override
+  String get telegramSupportNav => 'የቴሌግራም እገዛ';
+
+  @override
+  String get paymentReceiptViewFull => 'ለማጉላት ይንኩ';
+
+  @override
   String get aboutVersionSectionTitle => 'ስሪት';
 
   @override

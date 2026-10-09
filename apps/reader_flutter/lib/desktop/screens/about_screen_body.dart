@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/primitives/shared_widgets.dart';
+import '../../widgets/telegram_support_banner.dart';
 import '../design/desktop_tokens.dart';
 import '../layout/desktop_layout_scope.dart';
 import '../widgets/common/desktop_page_header.dart';
@@ -45,6 +46,8 @@ class DesktopAboutScreenBody extends StatelessWidget {
             title: l10n.aboutTitle,
             subtitle: l10n.aboutAppSectionBody,
           ),
+          const SizedBox(height: 16),
+          const TelegramSupportBanner(),
           const SizedBox(height: 24),
           DesktopPanel(
             child: Row(

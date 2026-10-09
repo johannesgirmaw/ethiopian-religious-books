@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { site } from '@/config/site';
 import { useLang } from '@/i18n/LanguageProvider';
 import BrandMark from './BrandMark';
+import { TelegramIcon } from './icons';
 
 function LangToggle() {
   const { lang, setLang, t } = useLang();
@@ -75,6 +76,16 @@ export default function Header() {
           </nav>
 
           <div className="hidden items-center gap-1.5 md:flex">
+            <a
+              href={site.telegram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#229ED9]/25 bg-[#229ED9]/08 px-3 py-1.5 text-[13px] font-semibold text-[#1a8fc4] transition-colors hover:border-[#229ED9]/45 hover:bg-[#229ED9]/14"
+              aria-label={t.footer.telegram}
+            >
+              <TelegramIcon className="size-4 text-[#229ED9]" />
+              <span className="hidden xl:inline">{site.telegramHandle}</span>
+            </a>
             <LangToggle />
             <a
               href={site.login}
@@ -119,6 +130,16 @@ export default function Header() {
               <div className="mt-2 flex items-center justify-between px-1">
                 <LangToggle />
               </div>
+              <a
+                href={site.telegram}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setOpen(false)}
+                className="mt-2 inline-flex items-center justify-center gap-2 rounded-full border border-[#229ED9]/30 bg-[#229ED9]/10 px-3 py-2.5 text-sm font-semibold text-[#1a8fc4]"
+              >
+                <TelegramIcon className="size-4 text-[#229ED9]" />
+                {t.footer.telegramSupport.replace('{handle}', site.telegramHandle)}
+              </a>
               <div className="mt-2 flex gap-2">
                 <a href={site.login} className="btn-ghost flex-1">{t.cta.login}</a>
                 <a href={site.register} className="btn-primary flex-1">{t.cta.getStarted}</a>

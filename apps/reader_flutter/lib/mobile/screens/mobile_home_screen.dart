@@ -16,14 +16,15 @@ import '../../utils/catalog_categories.dart';
 import '../../utils/catalog_language_label.dart';
 import '../../widgets/app_state_view.dart';
 import '../../widgets/home/home_filters.dart';
-import '../widgets/shell/liquid_glass_nav_bar.dart';
 import '../../widgets/skeleton_loader.dart';
+import '../../widgets/telegram_support_banner.dart';
 import '../widgets/catalog/catalog_filter_tabs.dart';
 import '../widgets/catalog/continue_reading_card.dart';
 import '../widgets/catalog/featured_carousel.dart';
 import '../widgets/catalog/genre_chip_row.dart';
 import '../widgets/catalog/mobile_book_card.dart';
 import '../widgets/catalog/mobile_home_header.dart';
+import '../widgets/shell/liquid_glass_nav_bar.dart';
 
 /// Reference-styled mobile home: top bar, search, featured "Popular" card,
 /// genre chips and a poster grid. Typing a query switches to search-results
@@ -281,39 +282,46 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        bottom: false,
-        child: async.when(
-          loading: () => _Frame(
-            header: _header(l10n),
-            onRefresh: _refresh,
-            children: const [
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  AppLayout.pageHorizontal,
-                  16,
-                  AppLayout.pageHorizontal,
-                  0,
-                ),
-                child: SkeletonCardGroup(count: 4),
+      body: Stack(
+        children: [
+          SafeArea(
+            bottom: false,
+            child: async.when(
+              loading: () => _Frame(
+                header: _header(l10n),
+                onRefresh: _refresh,
+                children: const [
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      AppLayout.pageHorizontal,
+                      16,
+                      AppLayout.pageHorizontal,
+                      0,
+                    ),
+                    child: SkeletonCardGroup(count: 4),
+                  ),
+                ],
               ),
-            ],
-          ),
-          error: (e, _) => _Frame(
-            header: _header(l10n),
-            onRefresh: _refresh,
-            children: [
-              AppStateView(
-                title: l10n.unableToLoadHome,
-                message: '$e',
-                icon: Icons.cloud_off_outlined,
-                actionLabel: l10n.retry,
-                onAction: () => ref.invalidate(catalogProvider),
+              error: (e, _) => _Frame(
+                header: _header(l10n),
+                onRefresh: _refresh,
+                children: [
+                  AppStateView(
+                    title: l10n.unableToLoadHome,
+                    message: '$e',
+                    icon: Icons.cloud_off_outlined,
+                    actionLabel: l10n.retry,
+                    onAction: () => ref.invalidate(catalogProvider),
+                  ),
+                ],
               ),
-            ],
+              data: (page) => _buildData(l10n, page.items),
+            ),
           ),
-          data: (page) => _buildData(l10n, page.items),
-        ),
+          const TelegramSupportFab(
+            bottomInset: LiquidGlassNavBar.bottomInset - 16,
+          ),
+        ],
       ),
     );
   }
@@ -349,6 +357,8 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                 ? () => context.go('/bible')
                 : null,
           ),
+          const SizedBox(height: 12),
+          const TelegramSupportBanner(compact: true),
         ],
       ),
     );

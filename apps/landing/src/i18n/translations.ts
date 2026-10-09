@@ -36,7 +36,14 @@ export type Dict = {
     allDownloads: string;
   };
   ctaSection: { heading: string; body: string; createAccount: string; openWebApp: string };
-  footer: { webApp: string; rights: string; builtFor: string; toTop: string };
+  footer: {
+    webApp: string;
+    rights: string;
+    builtFor: string;
+    toTop: string;
+    telegram: string;
+    telegramSupport: string;
+  };
   download: {
     eyebrow: string;
     title: string; // uses {name}
@@ -120,6 +127,8 @@ export const dict: Record<Lang, Dict> = {
       rights: 'All rights reserved.',
       builtFor: 'Built for the Ethiopian Orthodox Tewahedo community.',
       toTop: 'Back to top',
+      telegram: 'Telegram',
+      telegramSupport: 'Join {handle} for support and questions',
     },
     download: {
       eyebrow: 'Install the app',
@@ -223,6 +232,8 @@ export const dict: Record<Lang, Dict> = {
       rights: 'መብቱ በሕግ የተጠበቀ ነው።',
       builtFor: 'ለኢትዮጵያ ኦርቶዶክስ ተዋሕዶ ሕዝብ የተሠራ።',
       toTop: 'ወደ ላይ',
+      telegram: 'ቴሌግራም',
+      telegramSupport: 'ለእገዛና ጥያቄዎች {handle} ይቀላቀሉ',
     },
     download: {
       eyebrow: 'ወደ መሣሪያዎ ያውርዱ',

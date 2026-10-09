@@ -8,7 +8,9 @@ import '../../design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/api_client.dart';
 import '../../providers/session_notifier.dart';
+import '../../utils/open_support_link.dart';
 import '../../widgets/primitives/shell_primitives.dart';
+import '../../widgets/telegram_icon.dart';
 import '../widgets/shell/shell_page_scaffold.dart';
 
 class MobileProfileScreen extends ConsumerWidget {
@@ -159,6 +161,26 @@ class MobileProfileScreen extends ConsumerWidget {
           ],
           if (user != null) ...[
             const SizedBox(height: AppLayout.sectionGap),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => openTelegramSupport(),
+                icon: const TelegramIcon(size: 20),
+                label: Text(l10n.telegramSupportNav),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF229ED9),
+                  backgroundColor: AppColors.surfaceCard,
+                  side: BorderSide(
+                    color: const Color(0xFF229ED9).withValues(alpha: 0.45),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.cardV2),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppLayout.itemGap),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(

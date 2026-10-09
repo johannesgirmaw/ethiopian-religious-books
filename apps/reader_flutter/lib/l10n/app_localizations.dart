@@ -464,6 +464,42 @@ abstract class AppLocalizations {
   /// **'ፈለገ መጻሕፍት helps you browse, read, and study religious texts with offline support and reading progress.'**
   String get aboutAppSectionBody;
 
+  /// No description provided for @telegramSupportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Need help? Join our Telegram'**
+  String get telegramSupportTitle;
+
+  /// No description provided for @telegramSupportBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask questions and get support in {handle}.'**
+  String telegramSupportBody(String handle);
+
+  /// No description provided for @telegramSupportJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Join'**
+  String get telegramSupportJoin;
+
+  /// No description provided for @telegramSupportFab.
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get telegramSupportFab;
+
+  /// No description provided for @telegramSupportNav.
+  ///
+  /// In en, this message translates to:
+  /// **'Telegram support'**
+  String get telegramSupportNav;
+
+  /// No description provided for @paymentReceiptViewFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to enlarge'**
+  String get paymentReceiptViewFull;
+
   /// No description provided for @aboutVersionSectionTitle.
   ///
   /// In en, this message translates to:

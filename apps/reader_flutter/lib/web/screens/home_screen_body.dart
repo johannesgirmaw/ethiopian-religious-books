@@ -15,6 +15,7 @@ import '../../widgets/app_state_view.dart';
 import '../../widgets/home/home_filters.dart';
 import '../../widgets/home/home_sections.dart';
 import '../../widgets/skeleton_loader.dart';
+import '../../widgets/telegram_support_banner.dart';
 import '../design/web_tokens.dart';
 import '../layout/app_layout_scope.dart';
 import '../widgets/catalog/catalog_grid_delegate.dart';
@@ -105,30 +106,41 @@ class _HomeScreenBodyState extends ConsumerState<HomeScreenBody> {
       AppLayoutScope.tierOf(context),
     ).resolve(Directionality.of(context));
 
-    return async.when(
-      loading: () => ListView(
-        padding: EdgeInsets.fromLTRB(insets.left, insets.top, insets.right, 0),
-        children: [
-          _topBar(l10n),
-          const SizedBox(height: 24),
-          const SkeletonCardGroup(count: 4),
-        ],
-      ),
-      error: (e, _) => ListView(
-        padding: EdgeInsets.fromLTRB(insets.left, insets.top, insets.right, 0),
-        children: [
-          _topBar(l10n),
-          const SizedBox(height: 24),
-          AppStateView(
-            title: l10n.unableToLoadHome,
-            message: '$e',
-            icon: Icons.cloud_off_outlined,
-            actionLabel: l10n.retry,
-            onAction: () => ref.invalidate(catalogProvider),
+    return Stack(
+      children: [
+        async.when(
+          loading: () => ListView(
+            padding:
+                EdgeInsets.fromLTRB(insets.left, insets.top, insets.right, 0),
+            children: [
+              _topBar(l10n),
+              const SizedBox(height: 16),
+              const TelegramSupportBanner(compact: true),
+              const SizedBox(height: 24),
+              const SkeletonCardGroup(count: 4),
+            ],
           ),
-        ],
-      ),
-      data: (page) => _buildData(context, l10n, page.items, insets),
+          error: (e, _) => ListView(
+            padding:
+                EdgeInsets.fromLTRB(insets.left, insets.top, insets.right, 0),
+            children: [
+              _topBar(l10n),
+              const SizedBox(height: 16),
+              const TelegramSupportBanner(compact: true),
+              const SizedBox(height: 24),
+              AppStateView(
+                title: l10n.unableToLoadHome,
+                message: '$e',
+                icon: Icons.cloud_off_outlined,
+                actionLabel: l10n.retry,
+                onAction: () => ref.invalidate(catalogProvider),
+              ),
+            ],
+          ),
+          data: (page) => _buildData(context, l10n, page.items, insets),
+        ),
+        const TelegramSupportFab(),
+      ],
     );
   }
 
@@ -140,7 +152,12 @@ class _HomeScreenBodyState extends ConsumerState<HomeScreenBody> {
   ) {
     final header = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [const SizedBox(height: 4), _topBar(l10n)],
+      children: [
+        const SizedBox(height: 4),
+        _topBar(l10n),
+        const SizedBox(height: 16),
+        const TelegramSupportBanner(compact: true),
+      ],
     );
 
     if (books.isEmpty) {

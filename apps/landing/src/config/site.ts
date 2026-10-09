@@ -13,6 +13,8 @@ export const site = {
   login: 'https://app.felegemetsahft.com/#/login',
   register: 'https://app.felegemetsahft.com/#/register',
   email: 'yohannesgirmaw23@gmail.com',
+  telegram: 'https://t.me/felegemetsahft',
+  telegramHandle: '@felegemetsahft',
 };
 
 const dl = (file: string) => `https://felegemetsahft.com/downloads/${file}`;

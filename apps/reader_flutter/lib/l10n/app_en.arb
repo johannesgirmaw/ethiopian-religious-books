@@ -97,6 +97,17 @@
   "aboutTitle": "About",
   "aboutAppSectionTitle": "About this app",
   "aboutAppSectionBody": "ፈለገ መጻሕፍት helps you browse, read, and study religious texts with offline support and reading progress.",
+  "telegramSupportTitle": "Need help? Join our Telegram",
+  "telegramSupportBody": "Ask questions and get support in {handle}.",
+  "@telegramSupportBody": {
+    "placeholders": {
+      "handle": { "type": "String" }
+    }
+  },
+  "telegramSupportJoin": "Join",
+  "telegramSupportFab": "Support",
+  "telegramSupportNav": "Telegram support",
+  "paymentReceiptViewFull": "Tap to enlarge",
   "aboutVersionSectionTitle": "Version",
   "aboutVersionValue": "1.0.0",
   "aboutDevelopersSectionTitle": "Developers",
