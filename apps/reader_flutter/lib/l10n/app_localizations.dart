@@ -212,6 +212,12 @@ abstract class AppLocalizations {
   /// **'Replace PDF'**
   String get pdfReplaceFile;
 
+  /// No description provided for @pdfRemoveFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove PDF'**
+  String get pdfRemoveFile;
+
   /// No description provided for @pdfUploadHint.
   ///
   /// In en, this message translates to:
@@ -229,6 +235,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'PDF selected — will upload when you save.'**
   String get pdfPendingUpload;
+
+  /// No description provided for @pdfRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF removed. Choose a new file to upload.'**
+  String get pdfRemoved;
+
+  /// No description provided for @pdfRemoveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not remove the PDF.'**
+  String get pdfRemoveFailed;
 
   /// No description provided for @pdfUploadFailed.
   ///

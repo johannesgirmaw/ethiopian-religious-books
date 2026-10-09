@@ -26,6 +26,7 @@
   "pdfDocumentSection": "የPDF መጽሐፍ",
   "pdfPickFile": "PDF ምረጥ",
   "pdfReplaceFile": "PDF ቀይር",
+  "pdfRemoveFile": "PDF አስወግድ",
   "pdfUploadHint": "PDF ያያይዙ (ከ100 ሜባ አይብለጥ)። መጀመሪያ መጽሐፉን አስቀምጡ፣ ከዚያ ፋይሉን ያያይዙ።",
   "pdfReadyLabel": "PDF ዝግጁ ነው፦ {filename} ({size})",
   "@pdfReadyLabel": {
@@ -39,6 +40,8 @@
     }
   },
   "pdfPendingUpload": "PDF ተመርጧል — ሲያስቀምጡ ይጫናል።",
+  "pdfRemoved": "PDF ተወግዷል። አዲስ ፋይል ይምረጡ።",
+  "pdfRemoveFailed": "PDF ማስወገድ አልተቻለም።",
   "pdfUploadFailed": "PDF መጫን አልተቻለም።",
   "pdfUploadSuccess": "PDF ተጭኗል።",
   "pdfBookTypeLabel": "የPDF መጽሐፍ",

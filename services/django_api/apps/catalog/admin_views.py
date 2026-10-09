@@ -57,8 +57,10 @@ from apps.catalog.pdf_books import (
     MAX_PDF_BYTES,
     PDF_MAGIC,
     PdfBookError,
+    clear_pdf_package,
     complete_pdf_upload,
     create_pdf_draft_revision,
+    pdf_draft_summary,
 )
 
 logger = logging.getLogger(__name__)
@@ -634,11 +636,47 @@ class AdminBookPdfCompleteView(APIView):
                 {"error": {"code": exc.code, "message": exc.message}},
                 status=exc.status_code,
             )
+        rev.refresh_from_db()
         return Response(
             {
                 "status": "draft_validated",
                 "revision_id": str(rev.id),
                 "total_bytes": rev.total_bytes,
+                "pdf_draft": pdf_draft_summary(book),
+            }
+        )
+
+
+class AdminBookPdfClearView(APIView):
+    """Delete the editable PDF package so a different file can be uploaded."""
+
+    permission_classes = [IsPublisherOrAuthor]
+
+    def delete(self, request, book_id):
+        book = get_object_or_404(Book, pk=book_id)
+        if book.catalog_visibility == Book.Visibility.PUBLISHED:
+            return Response(
+                {
+                    "error": {
+                        "code": "BOOK_PUBLISHED",
+                        "message": "Unpublish this book before editing.",
+                    }
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        if not can_manage_book(book, request.user):
+            return _not_book_creator_response()
+        try:
+            cleared = clear_pdf_package(book)
+        except PdfBookError as exc:
+            return Response(
+                {"error": {"code": exc.code, "message": exc.message}},
+                status=exc.status_code,
+            )
+        return Response(
+            {
+                "cleared": cleared,
+                "pdf_draft": pdf_draft_summary(book),
             }
         )
 

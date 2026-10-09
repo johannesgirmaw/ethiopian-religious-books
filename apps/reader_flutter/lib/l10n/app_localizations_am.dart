@@ -68,6 +68,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get pdfReplaceFile => 'PDF ቀይር';
 
   @override
+  String get pdfRemoveFile => 'PDF አስወግድ';
+
+  @override
   String get pdfUploadHint =>
       'PDF ያያይዙ (ከ100 ሜባ አይብለጥ)። መጀመሪያ መጽሐፉን አስቀምጡ፣ ከዚያ ፋይሉን ያያይዙ።';
 
@@ -78,6 +81,12 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get pdfPendingUpload => 'PDF ተመርጧል — ሲያስቀምጡ ይጫናል።';
+
+  @override
+  String get pdfRemoved => 'PDF ተወግዷል። አዲስ ፋይል ይምረጡ።';
+
+  @override
+  String get pdfRemoveFailed => 'PDF ማስወገድ አልተቻለም።';
 
   @override
   String get pdfUploadFailed => 'PDF መጫን አልተቻለም።';

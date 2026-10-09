@@ -502,12 +502,57 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
       data: bytes,
       options: Options(headers: {'Content-Type': 'application/pdf'}),
     );
-    await api.post<Map<String, dynamic>>(
+    final complete = await api.post<Map<String, dynamic>>(
       'admin/books/$bookId/pdf/complete',
       data: {'revision_id': revisionId, 'filename': filename},
     );
     _pendingPdfBytes = null;
     _pendingPdfFilename = null;
+    final draftJson = complete.data?['pdf_draft'];
+    if (draftJson is Map) {
+      _serverPdfDraft = AdminPdfDraft.fromJson(
+        Map<String, dynamic>.from(draftJson),
+      );
+      _isPdfBook = true;
+    } else {
+      // Fall back to a fresh book fetch so the editor shows the uploaded file.
+      final refreshed = await fetchAdminBookByDio(api, bookId);
+      if (refreshed != null) {
+        _serverPdfDraft = refreshed.pdfDraft;
+        _isPdfBook = refreshed.isPdfBook;
+      }
+    }
+  }
+
+  Future<void> _removeServerPdf() async {
+    final bookId = widget.bookId;
+    final l10n = AppLocalizations.of(context);
+    if (bookId == null || _busy) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final api = ref.read(apiDioProvider);
+      await api.delete<Map<String, dynamic>>('admin/books/$bookId/pdf');
+      if (!mounted) return;
+      setState(() {
+        _serverPdfDraft = null;
+        _pendingPdfBytes = null;
+        _pendingPdfFilename = null;
+        // Keep PDF book type on so the author can pick a replacement file.
+        _isPdfBook = true;
+      });
+      _markDirty();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.pdfRemoved)));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = l10n.pdfRemoveFailed);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _pickPdfFile() async {
@@ -1244,38 +1289,67 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   ) {
     final pendingName = _pendingPdfFilename;
     final server = _serverPdfDraft;
+    final hasServerPdf = server != null && server.ready;
+    final hasPending = pendingName != null;
     return [
       AppSectionHeader(title: l10n.pdfDocumentSection),
       const SizedBox(height: 8),
       Text(l10n.pdfUploadHint, style: Theme.of(context).textTheme.bodySmall),
       const SizedBox(height: 16),
-      if (pendingName != null) ...[
+      if (hasPending) ...[
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.picture_as_pdf_outlined),
           title: Text(pendingName),
           subtitle: Text(l10n.pdfPendingUpload),
+          trailing: IconButton(
+            tooltip: l10n.pdfRemoveFile,
+            onPressed: _busy
+                ? null
+                : () => setState(() {
+                      _pendingPdfBytes = null;
+                      _pendingPdfFilename = null;
+                      _markDirty();
+                    }),
+            icon: const Icon(Icons.close_rounded),
+          ),
         ),
-      ] else if (server != null && server.ready) ...[
+      ] else if (hasServerPdf) ...[
         ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.picture_as_pdf_outlined),
+          leading: const Icon(
+            Icons.picture_as_pdf_outlined,
+            color: AppColors.primary,
+          ),
           title: Text(
-            l10n.pdfReadyLabel(server.filename, _formatBytes(server.sizeBytes)),
+            l10n.pdfReadyLabel(
+              server.filename,
+              _formatBytes(server.sizeBytes),
+            ),
           ),
         ),
       ],
-      Align(
-        alignment: Alignment.centerLeft,
-        child: FilledButton.tonalIcon(
-          onPressed: _busy ? null : _pickPdfFile,
-          icon: const Icon(Icons.upload_file_outlined),
-          label: Text(
-            (server?.ready == true || pendingName != null)
-                ? l10n.pdfReplaceFile
-                : l10n.pdfPickFile,
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          FilledButton.tonalIcon(
+            onPressed: _busy ? null : _pickPdfFile,
+            icon: const Icon(Icons.upload_file_outlined),
+            label: Text(
+              (hasServerPdf || hasPending)
+                  ? l10n.pdfReplaceFile
+                  : l10n.pdfPickFile,
+            ),
           ),
-        ),
+          if (hasServerPdf && !isNew)
+            TextButton.icon(
+              onPressed: _busy ? null : _removeServerPdf,
+              icon: const Icon(Icons.delete_outline_rounded),
+              label: Text(l10n.pdfRemoveFile),
+              style: TextButton.styleFrom(foregroundColor: AppColors.crimson),
+            ),
+        ],
       ),
       if (isNew) ...[
         const SizedBox(height: 12),

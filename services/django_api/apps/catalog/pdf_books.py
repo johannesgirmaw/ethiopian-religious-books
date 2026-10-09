@@ -53,13 +53,44 @@ def latest_pdf_draft(book: Book) -> BookRevision | None:
     )
 
 
+def latest_pdf_for_admin(book: Book) -> BookRevision | None:
+    """PDF revision the admin editor should show / replace / clear.
+
+    Prefer an explicit draft, then the linked published revision, then any
+    orphaned PDF revision left behind by older unpublish (published_revision
+    cleared while the revision row stayed ``published``).
+    """
+    rev = latest_pdf_draft(book)
+    if rev is not None:
+        return rev
+    pub = book.published_revision
+    if is_pdf_revision(pub):
+        return pub
+    orphan = (
+        BookRevision.objects.filter(
+            book=book,
+            content_format=CONTENT_FORMAT_PDF,
+        )
+        .exclude(content_object_key__isnull=True)
+        .exclude(content_object_key="")
+        .order_by("-revision_number")
+        .first()
+    )
+    # Heal older unpublish that cleared published_revision but left the PDF
+    # revision stuck as ``published`` — reopen it as a draft for editing.
+    if (
+        orphan is not None
+        and orphan.status == BookRevision.Status.PUBLISHED
+        and book.published_revision_id != orphan.id
+    ):
+        orphan.status = BookRevision.Status.DRAFT
+        orphan.save(update_fields=["status"])
+    return orphan
+
+
 def pdf_draft_summary(book: Book) -> dict[str, Any] | None:
     """Admin UI payload describing the current PDF draft (or published PDF)."""
-    rev = latest_pdf_draft(book)
-    if rev is None:
-        pub = book.published_revision
-        if is_pdf_revision(pub):
-            rev = pub
+    rev = latest_pdf_for_admin(book)
     if rev is None:
         return None
 
@@ -77,15 +108,54 @@ def pdf_draft_summary(book: Book) -> dict[str, Any] | None:
         except Exception:
             logger.debug("could not read pdf manifest for %s", rev.id, exc_info=True)
 
+    size_bytes = int(rev.total_bytes or 0)
     return {
         "revision_id": str(rev.id),
         "revision_number": rev.revision_number,
         "status": rev.status,
         "filename": filename or "content.pdf",
-        "size_bytes": int(rev.total_bytes or 0),
-        "ready": bool(rev.content_object_key and rev.manifest_object_key),
+        "size_bytes": size_bytes,
+        # Keys alone are not enough — create_pdf_draft_revision sets them before
+        # upload. Require validated bytes so the editor does not fake a ready PDF.
+        "ready": bool(
+            rev.content_object_key and rev.manifest_object_key and size_bytes > 0
+        ),
         "content_object_key": rev.content_object_key or "",
     }
+
+
+def clear_pdf_package(book: Book) -> bool:
+    """Remove the editable PDF package for [book]. Returns True if one existed.
+
+    Used when an author deletes the PDF from the edit screen so they can upload
+    a different file. Refuses when the book is still catalog-published.
+    """
+    if book.catalog_visibility == Book.Visibility.PUBLISHED:
+        raise PdfBookError(
+            "BOOK_PUBLISHED",
+            "Unpublish this book before editing.",
+            status_code=409,
+        )
+    rev = latest_pdf_for_admin(book)
+    if rev is None:
+        return False
+    if rev.status == BookRevision.Status.PUBLISHED and book.published_revision_id == rev.id:
+        raise PdfBookError(
+            "BOOK_PUBLISHED",
+            "Unpublish this book before editing.",
+            status_code=409,
+        )
+
+    from apps.catalog.storage_s3 import delete_objects
+
+    keys = [k for k in (rev.content_object_key, rev.manifest_object_key) if k]
+    delete_objects(keys)
+    with transaction.atomic():
+        if book.published_revision_id == rev.id:
+            book.published_revision = None
+            book.save(update_fields=["published_revision"])
+        rev.delete()
+    return True
 
 
 def create_pdf_draft_revision(

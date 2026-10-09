@@ -662,6 +662,18 @@ def publish_book(book: Book, user, revision_id: UUID | None = None) -> PublishBo
 
 
 def unpublish_book(book: Book) -> None:
-    book.catalog_visibility = Book.Visibility.HIDDEN
-    book.published_revision = None
-    book.save()
+    """Hide the book from the catalog and reopen its package for editing.
+
+    For PDF books the published revision is demoted back to ``draft`` so the
+    admin editor still sees the uploaded file (replace / clear). Older code
+    only cleared ``published_revision``, which orphaned the PDF and made the
+    edit screen look empty.
+    """
+    rev = book.published_revision
+    with transaction.atomic():
+        book.catalog_visibility = Book.Visibility.HIDDEN
+        book.published_revision = None
+        book.save(update_fields=["catalog_visibility", "published_revision"])
+        if rev is not None and rev.status == BookRevision.Status.PUBLISHED:
+            rev.status = BookRevision.Status.DRAFT
+            rev.save(update_fields=["status"])

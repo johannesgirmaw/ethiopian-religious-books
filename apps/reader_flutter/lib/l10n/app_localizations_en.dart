@@ -69,6 +69,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pdfReplaceFile => 'Replace PDF';
 
   @override
+  String get pdfRemoveFile => 'Remove PDF';
+
+  @override
   String get pdfUploadHint =>
       'Upload a PDF (max 100 MB). Save the book first, then attach the file.';
 
@@ -79,6 +82,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pdfPendingUpload => 'PDF selected — will upload when you save.';
+
+  @override
+  String get pdfRemoved => 'PDF removed. Choose a new file to upload.';
+
+  @override
+  String get pdfRemoveFailed => 'Could not remove the PDF.';
 
   @override
   String get pdfUploadFailed => 'Could not upload the PDF.';
