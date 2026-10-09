@@ -68,6 +68,40 @@ class ReaderPrefsStorage {
   static String _themeKey(String bookId) => 'reader_theme_$bookId';
   static String _pageCurlKey(String bookId) => 'reader_page_curl_$bookId';
   static String _bookmarksKey(String bookId) => 'reader_bookmarks_$bookId';
+  static String _pdfZoomKey(String bookId) => 'reader_pdf_zoom_$bookId';
+  static String _pdfFitKey(String bookId) => 'reader_pdf_fit_$bookId';
+  static String _pdfPageKey(String bookId) => 'reader_pdf_page_$bookId';
+
+  /// PDF view fit mode: `width`, `page`, or `custom` (manual zoom).
+  static Future<String> readPdfFit(String bookId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_pdfFitKey(bookId)) ?? 'custom';
+  }
+
+  static Future<void> writePdfFit(String bookId, String fit) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_pdfFitKey(bookId), fit);
+  }
+
+  static Future<double?> readPdfZoom(String bookId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble(_pdfZoomKey(bookId));
+  }
+
+  static Future<void> writePdfZoom(String bookId, double zoom) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_pdfZoomKey(bookId), zoom.clamp(0.25, 8.0));
+  }
+
+  static Future<int?> readPdfPage(String bookId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_pdfPageKey(bookId));
+  }
+
+  static Future<void> writePdfPage(String bookId, int page) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_pdfPageKey(bookId), page < 1 ? 1 : page);
+  }
 
   static Future<double> readProgress(String bookId) async {
     final prefs = await SharedPreferences.getInstance();

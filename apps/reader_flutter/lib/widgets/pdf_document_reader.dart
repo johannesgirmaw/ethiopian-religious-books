@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,7 +7,11 @@ import 'package:pdfrx/pdfrx.dart';
 
 import '../design/app_tokens.dart';
 import '../l10n/app_localizations.dart';
+import '../storage/reader_prefs_storage.dart';
 import 'protected_content_scope.dart';
+
+/// Fit mode persisted per book. `custom` means the user zoomed manually.
+enum _PdfFitMode { custom, width, page }
 
 /// In-app PDF reader with navigation, zoom, and text search (ported from gizecare).
 ///
@@ -13,6 +19,7 @@ import 'protected_content_scope.dart';
 class PdfDocumentReader extends StatefulWidget {
   const PdfDocumentReader({
     super.key,
+    this.bookId,
     this.filePath,
     this.uri,
     this.headers,
@@ -25,6 +32,8 @@ class PdfDocumentReader extends StatefulWidget {
           'Provide exactly one of filePath or uri',
         );
 
+  /// When set, zoom / fit / page are restored and saved for this book.
+  final String? bookId;
   final String? filePath;
   final Uri? uri;
   final Map<String, String>? headers;
@@ -44,11 +53,14 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
   final FocusNode _searchFocus = FocusNode();
   PdfTextSearcher? _searcher;
   VoidCallback? _removeSearchListener;
+  Timer? _persistTimer;
   var _ready = false;
   var _showSearch = false;
+  var _restoringPrefs = false;
   int _pageNumber = 1;
   int _pageCount = 1;
   double _zoom = 1;
+  _PdfFitMode _fitMode = _PdfFitMode.custom;
 
   Object get _sourceKey => widget.filePath ?? widget.uri!;
 
@@ -61,6 +73,8 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
 
   @override
   void dispose() {
+    _persistTimer?.cancel();
+    _persistViewPrefs(immediate: true);
     _controller.removeListener(_onControllerChanged);
     _removeSearchListener?.call();
     _searcher?.dispose();
@@ -82,6 +96,7 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
         _pageNumber = 1;
         _pageCount = 1;
         _zoom = 1;
+        _fitMode = _PdfFitMode.custom;
       });
       _pageField.text = '1';
       _searchField.clear();
@@ -98,14 +113,76 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
         (zoom - _zoom).abs() < 0.001) {
       return;
     }
+    final zoomChanged = (zoom - _zoom).abs() >= 0.001;
     setState(() {
       _ready = true;
       _pageNumber = page;
       _pageCount = count;
       _zoom = zoom;
+      // Pinch / scroll wheel zoom leaves fit mode.
+      if (!_restoringPrefs && zoomChanged && _fitMode != _PdfFitMode.custom) {
+        _fitMode = _PdfFitMode.custom;
+      }
     });
     if (_pageField.text != '$page') {
       _pageField.text = '$page';
+    }
+    if (!_restoringPrefs) _schedulePersistViewPrefs();
+  }
+
+  void _schedulePersistViewPrefs() {
+    if (widget.bookId == null || !_ready) return;
+    _persistTimer?.cancel();
+    _persistTimer = Timer(const Duration(milliseconds: 400), () {
+      unawaited(_persistViewPrefs());
+    });
+  }
+
+  Future<void> _persistViewPrefs({bool immediate = false}) async {
+    final bookId = widget.bookId;
+    if (bookId == null || !_ready) return;
+    if (!immediate) {
+      // no-op: already debounced
+    }
+    final fit = switch (_fitMode) {
+      _PdfFitMode.width => 'width',
+      _PdfFitMode.page => 'page',
+      _PdfFitMode.custom => 'custom',
+    };
+    await ReaderPrefsStorage.writePdfFit(bookId, fit);
+    await ReaderPrefsStorage.writePdfZoom(bookId, _zoom);
+    await ReaderPrefsStorage.writePdfPage(bookId, _pageNumber);
+  }
+
+  Future<void> _restoreViewPrefs() async {
+    final bookId = widget.bookId;
+    if (bookId == null || !_controller.isReady) return;
+    _restoringPrefs = true;
+    try {
+      final fitRaw = await ReaderPrefsStorage.readPdfFit(bookId);
+      final zoom = await ReaderPrefsStorage.readPdfZoom(bookId);
+      final page = await ReaderPrefsStorage.readPdfPage(bookId);
+      if (!mounted || !_controller.isReady) return;
+
+      if (page != null && page > 1) {
+        await _controller.goToPage(pageNumber: page);
+      }
+
+      if (fitRaw == 'width') {
+        setState(() => _fitMode = _PdfFitMode.width);
+        await _applyFitWidth();
+      } else if (fitRaw == 'page') {
+        setState(() => _fitMode = _PdfFitMode.page);
+        await _applyFitPage();
+      } else if (zoom != null && zoom > 0) {
+        setState(() => _fitMode = _PdfFitMode.custom);
+        await _controller.setZoom(
+          _controller.centerPosition,
+          zoom.clamp(_minZoom, _maxZoom),
+        );
+      }
+    } finally {
+      _restoringPrefs = false;
     }
   }
 
@@ -201,8 +278,10 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
 
   Future<void> _setZoomPercent(double zoom) async {
     if (!_controller.isReady) return;
+    setState(() => _fitMode = _PdfFitMode.custom);
     final clamped = zoom.clamp(_minZoom, _maxZoom);
     await _controller.setZoom(_controller.centerPosition, clamped);
+    _schedulePersistViewPrefs();
   }
 
   Future<void> _zoomIn() async {
@@ -219,7 +298,7 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
     await _setZoomPercent(stepped);
   }
 
-  Future<void> _fitWidth() async {
+  Future<void> _applyFitWidth() async {
     if (!_controller.isReady) return;
     final page = _controller.pageNumber ?? 1;
     // Scales the current page so its width fills the viewport (may crop height).
@@ -230,7 +309,7 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
     await _controller.goTo(matrix);
   }
 
-  Future<void> _fitPage() async {
+  Future<void> _applyFitPage() async {
     if (!_controller.isReady) return;
     final page = _controller.pageNumber ?? 1;
     // Contain the whole page in the viewport (letterbox if needed).
@@ -239,6 +318,18 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
     final pageRect = _controller.layout.pageLayouts[page - 1];
     final matrix = _controller.calcMatrixFor(pageRect.center, zoom: zoom);
     await _controller.goTo(matrix);
+  }
+
+  Future<void> _fitWidth() async {
+    setState(() => _fitMode = _PdfFitMode.width);
+    await _applyFitWidth();
+    _schedulePersistViewPrefs();
+  }
+
+  Future<void> _fitPage() async {
+    setState(() => _fitMode = _PdfFitMode.page);
+    await _applyFitPage();
+    _schedulePersistViewPrefs();
   }
 
   Future<void> _resetZoom() async {
@@ -340,12 +431,25 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
           _zoom = controller.currentZoom;
         });
         _pageField.text = '$_pageNumber';
+        // Restore after the first frame so layout / viewSize are valid.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) unawaited(_restoreViewPrefs());
+        });
       },
       onPageChanged: (pageNumber) {
         if (!mounted || pageNumber == null) return;
         setState(() => _pageNumber = pageNumber);
         if (_pageField.text != '$pageNumber') {
           _pageField.text = '$pageNumber';
+        }
+        if (!_restoringPrefs) {
+          // Keep the selected fit tool applied as the user turns pages.
+          if (_fitMode == _PdfFitMode.width) {
+            unawaited(_applyFitWidth());
+          } else if (_fitMode == _PdfFitMode.page) {
+            unawaited(_applyFitPage());
+          }
+          _schedulePersistViewPrefs();
         }
       },
       viewerOverlayBuilder: (context, size, handleLinkTap) => [
@@ -427,6 +531,8 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
             pageNumber: _pageNumber,
             pageCount: _pageCount,
             zoom: _zoom,
+            fitWidthActive: _fitMode == _PdfFitMode.width,
+            fitPageActive: _fitMode == _PdfFitMode.page,
             pageField: _pageField,
             searchActive: _showSearch,
             searchTooltip: l10n.findInBookLabel,
@@ -643,6 +749,8 @@ class _PdfToolbar extends StatelessWidget {
     required this.pageNumber,
     required this.pageCount,
     required this.zoom,
+    required this.fitWidthActive,
+    required this.fitPageActive,
     required this.pageField,
     required this.searchActive,
     required this.searchTooltip,
@@ -663,6 +771,8 @@ class _PdfToolbar extends StatelessWidget {
   final int pageNumber;
   final int pageCount;
   final double zoom;
+  final bool fitWidthActive;
+  final bool fitPageActive;
   final TextEditingController pageField;
   final bool searchActive;
   final String searchTooltip;
@@ -678,7 +788,8 @@ class _PdfToolbar extends StatelessWidget {
   final VoidCallback onResetZoom;
   final VoidCallback onToggleSearch;
 
-  static const _compactBreakpoint = 560.0;
+  // Stack earlier so fit max/min icons are never clipped off the right edge.
+  static const _compactBreakpoint = 720.0;
 
   @override
   Widget build(BuildContext context) {
@@ -741,16 +852,20 @@ class _PdfToolbar extends StatelessWidget {
           ],
         );
 
+        // Use open_in_full / close_fullscreen — always present in Material Icons.
+        // width_wide_outlined was rendering blank (missing glyph) on web.
         final fitControls = _ToolbarGroup(
           children: [
             _ToolbarIcon(
-              tooltip: 'Fit width',
-              icon: Icons.width_wide_outlined,
+              tooltip: 'Fit width (maximize)',
+              icon: Icons.open_in_full_rounded,
+              selected: fitWidthActive,
               onPressed: enabled ? onFitWidth : null,
             ),
             _ToolbarIcon(
-              tooltip: 'Fit page',
-              icon: Icons.fit_screen_outlined,
+              tooltip: 'Fit page (minimize)',
+              icon: Icons.close_fullscreen_rounded,
+              selected: fitPageActive,
               onPressed: enabled ? onFitPage : null,
             ),
           ],
@@ -760,9 +875,23 @@ class _PdfToolbar extends StatelessWidget {
           children: [
             _ToolbarIcon(
               tooltip: searchTooltip,
-              icon: searchActive ? Icons.search_off_rounded : Icons.search_rounded,
+              icon: searchActive
+                  ? Icons.search_off_rounded
+                  : Icons.search_rounded,
+              selected: searchActive,
               onPressed: enabled ? onToggleSearch : null,
             ),
+          ],
+        );
+
+        final toolsRow = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            zoomControls,
+            const SizedBox(width: AppSpace.xs),
+            fitControls,
+            const SizedBox(width: AppSpace.xs),
+            searchControl,
           ],
         );
 
@@ -789,15 +918,11 @@ class _PdfToolbar extends StatelessWidget {
                   children: [
                     Center(child: pageNav),
                     const SizedBox(height: AppSpace.xxs),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        zoomControls,
-                        const SizedBox(width: AppSpace.xs),
-                        fitControls,
-                        const SizedBox(width: AppSpace.xs),
-                        searchControl,
-                      ],
+                    Center(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: toolsRow,
+                      ),
                     ),
                   ],
                 )
@@ -806,14 +931,13 @@ class _PdfToolbar extends StatelessWidget {
                     Expanded(
                       child: Align(
                         alignment: Alignment.centerLeft,
-                        child: pageNav,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: pageNav,
+                        ),
                       ),
                     ),
-                    zoomControls,
-                    const SizedBox(width: AppSpace.xs),
-                    fitControls,
-                    const SizedBox(width: AppSpace.xs),
-                    searchControl,
+                    toolsRow,
                   ],
                 ),
         );
@@ -851,15 +975,22 @@ class _ToolbarIcon extends StatelessWidget {
     required this.icon,
     required this.tooltip,
     this.onPressed,
+    this.selected = false,
   });
 
   final IconData icon;
   final String tooltip;
   final VoidCallback? onPressed;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
     final active = onPressed != null;
+    final color = !active
+        ? AppColors.textTertiary
+        : selected
+            ? AppColors.primary
+            : AppColors.textPrimary;
     return IconButton(
       onPressed: onPressed,
       tooltip: tooltip,
@@ -867,10 +998,12 @@ class _ToolbarIcon extends StatelessWidget {
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
       iconSize: 22,
-      icon: Icon(
-        icon,
-        color: active ? AppColors.textPrimary : AppColors.textTertiary,
-      ),
+      style: selected
+          ? IconButton.styleFrom(
+              backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+            )
+          : null,
+      icon: Icon(icon, color: color),
     );
   }
 }

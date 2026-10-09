@@ -207,6 +207,7 @@ class _PdfReaderBody extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
               child: PdfDocumentReader(
+                bookId: bookId,
                 filePath: source.filePath,
                 uri: source.uri,
                 headers: source.headers,
