@@ -10,7 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../common/platform/platform_shell.dart';
-
+import '../../config/app_config.dart';
 import '../../design/app_tokens.dart';
 import '../../desktop/widgets/shell/desktop_overlay_scaffold.dart';
 import '../../l10n/app_localizations.dart';
@@ -819,8 +819,8 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
       final chaptersDraftPayload = _chaptersDraft
           .map((e) => e.toDraftPayload())
           .toList();
-      final commissionPercent =
-          ref.read(commissionRateProvider).valueOrNull ?? 0;
+      final commissionPercent = ref.read(commissionRateProvider).valueOrNull ??
+          AppConfig.defaultCommissionPercent;
       final listedEtb = _pricePayload(_priceEtb, commissionPercent);
       final listedUsd = _pricePayload(_priceUsd, commissionPercent);
       final listedPrice = listedUsd > 0 ? listedUsd : listedEtb;
@@ -985,7 +985,8 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     required bool sideBySide,
   }) {
     final commissionPercent =
-        ref.watch(commissionRateProvider).valueOrNull ?? 0;
+        ref.watch(commissionRateProvider).valueOrNull ??
+            AppConfig.defaultCommissionPercent;
     final etbAuthor = _parsePriceInput(_priceEtb.text) ?? 0;
     final usdAuthor = _parsePriceInput(_priceUsd.text) ?? 0;
     final etbListed = _listedPriceFromAuthor(etbAuthor, commissionPercent);

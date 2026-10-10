@@ -30,7 +30,7 @@ class PlatformSettings(models.Model):
 
     # Commission configuration.
     default_commission_percent = models.DecimalField(
-        max_digits=5, decimal_places=2, default=Decimal("10.00")
+        max_digits=5, decimal_places=2, default=Decimal("20.00")
     )
     allow_author_override = models.BooleanField(default=True)
     allow_book_override = models.BooleanField(default=True)

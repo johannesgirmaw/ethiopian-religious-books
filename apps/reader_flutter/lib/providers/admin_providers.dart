@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config/app_config.dart';
 import '../models/admin_book.dart';
 import 'api_client.dart';
 
@@ -289,8 +290,9 @@ final commissionRateProvider = FutureProvider.autoDispose<double>((ref) async {
   final dio = ref.watch(apiDioProvider);
   try {
     final res = await dio.get<Map<String, dynamic>>('payments/commission-rate');
-    return double.tryParse('${res.data?['commission_percent'] ?? ''}') ?? 0;
+    return double.tryParse('${res.data?['commission_percent'] ?? ''}') ??
+        AppConfig.defaultCommissionPercent;
   } on DioException {
-    return 0;
+    return AppConfig.defaultCommissionPercent;
   }
 });

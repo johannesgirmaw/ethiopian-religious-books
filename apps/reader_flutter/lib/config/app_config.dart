@@ -29,6 +29,10 @@ class AppConfig {
   static const String telegramSupportUrl = 'https://t.me/felegemetsahft';
   static const String telegramSupportHandle = '@felegemetsahft';
 
+  /// Platform cut of book sale price when the API rate is unavailable.
+  /// Keep in sync with `PlatformSettings.default_commission_percent` (backend).
+  static const double defaultCommissionPercent = 20;
+
   static const String _productionApiBaseUrl =
       'https://api.felegemetsahft.com/v1/';
 

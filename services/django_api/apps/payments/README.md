@@ -15,7 +15,7 @@ Telebirr).
 | Model | Purpose |
 | --- | --- |
 | `Book` (catalog, extended) | `author`, `currency`, `price`, `sale_price`, `commission_percent` |
-| `PlatformSettings` | singleton: gateway toggles, default commission, override flags |
+| `PlatformSettings` | singleton: gateway toggles, default commission (**20%** of sale), override flags |
 | `GatewayCredential` | per-provider **encrypted** secret/webhook keys |
 | `AuthorCommission` | per-author commission override |
 | `AuthorProfile` | author publishing identity + payout info |
