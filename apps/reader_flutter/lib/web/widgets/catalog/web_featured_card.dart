@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../design/app_tokens.dart';
+import '../../../router/app_navigation.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/book_models.dart';
 import '../../../utils/catalog_book_visuals.dart';
@@ -10,7 +12,7 @@ import '../../design/web_tokens.dart';
 import 'book_tile_hover.dart';
 
 /// Wide "Popular" featured banner for the web home.
-class WebFeaturedCard extends StatelessWidget {
+class WebFeaturedCard extends ConsumerWidget {
   const WebFeaturedCard({
     super.key,
     required this.book,
@@ -21,12 +23,13 @@ class WebFeaturedCard extends StatelessWidget {
   final int index;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final author = book.authorCompiler?.trim();
 
     return WebBookTileHover(
-      route: '/book/${book.id}',
+      route: book.isBible ? '/bible/book/${book.id}' : '/book/${book.id}',
+      onActivate: () => openCatalogBook(context, ref, book),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surfaceSoft,

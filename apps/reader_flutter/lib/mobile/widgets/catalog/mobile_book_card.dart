@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../design/app_tokens.dart';
+import '../../../router/app_navigation.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/book_models.dart';
 import '../../../providers/catalog_providers.dart';
@@ -141,9 +141,7 @@ class MobileBookCard extends ConsumerWidget {
     );
 
     final tappable = GestureDetector(
-      onTap: () => context.push(
-        book.isBible ? '/bible/book/${book.id}' : '/book/${book.id}',
-      ),
+      onTap: () => openCatalogBook(context, ref, book),
       behavior: HitTestBehavior.opaque,
       child: card,
     );
@@ -167,9 +165,7 @@ class MobileBookListRow extends ConsumerWidget {
     final author = book.authorCompiler?.trim();
 
     return GestureDetector(
-      onTap: () => context.push(
-        book.isBible ? '/bible/book/${book.id}' : '/book/${book.id}',
-      ),
+      onTap: () => openCatalogBook(context, ref, book),
       behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),

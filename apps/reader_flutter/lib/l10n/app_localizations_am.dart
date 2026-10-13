@@ -2100,6 +2100,47 @@ class AppLocalizationsAm extends AppLocalizations {
   String get paymentSubmitting => 'እየተላከ ነው…';
 
   @override
+  String get paymentCancelPurchase => 'ግዢውን ሰርዝ';
+
+  @override
+  String get paymentCancelPurchaseTitle => 'ይህን ግዢ ይሰረዝ?';
+
+  @override
+  String get paymentCancelPurchaseBody =>
+      'ክፍያው ገና አልተላከም። ሲሰርዙት ይህ ግዢ ይወገዳል፤ በኋላ እንደገና መጀመር ይችላሉ።';
+
+  @override
+  String get paymentCancelPurchaseConfirm => 'ግዢውን ሰርዝ';
+
+  @override
+  String get paymentKeepPurchase => 'ግዢውን ቀጥል';
+
+  @override
+  String get paymentDeletePending => 'ሰርዝ';
+
+  @override
+  String get paymentDeletePendingTitle => 'ይህ በመጠባበቅ ላይ ያለ ክፍያ ይሰረዝ?';
+
+  @override
+  String get paymentDeletePendingBody =>
+      'በመጠባበቅ ላይ ያለ ወይም ማረጋገጫ የሚጠብቅ ክፍያ ብቻ ይሰረዛል። የተጠናቀቀ ግዢ በታሪክዎ ይቀራል።';
+
+  @override
+  String get paymentDeletePendingConfirm => 'ሰርዝ';
+
+  @override
+  String get paymentContinuePurchase => 'ክፍያውን ቀጥል';
+
+  @override
+  String get paymentAlreadyOwnedTitle => 'ይህን መጽሐፍ አስቀድመው ገዝተዋል';
+
+  @override
+  String get paymentAlreadyOwnedBody => 'ክፍያው ተጠናቋል። መጽሐፉን ለማንበብ ይክፈቱ።';
+
+  @override
+  String get paymentInReviewBlocked => 'ለዚህ መጽሐፍ ክፍያ አስቀድሞ ማረጋገጫ እየጠበቀ ነው።';
+
+  @override
   String paymentPayNow(String amount) {
     return '$amount ክፈል';
   }

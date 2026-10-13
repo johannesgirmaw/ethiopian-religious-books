@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
@@ -12,13 +13,14 @@ import '../../models/payment_models.dart';
 import '../../providers/nav_visibility_providers.dart';
 import '../../providers/payment_providers.dart';
 import '../../providers/session_notifier.dart';
+import '../../router/app_navigation.dart';
 import '../../utils/form_draft_controller.dart';
 import '../../utils/form_draft_keys.dart';
 import '../../utils/money_format.dart';
 import '../../utils/resolve_cover_url.dart';
 import 'payment_method_icons.dart';
 
-enum _Step { method, details, success }
+enum _Step { method, details, success, owned }
 
 /// Responsive, end-to-end payment flow used by the mobile, web and desktop
 /// adapters (each wraps it in its own scaffold). Implements:
@@ -47,10 +49,14 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
   String? _receiptName;
   final _referenceCtrl = TextEditingController();
 
+  bool _bootstrapping = true;
   bool _busy = false;
   String? _error;
   PaymentTransaction? _transaction;
   String? _pendingTransactionId;
+  bool _persistDraftOnDispose = true;
+  bool _disposed = false;
+  Timer? _serverSync;
   late final FormDraftController _draft;
 
   String _draftKey() => FormDraftKeys.scope(
@@ -77,7 +83,42 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
 
   void _onReferenceChanged() {
     _draft.onChanged();
+    _scheduleServerSync();
     if (mounted) setState(() {});
+  }
+
+  void _scheduleServerSync() {
+    _serverSync?.cancel();
+    _serverSync = Timer(const Duration(milliseconds: 800), () {
+      unawaited(_syncPendingDraft());
+    });
+  }
+
+  /// Keeps bank and reference on the pending checkout so another visit — or
+  /// another device — opens the same step with the fields filled in.
+  Future<void> _syncPendingDraft() async {
+    if (_disposed) return;
+    final txn = _transaction;
+    if (txn == null || txn.status != PaymentStatus.pending) return;
+    try {
+      final updated = await ref.read(paymentRepositoryProvider).updatePending(
+            transactionId: txn.id,
+            bankId: _selectedBankId,
+            transactionReference: _referenceCtrl.text.trim(),
+          );
+      if (_disposed || !mounted) return;
+      _transaction = updated;
+    } catch (e) {
+      if (_disposed || !mounted) return;
+      if (paymentErrorCode(e) == 'DUPLICATE_REFERENCE') {
+        setState(() {
+          _error = paymentErrorMessage(
+            e,
+            AppLocalizations.of(context).paymentErrorGeneric,
+          );
+        });
+      }
+    }
   }
 
   bool get _canSubmitReceipt =>
@@ -90,12 +131,80 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
     unawaited(ref.read(paymentMethodsProvider.future));
     unawaited(ref.read(banksProvider.future));
 
-    final restored = await _draft.restoreIfPresent();
-    if (restored) {
-      await _hydrateRestoredDraft();
+    var restored = false;
+    PaymentTransaction? open;
+    try {
+      try {
+        final txns = await ref.read(myTransactionsProvider.future);
+        open = activePurchaseForBook(txns, widget.book.id);
+      } catch (_) {}
+
+      restored = await _draft.restoreIfPresent();
       if (!mounted) return;
-      setState(() {});
+
+      if (open != null) {
+        _applyOpenPurchase(open);
+      } else if (_pendingTransactionId != null) {
+        // The saved form belonged to a checkout that was cancelled or rejected.
+        _step = _Step.method;
+        _pendingTransactionId = null;
+        _transaction = null;
+        _referenceCtrl.clear();
+        _receiptName = null;
+        _receiptBytes = null;
+      } else {
+        await _hydrateRestoredDraft();
+      }
+
+      if (_step == _Step.details && _selectedBankId == null) {
+        try {
+          final banks = await ref.read(banksProvider.future);
+          if (mounted && _selectedBankId == null && banks.length == 1) {
+            _selectedBankId = banks.first.id;
+          }
+        } catch (_) {}
+      }
+    } finally {
+      if (mounted) setState(() => _bootstrapping = false);
+    }
+
+    if (!mounted) return;
+    if (restored && open == null && _step == _Step.method && _selectedMethod != null) {
       showFormDraftRestoredSnackBar(context);
+    }
+  }
+
+  void _applyOpenPurchase(PaymentTransaction open) {
+    final draftTxnId = _pendingTransactionId;
+    final draftMatches = draftTxnId == null || draftTxnId.isEmpty || draftTxnId == open.id;
+    final draftReference = _referenceCtrl.text;
+    _transaction = open;
+    _selectedMethod = open.method ?? _selectedMethod;
+    if (open.bank != null) {
+      _selectedBankId = open.bank!.id;
+    } else if (!draftMatches) {
+      _selectedBankId = null;
+    }
+    if (!draftMatches) {
+      _referenceCtrl.text = open.transactionReference;
+      _receiptName = null;
+      _receiptBytes = null;
+    } else if (draftReference.trim().isEmpty && open.transactionReference.isNotEmpty) {
+      _referenceCtrl.text = open.transactionReference;
+    }
+    if (_receiptBytes == null) _receiptName = null;
+    _pendingTransactionId = null;
+
+    if (open.status.resumesCheckout) {
+      _step = open.method?.isManual == false ? _Step.method : _Step.details;
+    } else if (open.status.isSuccessful) {
+      _step = _Step.owned;
+      _persistDraftOnDispose = false;
+      unawaited(_draft.clear());
+    } else if (open.status.isAwaitingReview) {
+      _step = _Step.success;
+      _persistDraftOnDispose = false;
+      unawaited(_draft.clear());
     }
   }
 
@@ -160,7 +269,11 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
 
   @override
   void dispose() {
-    if (_step != _Step.success) {
+    _disposed = true;
+    _serverSync?.cancel();
+    if (_persistDraftOnDispose &&
+        _step != _Step.success &&
+        _step != _Step.owned) {
       unawaited(_draft.persistNow());
     }
     _referenceCtrl.removeListener(_onReferenceChanged);
@@ -185,7 +298,8 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
         method: method,
       );
       if (!mounted) return;
-      // A transaction now exists — let the Purchases nav entry show up.
+      // A transaction now exists — refresh purchases and the catalog resume gate.
+      ref.invalidate(myTransactionsProvider);
       ref.invalidate(hasPurchasesProvider);
       if (method.isManual) {
         final banks = await ref.read(banksProvider.future);
@@ -202,6 +316,69 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
         // Online gateways are not active yet; checkoutUrl will be null.
         setState(() => _error = l10n.paymentGatewayUnavailable);
       }
+    } on PurchaseConflict catch (e) {
+      if (!mounted) return;
+      _persistDraftOnDispose = false;
+      unawaited(_draft.clear());
+      setState(() {
+        _transaction = e.transaction;
+        _error = null;
+        _step = e.code == 'ALREADY_OWNED' ? _Step.owned : _Step.success;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = paymentErrorMessage(e, l10n.paymentErrorGeneric));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  void _onBankSelected(String? id) {
+    setState(() {
+      _selectedBankId = id;
+      _notifyDraftChanged();
+    });
+    _scheduleServerSync();
+  }
+
+  Future<void> _cancelPurchase() async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.paymentCancelPurchaseTitle),
+        content: Text(l10n.paymentCancelPurchaseBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.paymentKeepPurchase),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.paymentCancelPurchaseConfirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final txn = _transaction;
+    if (txn == null) {
+      widget.onClose?.call();
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await ref.read(paymentRepositoryProvider).cancelTransaction(txn.id);
+      _persistDraftOnDispose = false;
+      _serverSync?.cancel();
+      await _draft.clear();
+      ref.invalidate(myTransactionsProvider);
+      ref.invalidate(hasPurchasesProvider);
+      if (!mounted) return;
+      widget.onClose?.call();
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = paymentErrorMessage(e, l10n.paymentErrorGeneric));
@@ -257,6 +434,8 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
         bankId: _selectedBankId,
       );
       if (!mounted) return;
+      _persistDraftOnDispose = false;
+      _serverSync?.cancel();
       ref.invalidate(myTransactionsProvider);
       await _draft.clear();
       setState(() {
@@ -274,6 +453,14 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
   // --- build -------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
+    if (_bootstrapping) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(48),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 640),
@@ -285,8 +472,10 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
             AppSpace.xxl,
           ),
           children: [
-            _StepIndicator(step: _step),
-            const SizedBox(height: AppSpace.lg),
+            if (_step != _Step.owned) ...[
+              _StepIndicator(step: _step),
+              const SizedBox(height: AppSpace.lg),
+            ],
             if (_error != null) ...[
               _ErrorBanner(message: _error!),
               const SizedBox(height: AppSpace.md),
@@ -312,16 +501,23 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
                 referenceController: _referenceCtrl,
                 busy: _busy,
                 canSubmit: _canSubmitReceipt,
-                onSelectBank: (id) => setState(() {
-                  _selectedBankId = id;
-                  _notifyDraftChanged();
-                }),
+                onSelectBank: _onBankSelected,
                 onPickReceipt: _pickReceipt,
                 onSubmit: _canSubmitReceipt ? _submitReceipt : null,
+                onCancel: _transaction == null || _busy ? null : _cancelPurchase,
               ),
               _Step.success => _SuccessStep(
                 transaction: _transaction,
                 onDone: widget.onClose,
+              ),
+              _Step.owned => _OwnedStep(
+                onRead: () => context.push(
+                  readingPathForBook(
+                    widget.book.id,
+                    isPdf: widget.book.isPdf,
+                    query: widget.book.isPdf ? null : 'pickChapter=1',
+                  ),
+                ),
               ),
             },
           ],
@@ -346,6 +542,7 @@ class _StepIndicator extends StatelessWidget {
       _Step.method => 0,
       _Step.details => 1,
       _Step.success => 2,
+      _Step.owned => 2,
     };
     final labels = [
       l10n.paymentStepMethod,
@@ -735,6 +932,7 @@ class _ManualDetailsStep extends ConsumerWidget {
     required this.onSelectBank,
     required this.onPickReceipt,
     required this.onSubmit,
+    required this.onCancel,
   });
 
   final BookSummary book;
@@ -747,6 +945,7 @@ class _ManualDetailsStep extends ConsumerWidget {
   final ValueChanged<String?> onSelectBank;
   final VoidCallback onPickReceipt;
   final VoidCallback? onSubmit;
+  final VoidCallback? onCancel;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -852,29 +1051,53 @@ class _ManualDetailsStep extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: AppSpace.lg),
-        FilledButton.icon(
-          onPressed: canSubmit ? onSubmit : null,
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.35),
-            disabledForegroundColor: Colors.white70,
-            minimumSize: const Size.fromHeight(50),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
-          ),
-          icon: busy
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: onCancel,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textPrimary,
+                  minimumSize: const Size.fromHeight(50),
+                  side: const BorderSide(color: AppColors.border),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
-                )
-              : const Icon(Icons.lock_outline, size: 18),
-          label: Text(busy ? l10n.paymentSubmitting : l10n.paymentSubmit),
+                ),
+                child: Text(l10n.paymentCancelPurchase),
+              ),
+            ),
+            const SizedBox(width: AppSpace.sm),
+            Expanded(
+              flex: 2,
+              child: FilledButton.icon(
+                onPressed: canSubmit ? onSubmit : null,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: AppColors.primary.withValues(
+                    alpha: 0.35,
+                  ),
+                  disabledForegroundColor: Colors.white70,
+                  minimumSize: const Size.fromHeight(50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                ),
+                icon: busy
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.lock_outline, size: 18),
+                label: Text(busy ? l10n.paymentSubmitting : l10n.paymentSubmit),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -1298,6 +1521,62 @@ class _SuccessStep extends StatelessWidget {
             ),
           ),
           child: Text(l10n.paymentDone),
+        ),
+      ],
+    );
+  }
+}
+
+class _OwnedStep extends StatelessWidget {
+  const _OwnedStep({required this.onRead});
+
+  final VoidCallback onRead;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: AppSpace.xl),
+        const Icon(
+          Icons.menu_book_rounded,
+          color: AppColors.primary,
+          size: 72,
+        ),
+        const SizedBox(height: AppSpace.md),
+        Text(
+          l10n.paymentAlreadyOwnedTitle,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: AppSpace.sm),
+        Text(
+          l10n.paymentAlreadyOwnedBody,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 14,
+            color: AppColors.textSecondary,
+            height: 1.45,
+          ),
+        ),
+        const SizedBox(height: AppSpace.xl),
+        FilledButton.icon(
+          onPressed: onRead,
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(50),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+          ),
+          icon: const Icon(Icons.auto_stories_rounded, size: 18),
+          label: Text(l10n.readNow),
         ),
       ],
     );

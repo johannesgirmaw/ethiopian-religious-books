@@ -9,6 +9,7 @@ import '../../../utils/catalog_book_visuals.dart';
 import '../../../utils/catalog_categories.dart';
 import '../../../widgets/book_pin_button.dart';
 import '../../../widgets/cover_badges.dart';
+import '../../../router/app_navigation.dart';
 import '../../../widgets/favourite_heart_button.dart';
 import '../../design/desktop_tokens.dart';
 import 'book_tile_hover.dart';
@@ -28,7 +29,8 @@ class DesktopBookCard extends ConsumerWidget {
     final icon = categoryForBook(book).icon;
 
     return DesktopBookTileHover(
-      route: '/book/${book.id}',
+      route: book.isBible ? '/bible/book/${book.id}' : '/book/${book.id}',
+      onActivate: () => openCatalogBook(context, ref, book),
       child: DecoratedBox(
         decoration: DesktopTokens.panelDecoration(),
         child: Column(
@@ -201,7 +203,8 @@ class DesktopBookListRow extends ConsumerWidget {
     final icon = catalogBookIcon(book, index);
 
     return DesktopBookTileHover(
-      route: '/book/${book.id}',
+      route: book.isBible ? '/bible/book/${book.id}' : '/book/${book.id}',
+      onActivate: () => openCatalogBook(context, ref, book),
       child: DecoratedBox(
         decoration: DesktopTokens.panelDecoration(),
         child: Padding(

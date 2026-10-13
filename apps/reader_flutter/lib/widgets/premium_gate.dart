@@ -27,6 +27,23 @@ Future<bool> ensureBookUnlocked(
   if (await userOwnsBook(ref, book.id)) return true;
 
   if (book.requiresPurchase) {
+    try {
+      final txns = await ref.read(myTransactionsProvider.future);
+      final active = activePurchaseForBook(txns, book.id);
+      if (!context.mounted) return false;
+      if (active != null && active.status.isSuccessful) return true;
+      if (active != null && active.status.isAwaitingReview) {
+        final l10n = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.paymentInReviewBlocked)),
+        );
+        return false;
+      }
+      if (active != null && active.status.resumesCheckout) {
+        context.push('/payment/${book.id}');
+        return false;
+      }
+    } catch (_) {}
     if (context.mounted) context.push('/payment/${book.id}');
     return false;
   }

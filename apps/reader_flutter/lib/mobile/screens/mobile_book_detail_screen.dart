@@ -322,28 +322,45 @@ class MobileBookDetailScreen extends ConsumerWidget {
                               .valueOrNull
                               ?.contains(bookId) ??
                           false;
+                      final resumeCheckout =
+                          !owned &&
+                          (ref
+                                  .watch(resumeCheckoutBookIdsProvider)
+                                  .valueOrNull
+                                  ?.contains(bookId) ??
+                              false);
                       final purchasePending =
                           !owned &&
+                          !resumeCheckout &&
                           (ref
                                   .watch(pendingPurchaseBookIdsProvider)
                                   .valueOrNull
                                   ?.contains(bookId) ??
                               false);
                       final mustBuy =
-                          book.requiresPurchase && !owned && !purchasePending;
-                      final label = purchasePending
-                          ? l10n.purchasePending
-                          : (mustBuy ? l10n.purchaseBook : l10n.readNow);
-                      final icon = purchasePending
-                          ? Icons.hourglass_top_rounded
-                          : (mustBuy
-                                ? Icons.shopping_cart_outlined
-                                : (book.isPdf
-                                      ? Icons.picture_as_pdf_outlined
-                                      : Icons.menu_book_rounded));
+                          book.requiresPurchase &&
+                          !owned &&
+                          !purchasePending &&
+                          !resumeCheckout;
+                      final label = resumeCheckout
+                          ? l10n.paymentContinuePurchase
+                          : (purchasePending
+                                ? l10n.purchasePending
+                                : (mustBuy ? l10n.purchaseBook : l10n.readNow));
+                      final icon = resumeCheckout
+                          ? Icons.payments_outlined
+                          : (purchasePending
+                                ? Icons.hourglass_top_rounded
+                                : (mustBuy
+                                      ? Icons.shopping_cart_outlined
+                                      : (book.isPdf
+                                            ? Icons.picture_as_pdf_outlined
+                                            : Icons.menu_book_rounded)));
                       return FilledButton.icon(
                         onPressed: purchasePending
                             ? null
+                            : resumeCheckout
+                            ? () => context.push('/payment/$bookId')
                             : () async {
                                 if (await ensureBookUnlocked(
                                       context,

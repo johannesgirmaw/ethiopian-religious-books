@@ -2144,6 +2144,49 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paymentSubmitting => 'Submitting…';
 
   @override
+  String get paymentCancelPurchase => 'Cancel purchase';
+
+  @override
+  String get paymentCancelPurchaseTitle => 'Cancel this purchase?';
+
+  @override
+  String get paymentCancelPurchaseBody =>
+      'You have not submitted payment yet. Cancelling removes this checkout so you can start again later.';
+
+  @override
+  String get paymentCancelPurchaseConfirm => 'Cancel purchase';
+
+  @override
+  String get paymentKeepPurchase => 'Keep purchase';
+
+  @override
+  String get paymentDeletePending => 'Delete';
+
+  @override
+  String get paymentDeletePendingTitle => 'Delete this pending payment?';
+
+  @override
+  String get paymentDeletePendingBody =>
+      'Only a payment that is still pending or waiting for approval can be deleted. Completed purchases stay in your history.';
+
+  @override
+  String get paymentDeletePendingConfirm => 'Delete';
+
+  @override
+  String get paymentContinuePurchase => 'Continue payment';
+
+  @override
+  String get paymentAlreadyOwnedTitle => 'You already own this book';
+
+  @override
+  String get paymentAlreadyOwnedBody =>
+      'This purchase is complete. Open the book to start reading.';
+
+  @override
+  String get paymentInReviewBlocked =>
+      'A payment for this book is already waiting for approval.';
+
+  @override
   String paymentPayNow(String amount) {
     return 'Pay $amount';
   }

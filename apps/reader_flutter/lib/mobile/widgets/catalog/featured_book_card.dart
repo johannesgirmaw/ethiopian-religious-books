@@ -1,27 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../design/app_tokens.dart';
+import '../../../router/app_navigation.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/book_models.dart';
 import 'book_cover_poster.dart';
 
 /// The "Popular" featured banner at the top of the home screen.
-class FeaturedBookCard extends StatelessWidget {
+class FeaturedBookCard extends ConsumerWidget {
   const FeaturedBookCard({super.key, required this.book, required this.index});
 
   final BookSummary book;
   final int index;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final author = book.authorCompiler?.trim();
 
     return GestureDetector(
-      onTap: () => context.push(
-        book.isBible ? '/bible/book/${book.id}' : '/book/${book.id}',
-      ),
+      onTap: () => openCatalogBook(context, ref, book),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surfaceSoft,

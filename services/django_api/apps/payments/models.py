@@ -322,6 +322,20 @@ class PaymentTransaction(models.Model):
                 condition=~models.Q(transaction_reference=""),
                 name="uniq_method_reference",
             ),
+            # One open or completed purchase per buyer per book. Cancelled and
+            # rejected rows stay as history and do not occupy the slot.
+            models.UniqueConstraint(
+                fields=["user", "book"],
+                condition=models.Q(
+                    status__in=[
+                        "pending",
+                        "on_review",
+                        "approved",
+                        "completed",
+                    ]
+                ),
+                name="uniq_user_book_active_purchase",
+            ),
         ]
 
     def __str__(self):

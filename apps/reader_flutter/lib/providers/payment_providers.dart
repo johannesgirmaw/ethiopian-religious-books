@@ -67,6 +67,51 @@ final pendingPurchaseBookIdsProvider =
   };
 });
 
+/// Book ids whose checkout was started and not submitted. Opening the book
+/// resumes that form instead of starting another purchase.
+final resumeCheckoutBookIdsProvider =
+    FutureProvider.autoDispose<Set<String>>((ref) async {
+  final txns = await ref.watch(myTransactionsProvider.future);
+  return {
+    for (final t in txns)
+      if (t.status.resumesCheckout && t.bookId.isNotEmpty) t.bookId,
+  };
+});
+
+/// The buyer's purchase that blocks a new checkout for [bookId], if any.
+///
+/// Completed wins over in-review, which wins over a half-finished checkout.
+PaymentTransaction? activePurchaseForBook(
+  Iterable<PaymentTransaction> transactions,
+  String bookId,
+) {
+  PaymentTransaction? best;
+  var bestRank = 99;
+  for (final txn in transactions) {
+    if (txn.bookId != bookId || !txn.status.blocksNewPurchase) continue;
+    final rank = switch (txn.status) {
+      PaymentStatus.completed => 0,
+      PaymentStatus.approved => 1,
+      PaymentStatus.onReview => 2,
+      PaymentStatus.pending => 3,
+      _ => 99,
+    };
+    if (rank < bestRank) {
+      best = txn;
+      bestRank = rank;
+    }
+  }
+  return best;
+}
+
+/// Thrown when creating a purchase is refused because one already exists.
+class PurchaseConflict implements Exception {
+  PurchaseConflict({required this.code, required this.transaction});
+
+  final String code;
+  final PaymentTransaction transaction;
+}
+
 /// A single transaction by id (polled for status updates).
 final transactionProvider = FutureProvider.autoDispose
     .family<PaymentTransaction, String>((ref, id) async {
@@ -109,15 +154,56 @@ class PaymentRepository {
     required PaymentMethodKind method,
     String? bankId,
   }) async {
-    final res = await _dio.post<Map<String, dynamic>>(
-      'payments/transactions',
+    try {
+      final res = await _dio.post<Map<String, dynamic>>(
+        'payments/transactions',
+        data: {
+          'book': bookId,
+          'payment_method': method.apiValue,
+          if (bankId != null) 'bank': bankId,
+        },
+      );
+      return CreateTransactionResult.fromJson(res.data ?? const {});
+    } on DioException catch (e) {
+      final code = paymentErrorCode(e);
+      final data = e.response?.data;
+      if ((code == 'ALREADY_OWNED' || code == 'PURCHASE_IN_PROGRESS') &&
+          data is Map &&
+          data['transaction'] is Map) {
+        throw PurchaseConflict(
+          code: code,
+          transaction: PaymentTransaction.fromJson(
+            Map<String, dynamic>.from(data['transaction'] as Map),
+          ),
+        );
+      }
+      rethrow;
+    }
+  }
+
+  /// Save bank and reference on a checkout that has not been submitted.
+  Future<PaymentTransaction> updatePending({
+    required String transactionId,
+    String? bankId,
+    String? transactionReference,
+  }) async {
+    final res = await _dio.patch<Map<String, dynamic>>(
+      'payments/transactions/$transactionId',
       data: {
-        'book': bookId,
-        'payment_method': method.apiValue,
         if (bankId != null) 'bank': bankId,
+        if (transactionReference != null)
+          'transaction_reference': transactionReference,
       },
     );
-    return CreateTransactionResult.fromJson(res.data ?? const {});
+    return PaymentTransaction.fromJson(res.data ?? const {});
+  }
+
+  /// Withdraw a pending checkout or a payment still waiting for approval.
+  Future<PaymentTransaction> cancelTransaction(String transactionId) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      'payments/transactions/$transactionId/cancel',
+    );
+    return PaymentTransaction.fromJson(res.data ?? const {});
   }
 
   /// Upload a receipt + reference for a manual transaction (-> ON_REVIEW).

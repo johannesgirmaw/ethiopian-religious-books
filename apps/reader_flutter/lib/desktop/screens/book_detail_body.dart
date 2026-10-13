@@ -88,22 +88,34 @@ class DesktopBookDetailBody extends ConsumerWidget {
         final owned =
             ref.watch(entitledBookIdsProvider).valueOrNull?.contains(bookId) ??
             false;
+        final resumeCheckout =
+            !owned &&
+            (ref
+                    .watch(resumeCheckoutBookIdsProvider)
+                    .valueOrNull
+                    ?.contains(bookId) ??
+                false);
         final purchasePending =
             !owned &&
+            !resumeCheckout &&
             (ref
                     .watch(pendingPurchaseBookIdsProvider)
                     .valueOrNull
                     ?.contains(bookId) ??
                 false);
-        final mustBuy = book.requiresPurchase && !owned && !purchasePending;
+        final mustBuy =
+            book.requiresPurchase && !owned && !purchasePending && !resumeCheckout;
 
         final rail = _LeftRail(
           book: book,
           downloadJob: currentJob,
           mustBuy: mustBuy,
           purchasePending: purchasePending,
+          resumeCheckout: resumeCheckout,
           onRead: purchasePending
               ? null
+              : resumeCheckout
+              ? () => context.push('/payment/$bookId')
               : () async {
                   if (await ensureBookUnlocked(context, ref, book) &&
                       context.mounted) {
@@ -246,6 +258,7 @@ class _LeftRail extends StatelessWidget {
     required this.onShare,
     required this.mustBuy,
     required this.purchasePending,
+    required this.resumeCheckout,
   });
 
   final BookSummary book;
@@ -255,6 +268,7 @@ class _LeftRail extends StatelessWidget {
   final VoidCallback onShare;
   final bool mustBuy;
   final bool purchasePending;
+  final bool resumeCheckout;
 
   @override
   Widget build(BuildContext context) {
@@ -281,6 +295,7 @@ class _LeftRail extends StatelessWidget {
           onShare: onShare,
           mustBuy: mustBuy,
           purchasePending: purchasePending,
+          resumeCheckout: resumeCheckout,
         ),
         if (downloadJob != null) ...[
           const SizedBox(height: 16),
@@ -369,6 +384,7 @@ class _ActionButtons extends StatelessWidget {
     required this.onShare,
     required this.mustBuy,
     required this.purchasePending,
+    required this.resumeCheckout,
   });
 
   final AppLocalizations l10n;
@@ -377,17 +393,22 @@ class _ActionButtons extends StatelessWidget {
   final VoidCallback onShare;
   final bool mustBuy;
   final bool purchasePending;
+  final bool resumeCheckout;
 
   @override
   Widget build(BuildContext context) {
-    final primaryLabel = purchasePending
-        ? l10n.purchasePending
-        : (mustBuy ? l10n.purchaseBook : l10n.startReading);
-    final primaryIcon = purchasePending
-        ? Icons.hourglass_top_rounded
-        : (mustBuy
-              ? Icons.shopping_cart_outlined
-              : Icons.auto_stories_rounded);
+    final primaryLabel = resumeCheckout
+        ? l10n.paymentContinuePurchase
+        : (purchasePending
+              ? l10n.purchasePending
+              : (mustBuy ? l10n.purchaseBook : l10n.startReading));
+    final primaryIcon = resumeCheckout
+        ? Icons.payments_outlined
+        : (purchasePending
+              ? Icons.hourglass_top_rounded
+              : (mustBuy
+                    ? Icons.shopping_cart_outlined
+                    : Icons.auto_stories_rounded));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

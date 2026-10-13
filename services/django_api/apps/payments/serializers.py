@@ -230,6 +230,9 @@ class AdminAuthorApplicationSerializer(AuthorApplicationSerializer):
 
 class PaymentTransactionSerializer(serializers.ModelSerializer):
     book_title = serializers.CharField(source="book.title", read_only=True)
+    book_content_format = serializers.CharField(
+        source="book.content_format", read_only=True
+    )
     bank_detail = PublicBankSerializer(source="bank", read_only=True)
     author_amount = serializers.DecimalField(
         max_digits=12, decimal_places=2, read_only=True
@@ -245,6 +248,7 @@ class PaymentTransactionSerializer(serializers.ModelSerializer):
             "user_email",
             "book",
             "book_title",
+            "book_content_format",
             "bank",
             "bank_detail",
             "currency",
@@ -281,6 +285,17 @@ class CreateTransactionSerializer(serializers.Serializer):
     payment_method = serializers.ChoiceField(choices=PaymentMethod.choices)
     bank = serializers.PrimaryKeyRelatedField(
         queryset=Bank.objects.filter(is_active=True), required=False, allow_null=True
+    )
+
+
+class UpdatePendingTransactionSerializer(serializers.Serializer):
+    """Fields a buyer may save on a checkout before submitting the receipt."""
+
+    bank = serializers.PrimaryKeyRelatedField(
+        queryset=Bank.objects.filter(is_active=True), required=False, allow_null=True
+    )
+    transaction_reference = serializers.CharField(
+        max_length=120, required=False, allow_blank=True
     )
 
 

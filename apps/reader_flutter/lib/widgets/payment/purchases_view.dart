@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/payment_models.dart';
 import '../../providers/nav_visibility_providers.dart';
 import '../../providers/payment_providers.dart';
+import '../../router/app_navigation.dart';
 import '../../utils/money_format.dart';
 import '../app_state_view.dart';
 import '../skeleton_loader.dart';
@@ -90,7 +92,62 @@ class PurchasesView extends ConsumerWidget {
   }
 }
 
-class _PurchaseTile extends StatelessWidget {
+/// Withdraws a pending checkout or a payment still waiting for approval.
+/// Returns true when the server accepted the cancellation.
+Future<bool> confirmDeletePendingPurchase(
+  BuildContext context,
+  WidgetRef ref,
+  PaymentTransaction txn,
+) async {
+  if (!txn.status.canBuyerCancel) return false;
+  final l10n = AppLocalizations.of(context);
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(l10n.paymentDeletePendingTitle),
+      content: Text(l10n.paymentDeletePendingBody),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(false),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(ctx).pop(true),
+          child: Text(l10n.paymentDeletePendingConfirm),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return false;
+  try {
+    await ref.read(paymentRepositoryProvider).cancelTransaction(txn.id);
+    ref.invalidate(myTransactionsProvider);
+    ref.invalidate(hasPurchasesProvider);
+    return true;
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(paymentErrorMessage(e, l10n.paymentErrorGeneric)),
+        ),
+      );
+    }
+    return false;
+  }
+}
+
+void openPurchasedBook(BuildContext context, PaymentTransaction txn) {
+  if (txn.bookId.isEmpty) return;
+  context.push(
+    readingPathForBook(
+      txn.bookId,
+      isPdf: txn.bookIsPdf,
+      query: txn.bookIsPdf ? null : 'pickChapter=1',
+    ),
+  );
+}
+
+class _PurchaseTile extends ConsumerWidget {
   const _PurchaseTile({required this.txn});
 
   final PaymentTransaction txn;
@@ -103,23 +160,32 @@ class _PurchaseTile extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final method = txn.method;
-    return InkWell(
-      onTap: () => showPurchaseDetail(context, txn),
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceCard,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    final resume = txn.status.resumesCheckout && txn.bookId.isNotEmpty;
+    final canRead = txn.status.isSuccessful && txn.bookId.isNotEmpty;
+    final canDelete = txn.status.canBuyerCancel;
+
+    void open() {
+      if (resume) {
+        context.push('/payment/${txn.bookId}');
+        return;
+      }
+      showPurchaseDetail(
+        context,
+        txn,
+        onRead: canRead ? () => openPurchasedBook(context, txn) : null,
+        onDelete: canDelete
+            ? () => confirmDeletePendingPurchase(context, ref, txn)
+            : null,
+      );
+    }
+
+    final summary = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
@@ -185,6 +251,64 @@ class _PurchaseTile extends StatelessWidget {
                 ),
               ),
             ],
+      ],
+    );
+
+    return Material(
+      color: AppColors.surfaceCard,
+      clipBehavior: Clip.antiAlias,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InkWell(
+              onTap: open,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+                child: summary,
+              ),
+            ),
+            if (resume || canRead || canDelete)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(6, 0, 6, 6),
+                child: Row(
+                  children: [
+                    if (resume)
+                      TextButton(
+                        onPressed: () => context.push('/payment/${txn.bookId}'),
+                        child: Text(l10n.paymentContinuePurchase),
+                      )
+                    else if (canRead)
+                      TextButton.icon(
+                        onPressed: () => openPurchasedBook(context, txn),
+                        icon: Icon(
+                          txn.bookIsPdf
+                              ? Icons.picture_as_pdf_outlined
+                              : Icons.auto_stories_rounded,
+                          size: 18,
+                        ),
+                        label: Text(l10n.readNow),
+                      ),
+                    const Spacer(),
+                    if (canDelete)
+                      TextButton.icon(
+                        onPressed: () =>
+                            confirmDeletePendingPurchase(context, ref, txn),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.errorText,
+                        ),
+                        icon: const Icon(Icons.delete_outline, size: 18),
+                        label: Text(l10n.paymentDeletePending),
+                      ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),

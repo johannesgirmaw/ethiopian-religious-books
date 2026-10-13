@@ -3992,6 +3992,84 @@ abstract class AppLocalizations {
   /// **'Submitting…'**
   String get paymentSubmitting;
 
+  /// No description provided for @paymentCancelPurchase.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel purchase'**
+  String get paymentCancelPurchase;
+
+  /// No description provided for @paymentCancelPurchaseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this purchase?'**
+  String get paymentCancelPurchaseTitle;
+
+  /// No description provided for @paymentCancelPurchaseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You have not submitted payment yet. Cancelling removes this checkout so you can start again later.'**
+  String get paymentCancelPurchaseBody;
+
+  /// No description provided for @paymentCancelPurchaseConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel purchase'**
+  String get paymentCancelPurchaseConfirm;
+
+  /// No description provided for @paymentKeepPurchase.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep purchase'**
+  String get paymentKeepPurchase;
+
+  /// No description provided for @paymentDeletePending.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get paymentDeletePending;
+
+  /// No description provided for @paymentDeletePendingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this pending payment?'**
+  String get paymentDeletePendingTitle;
+
+  /// No description provided for @paymentDeletePendingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Only a payment that is still pending or waiting for approval can be deleted. Completed purchases stay in your history.'**
+  String get paymentDeletePendingBody;
+
+  /// No description provided for @paymentDeletePendingConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get paymentDeletePendingConfirm;
+
+  /// No description provided for @paymentContinuePurchase.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue payment'**
+  String get paymentContinuePurchase;
+
+  /// No description provided for @paymentAlreadyOwnedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You already own this book'**
+  String get paymentAlreadyOwnedTitle;
+
+  /// No description provided for @paymentAlreadyOwnedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This purchase is complete. Open the book to start reading.'**
+  String get paymentAlreadyOwnedBody;
+
+  /// No description provided for @paymentInReviewBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'A payment for this book is already waiting for approval.'**
+  String get paymentInReviewBlocked;
+
   /// No description provided for @paymentPayNow.
   ///
   /// In en, this message translates to:

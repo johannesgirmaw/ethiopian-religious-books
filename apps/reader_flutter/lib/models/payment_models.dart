@@ -48,6 +48,19 @@ enum PaymentStatus {
   bool get isSuccessful => this == completed;
   bool get isAwaitingReview => this == onReview || this == approved;
 
+  /// Pending, in review, approved, or completed. A second purchase is refused.
+  bool get blocksNewPurchase =>
+      this == pending ||
+      this == onReview ||
+      this == approved ||
+      this == completed;
+
+  /// Checkout was started and the receipt has not been submitted yet.
+  bool get resumesCheckout => this == pending;
+
+  /// Buyer may withdraw this before it is granted (pending or awaiting review).
+  bool get canBuyerCancel => this == pending || this == onReview;
+
   static PaymentStatus fromApi(String? value) {
     for (final s in PaymentStatus.values) {
       if (s.apiValue == value) return s;
@@ -109,6 +122,7 @@ class PaymentTransaction {
     required this.id,
     required this.bookId,
     required this.bookTitle,
+    this.bookContentFormat = '',
     this.userEmail = '',
     required this.currency,
     required this.amount,
@@ -125,6 +139,9 @@ class PaymentTransaction {
   final String id;
   final String bookId;
   final String bookTitle;
+  final String bookContentFormat;
+
+  bool get bookIsPdf => bookContentFormat.toLowerCase() == 'pdf';
   final String userEmail;
   final String currency;
   final double amount;
@@ -143,6 +160,7 @@ class PaymentTransaction {
       id: j['id'] as String,
       bookId: j['book'] as String? ?? '',
       bookTitle: j['book_title'] as String? ?? '',
+      bookContentFormat: j['book_content_format'] as String? ?? '',
       userEmail: j['user_email'] as String? ?? '',
       currency: j['currency'] as String? ?? 'USD',
       amount: _toDouble(j['amount']),

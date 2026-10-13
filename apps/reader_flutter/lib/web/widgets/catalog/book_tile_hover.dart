@@ -10,10 +10,14 @@ class WebBookTileHover extends StatefulWidget {
     super.key,
     required this.route,
     required this.child,
+    this.onActivate,
   });
 
   final String route;
   final Widget child;
+
+  /// When set, tap and keyboard activation use this instead of [route].
+  final VoidCallback? onActivate;
 
   @override
   State<WebBookTileHover> createState() => _WebBookTileHoverState();
@@ -23,7 +27,14 @@ class _WebBookTileHoverState extends State<WebBookTileHover> {
   bool _hovered = false;
   bool _focused = false;
 
-  void _activate() => context.push(widget.route);
+  void _activate() {
+    final custom = widget.onActivate;
+    if (custom != null) {
+      custom();
+      return;
+    }
+    context.push(widget.route);
+  }
 
   @override
   Widget build(BuildContext context) {

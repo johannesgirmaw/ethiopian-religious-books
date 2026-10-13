@@ -49,12 +49,16 @@ from apps.payments.serializers import (
     PaymentTransactionSerializer,
     PublicBankSerializer,
     SubmitReceiptSerializer,
+    UpdatePendingTransactionSerializer,
 )
 from apps.payments.services import (
-    compute_amounts,
-    quote_for_payment,
+    BookNotForSale,
+    PurchaseConflict,
+    PurchaseNotCancellable,
+    cancel_buyer_purchase,
     record_audit,
     resolve_commission_percent_for_author,
+    start_or_resume_purchase,
     submit_author_application,
 )
 
@@ -132,8 +136,10 @@ class BankListView(_PaymentsView):
 class PaymentTransactionsView(_PaymentsView):
     @extend_schema(responses=PaymentTransactionSerializer(many=True))
     def get(self, request):
-        qs = PaymentTransaction.objects.filter(user=request.user).select_related(
-            "book", "bank"
+        qs = (
+            PaymentTransaction.objects.filter(user=request.user)
+            .exclude(status=TransactionStatus.CANCELLED)
+            .select_related("book", "bank")
         )
         return Response({"items": PaymentTransactionSerializer(qs, many=True, context={"request": request}).data})
 
@@ -154,32 +160,39 @@ class PaymentTransactionsView(_PaymentsView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        currency, sale = quote_for_payment(book, method)
-        if sale <= 0:
+        try:
+            txn, created = start_or_resume_purchase(
+                user=request.user,
+                book=book,
+                method=method,
+                bank=bank,
+                settings_obj=ps,
+            )
+        except BookNotForSale:
             return Response(
                 {"error": {"code": "NOT_FOR_SALE", "message": "This book is not for sale."}},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        amounts = compute_amounts(book, ps, sale_amount=sale)
+        except PurchaseConflict as exc:
+            return Response(
+                {
+                    "error": {"code": exc.code, "message": exc.message},
+                    "transaction": PaymentTransactionSerializer(
+                        exc.transaction, context={"request": request}
+                    ).data,
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
 
-        txn = PaymentTransaction.objects.create(
-            user=request.user,
-            book=book,
-            bank=bank if method in MANUAL_METHODS else None,
-            currency=currency,
-            amount=amounts["sale_amount"],
-            commission_amount=amounts["commission_amount"],
-            payment_method=method,
-            status=TransactionStatus.PENDING,
-        )
-        record_audit(
-            actor=request.user,
-            action="transaction.create",
-            target_type="PaymentTransaction",
-            target_id=txn.id,
-            metadata={"method": method, "amount": str(txn.amount)},
-            request=request,
-        )
+        if created:
+            record_audit(
+                actor=request.user,
+                action="transaction.create",
+                target_type="PaymentTransaction",
+                target_id=txn.id,
+                metadata={"method": method, "amount": str(txn.amount)},
+                request=request,
+            )
 
         payload = {"transaction": PaymentTransactionSerializer(txn, context={"request": request}).data}
 
@@ -218,7 +231,7 @@ class PaymentTransactionsView(_PaymentsView):
             ).data
             payload["transaction"] = PaymentTransactionSerializer(txn, context={"request": request}).data
 
-        return Response(payload, status=status.HTTP_201_CREATED)
+        return Response(payload, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
 
 class PaymentTransactionDetailView(_PaymentsView):
@@ -228,6 +241,96 @@ class PaymentTransactionDetailView(_PaymentsView):
             PaymentTransaction, pk=transaction_id, user=request.user
         )
         return Response(PaymentTransactionSerializer(txn, context={"request": request}).data)
+
+    @extend_schema(
+        request=UpdatePendingTransactionSerializer,
+        responses=PaymentTransactionSerializer,
+    )
+    def patch(self, request, transaction_id):
+        """Save bank and reference on a checkout the buyer has not submitted."""
+        txn = get_object_or_404(
+            PaymentTransaction, pk=transaction_id, user=request.user
+        )
+        if txn.status != TransactionStatus.PENDING:
+            return Response(
+                {"error": {"code": "LOCKED", "message": "Transaction can no longer be edited."}},
+                status=status.HTTP_409_CONFLICT,
+            )
+        if txn.payment_method not in MANUAL_METHODS:
+            return Response(
+                {"error": {"code": "NOT_MANUAL", "message": "Not a manual payment."}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        ser = UpdatePendingTransactionSerializer(data=request.data, partial=True)
+        ser.is_valid(raise_exception=True)
+        data = ser.validated_data
+        update_fields = ["updated_at"]
+        if "bank" in data:
+            txn.bank = data["bank"]
+            update_fields.append("bank")
+        if "transaction_reference" in data:
+            reference = data["transaction_reference"].strip()
+            if reference and _reference_taken(txn, reference):
+                return _duplicate_reference_response()
+            txn.transaction_reference = reference
+            update_fields.append("transaction_reference")
+        try:
+            txn.save(update_fields=update_fields)
+        except IntegrityError:
+            return _duplicate_reference_response()
+        return Response(PaymentTransactionSerializer(txn, context={"request": request}).data)
+
+
+class CancelTransactionView(_PaymentsView):
+    """Buyer withdraws a checkout that is still pending or waiting for approval."""
+
+    def post(self, request, transaction_id):
+        txn = get_object_or_404(
+            PaymentTransaction, pk=transaction_id, user=request.user
+        )
+        try:
+            txn = cancel_buyer_purchase(txn)
+        except PurchaseNotCancellable:
+            return Response(
+                {
+                    "error": {
+                        "code": "NOT_CANCELLABLE",
+                        "message": "Only a pending payment can be cancelled.",
+                    }
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        record_audit(
+            actor=request.user,
+            action="transaction.cancel",
+            target_type="PaymentTransaction",
+            target_id=txn.id,
+            metadata={"status": txn.status},
+            request=request,
+        )
+        return Response(PaymentTransactionSerializer(txn, context={"request": request}).data)
+
+
+def _reference_taken(txn: PaymentTransaction, reference: str) -> bool:
+    return (
+        PaymentTransaction.objects.filter(
+            payment_method=txn.payment_method, transaction_reference=reference
+        )
+        .exclude(pk=txn.pk)
+        .exists()
+    )
+
+
+def _duplicate_reference_response():
+    return Response(
+        {
+            "error": {
+                "code": "DUPLICATE_REFERENCE",
+                "message": "This transaction reference was already used.",
+            }
+        },
+        status=status.HTTP_409_CONFLICT,
+    )
 
 
 class ReceiptFileView(APIView):

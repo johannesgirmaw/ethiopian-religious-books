@@ -264,8 +264,16 @@ class ManualPaymentFlowTests(TestCase):
              "receipt": SimpleUploadedFile("r.png", PNG_BYTES, content_type="image/png")},
             format="multipart",
         )
-        # Second transaction tries to reuse REF-DUP.
-        t2 = self._create_txn().data["transaction"]["id"]
+        # A different book may start its own checkout, but not reuse REF-DUP.
+        other = make_book(price="40.00")
+        created = self.client.post(
+            "/v1/payments/transactions",
+            {"book": str(other.id), "payment_method": "bank_transfer",
+             "bank": str(self.bank.id)},
+            format="json",
+        )
+        self.assertEqual(created.status_code, 201)
+        t2 = created.data["transaction"]["id"]
         res = self.client.post(
             f"/v1/payments/transactions/{t2}/receipt",
             {"transaction_reference": "REF-DUP",
@@ -274,6 +282,101 @@ class ManualPaymentFlowTests(TestCase):
         )
         self.assertEqual(res.status_code, 409)
         self.assertEqual(res.data["error"]["code"], "DUPLICATE_REFERENCE")
+
+    def test_pending_checkout_is_resumed(self):
+        first = self._create_txn()
+        self.assertEqual(first.status_code, 201)
+        txn_id = first.data["transaction"]["id"]
+        again = self._create_txn()
+        self.assertEqual(again.status_code, 200)
+        self.assertEqual(again.data["transaction"]["id"], txn_id)
+        self.assertEqual(again.data["transaction"]["status"], TransactionStatus.PENDING)
+        self.assertEqual(
+            PaymentTransaction.objects.filter(user=self.buyer, book=self.book).count(),
+            1,
+        )
+
+    def test_submitted_payment_blocks_another_purchase(self):
+        txn_id = self._create_txn().data["transaction"]["id"]
+        self._submit_receipt(txn_id, ref="REF-BLOCK")
+        res = self._create_txn()
+        self.assertEqual(res.status_code, 409)
+        self.assertEqual(res.data["error"]["code"], "PURCHASE_IN_PROGRESS")
+        self.assertEqual(res.data["transaction"]["id"], txn_id)
+
+    def test_completed_purchase_blocks_another(self):
+        txn_id = self._create_txn().data["transaction"]["id"]
+        self._submit_receipt(txn_id, ref="REF-OWNED")
+        PaymentTransaction.objects.filter(pk=txn_id).update(
+            status=TransactionStatus.COMPLETED
+        )
+        res = self._create_txn()
+        self.assertEqual(res.status_code, 409)
+        self.assertEqual(res.data["error"]["code"], "ALREADY_OWNED")
+
+    def test_cancel_pending_frees_the_book(self):
+        txn_id = self._create_txn().data["transaction"]["id"]
+        cancelled = self.client.post(f"/v1/payments/transactions/{txn_id}/cancel")
+        self.assertEqual(cancelled.status_code, 200)
+        self.assertEqual(cancelled.data["status"], TransactionStatus.CANCELLED)
+        listed = self.client.get("/v1/payments/transactions")
+        self.assertEqual(listed.status_code, 200)
+        self.assertNotIn(txn_id, [item["id"] for item in listed.data["items"]])
+        again = self._create_txn()
+        self.assertEqual(again.status_code, 201)
+        self.assertNotEqual(again.data["transaction"]["id"], txn_id)
+
+    def test_cancel_on_review_only_pending_approval(self):
+        txn_id = self._create_txn().data["transaction"]["id"]
+        self._submit_receipt(txn_id, ref="REF-REVIEW")
+        cancelled = self.client.post(f"/v1/payments/transactions/{txn_id}/cancel")
+        self.assertEqual(cancelled.status_code, 200)
+        self.assertEqual(cancelled.data["status"], TransactionStatus.CANCELLED)
+
+    def test_cannot_cancel_completed_purchase(self):
+        txn_id = self._create_txn().data["transaction"]["id"]
+        PaymentTransaction.objects.filter(pk=txn_id).update(
+            status=TransactionStatus.COMPLETED
+        )
+        res = self.client.post(f"/v1/payments/transactions/{txn_id}/cancel")
+        self.assertEqual(res.status_code, 409)
+        self.assertEqual(res.data["error"]["code"], "NOT_CANCELLABLE")
+        self.assertEqual(
+            PaymentTransaction.objects.get(pk=txn_id).status,
+            TransactionStatus.COMPLETED,
+        )
+
+    def test_other_user_cannot_cancel(self):
+        txn_id = self._create_txn().data["transaction"]["id"]
+        self.client.force_authenticate(make_user("other-buyer@example.com"))
+        res = self.client.post(f"/v1/payments/transactions/{txn_id}/cancel")
+        self.assertEqual(res.status_code, 404)
+
+    def test_patch_saves_bank_and_reference_while_pending(self):
+        txn_id = self._create_txn().data["transaction"]["id"]
+        other = Bank.objects.create(
+            name="Other Bank", account_name="Platform", account_number="999"
+        )
+        res = self.client.patch(
+            f"/v1/payments/transactions/{txn_id}",
+            {"bank": str(other.id), "transaction_reference": "REF-DRAFT"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["status"], TransactionStatus.PENDING)
+        self.assertEqual(res.data["transaction_reference"], "REF-DRAFT")
+        self.assertEqual(str(res.data["bank"]), str(other.id))
+
+    def test_patch_locked_after_submit(self):
+        txn_id = self._create_txn().data["transaction"]["id"]
+        self._submit_receipt(txn_id, ref="REF-LOCK")
+        res = self.client.patch(
+            f"/v1/payments/transactions/{txn_id}",
+            {"transaction_reference": "REF-CHANGED"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 409)
+        self.assertEqual(res.data["error"]["code"], "LOCKED")
 
     def test_pdf_receipt_accepted(self):
         txn_id = self._create_txn().data["transaction"]["id"]
@@ -495,9 +598,11 @@ class AdminPaymentApiTests(TestCase):
 
     def test_unfiltered_transaction_list_is_the_open_queue(self):
         self._on_review_txn()
+        pending_book = make_book(price="50.00")
+        done_book = make_book(price="80.00")
         PaymentTransaction.objects.create(
             user=self.buyer,
-            book=self.book,
+            book=pending_book,
             amount=Decimal("50.00"),
             commission_amount=Decimal("5.00"),
             payment_method=PaymentMethod.BANK_TRANSFER,
@@ -507,7 +612,7 @@ class AdminPaymentApiTests(TestCase):
         )
         PaymentTransaction.objects.create(
             user=self.buyer,
-            book=self.book,
+            book=done_book,
             amount=Decimal("80.00"),
             commission_amount=Decimal("8.00"),
             payment_method=PaymentMethod.BANK_TRANSFER,
@@ -517,7 +622,7 @@ class AdminPaymentApiTests(TestCase):
         )
         PaymentTransaction.objects.create(
             user=self.buyer,
-            book=self.book,
+            book=done_book,
             amount=Decimal("70.00"),
             commission_amount=Decimal("7.00"),
             payment_method=PaymentMethod.BANK_TRANSFER,

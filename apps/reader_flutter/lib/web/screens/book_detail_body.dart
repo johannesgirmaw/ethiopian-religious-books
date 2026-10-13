@@ -86,17 +86,30 @@ class BookDetailBody extends ConsumerWidget {
         final owned =
             ref.watch(entitledBookIdsProvider).valueOrNull?.contains(bookId) ??
             false;
+        final resumeCheckout =
+            !owned &&
+            (ref
+                    .watch(resumeCheckoutBookIdsProvider)
+                    .valueOrNull
+                    ?.contains(bookId) ??
+                false);
         final purchasePending =
             !owned &&
+            !resumeCheckout &&
             (ref
                     .watch(pendingPurchaseBookIdsProvider)
                     .valueOrNull
                     ?.contains(bookId) ??
                 false);
-        final mustBuy = book.requiresPurchase && !owned && !purchasePending;
+        final mustBuy =
+            book.requiresPurchase && !owned && !purchasePending && !resumeCheckout;
 
         Future<void> onRead() async {
           if (purchasePending) return;
+          if (resumeCheckout) {
+            context.push('/payment/$bookId');
+            return;
+          }
           if (await ensureBookUnlocked(context, ref, book) && context.mounted) {
             context.push(
               readingPathForBook(
@@ -112,6 +125,7 @@ class BookDetailBody extends ConsumerWidget {
           l10n: l10n,
           mustBuy: mustBuy,
           purchasePending: purchasePending,
+          resumeCheckout: resumeCheckout,
           stretch: expanded,
           onRead: purchasePending ? null : onRead,
           onDownload: () => _downloadSample(context, ref),
@@ -568,6 +582,7 @@ class _ActionCluster extends StatelessWidget {
     required this.l10n,
     required this.mustBuy,
     required this.purchasePending,
+    required this.resumeCheckout,
     required this.stretch,
     required this.onRead,
     required this.onDownload,
@@ -577,6 +592,7 @@ class _ActionCluster extends StatelessWidget {
   final AppLocalizations l10n;
   final bool mustBuy;
   final bool purchasePending;
+  final bool resumeCheckout;
   final bool stretch;
   final VoidCallback? onRead;
   final VoidCallback onDownload;
@@ -586,14 +602,18 @@ class _ActionCluster extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryLabel = purchasePending
-        ? l10n.purchasePending
-        : (mustBuy ? l10n.purchaseBook : l10n.readNow);
-    final primaryIcon = purchasePending
-        ? Icons.hourglass_top_rounded
-        : (mustBuy
-              ? Icons.shopping_cart_outlined
-              : Icons.auto_stories_rounded);
+    final primaryLabel = resumeCheckout
+        ? l10n.paymentContinuePurchase
+        : (purchasePending
+              ? l10n.purchasePending
+              : (mustBuy ? l10n.purchaseBook : l10n.readNow));
+    final primaryIcon = resumeCheckout
+        ? Icons.payments_outlined
+        : (purchasePending
+              ? Icons.hourglass_top_rounded
+              : (mustBuy
+                    ? Icons.shopping_cart_outlined
+                    : Icons.auto_stories_rounded));
     final primary = FilledButton.icon(
       onPressed: onRead,
       style: FilledButton.styleFrom(

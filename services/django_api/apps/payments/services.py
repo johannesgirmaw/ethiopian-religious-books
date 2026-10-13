@@ -8,11 +8,17 @@ from __future__ import annotations
 
 from decimal import Decimal, ROUND_HALF_UP
 
-from django.db import transaction as db_transaction
+from django.db import IntegrityError, transaction as db_transaction
 from django.utils import timezone
 
 from apps.catalog.models import Book
-from apps.payments.enums import AuthorApplicationStatus, TransactionStatus
+from apps.payments.enums import (
+    ACTIVE_PURCHASE_STATUSES,
+    AuthorApplicationStatus,
+    BUYER_CANCELLABLE_STATUSES,
+    MANUAL_METHODS,
+    TransactionStatus,
+)
 from apps.payments.models import (
     AuditLog,
     AuthorApplication,
@@ -239,6 +245,151 @@ def reject_transaction(
         ]
     )
     return txn
+
+
+class PurchaseConflict(Exception):
+    """A second purchase cannot be opened for this buyer and book."""
+
+    def __init__(self, code: str, message: str, transaction: PaymentTransaction):
+        super().__init__(message)
+        self.code = code
+        self.message = message
+        self.transaction = transaction
+
+
+class BookNotForSale(Exception):
+    """The book has no positive price in any currency."""
+
+
+class PurchaseNotCancellable(Exception):
+    """The buyer can no longer withdraw this transaction."""
+
+
+_ACTIVE_RANK = {
+    TransactionStatus.COMPLETED: 0,
+    TransactionStatus.APPROVED: 1,
+    TransactionStatus.ON_REVIEW: 2,
+    TransactionStatus.PENDING: 3,
+}
+
+
+def _prefer_active(rows: list[PaymentTransaction]) -> PaymentTransaction:
+    def sort_key(txn: PaymentTransaction):
+        created = txn.created_at.timestamp() if txn.created_at else 0
+        return (_ACTIVE_RANK.get(txn.status, 9), -created)
+
+    return min(rows, key=sort_key)
+
+
+def _refresh_pending_quote(txn, book, method, bank, settings_obj) -> None:
+    """Point a still-pending checkout at the current price and method."""
+    currency, sale = quote_for_payment(book, method)
+    if sale <= 0:
+        raise BookNotForSale()
+    amounts = compute_amounts(book, settings_obj, sale_amount=sale)
+    txn.payment_method = method
+    txn.currency = currency
+    txn.amount = amounts["sale_amount"]
+    txn.commission_amount = amounts["commission_amount"]
+    if method in MANUAL_METHODS:
+        if bank is not None:
+            txn.bank = bank
+    else:
+        txn.bank = None
+    txn.save(
+        update_fields=[
+            "payment_method",
+            "currency",
+            "amount",
+            "commission_amount",
+            "bank",
+            "updated_at",
+        ]
+    )
+
+
+def _conflict_for(txn: PaymentTransaction) -> PurchaseConflict:
+    if txn.status == TransactionStatus.COMPLETED:
+        return PurchaseConflict(
+            "ALREADY_OWNED", "You already own this book.", txn
+        )
+    return PurchaseConflict(
+        "PURCHASE_IN_PROGRESS",
+        "A payment for this book is already waiting for approval.",
+        txn,
+    )
+
+
+@db_transaction.atomic
+def start_or_resume_purchase(
+    *, user, book, method: str, bank, settings_obj: PlatformSettings | None = None
+) -> tuple[PaymentTransaction, bool]:
+    """Return ``(transaction, created)`` for one buyer + book.
+
+    A pending checkout is reused (and its quote refreshed) so leaving the form
+    does not start a second request. A purchase that is in review, approved, or
+    completed blocks another one. Cancelled and rejected rows do not.
+    """
+    settings_obj = settings_obj or PlatformSettings.get_solo()
+    existing = list(
+        PaymentTransaction.objects.select_for_update()
+        .filter(user=user, book=book, status__in=ACTIVE_PURCHASE_STATUSES)
+        .order_by("-created_at")
+    )
+    if existing:
+        txn = _prefer_active(existing)
+        for extra in existing:
+            if extra.pk == txn.pk:
+                continue
+            if extra.status in BUYER_CANCELLABLE_STATUSES:
+                extra.status = TransactionStatus.CANCELLED
+                extra.save(update_fields=["status", "updated_at"])
+        if txn.status != TransactionStatus.PENDING:
+            raise _conflict_for(txn)
+        _refresh_pending_quote(txn, book, method, bank, settings_obj)
+        return txn, False
+
+    currency, sale = quote_for_payment(book, method)
+    if sale <= 0:
+        raise BookNotForSale()
+    amounts = compute_amounts(book, settings_obj, sale_amount=sale)
+    try:
+        with db_transaction.atomic():
+            txn = PaymentTransaction.objects.create(
+                user=user,
+                book=book,
+                bank=bank if method in MANUAL_METHODS else None,
+                currency=currency,
+                amount=amounts["sale_amount"],
+                commission_amount=amounts["commission_amount"],
+                payment_method=method,
+                status=TransactionStatus.PENDING,
+            )
+    except IntegrityError:
+        txn = (
+            PaymentTransaction.objects.select_for_update()
+            .filter(user=user, book=book, status__in=ACTIVE_PURCHASE_STATUSES)
+            .order_by("-created_at")
+            .first()
+        )
+        if txn is None:
+            raise
+        if txn.status != TransactionStatus.PENDING:
+            raise _conflict_for(txn)
+        _refresh_pending_quote(txn, book, method, bank, settings_obj)
+        return txn, False
+    return txn, True
+
+
+@db_transaction.atomic
+def cancel_buyer_purchase(txn: PaymentTransaction) -> PaymentTransaction:
+    """Withdraw a pending checkout or a payment still waiting for approval."""
+    locked = PaymentTransaction.objects.select_for_update().get(pk=txn.pk)
+    if locked.status not in BUYER_CANCELLABLE_STATUSES:
+        raise PurchaseNotCancellable()
+    locked.status = TransactionStatus.CANCELLED
+    locked.save(update_fields=["status", "updated_at"])
+    return locked
 
 
 def notify_user(user, *, title: str, body: str = "") -> None:

@@ -40,6 +40,26 @@ TERMINAL_STATUSES = frozenset(
     }
 )
 
+# At most one of these may exist per (buyer, book). A new checkout must resume
+# the pending row or be refused while a review / completed purchase exists.
+ACTIVE_PURCHASE_STATUSES = frozenset(
+    {
+        TransactionStatus.PENDING,
+        TransactionStatus.ON_REVIEW,
+        TransactionStatus.APPROVED,
+        TransactionStatus.COMPLETED,
+    }
+)
+
+# The buyer may withdraw a checkout that has not been granted yet:
+# pending = started, receipt not submitted; on_review = waiting for approval.
+BUYER_CANCELLABLE_STATUSES = frozenset(
+    {
+        TransactionStatus.PENDING,
+        TransactionStatus.ON_REVIEW,
+    }
+)
+
 
 class AuthorApplicationStatus(models.TextChoices):
     PENDING = "pending", "Pending"

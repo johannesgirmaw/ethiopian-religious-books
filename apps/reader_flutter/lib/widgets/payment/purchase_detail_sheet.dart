@@ -15,8 +15,10 @@ import 'receipt_preview.dart';
 /// narrow screens keep the draggable bottom sheet.
 Future<void> showPurchaseDetail(
   BuildContext context,
-  PaymentTransaction txn,
-) {
+  PaymentTransaction txn, {
+  VoidCallback? onRead,
+  Future<bool> Function()? onDelete,
+}) {
   final wide = MediaQuery.sizeOf(context).width >= 720;
   if (wide) {
     return showDialog<void>(
@@ -31,7 +33,11 @@ Future<void> showPurchaseDetail(
         ),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 820, maxHeight: 600),
-          child: _PurchaseDetailSheet(txn: txn),
+          child: _PurchaseDetailSheet(
+            txn: txn,
+            onRead: onRead,
+            onDelete: onDelete,
+          ),
         ),
       ),
     );
@@ -43,14 +49,24 @@ Future<void> showPurchaseDetail(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
     ),
-    builder: (context) => _PurchaseDetailSheet(txn: txn),
+    builder: (context) => _PurchaseDetailSheet(
+      txn: txn,
+      onRead: onRead,
+      onDelete: onDelete,
+    ),
   );
 }
 
 class _PurchaseDetailSheet extends StatelessWidget {
-  const _PurchaseDetailSheet({required this.txn});
+  const _PurchaseDetailSheet({
+    required this.txn,
+    this.onRead,
+    this.onDelete,
+  });
 
   final PaymentTransaction txn;
+  final VoidCallback? onRead;
+  final Future<bool> Function()? onDelete;
 
   bool get _hasReceipt =>
       txn.method?.isManual == true || txn.receiptUrl.isNotEmpty;
@@ -101,7 +117,7 @@ class _PurchaseDetailSheet extends StatelessWidget {
         const Divider(height: 1, color: AppColors.borderSubtle),
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
-          child: _closeButton(context, wide: true),
+          child: _actions(context, wide: true),
         ),
       ],
     );
@@ -141,7 +157,7 @@ class _PurchaseDetailSheet extends StatelessWidget {
                 _receiptColumn(context, height: 240),
               ],
               const SizedBox(height: AppSpace.md),
-              _closeButton(context, wide: false),
+              _actions(context, wide: false),
             ],
           ),
         ),
@@ -312,18 +328,72 @@ class _PurchaseDetailSheet extends StatelessWidget {
     );
   }
 
-  Widget _closeButton(BuildContext context, {required bool wide}) {
+  Widget _actions(BuildContext context, {required bool wide}) {
     final l10n = AppLocalizations.of(context);
-    final btn = FilledButton.tonal(
+    final close = FilledButton.tonal(
       onPressed: () => Navigator.of(context).pop(),
       style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(46)),
       child: Text(l10n.close),
     );
-    return wide
-        ? Align(
-            alignment: Alignment.centerRight,
-            child: SizedBox(width: 160, child: btn),
-          )
-        : btn;
+    final read = onRead == null
+        ? null
+        : FilledButton.icon(
+            onPressed: () {
+              final readBook = onRead!;
+              Navigator.of(context).pop();
+              readBook();
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(46),
+            ),
+            icon: Icon(
+              txn.bookIsPdf
+                  ? Icons.picture_as_pdf_outlined
+                  : Icons.auto_stories_rounded,
+              size: 18,
+            ),
+            label: Text(l10n.readNow),
+          );
+    final delete = onDelete == null
+        ? null
+        : TextButton.icon(
+            onPressed: () async {
+              final removed = await onDelete!.call();
+              if (removed && context.mounted) Navigator.of(context).pop();
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.errorText,
+              minimumSize: const Size.fromHeight(46),
+            ),
+            icon: const Icon(Icons.delete_outline, size: 18),
+            label: Text(l10n.paymentDeletePending),
+          );
+
+    if (!wide) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (read != null) read,
+          if (read != null && delete != null) const SizedBox(height: 8),
+          if (delete != null) delete,
+          if (read != null || delete != null) const SizedBox(height: 8),
+          close,
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        if (delete != null) delete,
+        const Spacer(),
+        if (read != null) ...[
+          SizedBox(width: 160, child: read),
+          const SizedBox(width: 8),
+        ],
+        SizedBox(width: 120, child: close),
+      ],
+    );
   }
 }

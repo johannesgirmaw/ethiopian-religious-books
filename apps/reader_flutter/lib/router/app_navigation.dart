@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../models/book_models.dart';
+import '../models/payment_models.dart';
+import '../providers/payment_providers.dart';
 import 'app_router.dart';
 
 /// Pops a full-screen route pushed above the main shell (book detail, reader, etc.).
@@ -27,6 +31,35 @@ String readingPathForBook(String bookId, {required bool isPdf, String? query}) {
 /// Catalog book-detail path (Bible books use the verse reader instead).
 String bookDetailPathForBook(String bookId, {required bool isBible}) {
   return isBible ? '/bible/book/$bookId' : '/book/$bookId';
+}
+
+/// Opens a catalog book. A checkout the buyer started but did not submit
+/// resumes on the payment form; everything else opens the book page.
+Future<void> openCatalogBook(
+  BuildContext context,
+  WidgetRef ref,
+  BookSummary book,
+) async {
+  if (book.isBible) {
+    if (!context.mounted) return;
+    context.push('/bible/book/${book.id}');
+    return;
+  }
+  if (book.requiresPurchase) {
+    try {
+      final txns = await ref.read(myTransactionsProvider.future);
+      final active = activePurchaseForBook(txns, book.id);
+      if (!context.mounted) return;
+      if (active != null && active.status == PaymentStatus.pending) {
+        context.push('/payment/${book.id}');
+        return;
+      }
+    } catch (_) {
+      // Book detail still offers "Continue payment" once purchases load.
+    }
+  }
+  if (!context.mounted) return;
+  context.push('/book/${book.id}');
 }
 
 /// Opens a book in the reader from manage-books (reviewer preview included).
