@@ -6,7 +6,13 @@ import '../../../utils/catalog_book_visuals.dart';
 import '../../../utils/catalog_categories.dart';
 import '../../../widgets/cover_badges.dart';
 export '../../../widgets/cover_badges.dart'
-    show ReadNowBadge, CoverHeartButton, RatingBadge, PremiumBadge, CoverImageFill;
+    show
+        ReadNowBadge,
+        CoverHeartButton,
+        RatingBadge,
+        PremiumBadge,
+        CoverImageFill,
+        CoverCategoryIcon;
 
 /// Gradient "cover" for a book — the app has no cover images, so we render a
 /// branded gradient poster with the book's category icon and a faint cross
@@ -42,40 +48,31 @@ class BookCoverPoster extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             const CatalogCrossWatermark(),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: iconSize + 8,
-                    height: iconSize + 8,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.20),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      category.icon,
+            if (book.coverUrl == null) ...[
+              Center(
+                child: CoverCategoryIcon(
+                  icon: category.icon,
+                  size: iconSize + 18,
+                ),
+              ),
+              if (showTitle)
+                Positioned(
+                  left: 12,
+                  right: 12,
+                  bottom: 12,
+                  child: Text(
+                    book.title,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
                       color: Colors.white,
-                      size: iconSize * 0.62,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      height: 1.2,
                     ),
                   ),
-                  const Spacer(),
-                  if (showTitle)
-                    Text(
-                      book.title,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        height: 1.2,
-                      ),
-                    ),
-                ],
-              ),
-            ),
+                ),
+            ],
             if (book.coverUrl != null)
               Positioned.fill(child: CoverImageFill(url: book.coverUrl!)),
           ],

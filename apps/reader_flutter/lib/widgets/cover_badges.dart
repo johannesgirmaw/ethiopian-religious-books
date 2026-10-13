@@ -114,7 +114,8 @@ class PremiumBadge extends StatelessWidget {
   }
 }
 
-/// "READ NOW" pill shown on the corner of a cover.
+/// Filled "READ NOW" CTA chip on the corner of a cover — matches the
+/// Continue-reading primary button (cyan fill, white label).
 class ReadNowBadge extends StatelessWidget {
   const ReadNowBadge({super.key, required this.label, this.compact = false});
 
@@ -123,25 +124,76 @@ class ReadNowBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconSize = compact ? 10.0 : 12.0;
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 6 : 8,
-        vertical: compact ? 2 : 3,
+      padding: EdgeInsets.fromLTRB(
+        compact ? 5 : 6,
+        compact ? 3 : 4,
+        compact ? 7 : 9,
+        compact ? 3 : 4,
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.primary,
         borderRadius: BorderRadius.circular(AppRadius.pill),
         boxShadow: AppShadows.listRow,
       ),
-      child: Text(
-        label.toUpperCase(),
-        style: TextStyle(
-          fontSize: compact ? 7.5 : 8.5,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.5,
-          color: AppColors.primary,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.menu_book_rounded,
+            size: iconSize,
+            color: Colors.white,
+          ),
+          SizedBox(width: compact ? 3 : 4),
+          Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              fontSize: compact ? 8 : 9,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.4,
+              color: Colors.white,
+              height: 1.1,
+            ),
+          ),
+        ],
       ),
+    );
+  }
+}
+
+/// Frosted category icon chip used on gradient placeholder covers.
+class CoverCategoryIcon extends StatelessWidget {
+  const CoverCategoryIcon({
+    super.key,
+    required this.icon,
+    this.size = 40,
+  });
+
+  final IconData icon;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.22),
+        borderRadius: BorderRadius.circular(size * 0.28),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.45),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Icon(icon, color: Colors.white, size: size * 0.48),
     );
   }
 }

@@ -45,18 +45,8 @@ class WebBookCard extends ConsumerWidget {
                 child: Stack(
                   children: [
                     const CatalogCrossWatermark(),
-                    Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.20),
-                          borderRadius: BorderRadius.circular(11),
-                        ),
-                        child: Icon(icon, color: Colors.white, size: 20),
-                      ),
-                    ),
+                    if (book.coverUrl == null)
+                      Center(child: CoverCategoryIcon(icon: icon, size: 48)),
                     if (book.coverUrl != null)
                       Positioned.fill(
                         child: ClipRRect(

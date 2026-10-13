@@ -45,18 +45,8 @@ class DesktopBookCard extends ConsumerWidget {
                 child: Stack(
                   children: [
                     const CatalogCrossWatermark(),
-                    Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: Container(
-                        width: 30,
-                        height: 30,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.20),
-                          borderRadius: BorderRadius.circular(9),
-                        ),
-                        child: Icon(icon, color: Colors.white, size: 17),
-                      ),
-                    ),
+                    if (book.coverUrl == null)
+                      Center(child: CoverCategoryIcon(icon: icon, size: 40)),
                     if (book.coverUrl != null)
                       Positioned.fill(
                         child: ClipRRect(

@@ -37,14 +37,22 @@ class BookPinButton extends ConsumerWidget {
             width: size,
             height: size,
             decoration: BoxDecoration(
-              color: Colors.white,
+              // Pinned: solid primary so the white pin reads clearly.
+              // Unpinned: white disc with a dark pin (outline glyphs look blank).
+              color: pinned ? AppColors.primary : Colors.white,
               shape: BoxShape.circle,
               boxShadow: AppShadows.listRow,
+              border: pinned
+                  ? null
+                  : Border.all(color: AppColors.line, width: 1),
             ),
-            child: Icon(
-              pinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
-              size: size * 0.52,
-              color: pinned ? AppColors.primary : AppColors.textTertiary,
+            child: Transform.rotate(
+              angle: pinned ? 0.4 : 0,
+              child: Icon(
+                Icons.push_pin,
+                size: size * 0.52,
+                color: pinned ? Colors.white : AppColors.textSecondary,
+              ),
             ),
           ),
         ),
