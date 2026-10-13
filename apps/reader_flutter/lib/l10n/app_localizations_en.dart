@@ -350,6 +350,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get downloadErrorGeneric => 'Download failed. Please try again.';
 
   @override
+  String get downloadRequiresPurchase =>
+      'You need to purchase this book before you can download it.';
+
+  @override
   String get downloadsSyncCache => 'Sync from server';
 
   @override

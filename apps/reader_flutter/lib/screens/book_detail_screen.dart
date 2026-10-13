@@ -11,6 +11,7 @@ import '../mobile/screens/mobile_book_detail_screen.dart';
 import '../models/book_models.dart';
 import '../providers/catalog_providers.dart';
 import '../router/app_navigation.dart';
+import '../utils/book_share.dart';
 import '../web/layout/app_layout_scope.dart';
 import '../web/screens/book_detail_body.dart';
 import '../web/widgets/shell/web_overlay_scaffold.dart';
@@ -22,7 +23,8 @@ class BookDetailScreen extends ConsumerWidget {
 
   void _shareBook(BuildContext context, BookSummary book) {
     final l10n = AppLocalizations.of(context)!;
-    Clipboard.setData(ClipboardData(text: book.title));
+    // Copy the public web detail URL so recipients can open it in the app.
+    Clipboard.setData(ClipboardData(text: bookDetailShareUrl(book.id)));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(l10n.bookSharedToClipboard)),
     );

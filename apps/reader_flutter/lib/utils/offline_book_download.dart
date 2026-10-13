@@ -93,6 +93,14 @@ Future<String?> runOfflineBookDownload(
     final message = e is _DownloadException
         ? e.message
         : friendlyDownloadError(e, l10n: l10n);
+    // Purchase-required failures are shown once via SnackBar — do not leave a
+    // sticky failed job on the book detail page.
+    if (isPurchaseRequiredDownloadError(message) ||
+        (e is DioException && e.response?.statusCode == 403)) {
+      await DownloadJobsStorage.removeJob(bookId);
+      return l10n?.downloadRequiresPurchase ??
+          'You need to purchase this book before you can download it.';
+    }
     await DownloadJobsStorage.upsertJob(
       DownloadJob(
         bookId: bookId,
@@ -105,6 +113,16 @@ Future<String?> runOfflineBookDownload(
   }
 }
 
+/// True when [message] is the one-shot "must purchase first" download error.
+bool isPurchaseRequiredDownloadError(String? message) {
+  if (message == null || message.trim().isEmpty) return false;
+  final lower = message.toLowerCase();
+  // English (en arb) + stable key fragment + Amharic (am arb) leftovers.
+  return lower.contains('purchase this book before you can download') ||
+      lower.contains('downloadrequirespurchase') ||
+      message.contains('ከማውረድዎ በፊት ይህን መጽሐፍ መግዛት');
+}
+
 String friendlyDownloadError(
   Object error, {
   AppLocalizations? l10n,
@@ -112,7 +130,8 @@ String friendlyDownloadError(
   if (error is DioException) {
     final code = error.response?.statusCode;
     if (code == 403) {
-      return 'You need to purchase this book before you can download it.';
+      return l10n?.downloadRequiresPurchase ??
+          'You need to purchase this book before you can download it.';
     }
     if (code == 404) {
       return 'This book is not available for download yet.';

@@ -14,7 +14,9 @@ import '../../providers/download_jobs_provider.dart';
 import '../../providers/engagement_providers.dart';
 import '../../providers/payment_providers.dart';
 import '../../router/app_navigation.dart';
+import '../../utils/book_share.dart';
 import '../../utils/catalog_language_label.dart';
+import '../../utils/download_job_ui.dart';
 import '../../utils/offline_book_download.dart';
 import '../../widgets/app_state_view.dart';
 import '../../widgets/book_reviews_section.dart';
@@ -44,10 +46,12 @@ Future<void> _downloadSample(
 }
 
 Future<void> _shareBook(BuildContext context, BookSummary book) async {
-  final text = book.authorCompiler != null && book.authorCompiler!.isNotEmpty
-      ? '${book.title} — ${book.authorCompiler}'
-      : book.title;
-  await SharePlus.instance.share(ShareParams(text: text));
+  await SharePlus.instance.share(
+    ShareParams(
+      text: bookShareText(book),
+      subject: book.title,
+    ),
+  );
 }
 
 class MobileBookDetailScreen extends ConsumerWidget {
@@ -63,16 +67,11 @@ class MobileBookDetailScreen extends ConsumerWidget {
     final downloadJobs = ref.watch(downloadJobsProvider);
     final reviews =
         ref.watch(bookReviewsProvider(bookId)).valueOrNull ?? const [];
-    DownloadJob? currentJob;
-    final jobs = downloadJobs.valueOrNull;
-    if (jobs != null) {
-      for (final job in jobs.reversed) {
-        if (job.bookId == bookId) {
-          currentJob = job;
-          break;
-        }
-      }
-    }
+    final currentJob = visibleDownloadJobForBook(
+      ref,
+      bookId,
+      downloadJobs.valueOrNull,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.referencePageBg,
@@ -115,6 +114,10 @@ class MobileBookDetailScreen extends ConsumerWidget {
           final showToc =
               !book.isPdf && (contentAsync.isLoading || chapters.isNotEmpty);
           final showReviews = reviews.isNotEmpty;
+          final owned =
+              ref.watch(entitledBookIdsProvider).valueOrNull?.contains(bookId) ??
+              false;
+          final canSaveOffline = owned || !book.requiresPurchase;
 
           final stats = <Widget>[
             if (chapterCount != null)
@@ -281,26 +284,29 @@ class MobileBookDetailScreen extends ConsumerWidget {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: () => _downloadSample(context, ref, bookId),
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: AppColors.surfaceCard,
-                          foregroundColor: AppColors.textPrimary,
-                          side: BorderSide(color: AppColors.line),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.cardV2,
+                    if (canSaveOffline) ...[
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () =>
+                              _downloadSample(context, ref, bookId),
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: AppColors.surfaceCard,
+                            foregroundColor: AppColors.textPrimary,
+                            side: BorderSide(color: AppColors.line),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.cardV2,
+                              ),
                             ),
                           ),
+                          icon: const Icon(Icons.download_outlined, size: 20),
+                          label: Text(l10n.downloadOffline),
                         ),
-                        icon: const Icon(Icons.download_outlined, size: 20),
-                        label: Text(l10n.downloadOffline),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),

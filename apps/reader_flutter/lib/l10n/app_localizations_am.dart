@@ -345,6 +345,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get downloadErrorGeneric => 'ማውረድ አልተሳካም። እባክዎ እንደገና ይሞክሩ።';
 
   @override
+  String get downloadRequiresPurchase => 'ከማውረድዎ በፊት ይህን መጽሐፍ መግዛት አለብዎት።';
+
+  @override
   String get downloadsSyncCache => 'አዲሱን አምጣ';
 
   @override

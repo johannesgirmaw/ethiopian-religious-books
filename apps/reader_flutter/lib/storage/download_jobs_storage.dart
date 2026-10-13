@@ -29,4 +29,18 @@ class DownloadJobsStorage {
       jsonEncode(next.map((e) => e.toJson()).toList()),
     );
   }
+
+  /// Drop any stored job for [bookId] (e.g. one-shot entitlement errors).
+  static Future<void> removeJob(String bookId) async {
+    final id = bookId.trim();
+    if (id.isEmpty) return;
+    final jobs = await readJobs();
+    final next = jobs.where((e) => e.bookId != id).toList();
+    if (next.length == jobs.length) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _key,
+      jsonEncode(next.map((e) => e.toJson()).toList()),
+    );
+  }
 }

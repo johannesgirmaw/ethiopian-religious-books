@@ -14,6 +14,7 @@ import '../../providers/payment_providers.dart';
 import '../../router/app_navigation.dart';
 import '../../utils/catalog_categories.dart';
 import '../../utils/catalog_language_label.dart';
+import '../../utils/download_job_ui.dart';
 import '../../utils/offline_book_download.dart';
 import '../../widgets/app_state_view.dart';
 import '../../widgets/book_reviews_section.dart';
@@ -62,16 +63,11 @@ class BookDetailBody extends ConsumerWidget {
     final reviews =
         ref.watch(bookReviewsProvider(bookId)).valueOrNull ?? const [];
 
-    DownloadJob? currentJob;
-    final jobs = downloadJobs.valueOrNull;
-    if (jobs != null) {
-      for (final job in jobs.reversed) {
-        if (job.bookId == bookId) {
-          currentJob = job;
-          break;
-        }
-      }
-    }
+    final currentJob = visibleDownloadJobForBook(
+      ref,
+      bookId,
+      downloadJobs.valueOrNull,
+    );
 
     return asyncBook.when(
       data: (book) {
@@ -106,6 +102,8 @@ class BookDetailBody extends ConsumerWidget {
                 false);
         final mustBuy =
             book.requiresPurchase && !owned && !purchasePending && !resumeCheckout;
+        // Offline save is only for free books or books the user already owns.
+        final canSaveOffline = owned || !book.requiresPurchase;
 
         Future<void> onRead() async {
           if (purchasePending) return;
@@ -129,6 +127,7 @@ class BookDetailBody extends ConsumerWidget {
           mustBuy: mustBuy,
           purchasePending: purchasePending,
           resumeCheckout: resumeCheckout,
+          showDownload: canSaveOffline,
           stretch: expanded,
           onRead: purchasePending ? null : onRead,
           onDownload: () => _downloadSample(context, ref),
@@ -586,6 +585,7 @@ class _ActionCluster extends StatelessWidget {
     required this.mustBuy,
     required this.purchasePending,
     required this.resumeCheckout,
+    required this.showDownload,
     required this.stretch,
     required this.onRead,
     required this.onDownload,
@@ -596,6 +596,7 @@ class _ActionCluster extends StatelessWidget {
   final bool mustBuy;
   final bool purchasePending;
   final bool resumeCheckout;
+  final bool showDownload;
   final bool stretch;
   final VoidCallback? onRead;
   final VoidCallback onDownload;
@@ -674,8 +675,10 @@ class _ActionCluster extends StatelessWidget {
           const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(child: download),
-              const SizedBox(width: 10),
+              if (showDownload) ...[
+                Expanded(child: download),
+                const SizedBox(width: 10),
+              ],
               share,
             ],
           ),
@@ -687,7 +690,11 @@ class _ActionCluster extends StatelessWidget {
       spacing: 10,
       runSpacing: 10,
       crossAxisAlignment: WrapCrossAlignment.center,
-      children: [primary, download, share],
+      children: [
+        primary,
+        if (showDownload) download,
+        share,
+      ],
     );
   }
 }

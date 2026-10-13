@@ -150,6 +150,7 @@
   "downloadErrorConnection": "Could not connect to download the book. Check your connection and try again.",
   "downloadErrorTimeout": "Download timed out. Try again when you have a stable connection.",
   "downloadErrorGeneric": "Download failed. Please try again.",
+  "downloadRequiresPurchase": "You need to purchase this book before you can download it.",
   "downloadsSyncCache": "Sync from server",
   "downloadsClearBookCache": "Remove offline copy",
   "downloadsClearAllCache": "Clear all offline copies",

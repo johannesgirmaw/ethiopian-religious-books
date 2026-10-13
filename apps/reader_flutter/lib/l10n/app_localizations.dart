@@ -722,6 +722,12 @@ abstract class AppLocalizations {
   /// **'Download failed. Please try again.'**
   String get downloadErrorGeneric;
 
+  /// No description provided for @downloadRequiresPurchase.
+  ///
+  /// In en, this message translates to:
+  /// **'You need to purchase this book before you can download it.'**
+  String get downloadRequiresPurchase;
+
   /// No description provided for @downloadsSyncCache.
   ///
   /// In en, this message translates to:

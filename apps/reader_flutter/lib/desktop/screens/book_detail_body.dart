@@ -14,6 +14,7 @@ import '../../providers/payment_providers.dart';
 import '../../router/app_navigation.dart';
 import '../../utils/catalog_categories.dart';
 import '../../utils/catalog_language_label.dart';
+import '../../utils/download_job_ui.dart';
 import '../../utils/offline_book_download.dart';
 import '../../widgets/app_state_view.dart';
 import '../../widgets/book_reviews_section.dart';
@@ -62,16 +63,11 @@ class DesktopBookDetailBody extends ConsumerWidget {
     final reviews =
         ref.watch(bookReviewsProvider(bookId)).valueOrNull ?? const [];
 
-    DownloadJob? currentJob;
-    final jobs = downloadJobs.valueOrNull;
-    if (jobs != null) {
-      for (final job in jobs.reversed) {
-        if (job.bookId == bookId) {
-          currentJob = job;
-          break;
-        }
-      }
-    }
+    final currentJob = visibleDownloadJobForBook(
+      ref,
+      bookId,
+      downloadJobs.valueOrNull,
+    );
 
     return asyncBook.when(
       data: (book) {
@@ -108,6 +104,7 @@ class DesktopBookDetailBody extends ConsumerWidget {
                 false);
         final mustBuy =
             book.requiresPurchase && !owned && !purchasePending && !resumeCheckout;
+        final canSaveOffline = owned || !book.requiresPurchase;
 
         final rail = _LeftRail(
           book: book,
@@ -115,6 +112,7 @@ class DesktopBookDetailBody extends ConsumerWidget {
           mustBuy: mustBuy,
           purchasePending: purchasePending,
           resumeCheckout: resumeCheckout,
+          showDownload: canSaveOffline,
           onRead: purchasePending
               ? null
               : resumeCheckout
@@ -262,6 +260,7 @@ class _LeftRail extends StatelessWidget {
     required this.mustBuy,
     required this.purchasePending,
     required this.resumeCheckout,
+    required this.showDownload,
   });
 
   final BookSummary book;
@@ -272,6 +271,7 @@ class _LeftRail extends StatelessWidget {
   final bool mustBuy;
   final bool purchasePending;
   final bool resumeCheckout;
+  final bool showDownload;
 
   @override
   Widget build(BuildContext context) {
@@ -299,6 +299,7 @@ class _LeftRail extends StatelessWidget {
           mustBuy: mustBuy,
           purchasePending: purchasePending,
           resumeCheckout: resumeCheckout,
+          showDownload: showDownload,
         ),
         if (downloadJob != null) ...[
           const SizedBox(height: 16),
@@ -388,6 +389,7 @@ class _ActionButtons extends StatelessWidget {
     required this.mustBuy,
     required this.purchasePending,
     required this.resumeCheckout,
+    required this.showDownload,
   });
 
   final AppLocalizations l10n;
@@ -397,6 +399,7 @@ class _ActionButtons extends StatelessWidget {
   final bool mustBuy;
   final bool purchasePending;
   final bool resumeCheckout;
+  final bool showDownload;
 
   @override
   Widget build(BuildContext context) {
@@ -441,25 +444,27 @@ class _ActionButtons extends StatelessWidget {
         const SizedBox(height: 10),
         Row(
           children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: onDownload,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.textPrimary,
-                  side: const BorderSide(color: DesktopTokens.borderColor),
-                  backgroundColor: DesktopTokens.surfaceBg,
-                  minimumSize: const Size.fromHeight(46),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            if (showDownload) ...[
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onDownload,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textPrimary,
+                    side: const BorderSide(color: DesktopTokens.borderColor),
+                    backgroundColor: DesktopTokens.surfaceBg,
+                    minimumSize: const Size.fromHeight(46),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
+                  icon: const Icon(Icons.download_outlined, size: 18),
+                  label: Text(l10n.downloadOfflineShort),
                 ),
-                icon: const Icon(Icons.download_outlined, size: 18),
-                label: Text(l10n.downloadOfflineShort),
               ),
-            ),
-            const SizedBox(width: 10),
+              const SizedBox(width: 10),
+            ],
             IconButton.outlined(
               onPressed: onShare,
               tooltip: l10n.shareBookTooltip,
