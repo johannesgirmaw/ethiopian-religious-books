@@ -3950,6 +3950,12 @@ abstract class AppLocalizations {
   /// **'Upload receipt'**
   String get paymentUploadReceipt;
 
+  /// No description provided for @paymentReceiptLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading your saved receipt…'**
+  String get paymentReceiptLoading;
+
   /// No description provided for @paymentReceiptHint.
   ///
   /// In en, this message translates to:

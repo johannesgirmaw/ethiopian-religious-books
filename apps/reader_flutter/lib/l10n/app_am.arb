@@ -1114,6 +1114,7 @@
   "paymentAccountName": "የሂሳብ ስም",
   "paymentAccountNumber": "የሂሳብ ቁጥር",
   "paymentUploadReceipt": "ደረሰኝ ጫን",
+  "paymentReceiptLoading": "የተቀመጠው ደረሰኝ እየተጫነ ነው…",
   "paymentReceiptHint": "ጎትተው ይጣሉ ወይም ይንኩ — JPG፣ PNG ወይም PDF (ከ10ሜባ አይብለጥ)",
   "paymentReceiptSelected": "ተመርጧል፦ {name}",
   "@paymentReceiptSelected": {

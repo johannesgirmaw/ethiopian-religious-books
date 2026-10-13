@@ -367,6 +367,42 @@ class ManualPaymentFlowTests(TestCase):
         self.assertEqual(res.data["transaction_reference"], "REF-DRAFT")
         self.assertEqual(str(res.data["bank"]), str(other.id))
 
+    def test_draft_receipt_stays_pending_and_can_be_fetched(self):
+        txn_id = self._create_txn().data["transaction"]["id"]
+        saved = self.client.post(
+            f"/v1/payments/transactions/{txn_id}/draft-receipt",
+            {"receipt": SimpleUploadedFile("hut.png", PNG_BYTES, content_type="image/png")},
+            format="multipart",
+        )
+        self.assertEqual(saved.status_code, 200)
+        self.assertEqual(saved.data["status"], TransactionStatus.PENDING)
+        self.assertEqual(saved.data["receipt_filename"], "hut.png")
+        self.assertTrue(saved.data["receipt_url"])
+        fetched = self.client.get(f"/v1/payments/transactions/{txn_id}/receipt-file")
+        self.assertEqual(fetched.status_code, 200)
+        self.assertEqual(fetched.content, PNG_BYTES)
+        # Still editable: bank and reference can be saved alongside the image.
+        patched = self.client.patch(
+            f"/v1/payments/transactions/{txn_id}",
+            {"transaction_reference": "REF-SAVED", "bank": str(self.bank.id)},
+            format="json",
+        )
+        self.assertEqual(patched.status_code, 200)
+        self.assertEqual(patched.data["status"], TransactionStatus.PENDING)
+        self.assertEqual(patched.data["transaction_reference"], "REF-SAVED")
+        self.assertEqual(patched.data["receipt_filename"], "hut.png")
+
+    def test_draft_receipt_locked_after_submit(self):
+        txn_id = self._create_txn().data["transaction"]["id"]
+        self._submit_receipt(txn_id, ref="REF-LOCK-DRAFT")
+        res = self.client.post(
+            f"/v1/payments/transactions/{txn_id}/draft-receipt",
+            {"receipt": SimpleUploadedFile("hut.png", PNG_BYTES, content_type="image/png")},
+            format="multipart",
+        )
+        self.assertEqual(res.status_code, 409)
+        self.assertEqual(res.data["error"]["code"], "LOCKED")
+
     def test_patch_locked_after_submit(self):
         txn_id = self._create_txn().data["transaction"]["id"]
         self._submit_receipt(txn_id, ref="REF-LOCK")

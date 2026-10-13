@@ -41,11 +41,18 @@ from apps.payments.models import (
     RevenueLedger,
 )
 from apps.payments.permissions import IsAuthor
-from apps.payments.receipts import read_receipt, receipt_content_type, store_receipt
+from apps.payments.receipts import (
+    delete_receipt,
+    read_receipt,
+    receipt_content_type,
+    receipt_display_name,
+    store_receipt,
+)
 from apps.payments.serializers import (
     AuthorApplicationSerializer,
     AuthorProfileSerializer,
     CreateTransactionSerializer,
+    DraftReceiptSerializer,
     PaymentTransactionSerializer,
     PublicBankSerializer,
     SubmitReceiptSerializer,
@@ -408,11 +415,14 @@ class SubmitReceiptView(_PaymentsView):
                 status=status.HTTP_409_CONFLICT,
             )
 
-        object_key = store_receipt(txn.id, ser.validated_data["receipt"])
+        upload = ser.validated_data["receipt"]
+        previous_key = txn.receipt_object_key
+        object_key = store_receipt(txn.id, upload)
 
         txn.transaction_reference = reference
         txn.bank = bank
         txn.receipt_object_key = object_key
+        txn.receipt_filename = receipt_display_name(upload)
         txn.status = TransactionStatus.ON_REVIEW
         try:
             txn.save(
@@ -420,6 +430,7 @@ class SubmitReceiptView(_PaymentsView):
                     "transaction_reference",
                     "bank",
                     "receipt_object_key",
+                    "receipt_filename",
                     "status",
                     "updated_at",
                 ]
@@ -431,6 +442,9 @@ class SubmitReceiptView(_PaymentsView):
                 status=status.HTTP_409_CONFLICT,
             )
 
+        if previous_key and previous_key != object_key:
+            delete_receipt(previous_key)
+
         record_audit(
             actor=request.user,
             action="transaction.submit_receipt",
@@ -439,6 +453,42 @@ class SubmitReceiptView(_PaymentsView):
             metadata={"reference": reference},
             request=request,
         )
+        return Response(PaymentTransactionSerializer(txn, context={"request": request}).data)
+
+
+class SaveDraftReceiptView(_PaymentsView):
+    """Store a receipt on a checkout that has not been submitted yet.
+
+    Status stays pending. The buyer can leave and open the same purchase on
+    another device with the image still attached.
+    """
+
+    @extend_schema(request=DraftReceiptSerializer, responses=PaymentTransactionSerializer)
+    def post(self, request, transaction_id):
+        txn = get_object_or_404(
+            PaymentTransaction, pk=transaction_id, user=request.user
+        )
+        if txn.payment_method not in MANUAL_METHODS:
+            return Response(
+                {"error": {"code": "NOT_MANUAL", "message": "Not a manual payment."}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if txn.status != TransactionStatus.PENDING:
+            return Response(
+                {"error": {"code": "LOCKED", "message": "Transaction can no longer be edited."}},
+                status=status.HTTP_409_CONFLICT,
+            )
+        ser = DraftReceiptSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        upload = ser.validated_data["receipt"]
+        previous_key = txn.receipt_object_key
+        txn.receipt_object_key = store_receipt(txn.id, upload)
+        txn.receipt_filename = receipt_display_name(upload)
+        txn.save(
+            update_fields=["receipt_object_key", "receipt_filename", "updated_at"]
+        )
+        if previous_key and previous_key != txn.receipt_object_key:
+            delete_receipt(previous_key)
         return Response(PaymentTransactionSerializer(txn, context={"request": request}).data)
 
 

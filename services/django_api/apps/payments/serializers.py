@@ -260,6 +260,7 @@ class PaymentTransactionSerializer(serializers.ModelSerializer):
             "transaction_reference",
             "gateway_reference",
             "receipt_url",
+            "receipt_filename",
             "review_note",
             "reviewed_by",
             "reviewed_at",
@@ -286,6 +287,12 @@ class CreateTransactionSerializer(serializers.Serializer):
     bank = serializers.PrimaryKeyRelatedField(
         queryset=Bank.objects.filter(is_active=True), required=False, allow_null=True
     )
+
+
+class DraftReceiptSerializer(serializers.Serializer):
+    """Receipt saved on a checkout that has not been submitted yet."""
+
+    receipt = serializers.FileField()
 
 
 class UpdatePendingTransactionSerializer(serializers.Serializer):

@@ -2119,6 +2119,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paymentUploadReceipt => 'Upload receipt';
 
   @override
+  String get paymentReceiptLoading => 'Loading your saved receipt…';
+
+  @override
   String get paymentReceiptHint =>
       'Drag & drop or tap to upload — JPG, PNG or PDF (max 10MB)';
 

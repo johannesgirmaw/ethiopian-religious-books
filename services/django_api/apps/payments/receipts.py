@@ -9,6 +9,7 @@ mislabelled or oversized file is rejected before it is ever stored.
 from __future__ import annotations
 
 import logging
+import os
 import uuid
 
 from django.core.files.storage import default_storage
@@ -80,6 +81,32 @@ def validate_receipt(upload) -> bytes:
         )
 
     return data
+
+
+def receipt_display_name(upload) -> str:
+    """Original file name, stripped of any path, for showing the saved receipt."""
+    raw = os.path.basename(getattr(upload, "name", "") or "")
+    name = raw.replace("\x00", "").strip()
+    if not name:
+        ext = _extension(getattr(upload, "name", "") or "") or "bin"
+        name = f"receipt.{ext}"
+    return name[:255]
+
+
+def delete_receipt(object_key: str) -> None:
+    """Best-effort removal of a previously stored receipt."""
+    if not object_key:
+        return
+    if is_object_storage_configured():
+        from apps.catalog.storage_s3 import delete_objects
+
+        delete_objects([object_key])
+        return
+    try:
+        if default_storage.exists(object_key):
+            default_storage.delete(object_key)
+    except Exception as exc:  # noqa: BLE001 - a leftover file must not fail the save
+        logger.warning("could not delete receipt %s: %s", object_key, exc)
 
 
 def store_receipt(transaction_id, upload) -> str:

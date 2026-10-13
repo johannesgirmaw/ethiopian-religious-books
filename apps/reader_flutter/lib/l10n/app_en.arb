@@ -960,6 +960,7 @@
   "paymentAccountName": "Account name",
   "paymentAccountNumber": "Account number",
   "paymentUploadReceipt": "Upload receipt",
+  "paymentReceiptLoading": "Loading your saved receipt…",
   "paymentReceiptHint": "Drag & drop or tap to upload — JPG, PNG or PDF (max 10MB)",
   "paymentReceiptSelected": "Selected: {name}",
   "@paymentReceiptSelected": {

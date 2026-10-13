@@ -2076,6 +2076,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get paymentUploadReceipt => 'ደረሰኝ ጫን';
 
   @override
+  String get paymentReceiptLoading => 'የተቀመጠው ደረሰኝ እየተጫነ ነው…';
+
+  @override
   String get paymentReceiptHint =>
       'ጎትተው ይጣሉ ወይም ይንኩ — JPG፣ PNG ወይም PDF (ከ10ሜባ አይብለጥ)';
 

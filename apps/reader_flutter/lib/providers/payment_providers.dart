@@ -206,6 +206,38 @@ class PaymentRepository {
     return PaymentTransaction.fromJson(res.data ?? const {});
   }
 
+  /// Store the receipt on a pending checkout without submitting it for review.
+  Future<PaymentTransaction> saveDraftReceipt({
+    required String transactionId,
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    final form = FormData.fromMap({
+      'receipt': MultipartFile.fromBytes(bytes, filename: filename),
+    });
+    final res = await _dio.post<Map<String, dynamic>>(
+      'payments/transactions/$transactionId/draft-receipt',
+      data: form,
+    );
+    return PaymentTransaction.fromJson(res.data ?? const {});
+  }
+
+  /// Bytes of a receipt already stored for this purchase. Null when none exists.
+  Future<Uint8List?> fetchReceiptBytes(String transactionId) async {
+    try {
+      final res = await _dio.get<List<int>>(
+        'payments/transactions/$transactionId/receipt-file',
+        options: Options(responseType: ResponseType.bytes),
+      );
+      final data = res.data;
+      if (data == null || data.isEmpty) return null;
+      return Uint8List.fromList(data);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
   /// Upload a receipt + reference for a manual transaction (-> ON_REVIEW).
   Future<PaymentTransaction> submitReceipt({
     required String transactionId,

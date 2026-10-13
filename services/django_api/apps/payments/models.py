@@ -291,7 +291,10 @@ class PaymentTransaction(models.Model):
     # Gateway-issued id (Stripe/PayPal/Telebirr) for online flows.
     gateway_reference = models.CharField(max_length=255, blank=True)
     # Object key of the uploaded receipt; a signed URL is exposed via the API.
+    # A still-pending checkout may already have a receipt saved so the buyer
+    # can resume the form on another device before they submit for review.
     receipt_object_key = models.CharField(max_length=500, blank=True)
+    receipt_filename = models.CharField(max_length=255, blank=True)
 
     reviewed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

@@ -132,6 +132,7 @@ class PaymentTransaction {
     required this.status,
     required this.transactionReference,
     required this.receiptUrl,
+    this.receiptFilename = '',
     this.bank,
     this.createdAt,
   });
@@ -151,6 +152,7 @@ class PaymentTransaction {
   final PaymentStatus status;
   final String transactionReference;
   final String receiptUrl;
+  final String receiptFilename;
   final BankAccount? bank;
   final DateTime? createdAt;
 
@@ -170,6 +172,7 @@ class PaymentTransaction {
       status: PaymentStatus.fromApi(j['status'] as String?),
       transactionReference: j['transaction_reference'] as String? ?? '',
       receiptUrl: j['receipt_url'] as String? ?? '',
+      receiptFilename: j['receipt_filename'] as String? ?? '',
       bank: bankDetail is Map<String, dynamic>
           ? BankAccount.fromJson(bankDetail)
           : null,

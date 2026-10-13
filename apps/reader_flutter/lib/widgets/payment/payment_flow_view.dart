@@ -56,7 +56,10 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
   String? _pendingTransactionId;
   bool _persistDraftOnDispose = true;
   bool _disposed = false;
+  bool _receiptLoading = false;
+  int _receiptGeneration = 0;
   Timer? _serverSync;
+  late final PaymentRepository _payments;
   late final FormDraftController _draft;
 
   String _draftKey() => FormDraftKeys.scope(
@@ -67,6 +70,7 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
   @override
   void initState() {
     super.initState();
+    _payments = ref.read(paymentRepositoryProvider);
     _draft = FormDraftController(
       draftKey: _draftKey(),
       capture: _captureDraft,
@@ -172,6 +176,13 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
     if (restored && open == null && _step == _Step.method && _selectedMethod != null) {
       showFormDraftRestoredSnackBar(context);
     }
+    final saved = _transaction;
+    if (saved != null &&
+        saved.status.resumesCheckout &&
+        saved.receiptUrl.isNotEmpty &&
+        _receiptBytes == null) {
+      unawaited(_loadSavedReceipt(saved));
+    }
   }
 
   void _applyOpenPurchase(PaymentTransaction open) {
@@ -189,10 +200,16 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
       _referenceCtrl.text = open.transactionReference;
       _receiptName = null;
       _receiptBytes = null;
-    } else if (draftReference.trim().isEmpty && open.transactionReference.isNotEmpty) {
+    } else if (draftReference.trim().isEmpty &&
+        open.transactionReference.isNotEmpty) {
       _referenceCtrl.text = open.transactionReference;
     }
-    if (_receiptBytes == null) _receiptName = null;
+    final savedName = open.receiptFilename.trim();
+    if (open.receiptUrl.isNotEmpty && savedName.isNotEmpty) {
+      _receiptName = savedName;
+    } else if (_receiptBytes == null) {
+      _receiptName = null;
+    }
     _pendingTransactionId = null;
 
     if (open.status.resumesCheckout) {
@@ -267,6 +284,47 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
 
   void _notifyDraftChanged() => _draft.onChanged();
 
+  void _flushPendingFields() {
+    final txn = _transaction;
+    if (txn == null || txn.status != PaymentStatus.pending) return;
+    if (txn.method?.isManual == false) return;
+    unawaited(
+      _payments.updatePending(
+        transactionId: txn.id,
+        bankId: _selectedBankId,
+        transactionReference: _referenceCtrl.text.trim(),
+      ),
+    );
+  }
+
+  Future<void> _loadSavedReceipt(PaymentTransaction txn) async {
+    final generation = _receiptGeneration;
+    if (mounted) setState(() => _receiptLoading = true);
+    try {
+      final bytes = await _payments.fetchReceiptBytes(txn.id);
+      if (!mounted || _disposed || generation != _receiptGeneration) return;
+      if (bytes == null || bytes.isEmpty) {
+        setState(() => _receiptLoading = false);
+        return;
+      }
+      final name = txn.receiptFilename.trim();
+      setState(() {
+        _receiptBytes = bytes;
+        if (name.isNotEmpty) _receiptName = name;
+        _receiptLoading = false;
+      });
+    } catch (e) {
+      if (!mounted || _disposed || generation != _receiptGeneration) return;
+      setState(() {
+        _receiptLoading = false;
+        _error = paymentErrorMessage(
+          e,
+          AppLocalizations.of(context).paymentErrorGeneric,
+        );
+      });
+    }
+  }
+
   @override
   void dispose() {
     _disposed = true;
@@ -274,6 +332,7 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
     if (_persistDraftOnDispose &&
         _step != _Step.success &&
         _step != _Step.owned) {
+      _flushPendingFields();
       unawaited(_draft.persistNow());
     }
     _referenceCtrl.removeListener(_onReferenceChanged);
@@ -396,12 +455,38 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
     if (result == null || result.files.isEmpty) return;
     final file = result.files.first;
     final bytes = file.bytes;
-    if (bytes == null) return;
+    if (bytes == null || !mounted) return;
+    final generation = ++_receiptGeneration;
     setState(() {
       _receiptBytes = bytes;
       _receiptName = file.name;
+      _error = null;
     });
     _notifyDraftChanged();
+    final txn = _transaction;
+    if (txn == null || txn.status != PaymentStatus.pending) return;
+    setState(() => _receiptLoading = true);
+    try {
+      final updated = await _payments.saveDraftReceipt(
+        transactionId: txn.id,
+        bytes: bytes,
+        filename: file.name,
+      );
+      if (!mounted || generation != _receiptGeneration) return;
+      setState(() {
+        _transaction = updated;
+        _receiptLoading = false;
+      });
+    } catch (e) {
+      if (!mounted || generation != _receiptGeneration) return;
+      setState(() {
+        _receiptLoading = false;
+        _error = paymentErrorMessage(
+          e,
+          AppLocalizations.of(context).paymentErrorGeneric,
+        );
+      });
+    }
   }
 
   Future<void> _submitReceipt() async {
@@ -498,6 +583,7 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
                 selectedBankId: _selectedBankId,
                 receiptBytes: _receiptBytes,
                 receiptName: _receiptName,
+                receiptLoading: _receiptLoading,
                 referenceController: _referenceCtrl,
                 busy: _busy,
                 canSubmit: _canSubmitReceipt,
@@ -926,6 +1012,7 @@ class _ManualDetailsStep extends ConsumerWidget {
     required this.selectedBankId,
     required this.receiptBytes,
     required this.receiptName,
+    required this.receiptLoading,
     required this.referenceController,
     required this.busy,
     required this.canSubmit,
@@ -939,6 +1026,7 @@ class _ManualDetailsStep extends ConsumerWidget {
   final String? selectedBankId;
   final Uint8List? receiptBytes;
   final String? receiptName;
+  final bool receiptLoading;
   final TextEditingController referenceController;
   final bool busy;
   final bool canSubmit;
@@ -1029,11 +1117,36 @@ class _ManualDetailsStep extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: AppSpace.xs),
-        _ReceiptDropZone(
-          fileName: receiptName,
-          bytes: receiptBytes,
-          onTap: onPickReceipt,
-        ),
+        if (receiptLoading && (receiptBytes == null || receiptBytes!.isEmpty))
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppSpace.lg),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceSoft,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: AppSpace.sm),
+                Text(
+                  l10n.paymentReceiptLoading,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          _ReceiptDropZone(
+            fileName: receiptName,
+            bytes: receiptBytes,
+            onTap: onPickReceipt,
+          ),
         const SizedBox(height: AppSpace.lg),
         Text(
           l10n.paymentTransactionReference,
