@@ -58,6 +58,7 @@ class BookSummary {
     this.readersCount = 0,
     this.isPremium = false,
     this.isFeatured = false,
+    this.pinOrder,
     this.currency = 'USD',
     this.price = 0,
     this.priceEtb = 0,
@@ -104,6 +105,11 @@ class BookSummary {
   final int readersCount;
   final bool isPremium;
   final bool isFeatured;
+
+  /// Ascending catalog pin rank; null when unpinned. Pinned books lead Explore.
+  final int? pinOrder;
+
+  bool get isPinned => pinOrder != null;
 
   /// ISO currency code for the primary [price] / [salePrice] / [finalPrice].
   final String currency;
@@ -174,6 +180,7 @@ class BookSummary {
       readersCount: (j['readers_count'] as num?)?.toInt() ?? 0,
       isPremium: j['is_premium'] as bool? ?? false,
       isFeatured: j['is_featured'] as bool? ?? false,
+      pinOrder: (j['pin_order'] as num?)?.toInt(),
       currency: (j['currency'] as String?)?.trim().isNotEmpty == true
           ? j['currency'] as String
           : 'USD',

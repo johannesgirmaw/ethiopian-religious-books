@@ -121,6 +121,8 @@
   "continueReading": "Continue reading",
   "resumeReading": "Resume",
   "readNow": "Read now",
+  "bookPinTooltip": "Pin to top of Explore",
+  "bookUnpinTooltip": "Unpin from Explore",
   "authoredBy": "by {name}",
   "@authoredBy": {
     "placeholders": {

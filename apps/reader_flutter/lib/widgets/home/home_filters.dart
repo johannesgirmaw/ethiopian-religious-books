@@ -17,25 +17,31 @@ String homeSortLabel(AppLocalizations l10n, HomeSort m) => switch (m) {
       HomeSort.topRated => l10n.sortTopRated,
     };
 
-/// Sorts [list] in place according to [sort].
+/// Sorts [list] in place: pinned books first (by [BookSummary.pinOrder]), then
+/// the remaining titles according to [sort].
 void applyHomeSort(List<BookSummary> list, HomeSort sort) {
   int byDate(BookSummary a, BookSummary b) =>
       (a.createdAt ?? DateTime(0)).compareTo(b.createdAt ?? DateTime(0));
   double pop(BookSummary b) =>
       b.readersCount + b.ratingAverage * b.ratingCount * 2;
-  switch (sort) {
-    case HomeSort.titleAz:
-      list.sort(
-          (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
-    case HomeSort.newest:
-      list.sort((a, b) => byDate(b, a));
-    case HomeSort.oldest:
-      list.sort(byDate);
-    case HomeSort.popular:
-      list.sort((a, b) => pop(b).compareTo(pop(a)));
-    case HomeSort.topRated:
-      list.sort((a, b) => b.ratingAverage.compareTo(a.ratingAverage));
-  }
+
+  int secondary(BookSummary a, BookSummary b) => switch (sort) {
+        HomeSort.titleAz =>
+          a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+        HomeSort.newest => byDate(b, a),
+        HomeSort.oldest => byDate(a, b),
+        HomeSort.popular => pop(b).compareTo(pop(a)),
+        HomeSort.topRated => b.ratingAverage.compareTo(a.ratingAverage),
+      };
+
+  list.sort((a, b) {
+    final ap = a.pinOrder;
+    final bp = b.pinOrder;
+    if (ap != null && bp != null) return ap.compareTo(bp);
+    if (ap != null) return -1;
+    if (bp != null) return 1;
+    return secondary(a, b);
+  });
 }
 
 /// Genres that at least one book uses, ordered by [lookup] and labelled from it.

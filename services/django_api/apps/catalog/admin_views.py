@@ -39,6 +39,7 @@ from apps.catalog.permissions import (
     can_manage_book,
     is_platform_admin,
 )
+from apps.catalog.pinning import pin_book, unpin_book
 from apps.catalog.publishing import (
     publish_book,
     unpublish_book,
@@ -846,6 +847,22 @@ class AdminBookUnpublishView(APIView):
             return _not_book_creator_response()
         unpublish_book(book)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AdminBookPinView(APIView):
+    """Pin / unpin a book for catalog Explore ordering (platform admins)."""
+
+    permission_classes = [IsPlatformReviewer]
+
+    def post(self, request, book_id):
+        book = get_object_or_404(Book, pk=book_id)
+        pin_book(book)
+        return Response(AdminBookSerializer(book).data)
+
+    def delete(self, request, book_id):
+        book = get_object_or_404(Book, pk=book_id)
+        unpin_book(book)
+        return Response(AdminBookSerializer(book).data)
 
 
 class AdminBookSubmitReviewView(APIView):

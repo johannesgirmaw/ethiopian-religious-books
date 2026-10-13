@@ -52,6 +52,7 @@ class BookListSerializer(serializers.ModelSerializer):
             "readers_count",
             "is_premium",
             "is_featured",
+            "pin_order",
             "catalog_visibility",
             "cover_url",
             "currency",

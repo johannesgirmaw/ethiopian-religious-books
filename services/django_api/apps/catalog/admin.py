@@ -104,6 +104,7 @@ class BookAdmin(ModelAdmin):
         "title",
         "genre_label",
         "catalog_visibility",
+        "pin_order",
         "is_premium",
         "price_etb",
         "price_usd",

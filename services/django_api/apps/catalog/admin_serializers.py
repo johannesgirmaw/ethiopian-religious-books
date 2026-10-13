@@ -256,6 +256,7 @@ class AdminBookSerializer(serializers.ModelSerializer):
             "readers_count",
             "is_premium",
             "is_featured",
+            "pin_order",
             "author",
             "currency",
             "price",

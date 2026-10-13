@@ -267,6 +267,12 @@ class AppLocalizationsAm extends AppLocalizations {
   String get readNow => 'አሁን ያንብቡ';
 
   @override
+  String get bookPinTooltip => 'ወደ አስስ ይሰኩ';
+
+  @override
+  String get bookUnpinTooltip => 'ከአስስ ያውጡ';
+
+  @override
   String authoredBy(String name) {
     return 'ያዘጋጁት $name';
   }

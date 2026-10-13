@@ -72,24 +72,16 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
   };
 
   void _applySort(List<BookSummary> list) {
-    int byDate(BookSummary a, BookSummary b) =>
-        (a.createdAt ?? DateTime(0)).compareTo(b.createdAt ?? DateTime(0));
-    double pop(BookSummary b) =>
-        b.readersCount + b.ratingAverage * b.ratingCount * 2;
-    switch (_sort) {
-      case _SortMode.titleAz:
-        list.sort(
-          (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
-        );
-      case _SortMode.newest:
-        list.sort((a, b) => byDate(b, a));
-      case _SortMode.oldest:
-        list.sort(byDate);
-      case _SortMode.popular:
-        list.sort((a, b) => pop(b).compareTo(pop(a)));
-      case _SortMode.topRated:
-        list.sort((a, b) => b.ratingAverage.compareTo(a.ratingAverage));
-    }
+    applyHomeSort(
+      list,
+      switch (_sort) {
+        _SortMode.titleAz => HomeSort.titleAz,
+        _SortMode.newest => HomeSort.newest,
+        _SortMode.oldest => HomeSort.oldest,
+        _SortMode.popular => HomeSort.popular,
+        _SortMode.topRated => HomeSort.topRated,
+      },
+    );
   }
 
   List<({String key, String label})> _languageOptions(

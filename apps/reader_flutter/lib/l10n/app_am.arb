@@ -137,6 +137,8 @@
   "continueReading": "ንባብ ይቀጥሉ",
   "resumeReading": "ከቆሙበት ይቀጥሉ",
   "readNow": "አሁን ያንብቡ",
+  "bookPinTooltip": "ወደ አስስ ይሰኩ",
+  "bookUnpinTooltip": "ከአስስ ያውጡ",
   "authoredBy": "ያዘጋጁት {name}",
   "@authoredBy": {
     "placeholders": {

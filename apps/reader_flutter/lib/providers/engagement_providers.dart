@@ -65,6 +65,21 @@ Future<void> setFavourite(WidgetRef ref, String bookId, {required bool add}) asy
   ref.invalidate(favouriteIdsProvider);
 }
 
+/// Pin / unpin a book for catalog Explore order (platform admins).
+Future<void> setBookPinned(
+  WidgetRef ref,
+  String bookId, {
+  required bool pin,
+}) async {
+  final dio = ref.read(apiDioProvider);
+  if (pin) {
+    await dio.post<Map<String, dynamic>>('admin/books/$bookId/pin');
+  } else {
+    await dio.delete<Map<String, dynamic>>('admin/books/$bookId/pin');
+  }
+  ref.invalidate(catalogProvider);
+}
+
 // ─── Reviews ─────────────────────────────────────────────────────────────────
 
 class BookReview {

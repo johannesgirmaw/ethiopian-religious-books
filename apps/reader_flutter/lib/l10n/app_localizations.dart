@@ -578,6 +578,18 @@ abstract class AppLocalizations {
   /// **'Read now'**
   String get readNow;
 
+  /// No description provided for @bookPinTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin to top of Explore'**
+  String get bookPinTooltip;
+
+  /// No description provided for @bookUnpinTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin from Explore'**
+  String get bookUnpinTooltip;
+
   /// No description provided for @authoredBy.
   ///
   /// In en, this message translates to:

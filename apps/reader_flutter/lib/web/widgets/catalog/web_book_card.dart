@@ -7,6 +7,7 @@ import '../../../models/book_models.dart';
 import '../../../providers/catalog_providers.dart';
 import '../../../utils/catalog_book_visuals.dart';
 import '../../../utils/catalog_categories.dart';
+import '../../../widgets/book_pin_button.dart';
 import '../../../widgets/cover_badges.dart';
 import '../../../widgets/favourite_heart_button.dart';
 import '../../design/web_tokens.dart';
@@ -83,7 +84,13 @@ class WebBookCard extends ConsumerWidget {
                     Positioned(
                       top: 10,
                       right: 10,
-                      child: FavouriteHeartButton(bookId: book.id),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          BookPinButton(book: book),
+                          FavouriteHeartButton(bookId: book.id),
+                        ],
+                      ),
                     ),
                     if (book.isPremium)
                       const Positioned(

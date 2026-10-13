@@ -57,6 +57,14 @@ class Book(models.Model):
     readers_count = models.PositiveIntegerField(default=0)
     is_premium = models.BooleanField(default=False)
     is_featured = models.BooleanField(default=False)  # "Popular" home banner
+    # Catalog pin order: null = unpinned. Lower numbers appear first among
+    # pinned titles. New pins take max(pin_order)+1 so they land next in line.
+    pin_order = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Ascending pin rank for Explore sorting; null when unpinned.",
+    )
 
     # --- Bible books -----------------------------------------------------
     # Bible books are verse-addressable (see BibleVerse / BibleSection) and

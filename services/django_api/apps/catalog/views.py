@@ -162,10 +162,13 @@ def _published_books_queryset():
     # category via genre="bible"); the client hides them from the "All" feed and
     # routes them to the verse reader. They carry the is_bible flag + genre so
     # the client can tell them apart.
+    # Pinned titles lead Explore in ascending pin_order; unpinned follow by title.
+    from django.db.models import F
+
     return (
         Book.objects.filter(catalog_visibility=Book.Visibility.PUBLISHED)
         .select_related("published_revision")
-        .order_by("title")
+        .order_by(F("pin_order").asc(nulls_last=True), "title")
     )
 
 

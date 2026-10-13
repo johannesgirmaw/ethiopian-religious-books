@@ -271,6 +271,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readNow => 'Read now';
 
   @override
+  String get bookPinTooltip => 'Pin to top of Explore';
+
+  @override
+  String get bookUnpinTooltip => 'Unpin from Explore';
+
+  @override
   String authoredBy(String name) {
     return 'by $name';
   }

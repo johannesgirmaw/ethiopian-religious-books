@@ -6,6 +6,7 @@ import '../../../design/app_tokens.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/book_models.dart';
 import '../../../providers/catalog_providers.dart';
+import '../../../widgets/book_pin_button.dart';
 import '../../../widgets/cover_badges.dart';
 import '../../../widgets/favourite_heart_button.dart';
 import 'book_cover_poster.dart';
@@ -73,7 +74,13 @@ class MobileBookCard extends ConsumerWidget {
               Positioned(
                 top: 6,
                 right: 6,
-                child: FavouriteHeartButton(bookId: book.id),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    BookPinButton(book: book),
+                    FavouriteHeartButton(bookId: book.id),
+                  ],
+                ),
               ),
               if (progress > 0)
                 Positioned(
