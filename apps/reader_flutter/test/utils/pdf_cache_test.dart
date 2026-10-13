@@ -22,4 +22,38 @@ void main() {
     expect(uri.path, '/pdf-proxy/11111111-1111-1111-1111-111111111111');
     expect(uri.queryParameters['r'], '22222222-2222-2222-2222-222222222222');
   });
+
+  test('PdfBookAccess parses linearized flag (defaults false)', () {
+    final missing = PdfBookAccess.fromJson({
+      'book_id': 'b1',
+      'url': '',
+      'filename': 'a.pdf',
+      'size_bytes': 10,
+      'revision_id': 'r1',
+    });
+    expect(missing.linearized, isFalse);
+
+    final flagged = PdfBookAccess.fromJson({
+      'book_id': 'b1',
+      'url': '',
+      'filename': 'a.pdf',
+      'size_bytes': 10,
+      'revision_id': 'r1',
+      'linearized': true,
+    });
+    expect(flagged.linearized, isTrue);
+  });
+
+  test('PdfViewerSource.uri carries preferRangeAccess for Fast Web View', () {
+    final rangeOn = PdfViewerSource.uri(
+      Uri.parse('https://example.com/pdf-proxy/b'),
+      preferRangeAccess: true,
+    );
+    final rangeOff = PdfViewerSource.uri(
+      Uri.parse('https://example.com/pdf-proxy/b'),
+      preferRangeAccess: false,
+    );
+    expect(rangeOn.preferRangeAccess, isTrue);
+    expect(rangeOff.preferRangeAccess, isFalse);
+  });
 }

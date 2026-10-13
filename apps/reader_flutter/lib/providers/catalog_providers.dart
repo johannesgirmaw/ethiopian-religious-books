@@ -12,7 +12,9 @@ import '../storage/catalog_cache_storage.dart';
 import '../storage/reader_prefs_storage.dart';
 import '../storage/secure_book_store.dart';
 import '../utils/pdf_book_loader.dart';
+import '../utils/pdf_prefetch.dart';
 import 'api_client.dart';
+import 'payment_providers.dart';
 import 'session_notifier.dart';
 
 class CatalogBookMeta {
@@ -348,6 +350,40 @@ final pdfViewerSourceProvider =
   final token =
       ref.watch(sessionNotifierProvider).valueOrNull?.accessToken;
   return resolvePdfViewerSource(access, accessToken: token);
+});
+
+/// Warm PDF metadata + first byte range while the user is on book detail.
+///
+/// Only runs for PDF books the user can already open (free, or purchased).
+/// Failures are swallowed — warmup must never break the detail screen.
+final pdfWarmupProvider =
+    FutureProvider.autoDispose.family<void, String>((ref, bookId) async {
+  try {
+    final session = ref.watch(sessionNotifierProvider).valueOrNull;
+    final token = session?.accessToken.trim() ?? '';
+    if (token.isEmpty) return;
+
+    final book = await ref.watch(bookDetailProvider(bookId).future);
+    if (!book.isPdf) return;
+
+    if (book.requiresPurchase) {
+      final owned =
+          (await ref.watch(entitledBookIdsProvider.future)).contains(bookId);
+      if (!owned) return;
+    }
+
+    final access = await ref.watch(pdfBookAccessProvider(bookId).future);
+    final source = await resolvePdfViewerSource(access, accessToken: token);
+    final uri = source.uri;
+    if (uri == null) return;
+
+    // Prefetch is only useful when Range will be used (linearized / native).
+    if (!source.preferRangeAccess) return;
+
+    await warmPdfFirstByteRange(uri, headers: source.headers);
+  } catch (_) {
+    // Best-effort: never surface warmup errors to the UI.
+  }
 });
 
 final catalogCachedAtProvider = FutureProvider.autoDispose<DateTime?>((ref) {

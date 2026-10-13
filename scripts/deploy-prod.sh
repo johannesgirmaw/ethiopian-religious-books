@@ -30,6 +30,9 @@ deploy_api() {
 
   echo "==> Rebuilding + restarting api + celery (migrations run on container start)"
   ssh "$SSH_HOST" "cd $REMOTE_APP/prod && docker compose -f docker-compose.prod.yml up -d --build api celery_worker"
+
+  echo "==> Reminder: after first deploy of PDF Fast Web View, backfill published PDFs:"
+  echo "    ssh $SSH_HOST 'cd $REMOTE_APP/prod && docker compose -f docker-compose.prod.yml exec -T api python manage.py linearize_pdfs --published-only'"
 }
 
 deploy_web() {

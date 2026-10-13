@@ -102,6 +102,9 @@ class MobileBookDetailScreen extends ConsumerWidget {
       ),
       body: asyncBook.when(
         data: (book) {
+          if (book.isPdf) {
+            ref.watch(pdfWarmupProvider(bookId));
+          }
           final tree = contentAsync.valueOrNull;
           final chapters = tree?.chapters ?? const <BookContentChapter>[];
           final chapterCount = chapters.isEmpty ? null : chapters.length;

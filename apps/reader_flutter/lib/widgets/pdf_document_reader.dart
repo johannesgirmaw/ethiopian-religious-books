@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
@@ -8,6 +7,9 @@ import 'package:pdfrx/pdfrx.dart';
 import '../design/app_tokens.dart';
 import '../l10n/app_localizations.dart';
 import '../storage/reader_prefs_storage.dart';
+import '../utils/pdf_book_loader.dart';
+import '../utils/pdf_cache_stub.dart'
+    if (dart.library.io) '../utils/pdf_cache_io.dart' as pdf_cache;
 import 'protected_content_scope.dart';
 
 /// Fit mode persisted per book. `custom` means the user zoomed manually.
@@ -23,6 +25,8 @@ class PdfDocumentReader extends StatefulWidget {
     this.filePath,
     this.uri,
     this.headers,
+    this.preferRangeAccess = true,
+    this.nativeCacheAccess,
     this.padding = EdgeInsets.zero,
     this.loadingLabel = 'Loading PDF…',
     this.errorTitle = 'Could not open PDF',
@@ -37,6 +41,10 @@ class PdfDocumentReader extends StatefulWidget {
   final String? filePath;
   final Uri? uri;
   final Map<String, String>? headers;
+  /// Web: false for non-linearized PDFs (full download). Native: usually true.
+  final bool preferRangeAccess;
+  /// Native only: after first paint, download [uri] into the temp-dir cache.
+  final PdfBookAccess? nativeCacheAccess;
   final EdgeInsets padding;
   final String loadingLabel;
   final String errorTitle;
@@ -435,6 +443,17 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) unawaited(_restoreViewPrefs());
         });
+        final cacheAccess = widget.nativeCacheAccess;
+        final uri = widget.uri;
+        if (cacheAccess != null && uri != null) {
+          unawaited(
+            pdf_cache.cachePdfFromNetwork(
+              cacheAccess,
+              uri,
+              headers: widget.headers,
+            ),
+          );
+        }
       },
       onPageChanged: (pageNumber) {
         if (!mounted || pageNumber == null) return;
@@ -490,21 +509,22 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
         useProgressiveLoading: true,
       );
     }
-    // Web: stream the whole file once (with progress) through the same-origin
-    // proxy, then open from memory. Live Range/GetBlock leaves page 1 blank on
-    // scanned books while every page structure is fetched. Native keeps ranges.
+    // Prefer Range when the source is linearized (or native). Non-linearized
+    // web sources force a full download in the worker to avoid blank page 1.
     // Do not put Authorization headers in the widget key (token must not live
     // in the element tree / debug inspector).
     final authPresent = widget.headers?.containsKey('Authorization') ?? false;
     return PdfViewer.uri(
       widget.uri!,
-      key: ValueKey('${widget.uri}|auth=$authPresent'),
+      key: ValueKey(
+        '${widget.uri}|auth=$authPresent|range=${widget.preferRangeAccess}',
+      ),
       controller: _controller,
       params: params,
-      preferRangeAccess: true,
-      useProgressiveLoading: !kIsWeb,
+      preferRangeAccess: widget.preferRangeAccess,
+      useProgressiveLoading: true,
       headers: widget.headers,
-      // Full-file web downloads of scanned books can exceed 60s on slow links.
+      // Large scanned books over slow links can still take minutes to finish.
       timeout: const Duration(minutes: 5),
     );
   }

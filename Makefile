@@ -1,4 +1,5 @@
-.PHONY: help infra-up infra-down infra-logs dev run-dev seed openapi-export print-api-url \
+.PHONY: help infra-up infra-down infra-logs dev run-dev seed seed-covers linearize-pdfs \
+	openapi-export print-api-url \
 	reader-setup reader-run reader-run-android reader-run-macos reader-run-ios \
 	reader-run-android-emulator reader-run-ios-simulator \
 	reader-run-web reader-run-linux reader-run-windows \
@@ -15,6 +16,7 @@ help:
 	@echo "  make dev          - ./scripts/dev.sh (full compose in foreground)"
 	@echo "  make run-dev      - ./scripts/run_dev.sh (Docker API + Flutter reader)"
 	@echo "  make seed         - run Django seed_dev (when api container exists)"
+	@echo "  make linearize-pdfs - Fast Web View rewrite for published PDF revisions"
 	@echo "  make print-api-url  - show Swagger/health URLs (respects infra/.env API_PORT)"
 	@echo "  make openapi-export - save OpenAPI JSON (API must be running; use print-api-url for port)"
 	@echo "  ./scripts/verify_backend.sh - Docker smoke test (see script header for port overrides)"
@@ -66,6 +68,12 @@ seed:
 
 seed-covers:
 	docker compose -f infra/docker-compose.yml --env-file infra/.env exec api python manage.py seed_book_covers
+
+# Rewrite published PDF blobs as linearized (Fast Web View) for sub-second first page.
+# Pass EXTRA="--force" or EXTRA="--book-id <uuid>" to override defaults.
+linearize-pdfs:
+	docker compose -f infra/docker-compose.yml --env-file infra/.env exec api \
+		python manage.py linearize_pdfs --published-only $(EXTRA)
 
 print-api-url:
 	@chmod +x scripts/print_api_url.sh 2>/dev/null || true

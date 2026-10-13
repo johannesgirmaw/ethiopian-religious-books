@@ -115,6 +115,8 @@ build_macos() {
 
 build_web() {
   echo "==> Release web → ${API_URL}"
+  # Keep custom range/cache worker next to stock pdfrx WASM assets.
+  bash tool/stage_pdfium_web.sh
   flutter build web --release --pwa-strategy=none "${DART_DEFINE}"
 }
 

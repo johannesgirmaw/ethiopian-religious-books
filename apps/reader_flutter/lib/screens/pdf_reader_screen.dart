@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -203,22 +204,33 @@ class _PdfReaderBody extends ConsumerWidget {
             actionLabel: l10n.retry,
             onAction: () => ref.invalidate(pdfViewerSourceProvider(bookId)),
           ),
-          data: (source) => ContentProtectionLifecycle(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-              child: PdfDocumentReader(
-                bookId: bookId,
-                filePath: source.filePath,
-                uri: source.uri,
-                headers: source.headers,
-                loadingLabel: l10n.pdfLoadingLabel,
-                errorTitle: l10n.pdfOpenFailed,
-                onRetry: () {
-                  ref.invalidate(pdfBookAccessProvider(bookId));
-                },
+          data: (source) {
+            final access =
+                ref.watch(pdfBookAccessProvider(bookId)).valueOrNull;
+            final nativeCache = !kIsWeb &&
+                    source.uri != null &&
+                    access != null
+                ? access
+                : null;
+            return ContentProtectionLifecycle(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                child: PdfDocumentReader(
+                  bookId: bookId,
+                  filePath: source.filePath,
+                  uri: source.uri,
+                  headers: source.headers,
+                  preferRangeAccess: source.preferRangeAccess,
+                  nativeCacheAccess: nativeCache,
+                  loadingLabel: l10n.pdfLoadingLabel,
+                  errorTitle: l10n.pdfOpenFailed,
+                  onRetry: () {
+                    ref.invalidate(pdfBookAccessProvider(bookId));
+                  },
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );

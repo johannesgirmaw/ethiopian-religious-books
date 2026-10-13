@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import ipaddress
 import logging
+import os
 from collections.abc import Iterable
 from typing import Any
 from urllib.parse import urlparse
@@ -163,6 +164,36 @@ def put_bytes(object_key: str, body: bytes, content_type: str = "application/oct
         ContentType=content_type,
     )
     return hashlib.sha256(body).hexdigest()
+
+
+def put_file(
+    object_key: str,
+    file_path: str,
+    content_type: str = "application/octet-stream",
+) -> str:
+    """Upload a local file and return its SHA-256 hex digest."""
+    digest = hashlib.sha256()
+    with open(file_path, "rb") as fh:
+        while True:
+            chunk = fh.read(1024 * 1024)
+            if not chunk:
+                break
+            digest.update(chunk)
+    client = get_s3_client(for_presign=False)
+    client.upload_file(
+        file_path,
+        settings.AWS_STORAGE_BUCKET_NAME,
+        object_key,
+        ExtraArgs={"ContentType": content_type},
+    )
+    return digest.hexdigest()
+
+
+def download_object_to_path(object_key: str, dest_path: str) -> int:
+    """Download an object to [dest_path]. Returns byte size written."""
+    client = get_s3_client(for_presign=False)
+    client.download_file(settings.AWS_STORAGE_BUCKET_NAME, object_key, dest_path)
+    return os.path.getsize(dest_path)
 
 
 def presign_put(

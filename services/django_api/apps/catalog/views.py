@@ -27,6 +27,7 @@ from apps.catalog.models import (
     Tag,
 )
 from apps.catalog.permissions import can_manage_book
+from apps.catalog.pdf_books import pdf_object_looks_linearized
 from apps.catalog.search_index import ensure_revision_index_from_book_draft
 from apps.catalog.search_normalization import normalize_search_text
 from apps.catalog.serializers import BookListSerializer, GenreSerializer, TagSerializer
@@ -720,6 +721,7 @@ class BookPdfView(APIView):
         except Exception:
             pass
         filename = _pdf_filename_for_revision(rev)
+        linearized = pdf_object_looks_linearized(rev.content_object_key)
         delivery = (request.query_params.get("delivery") or "").strip().lower()
         if delivery == "proxy":
             return Response(
@@ -731,6 +733,7 @@ class BookPdfView(APIView):
                     "filename": filename,
                     "revision_id": str(rev.id),
                     "delivery": "proxy",
+                    "linearized": linearized,
                 }
             )
 
@@ -761,6 +764,7 @@ class BookPdfView(APIView):
                 "filename": filename,
                 "revision_id": str(rev.id),
                 "expires_in": _PDF_PRESIGN_TTL_SECONDS,
+                "linearized": linearized,
             }
         )
 

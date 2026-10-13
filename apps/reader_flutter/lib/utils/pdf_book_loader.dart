@@ -12,6 +12,7 @@ class PdfBookAccess {
     required this.filename,
     required this.sizeBytes,
     required this.revisionId,
+    this.linearized = false,
   });
 
   final String bookId;
@@ -20,6 +21,11 @@ class PdfBookAccess {
   final int sizeBytes;
   final String revisionId;
 
+  /// True when the stored PDF is Fast Web View (linearized). Web uses this to
+  /// enable HTTP Range first-page paint; non-linearized web falls back to a
+  /// full download to avoid blank page 1 on scanned books.
+  final bool linearized;
+
   factory PdfBookAccess.fromJson(Map<String, dynamic> j) {
     return PdfBookAccess(
       bookId: j['book_id'] as String? ?? '',
@@ -27,6 +33,7 @@ class PdfBookAccess {
       filename: j['filename'] as String? ?? 'content.pdf',
       sizeBytes: (j['size_bytes'] as num?)?.toInt() ?? 0,
       revisionId: j['revision_id'] as String? ?? '',
+      linearized: j['linearized'] == true,
     );
   }
 }
@@ -35,12 +42,21 @@ class PdfBookAccess {
 class PdfViewerSource {
   PdfViewerSource.file(this.filePath)
       : uri = null,
-        headers = null;
-  PdfViewerSource.uri(this.uri, {this.headers}) : filePath = null;
+        headers = null,
+        preferRangeAccess = true;
+  PdfViewerSource.uri(
+    this.uri, {
+    this.headers,
+    this.preferRangeAccess = true,
+  }) : filePath = null;
 
   final String? filePath;
   final Uri? uri;
   final Map<String, String>? headers;
+
+  /// When false on web, the worker does a full download (safer for scanned,
+  /// non-linearized PDFs that blank page 1 under live Range/GetBlock).
+  final bool preferRangeAccess;
 }
 
 /// A cached file is usable only when it matches the published byte length.
@@ -74,9 +90,11 @@ Future<PdfViewerSource> resolvePdfViewerSource(
     if (token.isEmpty || access.bookId.isEmpty) {
       throw StateError('PDF open requires a signed-in session on web.');
     }
+    // Range/first-page only when the blob is linearized. Otherwise full GET.
     return PdfViewerSource.uri(
       webPdfProxyUri(access.bookId, revisionId: access.revisionId),
       headers: {'Authorization': 'Bearer $token'},
+      preferRangeAccess: access.linearized,
     );
   }
 
@@ -86,5 +104,5 @@ Future<PdfViewerSource> resolvePdfViewerSource(
   if (url.isEmpty) {
     throw StateError('PDF open requires a download URL on this platform.');
   }
-  return PdfViewerSource.uri(Uri.parse(url));
+  return PdfViewerSource.uri(Uri.parse(url), preferRangeAccess: true);
 }

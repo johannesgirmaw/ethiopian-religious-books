@@ -16,10 +16,12 @@ from django.db.models import Max
 
 from apps.catalog.models import Book, BookRevision
 from apps.catalog.storage_s3 import (
+    download_object_to_path,
     get_object_range,
     head_object,
     is_object_storage_configured,
     put_bytes,
+    put_file,
 )
 
 logger = logging.getLogger(__name__)
@@ -227,6 +229,104 @@ def validate_uploaded_pdf(object_key: str) -> int:
     return size
 
 
+def pdf_object_looks_linearized(object_key: str) -> bool:
+    """Cheap Fast Web View hint: linearized PDFs declare ``/Linearized`` near the head."""
+    try:
+        head = get_object_range(object_key, 0, 2047)
+    except Exception:
+        return False
+    return b"/Linearized" in head
+
+
+def _sha256_file(path: str) -> str:
+    import hashlib
+
+    digest = hashlib.sha256()
+    with open(path, "rb") as fh:
+        while True:
+            chunk = fh.read(1024 * 1024)
+            if not chunk:
+                break
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def linearize_pdf_object(
+    object_key: str, *, force: bool = False
+) -> tuple[int, str, bool]:
+    """Rewrite [object_key] as a linearized (Fast Web View) PDF.
+
+    Returns ``(size_bytes, sha256_hex, is_linearized)``. Uses temp files so a
+    100 MB PDF does not peak at ~2× in RAM. On pikepdf failure, leaves the
+    original object untouched and returns its size/hash with ``is_linearized``
+    reflecting the original file.
+    """
+    import os
+    import tempfile
+
+    import pikepdf
+
+    with tempfile.TemporaryDirectory(prefix="fm-pdf-lin-") as tmp:
+        src = os.path.join(tmp, "in.pdf")
+        dst = os.path.join(tmp, "out.pdf")
+        try:
+            size = download_object_to_path(object_key, src)
+        except Exception as exc:
+            raise PdfBookError(
+                "OBJECTS_MISSING",
+                "PDF upload not found or incomplete.",
+            ) from exc
+
+        if size <= 0:
+            raise PdfBookError("EMPTY_PDF", "PDF file is empty.")
+        if size > MAX_PDF_BYTES:
+            raise PdfBookError(
+                "PDF_TOO_LARGE",
+                f"PDF exceeds the {MAX_PDF_BYTES // (1024 * 1024)}MB limit.",
+            )
+
+        with open(src, "rb") as fh:
+            magic = fh.read(8)
+        if not magic.startswith(PDF_MAGIC):
+            raise PdfBookError("INVALID_PDF", "File content is not a valid PDF.")
+
+        already_linearized = False
+        try:
+            with pikepdf.open(src) as pdf:
+                already_linearized = bool(pdf.is_linearized)
+                if already_linearized and not force:
+                    return size, _sha256_file(src), True
+                pdf.save(dst, linearize=True)
+        except PdfBookError:
+            raise
+        except Exception:
+            logger.warning(
+                "PDF linearization failed for %s; keeping original bytes",
+                object_key,
+                exc_info=True,
+            )
+            return size, _sha256_file(src), already_linearized
+
+        out_size = os.path.getsize(dst)
+        with open(dst, "rb") as fh:
+            out_magic = fh.read(8)
+        if not out_magic.startswith(PDF_MAGIC):
+            logger.warning(
+                "Linearized output for %s failed magic check; keeping original",
+                object_key,
+            )
+            return size, _sha256_file(src), False
+        if out_size > MAX_PDF_BYTES:
+            logger.warning(
+                "Linearized PDF for %s exceeds size limit; keeping original",
+                object_key,
+            )
+            return size, _sha256_file(src), False
+
+        digest = put_file(object_key, dst, content_type="application/pdf")
+        return out_size, digest, True
+
+
 def complete_pdf_upload(
     rev: BookRevision,
     *,
@@ -238,16 +338,25 @@ def complete_pdf_upload(
     if not rev.content_object_key:
         raise PdfBookError("PACKAGE_INCOMPLETE", "PDF revision has no content key.")
 
-    size = validate_uploaded_pdf(rev.content_object_key)
+    validate_uploaded_pdf(rev.content_object_key)
+    size, digest, linearized = linearize_pdf_object(rev.content_object_key)
     safe_name = (filename or "content.pdf").strip() or "content.pdf"
     if not safe_name.lower().endswith(".pdf"):
         safe_name = f"{safe_name}.pdf"
+
+    # Ignore client sha after rewrite — it would describe the pre-linearized blob.
+    if content_sha256 and content_sha256.strip().lower() != digest.lower():
+        logger.info(
+            "Ignoring client content_sha256 for %s after linearization rewrite",
+            rev.id,
+        )
 
     manifest = {
         "format": CONTENT_FORMAT_PDF,
         "version": 1,
         "filename": safe_name,
         "size_bytes": size,
+        "linearized": linearized,
     }
     if not rev.manifest_object_key:
         rev.manifest_object_key = f"books/{rev.book_id}/{rev.id}/manifest.json"
@@ -259,8 +368,7 @@ def complete_pdf_upload(
     )
 
     rev.total_bytes = size
-    if content_sha256:
-        rev.content_sha256 = content_sha256.strip()
+    rev.content_sha256 = digest
     rev.save(
         update_fields=[
             "manifest_object_key",
@@ -280,8 +388,50 @@ def publish_pdf_revision(book: Book, rev: BookRevision) -> None:
             "PACKAGE_INCOMPLETE",
             "Upload a PDF and complete the package before publishing.",
         )
-    # Re-validate blob still present.
-    validate_uploaded_pdf(rev.content_object_key)
+    # Ensure Fast Web View layout before readers can open the book.
+    size, digest, linearized = linearize_pdf_object(rev.content_object_key)
+    update_fields: list[str] = []
+    if rev.total_bytes != size:
+        rev.total_bytes = size
+        update_fields.append("total_bytes")
+    if rev.content_sha256 != digest:
+        rev.content_sha256 = digest
+        update_fields.append("content_sha256")
+    if update_fields:
+        rev.save(update_fields=update_fields)
+
+    # Keep manifest size / linearized flag in sync for admin + clients.
+    try:
+        from apps.catalog.storage_s3 import get_object_bytes
+
+        filename = "content.pdf"
+        try:
+            raw = get_object_bytes(rev.manifest_object_key)
+            data = json.loads(raw.decode("utf-8"))
+            if isinstance(data, dict) and data.get("filename"):
+                filename = str(data["filename"])
+        except Exception:
+            pass
+        put_bytes(
+            rev.manifest_object_key,
+            json.dumps(
+                {
+                    "format": CONTENT_FORMAT_PDF,
+                    "version": 1,
+                    "filename": filename,
+                    "size_bytes": size,
+                    "linearized": linearized,
+                },
+                ensure_ascii=False,
+            ).encode("utf-8"),
+            content_type="application/json",
+        )
+    except Exception:
+        logger.warning(
+            "Could not refresh PDF manifest for %s after linearize",
+            rev.id,
+            exc_info=True,
+        )
 
     with transaction.atomic():
         BookRevision.objects.filter(
