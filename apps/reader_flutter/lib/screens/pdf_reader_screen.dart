@@ -252,8 +252,7 @@ class _PdfReaderBody extends ConsumerWidget {
                 ref.invalidate(pdfViewerSourceProvider(bookId));
               },
             );
-            // Cap extreme wide desktop/web canvases so pages stay readable.
-            final wide = useWebShell(context) || useDesktopShell(context);
+            // Use the full content pane so Max (fit width) can fill side space.
             final padded = Padding(
               padding: EdgeInsets.fromLTRB(
                 dense ? 4 : 8,
@@ -261,22 +260,7 @@ class _PdfReaderBody extends ConsumerWidget {
                 dense ? 4 : 8,
                 dense ? 4 : 8,
               ),
-              child: wide
-                  ? LayoutBuilder(
-                      builder: (context, constraints) {
-                        final width = constraints.maxWidth > 1400
-                            ? 1400.0
-                            : constraints.maxWidth;
-                        return Center(
-                          child: SizedBox(
-                            width: width,
-                            height: constraints.maxHeight,
-                            child: reader,
-                          ),
-                        );
-                      },
-                    )
-                  : reader,
+              child: reader,
             );
             return ContentProtectionLifecycle(child: padded);
           },

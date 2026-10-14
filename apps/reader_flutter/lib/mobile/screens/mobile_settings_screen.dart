@@ -78,17 +78,6 @@ class MobileSettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: AppLayout.itemGap),
-          _SettingsActionRow(
-            icon: Icons.download_outlined,
-            title: l10n.homeQuickDownloads,
-            subtitle: offlineCount.when(
-              data: (count) => l10n.offlineBooksSaved(count),
-              loading: () => l10n.checkingCache,
-              error: (_, __) => l10n.cacheUnavailable,
-            ),
-            onTap: () => context.go('/downloads'),
-          ),
           const SizedBox(height: 10),
           catalog.when(
             data: (page) {
@@ -130,6 +119,22 @@ class MobileSettingsScreen extends ConsumerWidget {
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: AppLayout.sectionGap),
+          AppSectionAccent(label: l10n.homeQuickDownloads.toUpperCase()),
+          const SizedBox(height: AppLayout.itemGap),
+          _SettingsActionRow(
+            icon: Icons.download_outlined,
+            title: l10n.homeQuickDownloads,
+            subtitle: [
+              l10n.homeQuickDownloadsSubtitle,
+              offlineCount.when(
+                data: (count) => l10n.offlineBooksSaved(count),
+                loading: () => l10n.checkingCache,
+                error: (_, __) => l10n.cacheUnavailable,
+              ),
+            ].join('\n'),
+            onTap: () => context.go('/downloads'),
           ),
           const SizedBox(height: AppLayout.sectionGap),
           AppSectionAccent(label: l10n.languagePreferenceTitle.toUpperCase()),

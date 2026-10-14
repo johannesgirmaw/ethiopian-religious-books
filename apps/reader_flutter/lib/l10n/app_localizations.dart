@@ -623,13 +623,13 @@ abstract class AppLocalizations {
   /// No description provided for @homeQuickDownloads.
   ///
   /// In en, this message translates to:
-  /// **'Downloads'**
+  /// **'Saved offline'**
   String get homeQuickDownloads;
 
   /// No description provided for @homeQuickDownloadsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Books saved for offline reading'**
+  /// **'Open books you saved to read without an internet connection.'**
   String get homeQuickDownloadsSubtitle;
 
   /// No description provided for @downloadsPageTitle.
@@ -5319,7 +5319,7 @@ abstract class AppLocalizations {
   /// No description provided for @adminAuthorAppsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Author applications'**
+  /// **'Author'**
   String get adminAuthorAppsTitle;
 
   /// No description provided for @adminAuthorAppsSubtitle.

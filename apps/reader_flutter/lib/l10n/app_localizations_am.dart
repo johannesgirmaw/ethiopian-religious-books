@@ -290,10 +290,11 @@ class AppLocalizationsAm extends AppLocalizations {
   String get homeQuickBrowseSubtitle => 'በርዕስ ወይም በምድብ ይፈልጉ';
 
   @override
-  String get homeQuickDownloads => 'የተቀመጡ';
+  String get homeQuickDownloads => 'ያለ ኢንተርኔት የተቀመጡ';
 
   @override
-  String get homeQuickDownloadsSubtitle => 'ያለ ኢንተርኔት የሚነበቡ መጻሕፍት';
+  String get homeQuickDownloadsSubtitle =>
+      'ያለ ኢንተርኔት ለማንበብ ያስቀመጧቸውን መጻሕፍት ይክፈቱ።';
 
   @override
   String get downloadsPageTitle => 'የተቀመጡ መጻሕፍት';
@@ -2809,7 +2810,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authorFullNameRequired => 'እባክዎ ሙሉ ስምዎን ያስገቡ';
 
   @override
-  String get adminAuthorAppsTitle => 'የደራሲ ጥያቄዎች';
+  String get adminAuthorAppsTitle => 'ደራሲ';
 
   @override
   String get adminAuthorAppsSubtitle => 'ደራሲ ለመሆን የቀረቡ ጥያቄዎችን ይመልከቱ';

@@ -106,6 +106,27 @@ class DesktopSettingsScreenBody extends ConsumerWidget {
         ),
         const SizedBox(height: 20),
         DesktopSection(
+          title: l10n.homeQuickDownloads.toUpperCase(),
+          child: DesktopPanel(
+            child: _SettingsRow(
+              title: l10n.homeQuickDownloads,
+              subtitle: [
+                l10n.homeQuickDownloadsSubtitle,
+                offlineCount.when(
+                  data: (count) => l10n.offlineBooksSaved(count),
+                  loading: () => l10n.checkingCache,
+                  error: (_, __) => l10n.cacheUnavailable,
+                ),
+              ].join('\n'),
+              trailing: TextButton(
+                onPressed: () => context.go('/downloads'),
+                child: Text(l10n.openLibrary),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        DesktopSection(
           title: l10n.languagePreferenceTitle.toUpperCase(),
           child: const LanguagePreferenceCard(),
         ),
@@ -143,19 +164,6 @@ class DesktopSettingsScreenBody extends ConsumerWidget {
                   trailing: TextButton(
                     onPressed: () => _confirmClearCache(context, ref, l10n),
                     child: Text(l10n.clear),
-                  ),
-                ),
-                const Divider(height: 20),
-                _SettingsRow(
-                  title: l10n.homeQuickDownloads,
-                  subtitle: offlineCount.when(
-                    data: (count) => l10n.offlineBooksSaved(count),
-                    loading: () => l10n.checkingCache,
-                    error: (_, __) => l10n.cacheUnavailable,
-                  ),
-                  trailing: TextButton(
-                    onPressed: () => context.go('/downloads'),
-                    child: Text(l10n.openLibrary),
                   ),
                 ),
               ],

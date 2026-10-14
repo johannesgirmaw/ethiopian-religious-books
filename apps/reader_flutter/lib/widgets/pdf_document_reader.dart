@@ -92,7 +92,6 @@ class PdfDocumentReader extends ConsumerStatefulWidget {
 class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
   static const _minZoom = 0.25;
   static const _maxZoom = 8.0;
-  static const _autoHideAfter = Duration(seconds: 3);
   static const _progressDebounce = Duration(seconds: 1);
 
   late final PdfViewerController _controller;
@@ -104,12 +103,13 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
   VoidCallback? _removeSearchListener;
   Timer? _persistTimer;
   Timer? _progressTimer;
-  Timer? _autoHideTimer;
 
   var _ready = false;
   var _showSearch = false;
+  /// Stays visible until the user hides it; never auto-hides.
   var _chromeVisible = true;
   var _restoringPrefs = false;
+  var _applyingFit = false;
   var _searchHadNoTextLayer = false;
   int _pageNumber = 1;
   int _pageCount = 1;
@@ -159,7 +159,6 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
   void dispose() {
     _persistTimer?.cancel();
     _progressTimer?.cancel();
-    _autoHideTimer?.cancel();
     unawaited(_persistViewPrefs(immediate: true));
     unawaited(_flushReadingProgress(force: true));
     _controller.removeListener(_onControllerChanged);
@@ -225,7 +224,11 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
       _pageNumber = page;
       _pageCount = count;
       _zoom = zoom;
-      if (!_restoringPrefs && zoomChanged && _fitMode != _PdfFitMode.custom) {
+      // Pinch/scroll zoom clears Max/Min; programmatic fit must keep the mode.
+      if (!_restoringPrefs &&
+          !_applyingFit &&
+          zoomChanged &&
+          _fitMode != _PdfFitMode.custom) {
         _fitMode = _PdfFitMode.custom;
       }
     });
@@ -236,7 +239,6 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
       _schedulePersistViewPrefs();
       if (pageChanged) _scheduleReadingProgress();
     }
-    _bumpAutoHide();
   }
 
   void _schedulePersistViewPrefs() {
@@ -424,7 +426,6 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
       _showSearch = true;
       _chromeVisible = true;
     });
-    _bumpAutoHide();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _searchFocus.requestFocus();
     });
@@ -449,7 +450,6 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
     if (!_controller.isReady) return;
     final target = page.clamp(1, _controller.pageCount);
     await _controller.goToPage(pageNumber: target);
-    _bumpAutoHide();
   }
 
   void _submitPageField() {
@@ -484,8 +484,15 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
   Future<void> _applyFitWidth() async {
     if (!_controller.isReady) return;
     final page = _controller.pageNumber ?? 1;
+    // Fit the current page to the full viewer width and lock horizontally.
     final matrix = _controller.calcMatrixFitWidthForPage(pageNumber: page);
-    if (matrix != null) await _controller.goTo(matrix);
+    if (matrix == null) return;
+    _applyingFit = true;
+    try {
+      await _controller.goTo(matrix);
+    } finally {
+      _applyingFit = false;
+    }
   }
 
   Future<void> _applyFitPage() async {
@@ -495,36 +502,41 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
     if (zoom == null) return;
     final pageRect = _controller.layout.pageLayouts[page - 1];
     final matrix = _controller.calcMatrixFor(pageRect.center, zoom: zoom);
-    await _controller.goTo(matrix);
+    _applyingFit = true;
+    try {
+      await _controller.goTo(matrix);
+    } finally {
+      _applyingFit = false;
+    }
   }
 
   Future<void> _fitWidth() async {
     setState(() => _fitMode = _PdfFitMode.width);
+    // Wait a frame so the viewer uses the full pane after layout.
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted) return;
     await _applyFitWidth();
     _schedulePersistViewPrefs();
   }
 
   Future<void> _fitPage() async {
     setState(() => _fitMode = _PdfFitMode.page);
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted) return;
     await _applyFitPage();
     _schedulePersistViewPrefs();
   }
 
-  void _toggleChrome() {
-    setState(() => _chromeVisible = !_chromeVisible);
-    if (_chromeVisible) {
-      _bumpAutoHide();
-    } else {
-      _autoHideTimer?.cancel();
-    }
+  void _showChrome() {
+    if (_chromeVisible) return;
+    setState(() => _chromeVisible = true);
   }
 
-  void _bumpAutoHide() {
-    _autoHideTimer?.cancel();
-    if (!_chromeVisible || _showSearch) return;
-    _autoHideTimer = Timer(_autoHideAfter, () {
-      if (!mounted || _showSearch) return;
-      setState(() => _chromeVisible = false);
+  void _hideChrome() {
+    if (!_chromeVisible) return;
+    setState(() {
+      _chromeVisible = false;
+      _showSearch = false;
     });
   }
 
@@ -539,7 +551,6 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
     if (bookId != null) {
       await ReaderPrefsStorage.writePdfTheme(bookId, next);
     }
-    _bumpAutoHide();
   }
 
   Future<void> _togglePageMode() async {
@@ -558,7 +569,6 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
         await _fitWidth();
       }
     }
-    _bumpAutoHide();
   }
 
   Future<void> _toggleBookmark() async {
@@ -770,7 +780,11 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.keyH) {
-      _toggleChrome();
+      if (_chromeVisible) {
+        _hideChrome();
+      } else {
+        _showChrome();
+      }
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
@@ -903,7 +917,6 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
             ),
           );
         }
-        _bumpAutoHide();
       },
       onPageChanged: (pageNumber) {
         if (!mounted || pageNumber == null) return;
@@ -911,12 +924,9 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
         if (_pageField.text != '$pageNumber') {
           _pageField.text = '$pageNumber';
         }
+        // Do not re-apply Max/Min on every page — that shifts pages left/right.
+        // Zoom stays locked until the user clicks Max/Min or pinches.
         if (!_restoringPrefs) {
-          if (_fitMode == _PdfFitMode.width) {
-            unawaited(_applyFitWidth());
-          } else if (_fitMode == _PdfFitMode.page) {
-            unawaited(_applyFitPage());
-          }
           _schedulePersistViewPrefs();
           _scheduleReadingProgress();
         }
@@ -926,7 +936,6 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
           behavior: HitTestBehavior.translucent,
           onTapUp: (details) {
             handleLinkTap(details.localPosition);
-            _toggleChrome();
           },
           onDoubleTap: () {
             if (_fitMode == _PdfFitMode.width) {
@@ -937,64 +946,31 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
           },
           child: const SizedBox.expand(),
         ),
-        if (_chromeVisible) ...[
-          PdfViewerScrollThumb(
-            controller: _controller,
-            thumbSize: const Size(8, 44),
-            thumbBuilder: (context, thumbSize, pageNumber, controller) {
-              return Container(
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.85),
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                ),
-              );
-            },
-          ),
-          PdfViewerScrollThumb(
-            controller: _controller,
-            orientation: ScrollbarOrientation.bottom,
-            thumbSize: const Size(44, 8),
-            thumbBuilder: (context, thumbSize, pageNumber, controller) {
-              return Container(
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.85),
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                ),
-              );
-            },
-          ),
-        ],
-        if (!_chromeVisible && _ready)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 12,
-            child: Center(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: theme.toolbarBg.withValues(alpha: 0.88),
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                  border: Border.all(color: theme.border),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  child: Text(
-                    AppLocalizations.of(
-                      context,
-                    ).pdfPageOf(_pageNumber, _pageCount),
-                    style: TextStyle(
-                      color: theme.toolbarFg,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
+        PdfViewerScrollThumb(
+          controller: _controller,
+          thumbSize: const Size(8, 44),
+          thumbBuilder: (context, thumbSize, pageNumber, controller) {
+            return Container(
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
-            ),
-          ),
+            );
+          },
+        ),
+        PdfViewerScrollThumb(
+          controller: _controller,
+          orientation: ScrollbarOrientation.bottom,
+          thumbSize: const Size(44, 8),
+          thumbBuilder: (context, thumbSize, pageNumber, controller) {
+            return Container(
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+              ),
+            );
+          },
+        ),
       ],
     );
 
@@ -1051,13 +1027,6 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
     return l10n.pdfDownloadProgress(percent);
   }
 
-  /// Wide web and native desktop float the toolbar over the page so the
-  /// sidebar shells still feel immersive. Mobile and compact web keep a
-  /// stacked top bar under the AppBar.
-  bool _floatChrome(BuildContext context) {
-    return useDesktopShell(context) || useWebShell(context);
-  }
-
   Widget _viewerPane(PdfReaderTheme theme) {
     return CopyProtectedContent(
       child: DecoratedBox(
@@ -1102,8 +1071,6 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
           zoomInTooltip: l10n.pdfZoomIn,
           fitWidthTooltip: l10n.pdfFitWidth,
           fitPageTooltip: l10n.pdfFitPage,
-          fitWidthLabel: l10n.pdfFitWidthShort,
-          fitPageLabel: l10n.pdfFitPageShort,
           themeTooltip: l10n.pdfThemeTooltip,
           pageModeTooltip: _pageMode == 'single'
               ? l10n.pdfPageModeScroll
@@ -1132,7 +1099,7 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
           onBookmarks: _openBookmarksSheet,
           onToggleBookmark: widget.bookId == null ? null : _toggleBookmark,
           onShare: _shareCite,
-          onHide: _toggleChrome,
+          onHide: _hideChrome,
         ),
         if (_showSearch) ...[
           const SizedBox(height: AppSpace.xxs),
@@ -1158,47 +1125,79 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
     );
   }
 
+  Widget _hiddenChromeChip(AppLocalizations l10n, PdfReaderTheme theme) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Material(
+        color: theme.toolbarBg,
+        elevation: 2,
+        shadowColor: Colors.black26,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: InkWell(
+          onTap: _showChrome,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.visibility_rounded,
+                  size: 18,
+                  color: theme.toolbarFg,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.pdfShowControls,
+                  style: TextStyle(
+                    color: theme.toolbarFg,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+                if (_ready) ...[
+                  const SizedBox(width: 10),
+                  Text(
+                    l10n.pdfPageOf(_pageNumber, _pageCount),
+                    style: TextStyle(
+                      color: theme.toolbarMuted,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = _theme;
     final dense = useMobileShell(context);
-    final floatChrome = _floatChrome(context);
-    final chrome = _chromeVisible
-        ? Material(
-            color: Colors.transparent,
-            elevation: floatChrome ? 8 : 0,
-            shadowColor: Colors.black26,
-            child: _chromePanel(l10n, theme, dense),
-          )
-        : null;
 
-    final body = floatChrome
-        ? Stack(
-            fit: StackFit.expand,
-            children: [
-              Positioned.fill(child: _viewerPane(theme)),
-              if (chrome != null)
-                Positioned(
-                  left: dense ? 4 : 12,
-                  right: dense ? 4 : 12,
-                  bottom: dense ? 8 : 16,
-                  child: chrome,
+    final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AnimatedSize(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          alignment: Alignment.topCenter,
+          child: _chromeVisible
+              ? _chromePanel(l10n, theme, dense)
+              : Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpace.xs),
+                  child: _hiddenChromeChip(l10n, theme),
                 ),
-            ],
-          )
-        : Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              AnimatedSize(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOut,
-                child: chrome ?? const SizedBox.shrink(),
-              ),
-              if (_chromeVisible) const SizedBox(height: AppSpace.xs),
-              Expanded(child: _viewerPane(theme)),
-            ],
-          );
+        ),
+        if (_chromeVisible) const SizedBox(height: AppSpace.xs),
+        Expanded(child: _viewerPane(theme)),
+      ],
+    );
 
     return Focus(
       focusNode: _keysFocus,
@@ -1388,8 +1387,6 @@ class _PdfToolbar extends StatelessWidget {
     required this.zoomInTooltip,
     required this.fitWidthTooltip,
     required this.fitPageTooltip,
-    required this.fitWidthLabel,
-    required this.fitPageLabel,
     required this.themeTooltip,
     required this.pageModeTooltip,
     required this.outlineTooltip,
@@ -1439,8 +1436,6 @@ class _PdfToolbar extends StatelessWidget {
   final String zoomInTooltip;
   final String fitWidthTooltip;
   final String fitPageTooltip;
-  final String fitWidthLabel;
-  final String fitPageLabel;
   final String themeTooltip;
   final String pageModeTooltip;
   final String outlineTooltip;
@@ -1549,17 +1544,17 @@ class _PdfToolbar extends StatelessWidget {
         final fitControls = _ToolbarGroup(
           theme: theme,
           children: [
-            _FitToolButton(
+            _ToolbarIcon(
               theme: theme,
               tooltip: fitWidthTooltip,
-              label: fitWidthLabel,
+              icon: Icons.width_wide_rounded,
               selected: fitWidthActive,
               onPressed: enabled ? onFitWidth : null,
             ),
-            _FitToolButton(
+            _ToolbarIcon(
               theme: theme,
               tooltip: fitPageTooltip,
-              label: fitPageLabel,
+              icon: Icons.fit_screen_rounded,
               selected: fitPageActive,
               onPressed: enabled ? onFitPage : null,
             ),
@@ -1629,7 +1624,7 @@ class _PdfToolbar extends StatelessWidget {
             _ToolbarIcon(
               theme: theme,
               tooltip: hideTooltip,
-              icon: Icons.fullscreen_rounded,
+              icon: Icons.visibility_off_rounded,
               onPressed: onHide,
             ),
           ],
@@ -1756,57 +1751,6 @@ class _ToolbarIcon extends StatelessWidget {
             )
           : null,
       icon: Icon(icon, color: color),
-    );
-  }
-}
-
-class _FitToolButton extends StatelessWidget {
-  const _FitToolButton({
-    required this.theme,
-    required this.label,
-    required this.tooltip,
-    required this.selected,
-    this.onPressed,
-  });
-
-  final PdfReaderTheme theme;
-  final String label;
-  final String tooltip;
-  final bool selected;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final active = onPressed != null;
-    final color = !active
-        ? theme.toolbarMuted.withValues(alpha: 0.5)
-        : selected
-        ? AppColors.primary
-        : theme.toolbarFg;
-    return Tooltip(
-      message: tooltip,
-      child: TextButton(
-        onPressed: onPressed,
-        style: TextButton.styleFrom(
-          foregroundColor: color,
-          backgroundColor: selected
-              ? AppColors.primary.withValues(alpha: 0.12)
-              : Colors.transparent,
-          minimumSize: const Size(44, 36),
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          visualDensity: VisualDensity.compact,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.2,
-            color: color,
-          ),
-        ),
-      ),
     );
   }
 }

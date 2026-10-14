@@ -294,10 +294,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeQuickBrowseSubtitle => 'Search and filter the full catalog';
 
   @override
-  String get homeQuickDownloads => 'Downloads';
+  String get homeQuickDownloads => 'Saved offline';
 
   @override
-  String get homeQuickDownloadsSubtitle => 'Books saved for offline reading';
+  String get homeQuickDownloadsSubtitle =>
+      'Open books you saved to read without an internet connection.';
 
   @override
   String get downloadsPageTitle => 'Downloads';
@@ -2868,7 +2869,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authorFullNameRequired => 'Please enter your full name';
 
   @override
-  String get adminAuthorAppsTitle => 'Author applications';
+  String get adminAuthorAppsTitle => 'Author';
 
   @override
   String get adminAuthorAppsSubtitle => 'Review requests to become an author';
