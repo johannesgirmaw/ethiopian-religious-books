@@ -10,7 +10,7 @@ App entry, DI, routing, config, l10n, security/storage for all six targets. Per-
 | [`lib/app.dart`](lib/app.dart) | Root `ConsumerWidget`: `MaterialApp.router` on `goRouterProvider` + `appLocaleProvider`; theme = `AppTheme.light` (light-only). |
 | [`lib/config/app_config.dart`](lib/config/app_config.dart) | API base URL resolver. `_productionApiBaseUrl` = prod; debug picks per-platform localhost; overrides normalized to a trailing slash. |
 | `lib/config/resolve_api_host_{io,stub}.dart` | Conditional-import LAN-IPv4 discovery; macOS debug only. |
-| [`lib/security/book_crypto.dart`](lib/security/book_crypto.dart) | AES-256-GCM seal/open. Device master key (KEK) in secure store key `vault_master_key_v1`. Legacy blob = nonce(12)‖ct‖mac(16); v1 = `0x01`‖nonce‖ct‖mac with GCM AAD. |
+| [`lib/security/book_crypto.dart`](lib/security/book_crypto.dart) | AES-256-GCM seal/open. Device master key (KEK) in secure store key `vault_master_key_v1`. Legacy blob = nonce(12)‖ct‖mac(16); v1 = `FM\\x01`‖nonce‖ct‖mac with GCM AAD. |
 | [`lib/security/secure_storage_factory.dart`](lib/security/secure_storage_factory.dart) | Shared FlutterSecureStorage options (Android EncryptedSharedPreferences, iOS first_unlock_this_device). |
 | [`lib/security/device_identity.dart`](lib/security/device_identity.dart) | Per-install 128-bit device id (`device_id_v1`), `ensureRegistered(dio)`. |
 | [`lib/security/secure_key_value.dart`](lib/security/secure_key_value.dart) | Secure KV; macOS DEBUG falls back to SharedPreferences to dodge keychain -34018 hang. |

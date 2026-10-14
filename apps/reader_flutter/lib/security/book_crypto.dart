@@ -16,9 +16,9 @@ import 'secure_key_value.dart';
 /// tampering makes [open] throw rather than return forged plaintext.
 ///
 /// When [aadContext] is provided, blobs are written in format v1
-/// (`0x01 || nonce || ciphertext || mac`) with that UTF-8 string as GCM AAD so
-/// ciphertext cannot be swapped across books/chunks. Legacy blobs (no version
-/// byte) still open without AAD.
+/// (`FM\\x01 || nonce || ciphertext || mac`) with that UTF-8 string as GCM AAD
+/// so ciphertext cannot be swapped across books/chunks. Legacy blobs (no
+/// version magic) still open without AAD.
 ///
 /// Honest limit: on a rooted/jailbroken device the legitimate logged-in user can
 /// still dump plaintext from memory while a page renders — no client-side scheme
@@ -29,14 +29,20 @@ class BookCrypto {
   static const _masterKeyName = 'vault_master_key_v1';
   static const _nonceLen = 12; // AES-GCM standard 96-bit nonce
   static const _macLen = 16; // 128-bit GCM tag
-  static const _formatV1 = 0x01;
+
+  /// Unambiguous v1 header (`FM` + version). Avoids colliding with a random
+  /// GCM nonce byte (a single `0x01` prefix is ~1/256 of legacy blobs).
+  static const _formatV1Magic = <int>[0x46, 0x4d, 0x01];
+
+  /// Brief transitional single-byte marker from an earlier AAD rollout.
+  static const _formatV1LegacyMarker = 0x01;
 
   /// Bytes added by [seal] without AAD: nonce plus GCM tag.
-  /// Chunked PDF storage uses this for legacy-sized pieces; v1 adds 1 byte.
+  /// Chunked PDF storage uses this for legacy-sized pieces; v1 adds magic.
   static const sealedOverhead = _nonceLen + _macLen;
 
-  /// Extra byte when sealing with [aadContext] (format v1).
-  static const sealedOverheadV1 = 1 + sealedOverhead;
+  /// Extra bytes when sealing with [aadContext] (format v1 magic).
+  static const sealedOverheadV1 = 3 + sealedOverhead;
 
   static final AesGcm _algo = AesGcm.with256bits();
   static SecretKey? _cached;
@@ -76,7 +82,7 @@ class BookCrypto {
   }
 
   /// Seals [plain] into `nonce(12) || ciphertext || mac(16)`, or when
-  /// [aadContext] is set: `0x01 || nonce || ciphertext || mac` with AAD.
+  /// [aadContext] is set: `FM\\x01 || nonce || ciphertext || mac` with AAD.
   static Future<Uint8List> seal(List<int> plain, {String? aadContext}) async {
     final key = await _masterKey();
     final aad = _aadBytes(aadContext);
@@ -92,22 +98,43 @@ class BookCrypto {
       ...box.mac.bytes,
     ];
     if (aad == null) return Uint8List.fromList(body);
-    return Uint8List.fromList([_formatV1, ...body]);
+    return Uint8List.fromList([..._formatV1Magic, ...body]);
+  }
+
+  static bool _hasMagic(Uint8List blob, List<int> magic) {
+    if (blob.length < magic.length) return false;
+    for (var i = 0; i < magic.length; i++) {
+      if (blob[i] != magic[i]) return false;
+    }
+    return true;
   }
 
   /// Opens a blob produced by [seal]. Throws on tamper / wrong device key /
-  /// wrong AAD. Legacy blobs (no v1 prefix) open without AAD even if
+  /// wrong AAD. Legacy blobs (no version magic) open without AAD even if
   /// [aadContext] is passed, so upgrades stay readable.
+  ///
+  /// Also accepts the brief single-byte `0x01` marker; a legacy nonce can
+  /// start with that value (~1/256), so that path falls back to legacy on
+  /// decrypt failure.
   static Future<Uint8List> open(Uint8List blob, {String? aadContext}) async {
     final key = await _masterKey();
-    if (blob.isNotEmpty && blob[0] == _formatV1) {
-      final aad = _aadBytes(aadContext);
-      if (aad == null) {
-        throw const FormatException('vault v1 blob requires aadContext');
-      }
-      return _openBody(key, blob.sublist(1), aad: aad);
+    final aad = _aadBytes(aadContext);
+    if (aad != null && _hasMagic(blob, _formatV1Magic)) {
+      return _openBody(
+        key,
+        blob.sublist(_formatV1Magic.length),
+        aad: aad,
+      );
     }
-    // Legacy layout — ignore aadContext so old libraries still open.
+    if (aad != null &&
+        blob.isNotEmpty &&
+        blob[0] == _formatV1LegacyMarker) {
+      try {
+        return await _openBody(key, blob.sublist(1), aad: aad);
+      } catch (_) {
+        // Likely a legacy blob whose random nonce starts with 0x01.
+      }
+    }
     return _openBody(key, blob, aad: null);
   }
 

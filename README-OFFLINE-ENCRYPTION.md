@@ -165,10 +165,10 @@ Override in debug with `--dart-define=USE_MACOS_KEYCHAIN=true`.
   iOS Keychain `first_unlock_this_device`). **Never written into a vault file.**
   Corrupt or wrong-length key material is discarded and rotated.
 - **Legacy** blob format: `nonce(12) ‖ ciphertext ‖ mac(16)`.
-- **Format v1** (when `aadContext` is set): `0x01 ‖ nonce ‖ ciphertext ‖ mac`, with
-  the UTF-8 context string as GCM **AAD** so ciphertext cannot be swapped across
-  books/chunks (`book:{id}:content`, `pdf:{id}:{generation}:{index}`, …). Legacy
-  blobs still open without AAD.
+- **Format v1** (when `aadContext` is set): `FM\\x01 ‖ nonce ‖ ciphertext ‖ mac`,
+  with the UTF-8 context string as GCM **AAD** so ciphertext cannot be swapped
+  across books/chunks (`book:{id}:content`, `pdf:{id}:{generation}:{index}`, …).
+  Legacy blobs (and the brief single-byte `0x01` marker) still open.
 - API: `seal` / `open`, `sealJson` / `openJson`, `wipeMasterKey()`.
 - Native acceleration via the `cryptography_flutter` plugin (auto-registered).
 

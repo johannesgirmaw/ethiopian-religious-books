@@ -99,7 +99,7 @@ void main() {
         utf8.encode('bound'),
         aadContext: 'pdf:book:gen:0',
       );
-      expect(blob.first, 0x01);
+      expect(blob.sublist(0, 3), <int>[0x46, 0x4d, 0x01]); // FM\x01
       final plain = await BookCrypto.open(
         blob,
         aadContext: 'pdf:book:gen:0',
@@ -113,12 +113,32 @@ void main() {
 
     test('legacy blobs without AAD still open', () async {
       final legacy = await BookCrypto.seal(utf8.encode('legacy'));
-      expect(legacy.first, isNot(0x01));
       final plain = await BookCrypto.open(
         legacy,
         aadContext: 'ignored-for-legacy',
       );
       expect(utf8.decode(plain), 'legacy');
+    });
+
+    test('legacy blob whose nonce starts with 0x01 still opens', () async {
+      // Format v1 also starts with 0x01; open must not mis-parse a legacy nonce.
+      late Uint8List legacy;
+      for (var i = 0; i < 512; i++) {
+        final candidate = await BookCrypto.seal(utf8.encode('legacy-$i'));
+        if (candidate.isNotEmpty && candidate.first == 0x01) {
+          legacy = candidate;
+          break;
+        }
+        if (i == 511) {
+          // Extremely unlikely; still assert open works for a normal legacy blob.
+          legacy = candidate;
+        }
+      }
+      final plain = await BookCrypto.open(
+        legacy,
+        aadContext: 'pdf:book:gen:0',
+      );
+      expect(utf8.decode(plain), startsWith('legacy-'));
     });
   });
 

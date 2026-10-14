@@ -430,17 +430,22 @@ final pdfViewerSourceProvider = FutureProvider.autoDispose
         if (sameRevision) {
           // WASM pdfrx implements openData, not openCustom. Native keeps
           // range reads so a large PDF is not decrypted all at once.
-          if (kIsWeb) {
-            return PdfViewerSource.data(
-              await local.readAll(),
+          try {
+            if (kIsWeb) {
+              return PdfViewerSource.data(
+                await local.readAll(),
+                sourceName: 'vault:$id:${local.revisionId}',
+              );
+            }
+            return PdfViewerSource.range(
+              fileSize: local.plainSize,
+              read: local.read,
               sourceName: 'vault:$id:${local.revisionId}',
             );
+          } catch (_) {
+            // Corrupt / undecryptable vault — prefer live download when online.
+            if (access == null) rethrow;
           }
-          return PdfViewerSource.range(
-            fileSize: local.plainSize,
-            read: local.read,
-            sourceName: 'vault:$id:${local.revisionId}',
-          );
         }
       }
 

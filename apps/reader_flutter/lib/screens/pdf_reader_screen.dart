@@ -223,6 +223,7 @@ class _PdfReaderBody extends ConsumerWidget {
                   errorTitle: l10n.pdfOpenFailed,
                   onRetry: () {
                     ref.invalidate(pdfBookAccessProvider(bookId));
+                    ref.invalidate(pdfViewerSourceProvider(bookId));
                   },
                 ),
               ),
