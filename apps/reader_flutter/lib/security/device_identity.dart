@@ -54,10 +54,19 @@ class DeviceIdentity {
     }
   }
 
+  /// Clear in-memory registration so the next account on this install
+  /// re-posts ``devices/register`` (server rows are per-user).
+  static void clearSessionRegistration() {
+    _registered = false;
+  }
+
   /// Best-effort registration with the backend (idempotent server-side). Safe to
   /// call repeatedly; silently no-ops when offline and retries on the next call.
-  static Future<void> ensureRegistered(Dio dio) async {
-    if (_registered) return;
+  ///
+  /// When [force] is true, skips the in-memory short-circuit (used after a
+  /// ``DEVICE_NOT_REGISTERED`` response from license issue).
+  static Future<void> ensureRegistered(Dio dio, {bool force = false}) async {
+    if (!force && _registered) return;
     try {
       final id = await deviceId();
       await dio.post<Map<String, dynamic>>(
@@ -66,6 +75,7 @@ class DeviceIdentity {
       );
       _registered = true;
     } catch (_) {
+      _registered = false;
       // Offline or transient; registration is retried on the next attempt.
     }
   }

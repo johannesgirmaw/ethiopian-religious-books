@@ -40,7 +40,14 @@ def lease_days() -> int:
 
 
 def issue_license(*, user_id, book_id, revision_id, device_id: str) -> dict:
-    """Return ``{token, expires_at, lease_days}`` for an offline lease."""
+    """Return ``{token, expires_at, lease_days}`` for an offline lease.
+
+    ``device_id`` must be non-empty — callers (views) also require a registered
+    :class:`~apps.accounts.models.UserDevice` row; this is defense in depth.
+    """
+    normalized_device = (device_id or "").strip()
+    if not normalized_device:
+        raise ValueError("device_id is required to issue an offline license")
     now = datetime.datetime.now(datetime.timezone.utc)
     exp = now + datetime.timedelta(days=lease_days())
     claims = {
@@ -48,7 +55,7 @@ def issue_license(*, user_id, book_id, revision_id, device_id: str) -> dict:
         "sub": str(user_id),
         "book": str(book_id),
         "rev": str(revision_id),
-        "device": device_id or "",
+        "device": normalized_device,
         "iat": int(now.timestamp()),
         "nbf": int(now.timestamp()),
         "exp": int(exp.timestamp()),
@@ -67,9 +74,16 @@ def verify_license(token: str) -> dict | None:
     if not token:
         return None
     try:
-        claims = jwt.decode(token, _signing_key(), algorithms=["HS256"])
+        claims = jwt.decode(
+            token,
+            _signing_key(),
+            algorithms=["HS256"],
+            options={"require": ["exp", "iat", "nbf", "sub", "jti"]},
+        )
     except jwt.PyJWTError:
         return None
     if claims.get("typ") != LICENSE_TYPE:
+        return None
+    if not (claims.get("book") and claims.get("rev") and claims.get("device")):
         return None
     return claims

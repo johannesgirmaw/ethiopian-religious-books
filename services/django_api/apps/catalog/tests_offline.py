@@ -50,6 +50,10 @@ class OfflineLicenseTests(TestCase):
         self.user = User.objects.create_user(email="r@example.com", password="pw123456")
         self.client = APIClient()
         self.client.force_authenticate(self.user)
+        self.client.post(
+            "/v1/devices/register",
+            {"device_id": "dev1", "platform": "android"},
+        )
 
     def test_free_book_issues_license(self):
         book, rev = _published_book(price="0.00")
@@ -75,10 +79,26 @@ class OfflineLicenseTests(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertTrue(res.data["license"]["token"])
 
+    def test_license_requires_registered_device(self):
+        book, _ = _published_book(price="0.00")
+        res = self.client.post(f"/v1/books/{book.id}/license", {"device_id": "unknown"})
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.data["error"]["code"], "DEVICE_NOT_REGISTERED")
+
+    def test_license_requires_device_id(self):
+        book, _ = _published_book(price="0.00")
+        res = self.client.post(f"/v1/books/{book.id}/license", {})
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.data["error"]["code"], "DEVICE_ID_REQUIRED")
+
     def test_license_records_offline_download(self):
         from apps.catalog.models import OfflineDownload
 
         book, _ = _published_book(price="0.00")
+        self.client.post(
+            "/v1/devices/register",
+            {"device_id": "dev9", "platform": "android"},
+        )
         self.client.post(f"/v1/books/{book.id}/license", {"device_id": "dev9"})
         row = OfflineDownload.objects.get(user=self.user, book=book, device_id="dev9")
         self.assertEqual(row.renew_count, 0)
@@ -101,6 +121,56 @@ class OfflineLicenseTests(TestCase):
         txn.save(update_fields=["status"])
         denied = self.client.post(f"/v1/books/{book.id}/license", {"device_id": "dev1"})
         self.assertEqual(denied.status_code, 403)
+
+
+class ContentEntitlementGateTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(email="c@example.com", password="pw123456")
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
+    @override_settings(FEATURE_BOOK_CONTENT_INDEX=True)
+    def test_paid_content_blocked_without_purchase(self):
+        book, rev = _published_book(price="5.00", is_premium=True)
+        from apps.catalog.models import BookChapter, BookPage
+
+        ch = BookChapter.objects.create(
+            revision=rev, chapter_key="c1", title="One", ordinal=1
+        )
+        BookPage.objects.create(
+            revision=rev,
+            chapter=ch,
+            page_number=1,
+            page_title="P1",
+            text_plain="secret body",
+        )
+        res = self.client.get(f"/v1/books/{book.id}/content")
+        self.assertEqual(res.status_code, 403)
+        self.assertEqual(res.data["error"]["code"], "NOT_ENTITLED")
+        search = self.client.get(f"/v1/books/{book.id}/search", {"q": "secret"})
+        self.assertEqual(search.status_code, 403)
+
+    @override_settings(FEATURE_BOOK_CONTENT_INDEX=True)
+    def test_paid_content_allowed_after_purchase(self):
+        book, rev = _published_book(price="5.00", is_premium=True)
+        book.chapters_draft = [
+            {
+                "chapter_key": "c1",
+                "title": "One",
+                "pages": [
+                    {"page_number": 1, "title": "P1", "body": "owned body"},
+                ],
+            }
+        ]
+        book.save(update_fields=["chapters_draft"])
+        from apps.catalog.search_index import rebuild_revision_index
+
+        rebuild_revision_index(rev)
+        _complete_purchase(self.user, book)
+        res = self.client.get(f"/v1/books/{book.id}/content")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.data.get("chapters") or []), 1)
+        self.assertIn("owned body", res.data["chapters"][0]["pages"][0]["body"])
 
 
 class DownloadEntitlementGateTests(TestCase):
@@ -153,6 +223,13 @@ class LicenseTokenUnitTests(TestCase):
         self.assertIsNotNone(claims)
         self.assertEqual(claims["sub"], "u1")
         self.assertEqual(claims["typ"], "offline-license")
+        self.assertEqual(claims["device"], "d1")
+
+    def test_issue_rejects_empty_device(self):
+        with self.assertRaises(ValueError):
+            issue_license(
+                user_id="u1", book_id="b1", revision_id="r1", device_id="  "
+            )
 
     def test_garbage_token_rejected(self):
         self.assertIsNone(verify_license("not-a-jwt"))

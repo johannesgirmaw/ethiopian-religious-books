@@ -6,6 +6,10 @@ import 'protected_content_guards_stub.dart'
     if (dart.library.html) 'protected_content_guards_web.dart';
 
 /// Enables native screenshot/capture protection while a reader route is open.
+///
+/// Uses a process-wide refcount so nested/overlapping reader routes (route
+/// replace where the new [initState] runs before the old [dispose]) do not
+/// briefly clear [FLAG_SECURE] / capture blur while content is still visible.
 class ContentProtectionLifecycle extends StatefulWidget {
   const ContentProtectionLifecycle({super.key, required this.child});
 
@@ -17,17 +21,25 @@ class ContentProtectionLifecycle extends StatefulWidget {
 }
 
 class _ContentProtectionLifecycleState extends State<ContentProtectionLifecycle> {
+  static int _holders = 0;
+
   @override
   void initState() {
     super.initState();
-    PlatformSecurity.setSecureMode(true);
-    enableWebContentGuards(true);
+    _holders++;
+    if (_holders == 1) {
+      PlatformSecurity.setSecureMode(true);
+      enableWebContentGuards(true);
+    }
   }
 
   @override
   void dispose() {
-    enableWebContentGuards(false);
-    PlatformSecurity.setSecureMode(false);
+    if (_holders > 0) _holders--;
+    if (_holders == 0) {
+      enableWebContentGuards(false);
+      PlatformSecurity.setSecureMode(false);
+    }
     super.dispose();
   }
 

@@ -14,6 +14,7 @@ import '../providers/study_providers.dart';
 import '../providers/session_notifier.dart';
 import '../storage/book_content_cache_storage.dart';
 import '../utils/form_draft_keys.dart';
+import '../utils/offline_book_download.dart';
 import '../widgets/reader/quick_note_sheet.dart';
 import '../storage/reader_prefs_storage.dart';
 import '../utils/rich_text_codec.dart' show plainTextFromStoredSummary;
@@ -909,53 +910,16 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       }
       return;
     }
-    final tree = await ref.read(bookContentProvider(widget.bookId).future);
-    final raw = {
-      'chapters': tree.chapters
-          .map(
-            (c) => {
-              'chapter_key': c.chapterKey,
-              'title': c.title,
-              'ordinal': c.ordinal,
-              'pages': c.pages
-                  .map(
-                    (p) => {
-                      'page_number': p.pageNumber,
-                      'title': p.title,
-                      'body': p.body,
-                    },
-                  )
-                  .toList(),
-            },
-          )
-          .toList(),
-      'total_pages': tree.totalPages,
-    };
-    final book = ref.read(bookDetailProvider(widget.bookId)).valueOrNull;
-    await BookContentCacheStorage.writeBookContent(
-      widget.bookId,
-      raw,
-      meta: BookCacheMeta(
-        title:
-            book?.title ??
-            BookContentCacheStorage.titleFromContentTree(tree) ??
-            widget.bookId,
-        authorCompiler: book?.authorCompiler,
-        primaryLanguage: book?.primaryLanguage,
-        savedAtEpochMs: DateTime.now().millisecondsSinceEpoch,
+    // Must go through the entitlement-checked license pipeline so offline
+    // opens satisfy hasValidOfflineAccess (seal alone is not enough).
+    final err = await runOfflineBookDownload(ref, widget.bookId, l10n: l10n);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 5),
+        content: Text(err ?? l10n.savedOfflineReading),
       ),
     );
-    ref.invalidate(offlineDownloadsListProvider);
-    ref.invalidate(offlineBookCachedProvider(widget.bookId));
-    ref.invalidate(offlineBookCountProvider);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          duration: const Duration(seconds: 5),
-          content: Text(l10n.savedOfflineReading),
-        ),
-      );
-    }
   }
 
   bool get _hasSelectedChapter =>

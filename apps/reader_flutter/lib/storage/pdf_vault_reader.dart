@@ -55,12 +55,15 @@ class ChunkedPdfReader {
     required this.revisionId,
     required Future<Uint8List?> Function(int index) readSealed,
     this.chunkSize = kPdfVaultChunkSize,
-  }) : _readSealed = readSealed;
+    String Function(int index)? aadContextForIndex,
+  }) : _readSealed = readSealed,
+       _aadContextForIndex = aadContextForIndex;
 
   final int plainSize;
   final String revisionId;
   final int chunkSize;
   final Future<Uint8List?> Function(int index) _readSealed;
+  final String Function(int index)? _aadContextForIndex;
 
   final Map<int, Future<Uint8List>> _openings = {};
   final List<int> _recent = [];
@@ -135,7 +138,10 @@ class ChunkedPdfReader {
     if (sealed == null) {
       throw StateError('missing sealed pdf chunk $index');
     }
-    final plain = await BookCrypto.open(sealed);
+    final plain = await BookCrypto.open(
+      sealed,
+      aadContext: _aadContextForIndex?.call(index),
+    );
     final expected = pdfVaultPlainChunkLength(
       plainSize,
       index,

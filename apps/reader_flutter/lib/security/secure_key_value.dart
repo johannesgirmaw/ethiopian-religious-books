@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart'
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'secure_storage_factory.dart';
+
 /// Small secure key/value store for cryptographic secrets (the device master key
 /// and device id).
 ///
@@ -25,14 +27,7 @@ class SecureKeyValue {
         defaultTargetPlatform == TargetPlatform.macOS;
   }
 
-  static FlutterSecureStorage _keychain() {
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.macOS) {
-      return const FlutterSecureStorage(
-        mOptions: MacOsOptions(useDataProtectionKeyChain: false),
-      );
-    }
-    return const FlutterSecureStorage();
-  }
+  static FlutterSecureStorage _keychain() => createAppSecureStorage();
 
   static Future<String?> read(String key) async {
     if (_useMacDebugPrefs()) {

@@ -66,6 +66,7 @@ class BookSummary {
     this.salePrice,
     this.finalPrice = 0,
     this.createdAt,
+    this.viewerCanManage = false,
   });
 
   final String id;
@@ -130,6 +131,10 @@ class BookSummary {
   final double finalPrice;
   final DateTime? createdAt;
 
+  /// True when the current user may manage this book (admin / creator / author).
+  /// Mirrors server ``can_manage_book``; used to unlock reader preview without purchase.
+  final bool viewerCanManage;
+
   bool get hasRating => ratingCount > 0;
 
   /// ETB then USD amounts readers see. Includes a legacy single-currency price.
@@ -146,7 +151,10 @@ class BookSummary {
   String get priceLabel => formatBookPriceQuotes(priceQuotes);
 
   /// Whether this title requires a purchase to read.
-  bool get requiresPurchase => isPremium && priceQuotes.isNotEmpty;
+  ///
+  /// Matches the server gate [book_is_priced] / [user_owns_book]: any non-zero
+  /// price quote requires entitlement, independent of the premium badge flag.
+  bool get requiresPurchase => priceQuotes.isNotEmpty;
 
   /// Unpublished titles are only returned to managers previewing a draft.
   bool get isCatalogPublished => catalogVisibility == 'published';
@@ -190,6 +198,7 @@ class BookSummary {
       salePrice: j['sale_price'] == null ? null : _toDouble(j['sale_price']),
       finalPrice: _toDouble(j['final_price']),
       createdAt: DateTime.tryParse(j['created_at'] as String? ?? ''),
+      viewerCanManage: j['viewer_can_manage'] as bool? ?? false,
     );
   }
 }

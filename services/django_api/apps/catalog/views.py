@@ -200,6 +200,64 @@ def _readable_book(request, book_id) -> Book | None:
     return None
 
 
+def _not_entitled_response(
+    message: str = "Purchase this book to read it.",
+) -> Response:
+    return Response(
+        {"error": {"code": "NOT_ENTITLED", "message": message}},
+        status=status.HTTP_403_FORBIDDEN,
+    )
+
+
+def _require_entitled_book(request, book_id):
+    """Return ``(book, None)`` when the caller may read full content, else an error.
+
+    Managers always pass. Published books also require ``user_owns_book`` (free
+    or a COMPLETED purchase). Unpublished books are already limited to managers
+    by :func:`_readable_book`.
+    """
+    book = _readable_book(request, book_id)
+    if book is None:
+        return None, _book_not_found_response()
+    user = getattr(request, "user", None)
+    if can_manage_book(book, user):
+        return book, None
+    if book.catalog_visibility == Book.Visibility.PUBLISHED and not user_owns_book(
+        user, book
+    ):
+        return None, _not_entitled_response()
+    return book, None
+
+
+def _require_registered_device(user, device_id: str):
+    """Normalize ``device_id`` and require a matching :class:`UserDevice` row.
+
+    Returns ``(device_id, None)`` or ``(None, error Response)``.
+    """
+    normalized = (device_id or "").strip()[:128]
+    if not normalized:
+        return None, Response(
+            {
+                "error": {
+                    "code": "DEVICE_ID_REQUIRED",
+                    "message": "device_id is required.",
+                }
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if not UserDevice.objects.filter(user=user, device_id=normalized).exists():
+        return None, Response(
+            {
+                "error": {
+                    "code": "DEVICE_NOT_REGISTERED",
+                    "message": "Register this device before requesting an offline license.",
+                }
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    return normalized, None
+
+
 def _chapters_from_draft(book: Book) -> list[dict]:
     draft = book.chapters_draft if isinstance(book.chapters_draft, list) else []
     items: list[dict] = []
@@ -374,15 +432,11 @@ class BookDownloadView(APIView):
                 {"error": {"code": "NOT_FOUND", "message": "Book not found"}},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        if not user_owns_book(request.user, book):
-            return Response(
-                {
-                    "error": {
-                        "code": "NOT_ENTITLED",
-                        "message": "Purchase this book to download it for offline reading.",
-                    }
-                },
-                status=status.HTTP_403_FORBIDDEN,
+        if not can_manage_book(book, request.user) and not user_owns_book(
+            request.user, book
+        ):
+            return _not_entitled_response(
+                "Purchase this book to download it for offline reading."
             )
         rev = book.published_revision
         if rev is None:
@@ -413,6 +467,12 @@ class BookDownloadView(APIView):
                 },
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
+
+        device_id, device_error = _require_registered_device(
+            request.user, request.query_params.get("device_id") or ""
+        )
+        if device_error is not None:
+            return device_error
 
         presign_endpoint = dev_presign_endpoint_from_request(request)
         try:
@@ -455,7 +515,6 @@ class BookDownloadView(APIView):
                     status=status.HTTP_503_SERVICE_UNAVAILABLE,
                 )
 
-        device_id = (request.query_params.get("device_id") or "").strip()
         license_payload = issue_license(
             user_id=request.user.id,
             book_id=book.id,
@@ -499,15 +558,11 @@ class BookLicenseView(APIView):
                 {"error": {"code": "NOT_FOUND", "message": "Book not found"}},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        if not user_owns_book(request.user, book):
-            return Response(
-                {
-                    "error": {
-                        "code": "NOT_ENTITLED",
-                        "message": "Purchase this book to read it offline.",
-                    }
-                },
-                status=status.HTTP_403_FORBIDDEN,
+        if not can_manage_book(book, request.user) and not user_owns_book(
+            request.user, book
+        ):
+            return _not_entitled_response(
+                "Purchase this book to read it offline."
             )
         rev = book.published_revision
         if rev is None:
@@ -515,7 +570,11 @@ class BookLicenseView(APIView):
                 {"error": {"code": "NO_REVISION", "message": "No published revision"}},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        device_id = (request.data.get("device_id") or "").strip()
+        device_id, device_error = _require_registered_device(
+            request.user, request.data.get("device_id") or ""
+        )
+        if device_error is not None:
+            return device_error
         license_payload = issue_license(
             user_id=request.user.id,
             book_id=book.id,
@@ -538,9 +597,9 @@ class BookChapterListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, book_id):
-        book = _readable_book(request, book_id)
-        if book is None:
-            return _book_not_found_response()
+        book, error = _require_entitled_book(request, book_id)
+        if error is not None:
+            return error
         rev = book.published_revision
         if rev is None:
             items = [
@@ -570,13 +629,12 @@ class BookSearchView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, book_id):
-        try:
-            book = _published_books_queryset().get(pk=book_id)
-        except Book.DoesNotExist:
-            return Response(
-                {"error": {"code": "NOT_FOUND", "message": "Book not found"}},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        book, error = _require_entitled_book(request, book_id)
+        if error is not None:
+            return error
+        if book.catalog_visibility != Book.Visibility.PUBLISHED:
+            # Managers may preview drafts via /content; search index is published-only.
+            return Response({"items": [], "total": 0})
         rev = book.published_revision
         if rev is None or not settings.FEATURE_BOOK_CONTENT_INDEX:
             return Response({"items": [], "total": 0})
@@ -616,9 +674,9 @@ class BookContentView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, book_id):
-        book = _readable_book(request, book_id)
-        if book is None:
-            return _book_not_found_response()
+        book, error = _require_entitled_book(request, book_id)
+        if error is not None:
+            return error
         rev = book.published_revision
         if rev is not None:
             if not settings.FEATURE_BOOK_CONTENT_INDEX:
@@ -640,22 +698,18 @@ def _entitled_pdf_revision(request, book_id):
     book = _readable_book(request, book_id)
     if book is None:
         return None, _book_not_found_response()
+    user = getattr(request, "user", None)
+    is_manager = can_manage_book(book, user)
     is_published = book.catalog_visibility == Book.Visibility.PUBLISHED
-    if is_published and not user_owns_book(request.user, book):
-        return None, Response(
-            {
-                "error": {
-                    "code": "NOT_ENTITLED",
-                    "message": "Purchase this book to read it.",
-                }
-            },
-            status=status.HTTP_403_FORBIDDEN,
-        )
+    if is_published and not is_manager and not user_owns_book(user, book):
+        return None, _not_entitled_response()
     rev = book.published_revision
     from apps.catalog.pdf_books import is_pdf_revision, latest_pdf_draft
 
+    # Draft PDF fallback is for managers previewing only — never for entitled readers
+    # of a published non-PDF revision.
     if not is_pdf_revision(rev):
-        rev = latest_pdf_draft(book)
+        rev = latest_pdf_draft(book) if is_manager else None
     if not is_pdf_revision(rev):
         return None, Response(
             {

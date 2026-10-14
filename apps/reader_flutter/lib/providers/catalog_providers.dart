@@ -13,6 +13,8 @@ import '../storage/pdf_vault_reader.dart';
 import '../storage/reader_prefs_storage.dart';
 import '../storage/secure_book_store.dart';
 import '../utils/pdf_book_loader.dart';
+import '../utils/pdf_cache_stub.dart'
+    if (dart.library.io) '../utils/pdf_cache_io.dart' as pdf_cache;
 import '../utils/pdf_prefetch.dart';
 import 'api_client.dart';
 import 'payment_providers.dart';
@@ -256,11 +258,30 @@ final bookContentProvider = FutureProvider.autoDispose
           return remote;
         }
         // API can return empty when content index is off or revision is missing;
-        // prefer a non-empty local cache so chapters/pages still render.
+        // only reuse a local cache when a valid this-device license exists.
         if (cached != null && cached.chapters.isNotEmpty) {
-          return cached;
+          final deviceId = await DeviceIdentity.deviceId();
+          final allowed = await SecureBookStore.hasValidOfflineAccess(
+            bookId,
+            deviceId: deviceId,
+          );
+          if (allowed) return cached;
         }
         return remote;
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 403) {
+          await SecureBookStore.revokeOfflineLicense(bookId);
+          await pdf_cache.clearNativePdfTempCache(bookId: bookId);
+        }
+        if (cached != null && cached.chapters.isNotEmpty) {
+          final deviceId = await DeviceIdentity.deviceId();
+          final allowed = await SecureBookStore.hasValidOfflineAccess(
+            bookId,
+            deviceId: deviceId,
+          );
+          if (allowed) return cached;
+        }
+        rethrow;
       } catch (_) {
         // Offline: only serve the encrypted cache if a valid, this-device
         // offline license is present. Without one (e.g. never downloaded, or the
@@ -284,37 +305,57 @@ Future<void> _maybeRenewOfflineLicense(Dio dio, String bookId) async {
   try {
     final existing = await SecureBookStore.readLicense(bookId);
     if (existing == null || !existing.needsRenewal()) return;
+    await DeviceIdentity.ensureRegistered(dio);
     final deviceId = await DeviceIdentity.deviceId();
-    final res = await dio.post<Map<String, dynamic>>(
-      'books/$bookId/license',
-      data: {'device_id': deviceId},
-    );
+    if (deviceId.isEmpty) return;
+    Map<String, dynamic>? data;
+    try {
+      final res = await dio.post<Map<String, dynamic>>(
+        'books/$bookId/license',
+        data: {'device_id': deviceId},
+      );
+      data = res.data;
+    } on DioException catch (e) {
+      final code = (e.response?.data is Map)
+          ? ((e.response!.data as Map)['error'] is Map
+                ? ((e.response!.data as Map)['error'] as Map)['code']
+                : null)
+          : null;
+      if (e.response?.statusCode == 400 && code == 'DEVICE_NOT_REGISTERED') {
+        await DeviceIdentity.ensureRegistered(dio, force: true);
+        final retry = await dio.post<Map<String, dynamic>>(
+          'books/$bookId/license',
+          data: {'device_id': deviceId},
+        );
+        data = retry.data;
+      } else {
+        rethrow;
+      }
+    }
     final lic =
-        (res.data?['license'] as Map?)?.cast<String, dynamic>() ??
+        (data?['license'] as Map?)?.cast<String, dynamic>() ??
         const <String, dynamic>{};
     final token = (lic['token'] as String?)?.trim() ?? '';
     if (token.isEmpty) return;
     final expiresIso = lic['expires_at'] as String?;
     final expiresMs = expiresIso != null
-        ? (DateTime.tryParse(expiresIso)?.millisecondsSinceEpoch ??
-              existing.expiresAtEpochMs)
-        : existing.expiresAtEpochMs;
+        ? DateTime.tryParse(expiresIso)?.millisecondsSinceEpoch
+        : null;
+    if (expiresMs == null) return;
     await SecureBookStore.writeLicense(
       bookId,
       OfflineLicense(
         token: token,
         deviceId: deviceId,
         expiresAtEpochMs: expiresMs,
-        revisionId: res.data?['revision_id'] as String? ?? existing.revisionId,
+        revisionId: data?['revision_id'] as String? ?? existing.revisionId,
       ),
     );
   } on DioException catch (e) {
     // Entitlement revoked -> stop renewing and revoke local offline access.
     if (e.response?.statusCode == 403) {
-      await SecureBookStore.writeLicense(
-        bookId,
-        OfflineLicense(token: '', deviceId: '', expiresAtEpochMs: 0),
-      );
+      await SecureBookStore.revokeOfflineLicense(bookId);
+      await pdf_cache.clearNativePdfTempCache(bookId: bookId);
     }
   } catch (_) {
     // Transient/offline — leave the existing license untouched.
@@ -333,8 +374,11 @@ final offlineBookCachedProvider = FutureProvider.autoDispose
 final downloadInfoProvider = FutureProvider.autoDispose
     .family<DownloadPayload, String>((ref, id) async {
       final dio = ref.watch(apiDioProvider);
+      await DeviceIdentity.ensureRegistered(dio);
+      final deviceId = await DeviceIdentity.deviceId();
       final res = await dio.get<Map<String, dynamic>>(
         'books/$id/download',
+        queryParameters: {'device_id': deviceId},
         options: Options(headers: devObjectStorageOriginHeaders()),
       );
       return DownloadPayload.fromJson(res.data!);
@@ -367,6 +411,7 @@ final pdfViewerSourceProvider = FutureProvider.autoDispose
         if (e is DioException && e.response?.statusCode == 403) {
           entitlementDenied = true;
           await SecureBookStore.revokeOfflineLicense(id);
+          await pdf_cache.clearNativePdfTempCache(bookId: id);
         }
       }
 

@@ -73,7 +73,6 @@ class MobileBookDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final asyncBook = ref.watch(bookDetailProvider(bookId));
-    final contentAsync = ref.watch(bookContentProvider(bookId));
     final downloadJobs = ref.watch(downloadJobsProvider);
     final reviews =
         ref.watch(bookReviewsProvider(bookId)).valueOrNull ?? const [];
@@ -114,7 +113,19 @@ class MobileBookDetailScreen extends ConsumerWidget {
           if (book.isPdf) {
             ref.watch(pdfWarmupProvider(bookId));
           }
-          final tree = contentAsync.valueOrNull;
+          final owned =
+              ref
+                  .watch(entitledBookIdsProvider)
+                  .valueOrNull
+                  ?.contains(bookId) ??
+              false;
+          final canSaveOffline =
+              owned || !book.requiresPurchase || book.viewerCanManage;
+          // Do not fetch / seal full chapter bodies until the user is entitled.
+          final contentAsync = (!book.isPdf && canSaveOffline)
+              ? ref.watch(bookContentProvider(bookId))
+              : null;
+          final tree = contentAsync?.valueOrNull;
           final chapters = tree?.chapters ?? const <BookContentChapter>[];
           final chapterCount = chapters.isEmpty ? null : chapters.length;
           final pageCount = tree?.totalPages != null && tree!.totalPages > 0
@@ -122,15 +133,10 @@ class MobileBookDetailScreen extends ConsumerWidget {
               : null;
           final hasSummary = book.summary?.trim().isNotEmpty == true;
           final showToc =
-              !book.isPdf && (contentAsync.isLoading || chapters.isNotEmpty);
+              !book.isPdf &&
+              contentAsync != null &&
+              (contentAsync.isLoading || chapters.isNotEmpty);
           final showReviews = reviews.isNotEmpty;
-          final owned =
-              ref
-                  .watch(entitledBookIdsProvider)
-                  .valueOrNull
-                  ?.contains(bookId) ??
-              false;
-          final canSaveOffline = owned || !book.requiresPurchase;
 
           final stats = <Widget>[
             if (chapterCount != null)
@@ -259,7 +265,7 @@ class MobileBookDetailScreen extends ConsumerWidget {
                       const SizedBox(height: 10),
                       _ContentsPanel(
                         tree: tree,
-                        loading: contentAsync.isLoading,
+                        loading: contentAsync!.isLoading,
                         l10n: l10n,
                         onChapter: (key) => context.push(
                           readingPathForBook(

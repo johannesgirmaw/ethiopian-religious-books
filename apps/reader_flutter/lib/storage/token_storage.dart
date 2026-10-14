@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart'
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../security/secure_storage_factory.dart';
+
 const _kAccess = 'access_token';
 const _kRefresh = 'refresh_token';
 const _kUserJson = 'user_json';
@@ -27,16 +29,7 @@ bool _useMacOsDebugPlainPrefs() {
       defaultTargetPlatform == TargetPlatform.macOS;
 }
 
-/// macOS: default data-protection keychain path triggers -34018 without extra entitlements;
-/// disabling matches local debug without a signed keychain-access-group.
-FlutterSecureStorage _platformSecureStorage() {
-  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.macOS) {
-    return const FlutterSecureStorage(
-      mOptions: MacOsOptions(useDataProtectionKeyChain: false),
-    );
-  }
-  return const FlutterSecureStorage();
-}
+FlutterSecureStorage _platformSecureStorage() => createAppSecureStorage();
 
 class TokenStorage {
   TokenStorage({FlutterSecureStorage? storage})

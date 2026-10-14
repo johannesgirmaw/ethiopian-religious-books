@@ -1,21 +1,14 @@
 // Entry worker for the web PDF viewer.
 //
 // Strategy:
-//   1) Cache API hit → open from memory (instant reopen)
-//   2) Linearized + preferRangeAccess → stock pdfrx Range/206 for page 1,
-//      then delayed background full GET into Cache API
-//   3) Non-linearized → full download once (with progress) + Cache API
-//      (avoids blank page 1 on scanned books under live GetBlock)
+//   1) Linearized + preferRangeAccess → stock pdfrx Range/206 for page 1
+//   2) Non-linearized → full download once into memory (with progress)
+// Plaintext PDFs are never written to Cache Storage (revocation / multi-user).
 importScripts(new URL('/assets/packages/pdfrx/assets/pdfium_worker.js', self.location.origin).href);
 
-const PDF_FULL_CACHE = 'fm-pdf-full-v2';
 const MAX_PDF_BYTES = 100 * 1024 * 1024;
-/** Delay so Range fetches for page 1 are not starved by a competing full GET. */
-const BACKGROUND_CACHE_DELAY_MS = 4000;
 
 const loadDocumentFromUrlStock = loadDocumentFromUrl;
-/** @type {Map<string, Promise<void>>} */
-const backgroundCacheInflight = new Map();
 
 functions.loadDocumentFromUrl = async function (params) {
   try {
@@ -27,34 +20,17 @@ functions.loadDocumentFromUrl = async function (params) {
 };
 
 async function loadDocumentFromUrlFast(params) {
-  const url = params.url;
-  const password = params.password || '';
-  const useProgressiveLoading = params.useProgressiveLoading || false;
-  const headers = params.headers || {};
-  const progressCallbackId = params.progressCallbackId;
   const preferRangeAccess = !!params.preferRangeAccess;
 
-  const cached = await readFullCache(url);
-  if (cached && isValidPdfBytes(cached)) {
-    reportPdfProgress(progressCallbackId, cached.byteLength, cached.byteLength);
-    return loadDocumentFromData({
-      data: cached,
-      password: password,
-      useProgressiveLoading: useProgressiveLoading,
-    });
-  }
-
+  // Non-linearized books: one full GET into memory only (no Cache Storage).
   if (!preferRangeAccess) {
-    // Proven path for scanned / non-linearized PDFs: one full GET, then memory open.
-    return loadDocumentFromUrlFullCached(params);
+    return loadDocumentFromUrlFullInMemory(params);
   }
 
-  const doc = await loadDocumentFromUrlStock(params);
-  scheduleBackgroundFullCache(url, headers);
-  return doc;
+  return loadDocumentFromUrlStock(params);
 }
 
-async function loadDocumentFromUrlFullCached(params) {
+async function loadDocumentFromUrlFullInMemory(params) {
   const url = params.url;
   const password = params.password || '';
   const useProgressiveLoading = params.useProgressiveLoading || false;
@@ -62,37 +38,11 @@ async function loadDocumentFromUrlFullCached(params) {
   const progressCallbackId = params.progressCallbackId;
 
   const data = await downloadFullPdfBytes(url, headers, progressCallbackId);
-  await writeFullCache(url, data);
   return loadDocumentFromData({
     data: data.buffer,
     password: password,
     useProgressiveLoading: useProgressiveLoading,
   });
-}
-
-function scheduleBackgroundFullCache(url, headers) {
-  const key = fullCacheKey(url);
-  if (backgroundCacheInflight.has(key)) return;
-
-  const job = (async () => {
-    await sleep(BACKGROUND_CACHE_DELAY_MS);
-    const existing = await readFullCache(url);
-    if (existing && isValidPdfBytes(existing)) return;
-    await downloadAndCacheFull(url, stripRangeHeader(headers || {}));
-  })()
-    .catch((err) => {
-      console.warn('PDF background cache failed', err);
-    })
-    .finally(() => {
-      backgroundCacheInflight.delete(key);
-    });
-
-  backgroundCacheInflight.set(key, job);
-}
-
-async function downloadAndCacheFull(url, headers) {
-  const data = await downloadFullPdfBytes(url, headers, null);
-  await writeFullCache(url, data);
 }
 
 /**
@@ -165,10 +115,6 @@ function stripRangeHeader(headers) {
   return out;
 }
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 function reportPdfProgress(callbackId, downloaded, total) {
   if (!callbackId) return;
   invokeCallback(callbackId, downloaded, total);
@@ -184,45 +130,4 @@ function isValidPdfBytes(bytes) {
     view[3] === 0x46 && // F
     view[4] === 0x2d // -
   );
-}
-
-function fullCacheKey(url) {
-  try {
-    const u = new URL(url, self.location.origin);
-    return 'https://fm-pdf-full.local' + u.pathname + u.search;
-  } catch (_) {
-    return 'https://fm-pdf-full.local/pdf';
-  }
-}
-
-async function readFullCache(url) {
-  try {
-    const cache = await caches.open(PDF_FULL_CACHE);
-    const res = await cache.match(fullCacheKey(url));
-    if (!res) return null;
-    const buf = await res.arrayBuffer();
-    if (!isValidPdfBytes(buf)) {
-      await cache.delete(fullCacheKey(url));
-      return null;
-    }
-    return buf;
-  } catch (_) {
-    return null;
-  }
-}
-
-async function writeFullCache(url, bytes) {
-  try {
-    const cache = await caches.open(PDF_FULL_CACHE);
-    const copy = bytes instanceof ArrayBuffer ? bytes.slice(0) : bytes.slice().buffer;
-    await cache.put(
-      fullCacheKey(url),
-      new Response(copy, {
-        headers: {
-          'Content-Type': 'application/pdf',
-          'Cache-Control': 'private, no-store',
-        },
-      }),
-    );
-  } catch (_) {}
 }

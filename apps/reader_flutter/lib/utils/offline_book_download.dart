@@ -23,14 +23,13 @@ class _DownloadException implements Exception {
   final String kind;
 }
 
-/// Parse the server's ISO-8601 license expiry into epoch millis, defaulting to a
-/// conservative 30-day lease if the field is missing or unparseable.
-int _expiryEpochMs(String? iso) {
-  if (iso != null && iso.trim().isNotEmpty) {
-    final parsed = DateTime.tryParse(iso);
-    if (parsed != null) return parsed.millisecondsSinceEpoch;
-  }
-  return DateTime.now().add(const Duration(days: 30)).millisecondsSinceEpoch;
+/// Parse the server's ISO-8601 license expiry into epoch millis.
+///
+/// Returns null when missing or unparseable — callers must fail closed rather
+/// than inventing a lease window the server did not grant.
+int? _expiryEpochMs(String? iso) {
+  if (iso == null || iso.trim().isEmpty) return null;
+  return DateTime.tryParse(iso)?.millisecondsSinceEpoch;
 }
 
 /// Downloads a book for **encrypted** offline reading. Returns a user-facing
@@ -61,16 +60,40 @@ Future<String?> runOfflineBookDownload(
     final deviceId = await DeviceIdentity.deviceId();
 
     // 1) Obtain the offline license (entitlement-checked server-side).
-    final licRes = await dio.post<Map<String, dynamic>>(
-      'books/$bookId/license',
-      data: {'device_id': deviceId},
-    );
-    final licBody = licRes.data ?? const <String, dynamic>{};
+    Map<String, dynamic> licBody;
+    try {
+      final licRes = await dio.post<Map<String, dynamic>>(
+        'books/$bookId/license',
+        data: {'device_id': deviceId},
+      );
+      licBody = licRes.data ?? const <String, dynamic>{};
+    } on DioException catch (e) {
+      // Stale in-memory registration after account switch — re-register once.
+      final code = (e.response?.data is Map)
+          ? ((e.response!.data as Map)['error'] is Map
+                ? ((e.response!.data as Map)['error'] as Map)['code']
+                : null)
+          : null;
+      if (e.response?.statusCode == 400 && code == 'DEVICE_NOT_REGISTERED') {
+        await DeviceIdentity.ensureRegistered(dio, force: true);
+        final retry = await dio.post<Map<String, dynamic>>(
+          'books/$bookId/license',
+          data: {'device_id': deviceId},
+        );
+        licBody = retry.data ?? const <String, dynamic>{};
+      } else {
+        rethrow;
+      }
+    }
     final lic =
         (licBody['license'] as Map?)?.cast<String, dynamic>() ??
         const <String, dynamic>{};
     final token = (lic['token'] as String?)?.trim() ?? '';
-    if (token.isEmpty) {
+    if (token.isEmpty || deviceId.isEmpty) {
+      throw _DownloadException('Could not obtain an offline license.');
+    }
+    final expiresMs = _expiryEpochMs(lic['expires_at'] as String?);
+    if (expiresMs == null) {
       throw _DownloadException('Could not obtain an offline license.');
     }
 
@@ -92,7 +115,7 @@ Future<String?> runOfflineBookDownload(
       OfflineLicense(
         token: token,
         deviceId: deviceId,
-        expiresAtEpochMs: _expiryEpochMs(lic['expires_at'] as String?),
+        expiresAtEpochMs: expiresMs,
         revisionId: licBody['revision_id'] as String?,
       ),
     );

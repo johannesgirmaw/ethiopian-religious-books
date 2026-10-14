@@ -65,7 +65,6 @@ class DesktopBookDetailBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final asyncBook = ref.watch(bookDetailProvider(bookId));
-    final contentAsync = ref.watch(bookContentProvider(bookId));
     final downloadJobs = ref.watch(downloadJobsProvider);
     final tier = DesktopLayoutScope.tierOf(context);
     final padding = DesktopTokens.pagePadding(tier);
@@ -83,19 +82,25 @@ class DesktopBookDetailBody extends ConsumerWidget {
         if (book.isPdf) {
           ref.watch(pdfWarmupProvider(bookId));
         }
-        final tree = contentAsync.valueOrNull;
+        final owned =
+            ref.watch(entitledBookIdsProvider).valueOrNull?.contains(bookId) ??
+            false;
+        final canFetchContent = !book.isPdf &&
+            (owned || !book.requiresPurchase || book.viewerCanManage);
+        final contentAsync = canFetchContent
+            ? ref.watch(bookContentProvider(bookId))
+            : null;
+        final tree = contentAsync?.valueOrNull;
         final chapters = tree?.chapters ?? const <BookContentChapter>[];
         final chapterCount = chapters.isEmpty ? null : chapters.length;
         final pageCount = tree?.totalPages;
         final twoColumn = tier != DesktopLayoutTier.compact;
         final hasSummary = book.summary?.trim().isNotEmpty == true;
         final showToc =
-            !book.isPdf && (contentAsync.isLoading || chapters.isNotEmpty);
+            canFetchContent &&
+            contentAsync != null &&
+            (contentAsync.isLoading || chapters.isNotEmpty);
         final showReviews = reviews.isNotEmpty;
-
-        final owned =
-            ref.watch(entitledBookIdsProvider).valueOrNull?.contains(bookId) ??
-            false;
         final resumeCheckout =
             !owned &&
             (ref
@@ -116,7 +121,8 @@ class DesktopBookDetailBody extends ConsumerWidget {
             !owned &&
             !purchasePending &&
             !resumeCheckout;
-        final canSaveOffline = owned || !book.requiresPurchase;
+        final canSaveOffline =
+            owned || !book.requiresPurchase || book.viewerCanManage;
 
         final rail = _LeftRail(
           book: book,
@@ -166,7 +172,7 @@ class DesktopBookDetailBody extends ConsumerWidget {
           if (showToc)
             _ContentsSection(
               tree: tree,
-              loading: contentAsync.isLoading,
+              loading: contentAsync!.isLoading,
               l10n: l10n,
               onChapter: (key) => context.push(
                 readingPathForBook(bookId, isPdf: false, query: 'chapter=$key'),

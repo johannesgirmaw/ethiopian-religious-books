@@ -10,7 +10,8 @@ App entry, DI, routing, config, l10n, security/storage for all six targets. Per-
 | [`lib/app.dart`](lib/app.dart) | Root `ConsumerWidget`: `MaterialApp.router` on `goRouterProvider` + `appLocaleProvider`; theme = `AppTheme.light` (light-only). |
 | [`lib/config/app_config.dart`](lib/config/app_config.dart) | API base URL resolver. `_productionApiBaseUrl` = prod; debug picks per-platform localhost; overrides normalized to a trailing slash. |
 | `lib/config/resolve_api_host_{io,stub}.dart` | Conditional-import LAN-IPv4 discovery; macOS debug only. |
-| [`lib/security/book_crypto.dart`](lib/security/book_crypto.dart) | AES-256-GCM seal/open. Device master key (KEK) in secure store key `vault_master_key_v1`. Blob = nonce(12)‖ct‖mac(16). |
+| [`lib/security/book_crypto.dart`](lib/security/book_crypto.dart) | AES-256-GCM seal/open. Device master key (KEK) in secure store key `vault_master_key_v1`. Legacy blob = nonce(12)‖ct‖mac(16); v1 = `0x01`‖nonce‖ct‖mac with GCM AAD. |
+| [`lib/security/secure_storage_factory.dart`](lib/security/secure_storage_factory.dart) | Shared FlutterSecureStorage options (Android EncryptedSharedPreferences, iOS first_unlock_this_device). |
 | [`lib/security/device_identity.dart`](lib/security/device_identity.dart) | Per-install 128-bit device id (`device_id_v1`), `ensureRegistered(dio)`. |
 | [`lib/security/secure_key_value.dart`](lib/security/secure_key_value.dart) | Secure KV; macOS DEBUG falls back to SharedPreferences to dodge keychain -34018 hang. |
 | [`lib/storage/secure_book_store.dart`](lib/storage/secure_book_store.dart) | Encrypted vault `{docs}/library/{bookId}/{content,meta,license}.enc`; `hasValidOfflineAccess()` is the offline gate. |
@@ -58,7 +59,7 @@ App entry, DI, routing, config, l10n, security/storage for all six targets. Per-
 - Web has no `dart:io`/hardware keystore: vault falls back to base64-in-SharedPreferences.
 - `SessionNotifier.clear()` (logout) wipes the entire encrypted library and master key — every downloaded book becomes permanently unreadable, by design.
 - `tryRefresh()` uses connect 15s; shared Dio uses connect 20s / receive 120s (long receive is intentional for large book content).
-- Android FLAG_SECURE is NOT implemented (`MainActivity.kt` is an empty `FlutterActivity`) — do not assume screen capture is blocked.
+- Android `FLAG_SECURE` and iOS capture blur are implemented via `ContentProtectionLifecycle` on reader/PDF routes (`MainActivity.applySecureMode`). Desktop/web capture blocking is limited or absent — do not treat these hooks as DRM.
 - New strings live in TWO arb files; forgetting `app_am.arb` ships an English string on the Amharic locale.
 
 ## Never do

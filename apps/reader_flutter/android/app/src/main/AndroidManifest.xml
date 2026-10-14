@@ -14,7 +14,8 @@ found in the LICENSE file. -->
     <application
         android:label="ፈለገ መጻሕፍት"
         android:icon="@mipmap/ic_launcher"
-        android:usesCleartextTraffic="true">
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:usesCleartextTraffic="false">
         <activity android:name=".MainActivity"
                   android:exported="true"
                   android:theme="@android:style/Theme.Black.NoTitleBar"

@@ -28,8 +28,12 @@ Future<void> vaultWrite(String bookId, String name, Uint8List bytes) async {
     await target.parent.create(recursive: true);
   }
   // Write-then-rename so a crash mid-write never leaves a half file.
+  // On Windows, rename fails if the destination already exists — replace first.
   final tmp = File('${target.path}.tmp');
   await tmp.writeAsBytes(bytes, flush: true);
+  if (await target.exists()) {
+    await target.delete();
+  }
   await tmp.rename(target.path);
 }
 

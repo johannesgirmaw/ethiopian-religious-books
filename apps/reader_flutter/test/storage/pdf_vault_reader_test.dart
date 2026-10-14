@@ -79,6 +79,7 @@ void main() {
       revisionId: 'rev',
       chunkSize: chunkSize,
       readSealed: (index) async => sealed[index],
+      aadContextForIndex: _aad,
     );
     expect(await copy.readAll(), plain);
   });
@@ -92,7 +93,23 @@ void main() {
 
     expect(reader.read(Uint8List(4), 8, 4), throwsA(isA<Object>()));
   });
+
+  test('wrong AAD rejects a sealed chunk', () async {
+    const chunkSize = 8;
+    final plain = Uint8List.fromList(List<int>.generate(20, (i) => i + 1));
+    final sealed = await _sealChunks(plain, chunkSize);
+    final reader = ChunkedPdfReader(
+      plainSize: plain.length,
+      revisionId: 'rev',
+      chunkSize: chunkSize,
+      readSealed: (index) async => sealed[index],
+      aadContextForIndex: (_) => 'pdf:other:gen:0',
+    );
+    expect(reader.read(Uint8List(4), 0, 4), throwsA(isA<Object>()));
+  });
 }
+
+String _aad(int index) => 'pdf:book:gen:$index';
 
 ChunkedPdfReader _reader(int size, int chunkSize, List<Uint8List> sealed) {
   return ChunkedPdfReader(
@@ -100,6 +117,7 @@ ChunkedPdfReader _reader(int size, int chunkSize, List<Uint8List> sealed) {
     revisionId: 'rev',
     chunkSize: chunkSize,
     readSealed: (index) async => sealed[index],
+    aadContextForIndex: _aad,
   );
 }
 
@@ -111,7 +129,12 @@ Future<List<Uint8List>> _sealChunks(Uint8List plain, int chunkSize) async {
     final end =
         start +
         pdfVaultPlainChunkLength(plain.length, index, chunkSize: chunkSize);
-    sealed.add(await BookCrypto.seal(plain.sublist(start, end)));
+    sealed.add(
+      await BookCrypto.seal(
+        plain.sublist(start, end),
+        aadContext: _aad(index),
+      ),
+    );
   }
   return sealed;
 }

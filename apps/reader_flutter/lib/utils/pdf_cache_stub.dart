@@ -7,3 +7,5 @@ Future<void> cachePdfFromNetwork(
   Uri uri, {
   Map<String, String>? headers,
 }) async {}
+
+Future<void> clearNativePdfTempCache({String? bookId}) async {}

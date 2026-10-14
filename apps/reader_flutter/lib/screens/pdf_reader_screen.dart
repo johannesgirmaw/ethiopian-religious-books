@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -205,10 +204,6 @@ class _PdfReaderBody extends ConsumerWidget {
             onAction: () => ref.invalidate(pdfViewerSourceProvider(bookId)),
           ),
           data: (source) {
-            final access = ref.watch(pdfBookAccessProvider(bookId)).valueOrNull;
-            final nativeCache = !kIsWeb && source.uri != null && access != null
-                ? access
-                : null;
             return ContentProtectionLifecycle(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
@@ -222,7 +217,8 @@ class _PdfReaderBody extends ConsumerWidget {
                   sourceName: source.sourceName,
                   headers: source.headers,
                   preferRangeAccess: source.preferRangeAccess,
-                  nativeCacheAccess: nativeCache,
+                  // Plaintext temp-dir caching is disabled; sealed vault only.
+                  nativeCacheAccess: null,
                   loadingLabel: l10n.pdfLoadingLabel,
                   errorTitle: l10n.pdfOpenFailed,
                   onRetry: () {

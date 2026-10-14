@@ -115,11 +115,11 @@ Uri webPdfProxyUri(String bookId, {String revisionId = ''}) {
   );
 }
 
-/// Resolves a local file when one is already complete, otherwise a URL the
-/// viewer can fetch.
+/// Resolves a URL (or vault-backed source upstream) for the PDF viewer.
 ///
 /// Web always uses the authenticated same-origin proxy (never a MinIO URL).
-/// Native prefers a complete local cache, else a short-lived presigned URL.
+/// Native uses a short-lived presigned URL — plaintext temp-dir caches are
+/// not used (sealed offline copies live in [SecureBookStore] only).
 Future<PdfViewerSource> resolvePdfViewerSource(
   PdfBookAccess access, {
   String? accessToken,
@@ -137,8 +137,9 @@ Future<PdfViewerSource> resolvePdfViewerSource(
     );
   }
 
-  final cached = await pdf_cache.cachedPdfPath(access);
-  if (cached != null) return PdfViewerSource.file(cached);
+  // Drop any leftover plaintext temp cache from older app versions.
+  await pdf_cache.clearNativePdfTempCache(bookId: access.bookId);
+
   final url = access.url.trim();
   if (url.isEmpty) {
     throw StateError('PDF open requires a download URL on this platform.');

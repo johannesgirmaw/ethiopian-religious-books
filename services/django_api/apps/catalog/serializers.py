@@ -32,6 +32,7 @@ class BookListSerializer(serializers.ModelSerializer):
     # inline so the catalog app keeps no dependency on the payments app.
     final_price = serializers.SerializerMethodField()
     content_format = serializers.SerializerMethodField()
+    viewer_can_manage = serializers.SerializerMethodField()
 
     class Meta:
         model = Book
@@ -65,11 +66,17 @@ class BookListSerializer(serializers.ModelSerializer):
             "published_revision",
             "created_at",
             "tags",
+            "viewer_can_manage",
         )
 
     def get_final_price(self, obj: Book) -> str:
         value = obj.sale_price if obj.sale_price is not None else obj.price
         return str(value if value is not None else 0)
+
+    def get_viewer_can_manage(self, obj: Book) -> bool:
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request is not None else None
+        return can_manage_book(obj, user)
 
     def get_content_format(self, obj: Book) -> str | None:
         rev = obj.published_revision

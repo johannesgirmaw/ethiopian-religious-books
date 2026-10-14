@@ -11,14 +11,18 @@ offline, while keeping the stored content **encrypted at rest** and **revocable*
 ## 1. Goals & threat model
 
 ### What this delivers
-- Books download to the **device disk** (never a shared/cloud location) and are
-  stored **AES-256-GCM encrypted**.
+- Offline downloads on **mobile + desktop** are stored **AES-256-GCM encrypted**
+  under the app documents vault (never a shared/cloud folder).
 - The decryption key lives in the device's **hardware-backed secure store**
   (iOS Keychain / Android Keystore / macOS Keychain / Linux libsecret / Windows
-  DPAPI) and is **never written into any file**.
+  DPAPI) and is **never written into any vault file**.
 - Offline access is governed by a **server-signed license (lease)** that expires
   and must be renewed online — so a **refunded/revoked** purchase loses offline
-  access.
+  access once the client next talks to the server (and immediately when
+  entitlements are checked online).
+- Online chapter/PDF access is **entitlement-gated on the server**
+  (`user_owns_book` / managers). Plaintext temp-dir / Cache Storage PDF caches
+  are **not** used.
 
 ### What is guaranteed
 Files copied off the device — backups, file managers, another app's sandbox, a
@@ -80,9 +84,10 @@ def user_owns_book(user, book) -> bool:
     # True if the book is free (final_price <= 0) or the user has a COMPLETED purchase.
 ```
 
-Single source of truth shared by the download endpoint, the license endpoint and
-the reader buy-gate, so they never disagree. Mirrors the query in
-`EntitlementsView`.
+Single source of truth shared by the download endpoint, the license endpoint,
+PDF bytes/metadata, chapter `/content` + `/search` + `/chapters`, and the
+reader buy-gate, so they never disagree. Managers (`can_manage_book`) may also
+preview. Mirrors the query in `EntitlementsView`.
 
 ### 3.2 Offline license — `apps/catalog/licensing.py`
 
@@ -107,8 +112,10 @@ A license is a **HMAC-SHA256 (HS256) signed JWT** lease:
 | Method & path | View | Purpose |
 |---------------|------|---------|
 | `POST /v1/devices/register` | `DeviceRegisterView` | Register/rotate a device's public key; idempotent on `(user, device_id)` |
-| `POST /v1/books/{id}/license` | `BookLicenseView` | **Issue or renew** an offline lease. Re-checks entitlement every call (the revocation lever). Decoupled from S3. |
-| `GET /v1/books/{id}/download` | `BookDownloadView` | Now **entitlement-gated** (403 if not owned); also embeds a license in its payload |
+| `POST /v1/books/{id}/license` | `BookLicenseView` | **Issue or renew** an offline lease. Requires a **registered** non-empty `device_id`. Re-checks entitlement every call (the revocation lever). Decoupled from S3. |
+| `GET /v1/books/{id}/download` | `BookDownloadView` | Entitlement-gated; requires registered `device_id`; embeds a license in its payload |
+| `GET /v1/books/{id}/content` | `BookContentView` | Entitlement-gated full chapter tree (managers exempt) |
+| `GET /v1/books/{id}/pdf` (+ `/pdf/bytes`) | `BookPdfView` / `BookPdfBytesView` | Entitlement-gated PDF metadata / byte proxy |
 
 Request/response shapes:
 
@@ -127,8 +134,10 @@ Request/response shapes:
 ### 3.4 Device registry — `apps/accounts/models.py` (+ migration `0005_userdevice.py`)
 
 `UserDevice(user, device_id, public_key, platform, label, created_at, last_seen)`
-with a unique `(user, device_id)`. The **public key** is stored for future
-server-side per-device key-wrapping; the private half never leaves the device.
+with a unique `(user, device_id)`. License issue/renew **requires** a matching
+row (register first). The optional **public key** field is reserved for future
+server-side per-device key-wrapping; the Flutter client currently registers
+`device_id` + `platform` only.
 
 ### 3.5 Settings — `config/settings/base.py`
 
@@ -152,9 +161,14 @@ Override in debug with `--dart-define=USE_MACOS_KEYCHAIN=true`.
 ### 4.2 Crypto core — `lib/security/book_crypto.dart`
 
 - A single **256-bit AES-GCM master key** (KEK), generated on first use and kept
-  via `SecureKeyValue`. **Never written into a vault file.**
-- Blob format: `nonce(12) ‖ ciphertext ‖ mac(16)`. The 128-bit GCM tag
-  authenticates every blob — tampering makes `open()` throw, not return forgeries.
+  via `SecureKeyValue` / `secure_storage_factory.dart` (Android EncryptedSharedPreferences,
+  iOS Keychain `first_unlock_this_device`). **Never written into a vault file.**
+  Corrupt or wrong-length key material is discarded and rotated.
+- **Legacy** blob format: `nonce(12) ‖ ciphertext ‖ mac(16)`.
+- **Format v1** (when `aadContext` is set): `0x01 ‖ nonce ‖ ciphertext ‖ mac`, with
+  the UTF-8 context string as GCM **AAD** so ciphertext cannot be swapped across
+  books/chunks (`book:{id}:content`, `pdf:{id}:{generation}:{index}`, …). Legacy
+  blobs still open without AAD.
 - API: `seal` / `open`, `sealJson` / `openJson`, `wipeMasterKey()`.
 - Native acceleration via the `cryptography_flutter` plugin (auto-registered).
 
@@ -185,7 +199,8 @@ On-disk layout (native): `{appDocuments}/library/{bookId}/`
 
 `OfflineLicense` exposes `isExpired` and `needsRenewal({days})`;
 `SecureBookStore.hasValidOfflineAccess(bookId, deviceId)` is the offline gate:
-a sealed, unexpired, **this-device** license must be present.
+a sealed, unexpired license with a **non-empty device id matching this device**
+must be present (empty ids fail closed).
 
 ### 4.5 Cache façade + legacy wipe — `lib/storage/book_content_cache_storage.dart`
 
@@ -205,16 +220,19 @@ plaintext `book_content_cache_*` SharedPreferences keys (guarded by
 
 Failures surface clear messages: **403 → "purchase this book first"**,
 404 → "not available for download yet", empty content → "no readable content yet".
-**No S3** is involved.
+Chapter books use `/content` (DB index). **PDF offline downloads** stream from
+a short-lived MinIO/S3 presigned URL (or the web proxy) and seal chunks into
+the vault — objects in S3 remain plaintext (see §9).
 
 ### 4.7 Decrypt-on-read + renewal — `lib/providers/catalog_providers.dart`
 
 `bookContentProvider`:
-- **Online:** fetch `/content`, seal to vault, and **silently renew** the lease if
-  it's near expiry (`_maybeRenewOfflineLicense`). A **403 on renewal** (purchase
-  revoked) drops the local license, ending offline access at the current lease's end.
+- **Online:** fetch `/content` (server entitlement-gated), seal to vault, and
+  **silently renew** the lease if it's near expiry (`_maybeRenewOfflineLicense`).
+  A **403** (purchase revoked) drops the local license immediately.
 - **Offline:** serve the encrypted cache **only** if a valid this-device license
   exists; otherwise it refuses (you must Download to read offline).
+- Book detail screens do **not** prefetch `/content` for unowned priced books.
 
 The reader UI (`reader_screen.dart`, `stored_rich_text_view.dart`) is unchanged —
 it still consumes a `BookContentTree`.
@@ -248,8 +266,9 @@ key.
 re-requests a license; entitlement is re-checked server-side.
 
 **Revocation:** mark the purchase non-`COMPLETED` (refund/chargeback). The next
-online renewal returns **403**; the app drops the local license and offline
-access ends when the current lease expires.
+online license renewal or entitlements check returns **403** / not entitled; the
+app drops the local license immediately. A device that never comes online keeps
+the old lease until local expiry (client-side DRM limit).
 
 **Logout:** vault + master key wiped → all downloads become unreadable.
 
@@ -329,14 +348,18 @@ is in the project QA gates.
   natural next step is to **encrypt content in S3 and wrap the per-book content
   key (CEK) to each device's public key** (ECIES/RSA-OAEP) — no rework of this
   layer required.
+- **Device public keys:** `UserDevice.public_key` is unused by the client today.
+  Before S3 CEK wrapping, generate a device keypair and register the public half.
 - **Hardware-non-exportable keys:** the master key is hardware-*protected* at
   rest but is read into Dart memory to encrypt/decrypt. A future hardening is to
   perform wrap/unwrap inside the Secure Enclave / StrongBox via a platform
   channel so the key never enters app memory.
-- **Anti-extraction layers** (optional, cost-raising, documented as non-absolute):
-  Android `FLAG_SECURE` + iOS capture detection on reader screens, root/jailbreak
-  detection gating decryption, TLS certificate pinning, and obfuscated release
-  builds (`flutter build --obfuscate --split-debug-info`).
+- **Anti-extraction layers** (cost-raising, documented as non-absolute):
+  Android `FLAG_SECURE` and iOS capture/app-switcher blur are wired on
+  reader/PDF routes via `ContentProtectionLifecycle` (refcount-safe across
+  nested routes). Optional future work: root/jailbreak detection gating
+  decryption, TLS certificate pinning, and obfuscated release builds
+  (`flutter build --obfuscate --split-debug-info`).
 
 ---
 

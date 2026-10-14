@@ -6,8 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_config.dart';
 import '../models/user_profile.dart';
 import '../security/book_crypto.dart';
+import '../security/device_identity.dart';
 import '../storage/secure_book_store.dart';
 import '../storage/token_storage.dart';
+import '../utils/pdf_cache_stub.dart'
+    if (dart.library.io) '../utils/pdf_cache_io.dart' as pdf_cache;
 import '../utils/pdf_full_cache_stub.dart'
     if (dart.library.html) '../utils/pdf_full_cache_web.dart' as pdf_full_cache;
 
@@ -196,14 +199,19 @@ class SessionNotifier extends AsyncNotifier<Session?> {
 
   Future<void> clear() async {
     await _storage.clear();
-    // Drop the encrypted offline library and its device key so a different user
-    // on this device cannot read the previous user's downloaded books.
+    // Next login must re-register this install under the new user.
+    DeviceIdentity.clearSessionRegistration();
+    // Wipe the master key first so leftover vault files become unreadable even
+    // if a later delete fails. Then clear vault + any plaintext PDF leftovers.
+    try {
+      await BookCrypto.wipeMasterKey();
+    } catch (_) {}
     try {
       await SecureBookStore.clearAll();
-      await BookCrypto.wipeMasterKey();
-    } catch (_) {
-      // Best-effort: never block sign-out on vault cleanup.
-    }
+    } catch (_) {}
+    try {
+      await pdf_cache.clearNativePdfTempCache();
+    } catch (_) {}
     // Web: also wipe Cache Storage PDFs (unencrypted browser blobs).
     try {
       await pdf_full_cache.clearPdfFullCache();

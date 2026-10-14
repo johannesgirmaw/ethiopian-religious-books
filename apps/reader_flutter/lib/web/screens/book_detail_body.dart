@@ -68,7 +68,6 @@ class BookDetailBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final asyncBook = ref.watch(bookDetailProvider(bookId));
-    final contentAsync = ref.watch(bookContentProvider(bookId));
     final downloadJobs = ref.watch(downloadJobsProvider);
     final padding = WebTokens.pagePadding(AppLayoutScope.tierOf(context));
     final tier = AppLayoutScope.tierOf(context);
@@ -87,17 +86,24 @@ class BookDetailBody extends ConsumerWidget {
         if (book.isPdf) {
           ref.watch(pdfWarmupProvider(bookId));
         }
-        final tree = contentAsync.valueOrNull;
+        final owned =
+            ref.watch(entitledBookIdsProvider).valueOrNull?.contains(bookId) ??
+            false;
+        final canFetchContent = !book.isPdf &&
+            (owned || !book.requiresPurchase || book.viewerCanManage);
+        final contentAsync = canFetchContent
+            ? ref.watch(bookContentProvider(bookId))
+            : null;
+        final tree = contentAsync?.valueOrNull;
         final chapters = tree?.chapters ?? const <BookContentChapter>[];
         final chapterCount = chapters.isEmpty ? null : chapters.length;
         final pageCount = tree?.totalPages;
         final hasSummary = book.summary?.trim().isNotEmpty == true;
         final showToc =
-            !book.isPdf && (contentAsync.isLoading || chapters.isNotEmpty);
+            canFetchContent &&
+            contentAsync != null &&
+            (contentAsync.isLoading || chapters.isNotEmpty);
         final showReviews = reviews.isNotEmpty;
-        final owned =
-            ref.watch(entitledBookIdsProvider).valueOrNull?.contains(bookId) ??
-            false;
         final resumeCheckout =
             !owned &&
             (ref
@@ -119,7 +125,8 @@ class BookDetailBody extends ConsumerWidget {
             !purchasePending &&
             !resumeCheckout;
         // Offline save is only for free books or books the user already owns.
-        final canSaveOffline = owned || !book.requiresPurchase;
+        final canSaveOffline =
+            owned || !book.requiresPurchase || book.viewerCanManage;
 
         Future<void> onRead() async {
           if (purchasePending) return;
@@ -167,7 +174,7 @@ class BookDetailBody extends ConsumerWidget {
           if (showToc)
             _ContentsSection(
               tree: tree,
-              loading: contentAsync.isLoading,
+              loading: contentAsync!.isLoading,
               l10n: l10n,
               onChapter: (key) => context.push(
                 readingPathForBook(bookId, isPdf: false, query: 'chapter=$key'),

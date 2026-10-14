@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,9 +16,11 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final store = <String, String>{};
+  late Directory tempDocs;
 
   setUp(() async {
     store.clear();
+    tempDocs = await Directory.systemTemp.createTemp('fm_vault_test_');
     await BookCrypto.wipeMasterKey().catchError((_) {});
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(_secureStorageChannel, (call) async {
@@ -42,6 +45,25 @@ void main() {
       }
       return null;
     });
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('plugins.flutter.io/path_provider'),
+      (call) async {
+        if (call.method == 'getApplicationDocumentsDirectory') {
+          return tempDocs.path;
+        }
+        if (call.method == 'getTemporaryDirectory') {
+          return tempDocs.path;
+        }
+        return null;
+      },
+    );
+  });
+
+  tearDown(() async {
+    try {
+      if (await tempDocs.exists()) await tempDocs.delete(recursive: true);
+    } catch (_) {}
   });
 
   group('BookCrypto AES-256-GCM', () {
@@ -70,6 +92,33 @@ void main() {
       store.clear();
       await BookCrypto.wipeMasterKey();
       expect(BookCrypto.open(blob), throwsA(isA<Object>()));
+    });
+
+    test('AAD binds ciphertext to context (v1)', () async {
+      final blob = await BookCrypto.seal(
+        utf8.encode('bound'),
+        aadContext: 'pdf:book:gen:0',
+      );
+      expect(blob.first, 0x01);
+      final plain = await BookCrypto.open(
+        blob,
+        aadContext: 'pdf:book:gen:0',
+      );
+      expect(utf8.decode(plain), 'bound');
+      expect(
+        BookCrypto.open(blob, aadContext: 'pdf:other:gen:0'),
+        throwsA(isA<Object>()),
+      );
+    });
+
+    test('legacy blobs without AAD still open', () async {
+      final legacy = await BookCrypto.seal(utf8.encode('legacy'));
+      expect(legacy.first, isNot(0x01));
+      final plain = await BookCrypto.open(
+        legacy,
+        aadContext: 'ignored-for-legacy',
+      );
+      expect(utf8.decode(plain), 'legacy');
     });
   });
 
@@ -104,6 +153,64 @@ void main() {
       );
       expect(lic.isExpired, isFalse);
       expect(lic.needsRenewal(days: 5), isTrue);
+    });
+  });
+
+  group('hasValidOfflineAccess device binding', () {
+    int ms(Duration d) => DateTime.now().add(d).millisecondsSinceEpoch;
+
+    test('caller empty device id fails closed', () async {
+      await SecureBookStore.writeLicense(
+        'book-a',
+        OfflineLicense(
+          token: 'tok',
+          deviceId: 'dev',
+          expiresAtEpochMs: ms(const Duration(days: 10)),
+        ),
+      );
+      expect(
+        await SecureBookStore.hasValidOfflineAccess('book-a', deviceId: ''),
+        isFalse,
+      );
+    });
+
+    test('legacy empty license device id is rebound once', () async {
+      await SecureBookStore.writeLicense(
+        'book-legacy',
+        OfflineLicense(
+          token: 'tok',
+          deviceId: '',
+          expiresAtEpochMs: ms(const Duration(days: 10)),
+        ),
+      );
+      expect(
+        await SecureBookStore.hasValidOfflineAccess(
+          'book-legacy',
+          deviceId: 'dev-now',
+        ),
+        isTrue,
+      );
+      final rebound = await SecureBookStore.readLicense('book-legacy');
+      expect(rebound?.deviceId, 'dev-now');
+    });
+
+    test('mismatched device is rejected', () async {
+      await SecureBookStore.writeLicense(
+        'book-b',
+        OfflineLicense(
+          token: 'tok',
+          deviceId: 'dev-1',
+          expiresAtEpochMs: ms(const Duration(days: 10)),
+        ),
+      );
+      expect(
+        await SecureBookStore.hasValidOfflineAccess('book-b', deviceId: 'dev-2'),
+        isFalse,
+      );
+      expect(
+        await SecureBookStore.hasValidOfflineAccess('book-b', deviceId: 'dev-1'),
+        isTrue,
+      );
     });
   });
 }

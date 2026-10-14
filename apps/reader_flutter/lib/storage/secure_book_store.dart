@@ -110,11 +110,16 @@ class SecureBookStore {
   static const _pdfMetaName = 'pdf_meta.enc';
   static const _pdfPartialName = 'pdf_partial.enc';
 
+  static String _aad(String bookId, String kind) => 'book:$bookId:$kind';
+
   static Future<BookContentTree?> readBookContent(String bookId) async {
     final blob = await vaultRead(bookId, _contentName);
     if (blob == null) return null;
     try {
-      final map = await BookCrypto.openJson(blob);
+      final map = await BookCrypto.openJson(
+        blob,
+        aadContext: _aad(bookId, 'content'),
+      );
       return BookContentTree.fromJson(map);
     } catch (_) {
       return null; // tampered, wrong key, or corrupt — treat as absent
@@ -126,12 +131,19 @@ class SecureBookStore {
     Map<String, dynamic> raw, {
     BookCacheMeta? meta,
   }) async {
-    await vaultWrite(bookId, _contentName, await BookCrypto.sealJson(raw));
+    await vaultWrite(
+      bookId,
+      _contentName,
+      await BookCrypto.sealJson(raw, aadContext: _aad(bookId, 'content')),
+    );
     if (meta != null && meta.title.trim().isNotEmpty) {
       await vaultWrite(
         bookId,
         _metaName,
-        await BookCrypto.sealJson(meta.toJson()),
+        await BookCrypto.sealJson(
+          meta.toJson(),
+          aadContext: _aad(bookId, 'meta'),
+        ),
       );
     }
   }
@@ -140,7 +152,9 @@ class SecureBookStore {
     final blob = await vaultRead(bookId, _metaName);
     if (blob == null) return null;
     try {
-      final meta = BookCacheMeta.fromJson(await BookCrypto.openJson(blob));
+      final meta = BookCacheMeta.fromJson(
+        await BookCrypto.openJson(blob, aadContext: _aad(bookId, 'meta')),
+      );
       return meta.title.isEmpty ? null : meta;
     } catch (_) {
       return null;
@@ -152,7 +166,10 @@ class SecureBookStore {
     await vaultWrite(
       bookId,
       _metaName,
-      await BookCrypto.sealJson(meta.toJson()),
+      await BookCrypto.sealJson(
+        meta.toJson(),
+        aadContext: _aad(bookId, 'meta'),
+      ),
     );
   }
 
@@ -250,7 +267,10 @@ class SecureBookStore {
         bookId,
         generation,
         index,
-        await BookCrypto.seal(plain),
+        await BookCrypto.seal(
+          plain,
+          aadContext: 'pdf:$bookId:$generation:$index',
+        ),
       );
       index++;
       await _writePdfPartial(bookId, generation, index);
@@ -333,6 +353,8 @@ class SecureBookStore {
       chunkSize: manifest.chunkSize,
       readSealed: (index) =>
           pdf_blob.readSealedChunk(bookId, manifest.generation, index),
+      aadContextForIndex: (index) =>
+          'pdf:$bookId:${manifest.generation}:$index',
     );
   }
 
@@ -353,7 +375,12 @@ class SecureBookStore {
     final blob = await vaultRead(bookId, _pdfMetaName);
     if (blob == null) return null;
     try {
-      return PdfVaultManifest.fromJson(await BookCrypto.openJson(blob));
+      return PdfVaultManifest.fromJson(
+        await BookCrypto.openJson(
+          blob,
+          aadContext: _aad(bookId, 'pdf_meta'),
+        ),
+      );
     } catch (_) {
       return null;
     }
@@ -366,7 +393,10 @@ class SecureBookStore {
     await vaultWrite(
       bookId,
       _pdfMetaName,
-      await BookCrypto.sealJson(manifest.toJson()),
+      await BookCrypto.sealJson(
+        manifest.toJson(),
+        aadContext: _aad(bookId, 'pdf_meta'),
+      ),
     );
   }
 
@@ -374,7 +404,10 @@ class SecureBookStore {
     final blob = await vaultRead(bookId, _pdfPartialName);
     if (blob == null) return null;
     try {
-      final json = await BookCrypto.openJson(blob);
+      final json = await BookCrypto.openJson(
+        blob,
+        aadContext: _aad(bookId, 'pdf_partial'),
+      );
       final generation = json['generation'] as String? ?? '';
       if (generation.isEmpty) return null;
       return _PdfPartial(generation, (json['count'] as num?)?.toInt() ?? 0);
@@ -391,7 +424,10 @@ class SecureBookStore {
     await vaultWrite(
       bookId,
       _pdfPartialName,
-      await BookCrypto.sealJson({'generation': generation, 'count': count}),
+      await BookCrypto.sealJson(
+        {'generation': generation, 'count': count},
+        aadContext: _aad(bookId, 'pdf_partial'),
+      ),
     );
   }
 
@@ -404,7 +440,10 @@ class SecureBookStore {
     await vaultWrite(
       bookId,
       _licenseName,
-      await BookCrypto.sealJson(lic.toJson()),
+      await BookCrypto.sealJson(
+        lic.toJson(),
+        aadContext: _aad(bookId, 'license'),
+      ),
     );
   }
 
@@ -412,26 +451,41 @@ class SecureBookStore {
     final blob = await vaultRead(bookId, _licenseName);
     if (blob == null) return null;
     try {
-      return OfflineLicense.fromJson(await BookCrypto.openJson(blob));
+      return OfflineLicense.fromJson(
+        await BookCrypto.openJson(blob, aadContext: _aad(bookId, 'license')),
+      );
     } catch (_) {
       return null;
     }
   }
 
   /// Whether the book may be opened offline: a sealed, unexpired license issued
-  /// to this device must be present.
+  /// to this device must be present. Empty caller [deviceId] fails closed.
+  ///
+  /// Licenses written before device-binding (empty ``device_id``) are rebound
+  /// once to this install — the vault master key already ties ciphertext to
+  /// the device, so this only repairs the lease metadata.
   static Future<bool> hasValidOfflineAccess(
     String bookId, {
     required String deviceId,
   }) async {
     final lic = await readLicense(bookId);
     if (lic == null || lic.token.isEmpty) return false;
-    if (lic.deviceId.isNotEmpty &&
-        deviceId.isNotEmpty &&
-        lic.deviceId != deviceId) {
-      return false;
+    if (deviceId.isEmpty) return false;
+    if (lic.isExpired) return false;
+    if (lic.deviceId.isEmpty) {
+      await writeLicense(
+        bookId,
+        OfflineLicense(
+          token: lic.token,
+          deviceId: deviceId,
+          expiresAtEpochMs: lic.expiresAtEpochMs,
+          revisionId: lic.revisionId,
+        ),
+      );
+      return true;
     }
-    return !lic.isExpired;
+    return lic.deviceId == deviceId;
   }
 }
 

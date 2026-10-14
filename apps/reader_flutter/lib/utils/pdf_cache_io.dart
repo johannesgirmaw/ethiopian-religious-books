@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'pdf_book_loader.dart';
@@ -12,134 +11,51 @@ File _cacheFileFor(Directory dir, PdfBookAccess access) {
   );
 }
 
-/// Returns a finished local copy of [access], or null when the reader should
-/// stream the PDF by byte range instead of waiting for the whole file.
+/// Returns a finished local copy of [access], or null.
+///
+/// Plaintext temp-dir caching is disabled for security (ciphertext belongs in
+/// [SecureBookStore] only). This still recognizes leftover files so
+/// [clearNativePdfTempCache] can remove them.
 Future<String?> cachedPdfPath(PdfBookAccess access) async {
   final dir = await getTemporaryDirectory();
   final file = _cacheFileFor(dir, access);
   if (!await file.exists()) return null;
-  final length = await file.length();
-  if (!_isAcceptableCacheLength(length, access.sizeBytes)) {
-    try {
-      await file.delete();
-    } catch (_) {}
-    return null;
-  }
   return file.path;
 }
 
-bool _isAcceptableCacheLength(int length, int expectedBytes) {
-  if (length <= 8) return false;
-  // Prefer exact match against API size; allow unknown expected size.
-  if (expectedBytes <= 0) return true;
-  return length == expectedBytes;
-}
-
-/// Download [uri] into the native temp-dir cache so the next open uses
-/// [PdfViewer.file] instead of re-streaming from the network.
+/// Formerly downloaded [uri] into the OS temp directory as plaintext.
 ///
-/// Safe to call after the viewer is already open from [uri]; failures are
-/// swallowed so caching never blocks reading. Concurrent calls for the same
-/// revision coalesce on the `.part` file path.
+/// That path defeated encryption-at-rest. Online opens now stream from the
+/// network URI (or the sealed vault when offline). This no-op remains so
+/// callers compile; it never writes disk.
 Future<void> cachePdfFromNetwork(
   PdfBookAccess access,
   Uri uri, {
   Map<String, String>? headers,
-}) async {
-  if (access.bookId.isEmpty) return;
-  final existing = await cachedPdfPath(access);
-  if (existing != null) return;
+}) async {}
 
-  final dir = await getTemporaryDirectory();
-  final target = _cacheFileFor(dir, access);
-  final partial = File('${target.path}.part');
-  final lock = File('${target.path}.locking');
-
-  // Cheap single-process lock so two ready-callbacks don't race.
-  if (await lock.exists()) {
-    final age = DateTime.now().difference(await lock.lastModified());
-    if (age < const Duration(minutes: 6)) return;
-    try {
-      await lock.delete();
-    } catch (_) {}
-  }
+/// Delete plaintext PDF leftovers under the OS temp directory.
+///
+/// When [bookId] is set, only that book's `pdf_{bookId}_*` files are removed.
+/// Otherwise every `pdf_*` cache file from this app is wiped (logout).
+Future<void> clearNativePdfTempCache({String? bookId}) async {
   try {
-    await lock.writeAsString('${DateTime.now().millisecondsSinceEpoch}');
-  } catch (_) {
-    return;
-  }
-
-  final client = Dio(
-    BaseOptions(
-      connectTimeout: const Duration(seconds: 20),
-      receiveTimeout: const Duration(minutes: 5),
-      validateStatus: (status) => status != null && status >= 200 && status < 300,
-    ),
-  );
-  try {
-    if (await partial.exists()) {
+    final dir = await getTemporaryDirectory();
+    if (!await dir.exists()) return;
+    final prefix = bookId == null || bookId.isEmpty
+        ? 'pdf_'
+        : 'pdf_${bookId}_';
+    await for (final entity in dir.list(followLinks: false)) {
+      if (entity is! File) continue;
+      final name = entity.uri.pathSegments.isEmpty
+          ? entity.path.split(Platform.pathSeparator).last
+          : entity.uri.pathSegments.last;
+      if (!name.startsWith(prefix)) continue;
       try {
-        await partial.delete();
+        await entity.delete();
       } catch (_) {}
     }
-    final response = await client.downloadUri(
-      uri,
-      partial.path,
-      options: Options(headers: headers),
-    );
-    final length = await partial.length();
-    final headerLen = int.tryParse(
-          response.headers.value('content-length') ?? '',
-        ) ??
-        0;
-
-    final matchesApi = _isAcceptableCacheLength(length, access.sizeBytes);
-    final matchesHeader = headerLen > 0 && length == headerLen;
-    final looksLikePdf = await _looksLikePdfFile(partial);
-    // Prefer exact API size; if size drifted after linearize, accept a complete
-    // Content-Length match that still looks like a PDF.
-    final acceptable = matchesApi ||
-        (looksLikePdf && (matchesHeader || access.sizeBytes <= 0));
-    if (!acceptable) {
-      try {
-        await partial.delete();
-      } catch (_) {}
-      return;
-    }
-
-    if (await target.exists()) {
-      try {
-        await target.delete();
-      } catch (_) {}
-    }
-    await partial.rename(target.path);
   } catch (_) {
-    try {
-      if (await partial.exists()) await partial.delete();
-    } catch (_) {}
-  } finally {
-    client.close(force: true);
-    try {
-      if (await lock.exists()) await lock.delete();
-    } catch (_) {}
-  }
-}
-
-Future<bool> _looksLikePdfFile(File file) async {
-  try {
-    final raf = await file.open();
-    try {
-      final head = await raf.read(5);
-      return head.length >= 5 &&
-          head[0] == 0x25 &&
-          head[1] == 0x50 &&
-          head[2] == 0x44 &&
-          head[3] == 0x46 &&
-          head[4] == 0x2d;
-    } finally {
-      await raf.close();
-    }
-  } catch (_) {
-    return false;
+    // Best-effort: never block sign-out or entitlement revoke on cleanup.
   }
 }
