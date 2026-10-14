@@ -367,7 +367,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final items = ref.read(catalogProvider).valueOrNull?.items;
           if (items == null) return null;
           for (final b in items) {
-            if (b.id == id && b.isPdf) return '/pdf/$id';
+            if (b.id == id && b.isPdf) {
+              final from = state.uri.queryParameters['from'];
+              if (from == null || from.isEmpty) return '/pdf/$id';
+              return '/pdf/$id?from=${Uri.encodeQueryComponent(from)}';
+            }
           }
           return null;
         },

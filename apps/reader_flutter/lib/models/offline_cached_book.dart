@@ -35,7 +35,10 @@ class OfflineCachedBook {
     required bool hasPdf,
   }) => hasPdf || (chapterCount > 0 && pageCount > 0);
 
-  String get readPath => isPdf ? '/pdf/$id' : '/reader/$id';
+  String get readPath {
+    final path = isPdf ? '/pdf/$id' : '/reader/$id';
+    return '$path?from=downloads';
+  }
 
   BookSummary get displaySummary =>
       catalogBook ??

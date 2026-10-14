@@ -82,13 +82,25 @@ void openBookInReader(
   );
 }
 
-/// Leaves the reader and lands on book detail.
+/// Leaves the reader.
 ///
-/// If detail is already the previous overlay, just pop so the stack stays
-/// intact (admin list → detail → reader → detail → admin list).
+/// Opened from Downloads: return to that list. Opened from book detail: pop
+/// back to detail. Otherwise replace this route with book detail.
 void leaveReaderToBookDetail(BuildContext context, String bookId) {
-  final detailPath = '/book/$bookId';
   final router = GoRouter.of(context);
+  String? from;
+  try {
+    from = GoRouterState.of(context).uri.queryParameters['from'];
+  } catch (_) {}
+  if (from == 'downloads') {
+    if (router.canPop()) {
+      router.pop();
+      return;
+    }
+    router.go('/downloads');
+    return;
+  }
+  final detailPath = '/book/$bookId';
   try {
     final matches = router.routerDelegate.currentConfiguration.matches;
     if (matches.length >= 2) {
