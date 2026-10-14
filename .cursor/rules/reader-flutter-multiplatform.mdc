@@ -1,75 +1,46 @@
 ---
-description: Felege metsahft — folder layout, common vs mobile/web/desktop, feature parity
+description: Reader platform contract — common logic once, UI per platform, feature parity
 alwaysApply: true
 ---
 
-# Reader Flutter — Multi-Platform Layout
+# Reader Flutter — platform contract
 
-App: `apps/reader_flutter/`. Targets: **iOS**, **Android** (mobile) · **Web** · **macOS**, **Linux**, **Windows** (desktop).
+App: `apps/reader_flutter/`. Targets: iOS, Android, Web, macOS, Linux, Windows.
 
-## Directory structure
+Folder roles live in `apps/reader_flutter/lib/CLAUDE.md`. Follow that file for paths; this rule is the contract.
 
+## Where code goes
+
+| Kind | Path |
+| --- | --- |
+| Logic, tokens, l10n, storage, security | root `lib/` (`config`, `design`, `l10n`, `models`, `providers`, `router`, `storage`, `security`, `utils`) |
+| Route adapters | `lib/screens/` — branch only |
+| iOS + Android UI | `lib/mobile/` |
+| Web UI | `lib/web/` |
+| macOS + Linux + Windows UI | `lib/desktop/` |
+
+`lib/widgets/` is legacy mobile UI. New mobile UI goes in `lib/mobile/`. Move a legacy file there when you edit it.
+
+## Rules
+
+1. Data, auth, sync, and business rules have one implementation in common.
+2. UI is implemented separately in `mobile/`, `web/`, and `desktop/`. Those three folders do not import each other. Only `lib/screens/` may import all three.
+3. Share `AppColors`, `AppSpace`, `AppRadius`, and `AppTheme`. Keep widget trees and scaffolds in the platform folder that owns them.
+4. Ship the same user-facing behavior on all six targets unless the task scopes one platform.
+5. Add every user-visible string to both `lib/l10n/app_en.arb` and `app_am.arb`.
+
+## Route adapter
+
+Branch web, then desktop. Mobile is the unguarded fallthrough. Narrow web (under 720px) uses the mobile UI. `useDesktopShell` is false on web.
+
+```dart
+if (useWebShell(context)) {
+  return const WebPageScaffold(body: HomeScreenBody());
+}
+if (useDesktopShell(context)) {
+  return const DesktopPageScaffold(body: DesktopHomeScreenBody());
+}
+return const MobileHomeScreen();
 ```
-lib/
-├── config/          ┐
-├── design/          │
-├── l10n/            │  COMMON — shared by every platform
-├── models/          │  (logic, tokens, routing, strings)
-├── providers/       │
-├── router/          │
-├── storage/         │
-├── utils/           │
-├── common/platform/ ┘  shell guards (useMobileShell, useWebShell, useDesktopShell)
-├── screens/            route adapters — branch only, no platform layout
-│
-├── mobile/             iOS + Android UI ONLY
-│   ├── design/
-│   ├── layout/
-│   ├── screens/
-│   └── widgets/
-│       ├── shell/
-│       ├── catalog/
-│       └── reader/
-│
-├── web/                Flutter Web UI ONLY
-│   ├── design/
-│   ├── layout/
-│   ├── screens/
-│   └── widgets/
-│
-└── desktop/            macOS + Linux + Windows UI ONLY (one codebase, three runners)
-    ├── design/
-    ├── layout/
-    ├── screens/
-    └── widgets/
-```
 
-**Migration note:** legacy mobile widgets still live in `lib/widgets/` and mobile branches in `lib/screens/`. New mobile UI goes in `lib/mobile/`. Move files when touching a screen.
-
-## Platform → folder
-
-| Platforms | UI folder | Runners |
-| --- | --- | --- |
-| iOS, Android | `lib/mobile/` | `ios/`, `android/` |
-| Web | `lib/web/` | `web/` |
-| macOS, Linux, Windows | `lib/desktop/` | `macos/`, `linux/`, `windows/` |
-
-## Cross-platform rules
-
-1. **Common once** — providers, models, storage, API, l10n, shared design tokens.
-2. **UI three times** — implement in `mobile/`, `web/`, and `desktop/` separately.
-3. **No cross-imports** between `mobile/`, `web/`, and `desktop/`. Route adapters in `lib/screens/` may import all three.
-4. **Share tokens & patterns**, not widget trees or scaffolds.
-5. Feature parity across all six targets unless explicitly scoped (e.g. Android `FLAG_SECURE`).
-
-## Feature checklist
-
-1. Logic → common (`providers/`, `storage/`, etc.)
-2. Mobile UI → `lib/mobile/screens/` + `lib/mobile/widgets/`
-3. Web UI → `lib/web/screens/` + `lib/web/widgets/`
-4. Desktop UI → `lib/desktop/screens/` + `lib/desktop/widgets/`
-5. Route adapter → `lib/screens/<name>_screen.dart`
-6. Strings → `lib/l10n/app_en.arb`, `app_am.arb`
-7. Verify → `make reader-run-{android,ios,web,macos,linux,windows}`
-
-See `DESIGN_SYSTEM.md` for shared token details.
+Verify with `make reader-run-{android,ios,web,macos,linux,windows}`.

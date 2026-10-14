@@ -1,47 +1,30 @@
 ---
-description: Shared common layer — logic, tokens, routing (all platforms)
-globs: apps/reader_flutter/lib/config/**/*.dart,apps/reader_flutter/lib/design/**/*.dart,apps/reader_flutter/lib/l10n/**/*,apps/reader_flutter/lib/models/**/*.dart,apps/reader_flutter/lib/providers/**/*.dart,apps/reader_flutter/lib/router/**/*.dart,apps/reader_flutter/lib/storage/**/*.dart,apps/reader_flutter/lib/utils/**/*.dart,apps/reader_flutter/lib/common/**/*.dart
+description: Shared common layer — logic, tokens, routing, security (all platforms)
+globs: apps/reader_flutter/lib/config/**/*.dart,apps/reader_flutter/lib/design/**/*.dart,apps/reader_flutter/lib/l10n/**/*,apps/reader_flutter/lib/models/**/*.dart,apps/reader_flutter/lib/providers/**/*.dart,apps/reader_flutter/lib/router/**/*.dart,apps/reader_flutter/lib/storage/**/*.dart,apps/reader_flutter/lib/security/**/*.dart,apps/reader_flutter/lib/utils/**/*.dart,apps/reader_flutter/lib/common/**/*.dart,apps/reader_flutter/lib/screens/**/*.dart
 alwaysApply: false
 ---
 
-# Common Layer (all platforms)
+# Common layer
 
-Shared code lives at **`lib/` root** (conceptually the “common” layer). **Never** put platform-specific widgets or layouts here.
-
-## Folders
-
-| Path | Purpose |
-| --- | --- |
-| `lib/config/` | API base URL, env, host resolution |
-| `lib/design/` | Brand tokens, theme, shared typography (`app_tokens.dart`) |
-| `lib/l10n/` | ARB files + generated localizations |
-| `lib/models/` | DTOs / domain models |
-| `lib/providers/` | Riverpod — API, session, catalog, downloads |
-| `lib/router/` | `go_router` routes and navigation helpers |
-| `lib/storage/` | Secure storage, caches, prefs |
-| `lib/utils/` | Pure helpers (no `BuildContext`, no platform UI) |
-| `lib/common/platform/` | Shell guards: `useMobileShell`, `useWebShell`, `useDesktopShell` |
-| `lib/screens/` | **Route adapters only** — wire providers, branch to platform UI |
+Root `lib/` is shared by every target. Platform widgets belong in `lib/mobile/`, `lib/web/`, or `lib/desktop/`. Folder roles: `apps/reader_flutter/lib/CLAUDE.md`.
 
 ## Rules
 
-- One implementation per feature for data, auth, sync, and business rules.
-- Import **down** into platform folders; platform folders must **not** export upward into common.
-- Common may import Flutter core only — not `lib/mobile/`, `lib/web/`, or `lib/desktop/`.
-- All user-visible strings in `lib/l10n/` — no hardcoded copy in common or platform code.
-- Shared brand: `AppColors`, `AppSpace`, `AppRadius`, `AppTheme`. Platform folders may add **extensions** (`WebTokens`, `MobileTokens`, `DesktopTokens`) that reference shared tokens.
-
-## Route adapter pattern (`lib/screens/`)
-
-Screen files orchestrate; they do **not** own platform layout trees:
+- One implementation for data, auth, sync, and business rules (`providers/`, `models/`, `storage/`, `security/`).
+- Common code does not import `lib/mobile/`, `lib/web/`, or `lib/desktop/`.
+- `lib/utils/` has no `BuildContext` and no platform UI.
+- `lib/screens/` are route adapters. They wire providers and branch web → desktop → mobile. Mobile is the unguarded fallthrough. When a mobile branch is still an inline `Scaffold` in `lib/screens/`, move it to `lib/mobile/` as part of the edit.
+- Strings live in both `app_en.arb` and `app_am.arb`. Read them with `AppLocalizations.of(context)`.
+- Brand tokens: `AppColors`, `AppSpace`, `AppRadius`, `AppTheme.light` (the only theme). Web and desktop extend them with `WebTokens` and `DesktopTokens`. Mobile uses the shared tokens directly.
+- Offline book bytes go through `BookCrypto` and `SecureBookStore`. Plaintext content, the master key, and licenses stay off disk.
+- Authenticated HTTP uses `apiDioProvider`.
 
 ```dart
-// lib/screens/home_screen.dart
 if (useWebShell(context)) {
   return const WebPageScaffold(body: HomeScreenBody());
 }
 if (useDesktopShell(context)) {
-  return const DesktopPageScaffold(body: HomeScreenBody());
+  return const DesktopPageScaffold(body: DesktopHomeScreenBody());
 }
-return const MobileHomeScreen(); // lib/mobile/screens/
+return const MobileHomeScreen();
 ```

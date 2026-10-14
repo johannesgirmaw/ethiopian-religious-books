@@ -41,7 +41,7 @@ Cross-platform logic/tokens/routing live in root folders; `lib/screens/` route a
 - `make reader-run-windows` — run reader on Windows
 
 ## Gotchas
-- `security/` is common-layer but is missing from the cursor `common.mdc` glob — still treat it as shared, never platform-specific.
+- `security/` is common-layer and is included in the `reader-flutter-common.mdc` glob. Treat it as shared, never platform-specific.
 - `widgets/` is legacy mobile-only, NOT a common folder — don't treat root `widgets/` as shared UI.
 - No `MobileTokens` class exists (only WebTokens / DesktopTokens); mobile UI mostly consumes root AppColors/AppSpace/AppRadius directly.
 - Single theme `AppTheme.light` wired in `app.dart` — no dark theme, no theme-switching.

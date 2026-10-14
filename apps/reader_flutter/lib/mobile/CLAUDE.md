@@ -32,8 +32,8 @@ Legacy deps imported via `../../widgets/...`: [`liquid_glass_nav_bar.dart`](../w
 
 ## Gotchas
 
-- The cursor rule `reader-flutter-mobile-ui.mdc` is ASPIRATIONAL: it claims full shell/catalog/reader trees and Home/Settings/Profile tabs. Reality: only catalog/ + one screen migrated, shell/reader are empty, and real tabs are Home/Purchases/Profile. **Trust the code, not the rule.**
-- Nav bar, `ShellPageScaffold`, auth layout, and all primitives STILL live in legacy `lib/widgets/` and are imported via `../../widgets/...`. Migrate into `lib/mobile/` when you touch them.
+- Shell chrome (`LiquidGlassNavBar`) lives in `lib/mobile/widgets/shell/`; `lib/widgets/liquid_glass_nav_bar.dart` re-exports it. Many other widgets are still legacy in `lib/widgets/`. Shell tabs are Home, Purchases (when the user has a purchase), Profile, plus Admin when `user.canManageBooks`.
+- Auth layout and shared primitives still live in `lib/widgets/primitives/`. `ShellPageScaffold` lives in `lib/mobile/widgets/shell/` (`lib/widgets/shell_page_scaffold.dart` re-exports it). Move a legacy widget into `lib/mobile/` when you edit it.
 - Shell tabs are dynamic (in `main_shell_screen.dart`): `/home`, `/purchases`, `/profile`, plus `/admin/books` only when `user.canManageBooks` (icon/label switch on `user.isPlatformAdmin`). `_indexFor` maps `/downloads`→Home and `/settings`→Profile.
 - Shell uses `extendBody: true` with nav `Positioned` at `bottom: LiquidGlassNavBar.bottomInset` — forget the bottom padding and content hides behind the bar.
 - Auth chrome is chosen by `AdaptiveAuthLayout` (`web/widgets/shell/adaptive_auth_layout.dart`, mobile→`AuthScreenLayout`); login/register screens live in `lib/screens/` (legacy), not here.
@@ -51,5 +51,5 @@ Legacy deps imported via `../../widgets/...`: [`liquid_glass_nav_bar.dart`](../w
 ## Related
 
 - [Root CLAUDE.md](../../../../CLAUDE.md)
-- [reader-flutter-mobile-ui.mdc](../../../../.cursor/rules/reader-flutter-mobile-ui.mdc) (aspirational — see Gotchas)
+- [reader-flutter-mobile-ui.mdc](../../../../.cursor/rules/reader-flutter-mobile-ui.mdc)
 - [reader-flutter-common.mdc](../../../../.cursor/rules/reader-flutter-common.mdc)
