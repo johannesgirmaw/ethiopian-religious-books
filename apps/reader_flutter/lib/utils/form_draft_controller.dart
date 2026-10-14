@@ -19,10 +19,10 @@ class FormDraftController {
     required FormDraftRestore restore,
     FormDraftIsEmpty? isEmpty,
     this.debounce = const Duration(milliseconds: 1200),
-  })  : scopedKey = draftKey,
-        _capture = capture,
-        _restore = restore,
-        _isEmpty = isEmpty ?? _defaultIsEmpty;
+  }) : scopedKey = draftKey,
+       _capture = capture,
+       _restore = restore,
+       _isEmpty = isEmpty ?? _defaultIsEmpty;
 
   final String scopedKey;
   final Duration debounce;
@@ -88,14 +88,20 @@ class FormDraftController {
 void showFormDraftRestoredSnackBar(BuildContext context) {
   final l10n = AppLocalizations.of(context)!;
   ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(l10n.formDraftRestored)),
+    SnackBar(
+      duration: const Duration(seconds: 5),
+      content: Text(l10n.formDraftRestored),
+    ),
   );
 }
 
 void showFormDraftSavedSnackBar(BuildContext context) {
   final l10n = AppLocalizations.of(context)!;
   ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(l10n.formDraftSaved)),
+    SnackBar(
+      duration: const Duration(seconds: 5),
+      content: Text(l10n.formDraftSaved),
+    ),
   );
 }
 

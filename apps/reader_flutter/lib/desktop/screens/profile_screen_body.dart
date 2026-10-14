@@ -126,7 +126,10 @@ class DesktopProfileScreenBody extends ConsumerWidget {
                     onCopy: () {
                       Clipboard.setData(ClipboardData(text: user.id));
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(l10n.profileUserIdCopied)),
+                        SnackBar(
+                          duration: const Duration(seconds: 5),
+                          content: Text(l10n.profileUserIdCopied),
+                        ),
                       );
                     },
                   ),

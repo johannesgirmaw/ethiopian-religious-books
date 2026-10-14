@@ -32,8 +32,9 @@ Future<void> importBookFromDocxFlow({
   final rootNavigator = Navigator.of(context, rootNavigator: true);
   final dio = ref.read(apiDioProvider);
 
-  void snack(String message) =>
-      messenger.showSnackBar(SnackBar(content: Text(message)));
+  void snack(String message) => messenger.showSnackBar(
+    SnackBar(duration: const Duration(seconds: 5), content: Text(message)),
+  );
 
   // 1) Pick the file.
   FilePickerResult? picked;
@@ -92,9 +93,11 @@ Future<void> importBookFromDocxFlow({
     );
   } on DioException catch (e) {
     if (rootNavigator.canPop()) rootNavigator.pop();
-    snack(messageFromDioResponse(e.response?.data) ??
-        e.message ??
-        l10n.importDocxFailed);
+    snack(
+      messageFromDioResponse(e.response?.data) ??
+          e.message ??
+          l10n.importDocxFailed,
+    );
     return;
   } catch (_) {
     if (rootNavigator.canPop()) rootNavigator.pop();
@@ -134,9 +137,11 @@ Future<void> importBookFromDocxFlow({
     router.push('/admin/books/${book.id}/edit', extra: book);
   } on DioException catch (e) {
     if (rootNavigator.canPop()) rootNavigator.pop();
-    snack(messageFromDioResponse(e.response?.data) ??
-        e.message ??
-        l10n.importDocxFailed);
+    snack(
+      messageFromDioResponse(e.response?.data) ??
+          e.message ??
+          l10n.importDocxFailed,
+    );
   } catch (_) {
     if (rootNavigator.canPop()) rootNavigator.pop();
     snack(l10n.importDocxFailed);
@@ -154,8 +159,9 @@ Future<void> importBookFromPdfFlow({
   final rootNavigator = Navigator.of(context, rootNavigator: true);
   final dio = ref.read(apiDioProvider);
 
-  void snack(String message) =>
-      messenger.showSnackBar(SnackBar(content: Text(message)));
+  void snack(String message) => messenger.showSnackBar(
+    SnackBar(duration: const Duration(seconds: 5), content: Text(message)),
+  );
 
   FilePickerResult? picked;
   try {
@@ -199,10 +205,12 @@ Future<void> importBookFromPdfFlow({
     router.push('/admin/books/${book.id}/edit', extra: book);
   } on DioException catch (e) {
     if (rootNavigator.canPop()) rootNavigator.pop();
-    snack(messageFromDioResponse(e.response?.data) ??
-        publishErrorMessage(e) ??
-        e.message ??
-        l10n.importPdfFailed);
+    snack(
+      messageFromDioResponse(e.response?.data) ??
+          publishErrorMessage(e) ??
+          e.message ??
+          l10n.importPdfFailed,
+    );
   } catch (_) {
     if (rootNavigator.canPop()) rootNavigator.pop();
     snack(l10n.importPdfFailed);
@@ -330,8 +338,10 @@ class ImportDocxDialogState extends State<ImportDocxDialog> {
                 ),
               ],
               const SizedBox(height: 12),
-              Text(l10n.importDetectedChaptersTitle,
-                  style: theme.textTheme.labelLarge),
+              Text(
+                l10n.importDetectedChaptersTitle,
+                style: theme.textTheme.labelLarge,
+              ),
               const SizedBox(height: 6),
               if (_rescanning)
                 const Padding(
@@ -359,17 +369,17 @@ class ImportDocxDialogState extends State<ImportDocxDialog> {
           onPressed: (selected == null || selected.chapters == 0)
               ? null
               : () => Navigator.pop(
-                    context,
-                    _ImportChoice(
-                      _mode,
-                      _patternCtrl.text.trim().isEmpty
-                          ? null
-                          : _patternCtrl.text.trim(),
-                      _markerCtrl.text.trim().isEmpty
-                          ? null
-                          : _markerCtrl.text.trim(),
-                    ),
+                  context,
+                  _ImportChoice(
+                    _mode,
+                    _patternCtrl.text.trim().isEmpty
+                        ? null
+                        : _patternCtrl.text.trim(),
+                    _markerCtrl.text.trim().isEmpty
+                        ? null
+                        : _markerCtrl.text.trim(),
                   ),
+                ),
           child: Text(l10n.importAction),
         ),
       ],

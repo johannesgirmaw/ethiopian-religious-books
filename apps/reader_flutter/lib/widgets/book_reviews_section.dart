@@ -45,9 +45,12 @@ Future<void> openBookReviewSheet(
   if (book.isPremium) {
     if (book.requiresPurchase && !await userOwnsBook(ref, book.id)) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.reviewRequiresPurchase)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(l10n.reviewRequiresPurchase),
+        ),
+      );
       if (!context.mounted) return;
       await ensureBookUnlocked(context, ref, book);
       return;
@@ -58,9 +61,12 @@ Future<void> openBookReviewSheet(
 
   if (!await _userHasStartedBook(ref, book.id)) {
     if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(l10n.reviewRequiresReading)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 5),
+        content: Text(l10n.reviewRequiresReading),
+      ),
+    );
     context.push(
       readingPathForBook(
         book.id,
@@ -209,7 +215,10 @@ class _ReviewComposerSheetState extends ConsumerState<_ReviewComposerSheet> {
           ? messageFromDioResponse(e.response?.data)
           : null;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(fromApi ?? widget.l10n.reviewSubmitFailed)),
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(fromApi ?? widget.l10n.reviewSubmitFailed),
+        ),
       );
       return;
     }

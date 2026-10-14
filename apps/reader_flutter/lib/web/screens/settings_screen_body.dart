@@ -40,8 +40,9 @@ class SettingsScreenBody extends ConsumerWidget {
           title: l10n.dashboard.toUpperCase(),
           child: downloadJobs.when(
             data: (jobs) {
-              final pending =
-                  jobs.where((e) => e.state == 'in_progress').length;
+              final pending = jobs
+                  .where((e) => e.state == 'in_progress')
+                  .length;
               final failed = jobs.where((e) => e.state == 'failed').length;
               return Row(
                 children: [
@@ -73,10 +74,8 @@ class SettingsScreenBody extends ConsumerWidget {
                 ],
               );
             },
-            loading: () => const SizedBox(
-              height: 88,
-              child: SkeletonCardGroup(count: 3),
-            ),
+            loading: () =>
+                const SizedBox(height: 88, child: SkeletonCardGroup(count: 3)),
             error: (_, __) => const SizedBox.shrink(),
           ),
         ),
@@ -168,7 +167,10 @@ class SettingsScreenBody extends ConsumerWidget {
     ref.invalidate(offlineBookCountProvider);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.offlineCacheCleared)),
+      SnackBar(
+        duration: const Duration(seconds: 5),
+        content: Text(l10n.offlineCacheCleared),
+      ),
     );
   }
 }

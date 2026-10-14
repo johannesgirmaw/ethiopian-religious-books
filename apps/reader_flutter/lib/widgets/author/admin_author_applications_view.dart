@@ -19,7 +19,10 @@ String _formatDate(String? iso) {
   return '${d.year}-${two(d.month)}-${two(d.day)}';
 }
 
-(String, AppStatusKind) _statusChip(AuthorApplication app, AppLocalizations l10n) {
+(String, AppStatusKind) _statusChip(
+  AuthorApplication app,
+  AppLocalizations l10n,
+) {
   if (app.isApproved) {
     return (l10n.adminAuthorAppStatusApproved, AppStatusKind.active);
   }
@@ -87,45 +90,44 @@ class _AdminAuthorApplicationsViewState
     final async = ref.watch(adminAuthorApplicationsProvider);
 
     Widget scrollable(List<Widget> children) => RefreshIndicator(
-          onRefresh: () async =>
-              ref.invalidate(adminAuthorApplicationsProvider),
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-            children: children,
-          ),
-        );
+      onRefresh: () async => ref.invalidate(adminAuthorApplicationsProvider),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        children: children,
+      ),
+    );
 
     List<Widget> controls(int pending) => [
-          _PendingStat(count: pending, l10n: l10n),
-          const SizedBox(height: AppSpace.md),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final f in _filters)
-                ChoiceChip(
-                  label: Text(_filterLabel(f, l10n)),
-                  selected: _filter == f,
-                  showCheckmark: false,
-                  selectedColor: AppColors.primary.withValues(alpha: 0.14),
-                  side: BorderSide(
-                    color: _filter == f ? AppColors.primary : AppColors.border,
-                  ),
-                  backgroundColor: AppColors.surfaceCard,
-                  labelStyle: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: _filter == f
-                        ? AppColors.primaryDeep
-                        : AppColors.textSecondary,
-                  ),
-                  onSelected: (_) => setState(() => _filter = f),
-                ),
-            ],
-          ),
-          const SizedBox(height: AppSpace.md),
-        ];
+      _PendingStat(count: pending, l10n: l10n),
+      const SizedBox(height: AppSpace.md),
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final f in _filters)
+            ChoiceChip(
+              label: Text(_filterLabel(f, l10n)),
+              selected: _filter == f,
+              showCheckmark: false,
+              selectedColor: AppColors.primary.withValues(alpha: 0.14),
+              side: BorderSide(
+                color: _filter == f ? AppColors.primary : AppColors.border,
+              ),
+              backgroundColor: AppColors.surfaceCard,
+              labelStyle: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: _filter == f
+                    ? AppColors.primaryDeep
+                    : AppColors.textSecondary,
+              ),
+              onSelected: (_) => setState(() => _filter = f),
+            ),
+        ],
+      ),
+      const SizedBox(height: AppSpace.md),
+    ];
 
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -190,7 +192,10 @@ class _AdminAuthorApplicationsViewState
         builder: (_) => Dialog(
           backgroundColor: AppColors.surfaceCard,
           clipBehavior: Clip.antiAlias,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 40,
+            vertical: 40,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.panel),
           ),
@@ -231,8 +236,11 @@ class _PendingStat extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.how_to_reg_outlined,
-              size: 22, color: AppColors.accent),
+          const Icon(
+            Icons.how_to_reg_outlined,
+            size: 22,
+            color: AppColors.accent,
+          ),
           const SizedBox(width: 12),
           Text(
             '$count',
@@ -334,8 +342,10 @@ class _ApplicationCard extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                color: AppColors.textTertiary),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textTertiary,
+            ),
           ],
         ),
       ),
@@ -367,10 +377,13 @@ class _Thumb extends StatelessWidget {
   }
 
   Widget _placeholder() => const ColoredBox(
-        color: AppColors.surfaceInput,
-        child: Icon(Icons.person_outline_rounded,
-            size: 24, color: AppColors.textTertiary),
-      );
+    color: AppColors.surfaceInput,
+    child: Icon(
+      Icons.person_outline_rounded,
+      size: 24,
+      color: AppColors.textTertiary,
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -445,14 +458,16 @@ class _ReviewSheetState extends ConsumerState<_ReviewSheet> {
       navigator.pop();
       messenger.showSnackBar(
         SnackBar(
+          duration: const Duration(seconds: 5),
           content: Text(approve ? l10n.adminApproved : l10n.adminRejected),
         ),
       );
     } on DioException catch (e) {
       if (!mounted) return;
-      setState(() => _error = messageFromDioResponse(e.response?.data) ??
-          e.message ??
-          '$e');
+      setState(
+        () => _error =
+            messageFromDioResponse(e.response?.data) ?? e.message ?? '$e',
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = '$e');
@@ -516,15 +531,26 @@ class _ReviewSheetState extends ConsumerState<_ReviewSheet> {
           _DetailRow(label: l10n.authorFieldPhone, value: app.phone),
           _DetailRow(label: l10n.authorFieldCountry, value: app.country),
           _DetailRow(
-              label: l10n.authorFieldCredentials, value: app.credentials),
+            label: l10n.authorFieldCredentials,
+            value: app.credentials,
+          ),
           _DetailRow(
-              label: l10n.authorFieldSampleLinks, value: app.sampleLinks),
+            label: l10n.authorFieldSampleLinks,
+            value: app.sampleLinks,
+          ),
           _DetailRow(
-              label: l10n.authorFieldPaymentEmail, value: app.paymentEmail),
-          _DetailRow(label: l10n.authorFieldTelebirr, value: app.telebirrNumber),
+            label: l10n.authorFieldPaymentEmail,
+            value: app.paymentEmail,
+          ),
+          _DetailRow(
+            label: l10n.authorFieldTelebirr,
+            value: app.telebirrNumber,
+          ),
           if (app.isRejected && app.reviewNote.trim().isNotEmpty)
             _DetailRow(
-                label: l10n.authorApplyReviewNoteLabel, value: app.reviewNote),
+              label: l10n.authorApplyReviewNoteLabel,
+              value: app.reviewNote,
+            ),
         ],
       ),
     );
@@ -552,71 +578,81 @@ class _ReviewSheetState extends ConsumerState<_ReviewSheet> {
   Widget _footer(AppLocalizations l10n, {required bool canAct}) {
     final children = <Widget>[];
     if (_error != null) {
-      children.add(Padding(
-        padding: const EdgeInsets.only(bottom: AppSpace.sm),
-        child: Text(
-          _error!,
-          style: const TextStyle(color: AppColors.errorText, fontSize: 13),
+      children.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpace.sm),
+          child: Text(
+            _error!,
+            style: const TextStyle(color: AppColors.errorText, fontSize: 13),
+          ),
         ),
-      ));
+      );
     }
     if (!canAct) {
-      children.add(SizedBox(
-        width: double.infinity,
-        child: FilledButton.tonal(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.close),
+      children.add(
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.tonal(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.close),
+          ),
         ),
-      ));
+      );
       return Column(mainAxisSize: MainAxisSize.min, children: children);
     }
 
-    children.add(TextField(
-      controller: _note,
-      minLines: 1,
-      maxLines: 3,
-      style: const TextStyle(fontSize: 13.5, color: AppColors.textPrimary),
-      decoration: InputDecoration(
-        labelText: l10n.adminRejectReason,
-        isDense: true,
-        border: const OutlineInputBorder(),
+    children.add(
+      TextField(
+        controller: _note,
+        minLines: 1,
+        maxLines: 3,
+        style: const TextStyle(fontSize: 13.5, color: AppColors.textPrimary),
+        decoration: InputDecoration(
+          labelText: l10n.adminRejectReason,
+          isDense: true,
+          border: const OutlineInputBorder(),
+        ),
       ),
-    ));
+    );
     children.add(const SizedBox(height: AppSpace.md));
-    children.add(Row(
-      children: [
-        Expanded(
-          child: OutlinedButton(
-            onPressed: _busy ? null : () => _act(approve: false),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.errorText,
-              side: const BorderSide(color: AppColors.errorBorder),
-              minimumSize: const Size(0, 48),
+    children.add(
+      Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: _busy ? null : () => _act(approve: false),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.errorText,
+                side: const BorderSide(color: AppColors.errorBorder),
+                minimumSize: const Size(0, 48),
+              ),
+              child: Text(l10n.adminReject),
             ),
-            child: Text(l10n.adminReject),
           ),
-        ),
-        const SizedBox(width: AppSpace.sm),
-        Expanded(
-          child: FilledButton(
-            onPressed: _busy ? null : () => _act(approve: true),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.successText,
-              foregroundColor: Colors.white,
-              minimumSize: const Size(0, 48),
+          const SizedBox(width: AppSpace.sm),
+          Expanded(
+            child: FilledButton(
+              onPressed: _busy ? null : () => _act(approve: true),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.successText,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(0, 48),
+              ),
+              child: _busy
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(l10n.adminApprove),
             ),
-            child: _busy
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
-                  )
-                : Text(l10n.adminApprove),
           ),
-        ),
-      ],
-    ));
+        ],
+      ),
+    );
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -27,8 +27,9 @@ class DesktopSettingsScreenBody extends ConsumerWidget {
     final cachedAt = ref.watch(catalogCachedAtProvider).valueOrNull;
     final downloadJobs = ref.watch(downloadJobsProvider);
     final offlineCount = ref.watch(offlineBookCountProvider);
-    final padding =
-        DesktopTokens.pagePadding(DesktopLayoutScope.tierOf(context));
+    final padding = DesktopTokens.pagePadding(
+      DesktopLayoutScope.tierOf(context),
+    );
 
     return DesktopScrollBody(
       padding: padding,
@@ -42,8 +43,9 @@ class DesktopSettingsScreenBody extends ConsumerWidget {
           title: l10n.dashboard.toUpperCase(),
           child: downloadJobs.when(
             data: (jobs) {
-              final pending =
-                  jobs.where((e) => e.state == 'in_progress').length;
+              final pending = jobs
+                  .where((e) => e.state == 'in_progress')
+                  .length;
               final failed = jobs.where((e) => e.state == 'failed').length;
               return Row(
                 children: [
@@ -75,24 +77,16 @@ class DesktopSettingsScreenBody extends ConsumerWidget {
                 ],
               );
             },
-            loading: () => const SizedBox(
-              height: 80,
-              child: SkeletonCardGroup(count: 3),
-            ),
+            loading: () =>
+                const SizedBox(height: 80, child: SkeletonCardGroup(count: 3)),
             error: (_, __) => Row(
               children: [
                 Expanded(
-                  child: _StatTile(
-                    label: l10n.inProgressDownloads,
-                    value: '—',
-                  ),
+                  child: _StatTile(label: l10n.inProgressDownloads, value: '—'),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: _StatTile(
-                    label: l10n.failedDownloads,
-                    value: '—',
-                  ),
+                  child: _StatTile(label: l10n.failedDownloads, value: '—'),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -199,7 +193,10 @@ class DesktopSettingsScreenBody extends ConsumerWidget {
     ref.invalidate(offlineBookCountProvider);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.offlineCacheCleared)),
+      SnackBar(
+        duration: const Duration(seconds: 5),
+        content: Text(l10n.offlineCacheCleared),
+      ),
     );
   }
 }

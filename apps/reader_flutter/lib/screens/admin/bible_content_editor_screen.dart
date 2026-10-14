@@ -37,7 +37,9 @@ class BibleContentEditorScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(bookTitle.isEmpty ? l10n.adminBibleContentTitle : bookTitle),
+        title: Text(
+          bookTitle.isEmpty ? l10n.adminBibleContentTitle : bookTitle,
+        ),
       ),
       body: BibleContentWorkspace(bookId: bookId),
     );
@@ -61,7 +63,8 @@ class BibleContentWorkspace extends ConsumerStatefulWidget {
 class _BibleContentWorkspaceState extends ConsumerState<BibleContentWorkspace> {
   int _nextChapter(BibleBookIndex index) => index.chapters.isEmpty
       ? 1
-      : index.chapters.map((c) => c.chapter).reduce((a, b) => a > b ? a : b) + 1;
+      : index.chapters.map((c) => c.chapter).reduce((a, b) => a > b ? a : b) +
+            1;
 
   Future<void> _pushEditor(int chapter, {required bool isNew}) async {
     final saved = await Navigator.of(context).push<bool>(
@@ -73,7 +76,8 @@ class _BibleContentWorkspaceState extends ConsumerState<BibleContentWorkspace> {
         ),
       ),
     );
-    if (saved == true) ref.invalidate(adminBibleBookIndexProvider(widget.bookId));
+    if (saved == true)
+      ref.invalidate(adminBibleBookIndexProvider(widget.bookId));
   }
 
   @override
@@ -115,10 +119,13 @@ class _BibleContentWorkspaceState extends ConsumerState<BibleContentWorkspace> {
                   style: FilledButton.styleFrom(
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                   ),
-                  onPressed: () => _pushEditor(_nextChapter(index), isNew: true),
+                  onPressed: () =>
+                      _pushEditor(_nextChapter(index), isNew: true),
                   icon: const Icon(Icons.add),
                   label: Text(l10n.adminAddChapter),
                 ),
@@ -223,7 +230,7 @@ class _ChapterEditorScreen extends ConsumerWidget {
 // ---------------------------------------------------------------------------
 class _SectionDraft {
   _SectionDraft({String title = ''})
-      : titleCtrl = TextEditingController(text: title);
+    : titleCtrl = TextEditingController(text: title);
   final TextEditingController titleCtrl;
   final List<_VerseDraft> verses = [];
 
@@ -237,8 +244,8 @@ class _SectionDraft {
 
 class _VerseDraft {
   _VerseDraft({int? number, String text = ''})
-      : numberCtrl = TextEditingController(text: number?.toString() ?? ''),
-        textCtrl = TextEditingController(text: text);
+    : numberCtrl = TextEditingController(text: number?.toString() ?? ''),
+      textCtrl = TextEditingController(text: text);
   final TextEditingController numberCtrl;
   final TextEditingController textCtrl;
 
@@ -296,8 +303,10 @@ class _ChapterEditorBodyState extends ConsumerState<_ChapterEditorBody> {
     }
     try {
       final chapter = await ref.read(
-        adminBibleChapterProvider((bookId: widget.bookId, chapter: widget.chapter))
-            .future,
+        adminBibleChapterProvider((
+          bookId: widget.bookId,
+          chapter: widget.chapter,
+        )).future,
       );
       _populate(chapter);
     } catch (e) {
@@ -336,8 +345,7 @@ class _ChapterEditorBodyState extends ConsumerState<_ChapterEditorBody> {
     super.dispose();
   }
 
-  int get _verseCount =>
-      _sections.fold(0, (sum, s) => sum + s.verses.length);
+  int get _verseCount => _sections.fold(0, (sum, s) => sum + s.verses.length);
 
   int _nextVerseNumber() {
     var max = 0;
@@ -351,8 +359,11 @@ class _ChapterEditorBodyState extends ConsumerState<_ChapterEditorBody> {
   }
 
   void _addSection() {
-    setState(() =>
-        _sections.add(_SectionDraft()..verses.add(_VerseDraft(number: _nextVerseNumber()))));
+    setState(
+      () => _sections.add(
+        _SectionDraft()..verses.add(_VerseDraft(number: _nextVerseNumber())),
+      ),
+    );
     _markDirty();
   }
 
@@ -385,14 +396,22 @@ class _ChapterEditorBodyState extends ConsumerState<_ChapterEditorBody> {
           .read(bibleRepositoryProvider)
           .saveChapter(widget.bookId, widget.chapter, sections);
       ref.invalidate(
-        adminBibleChapterProvider((bookId: widget.bookId, chapter: widget.chapter)),
+        adminBibleChapterProvider((
+          bookId: widget.bookId,
+          chapter: widget.chapter,
+        )),
       );
       // Chapters just landed — re-check whether the Bible nav entry can show.
       ref.invalidate(hasBibleContentProvider);
       _dirty = false;
       widget.onDirtyChanged?.call(false);
       if (!mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text(l10n.adminChapterSaved)));
+      messenger.showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(l10n.adminChapterSaved),
+        ),
+      );
       widget.onSaved();
     } catch (e) {
       if (!mounted) return;
@@ -424,8 +443,10 @@ class _ChapterEditorBodyState extends ConsumerState<_ChapterEditorBody> {
             width: double.infinity,
             color: AppColors.errorSurface,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: Text(_error!,
-                style: const TextStyle(color: AppColors.errorText)),
+            child: Text(
+              _error!,
+              style: const TextStyle(color: AppColors.errorText),
+            ),
           ),
         Expanded(
           child: ListView(
@@ -446,9 +467,11 @@ class _ChapterEditorBodyState extends ConsumerState<_ChapterEditorBody> {
                           canRemove: _sections.length > 1,
                           onRemove: () => _removeSection(i),
                           onAddVerse: () {
-                            setState(() => _sections[i]
-                                .verses
-                                .add(_VerseDraft(number: _nextVerseNumber())));
+                            setState(
+                              () => _sections[i].verses.add(
+                                _VerseDraft(number: _nextVerseNumber()),
+                              ),
+                            );
                             _markDirty();
                           },
                           onChanged: () {
@@ -558,7 +581,9 @@ class _EditorHeader extends StatelessWidget {
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : const Icon(Icons.check, size: 18),
             label: Text(l10n.save),
@@ -639,9 +664,14 @@ class _SectionCard extends StatelessWidget {
                 ),
                 if (canRemove)
                   IconButton(
-                    tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
-                    icon: const Icon(Icons.delete_outline,
-                        size: 20, color: AppColors.errorText),
+                    tooltip: MaterialLocalizations.of(
+                      context,
+                    ).deleteButtonTooltip,
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      size: 20,
+                      color: AppColors.errorText,
+                    ),
                     onPressed: onRemove,
                   ),
               ],
@@ -725,8 +755,10 @@ class _VerseRow extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
                 helperMaxLines: 1,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 10,
+                ),
               ),
               onChanged: (_) => onChanged(),
             ),

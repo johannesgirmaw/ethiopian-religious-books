@@ -43,12 +43,20 @@ class DesktopBookDetailBody extends ConsumerWidget {
   Future<void> _downloadSample(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(SnackBar(content: Text(l10n.preparingDownload)));
+    messenger.showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 5),
+        content: Text(l10n.preparingDownload),
+      ),
+    );
     final error = await runOfflineBookDownload(ref, bookId, l10n: l10n);
     if (!context.mounted) return;
     ref.invalidate(downloadJobsProvider);
     messenger.showSnackBar(
-      SnackBar(content: Text(error ?? l10n.savedOfflineReading)),
+      SnackBar(
+        duration: const Duration(seconds: 5),
+        content: Text(error ?? l10n.savedOfflineReading),
+      ),
     );
   }
 
@@ -103,7 +111,10 @@ class DesktopBookDetailBody extends ConsumerWidget {
                     ?.contains(bookId) ??
                 false);
         final mustBuy =
-            book.requiresPurchase && !owned && !purchasePending && !resumeCheckout;
+            book.requiresPurchase &&
+            !owned &&
+            !purchasePending &&
+            !resumeCheckout;
         final canSaveOffline = owned || !book.requiresPurchase;
 
         final rail = _LeftRail(

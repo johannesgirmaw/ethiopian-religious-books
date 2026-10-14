@@ -48,9 +48,12 @@ Future<bool> ensureBookUnlocked(
       if (active != null && active.status.isSuccessful) return true;
       if (active != null && active.status.isAwaitingReview) {
         final l10n = AppLocalizations.of(context);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.paymentInReviewBlocked)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            duration: const Duration(seconds: 5),
+            content: Text(l10n.paymentInReviewBlocked),
+          ),
+        );
         return false;
       }
       if (active != null && active.status.resumesCheckout) {

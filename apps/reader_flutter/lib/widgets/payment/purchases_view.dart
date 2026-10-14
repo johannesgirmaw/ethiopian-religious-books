@@ -128,6 +128,7 @@ Future<bool> confirmDeletePendingPurchase(
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          duration: const Duration(seconds: 5),
           content: Text(paymentErrorMessage(e, l10n.paymentErrorGeneric)),
         ),
       );
@@ -186,71 +187,71 @@ class _PurchaseTile extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    txn.bookTitle.isNotEmpty ? txn.bookTitle : l10n.paymentTitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                PaymentStatusChip(status: txn.status),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Text(
-                  formatMoney(txn.amount, txn.currency),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primary,
-                  ),
-                ),
-                if (method != null) ...[
-                  const SizedBox(width: 10),
-                  Icon(paymentMethodIcon(method),
-                      size: 15, color: AppColors.textTertiary),
-                  const SizedBox(width: 4),
-                  Text(
-                    paymentMethodLabel(method, l10n),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-                const Spacer(),
-                if (txn.createdAt != null)
-                  Text(
-                    _formatDate(txn.createdAt),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textTertiary,
-                    ),
-                  ),
-              ],
-            ),
-            if (txn.transactionReference.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Text(
-                l10n.paymentSuccessReference(txn.transactionReference),
-                maxLines: 1,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                txn.bookTitle.isNotEmpty ? txn.bookTitle : l10n.paymentTitle,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            PaymentStatusChip(status: txn.status),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Text(
+              formatMoney(txn.amount, txn.currency),
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primary,
+              ),
+            ),
+            if (method != null) ...[
+              const SizedBox(width: 10),
+              Icon(
+                paymentMethodIcon(method),
+                size: 15,
+                color: AppColors.textTertiary,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                paymentMethodLabel(method, l10n),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+            const Spacer(),
+            if (txn.createdAt != null)
+              Text(
+                _formatDate(txn.createdAt),
                 style: const TextStyle(
                   fontSize: 12,
                   color: AppColors.textTertiary,
                 ),
               ),
-            ],
+          ],
+        ),
+        if (txn.transactionReference.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(
+            l10n.paymentSuccessReference(txn.transactionReference),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+          ),
+        ],
       ],
     );
 

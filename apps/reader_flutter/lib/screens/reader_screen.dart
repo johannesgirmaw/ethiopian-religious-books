@@ -244,6 +244,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        duration: const Duration(seconds: 5),
         content: Text(existing ? l10n.bookmarkRemoved : l10n.bookmarkSaved),
       ),
     );
@@ -760,9 +761,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     );
     ref.invalidate(studyBookmarksProvider(widget.bookId));
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(l10n.cloudBookmarkSaved)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 5),
+        content: Text(l10n.cloudBookmarkSaved),
+      ),
+    );
   }
 
   Future<void> _createQuickNote(BookSummary book) async {
@@ -791,9 +795,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     );
     ref.invalidate(studyNotesProvider(widget.bookId));
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(l10n.noteSaved)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 5),
+        content: Text(l10n.noteSaved),
+      ),
+    );
   }
 
   Future<void> _addQuickHighlight(BookSummary book) async {
@@ -821,7 +828,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     ref.invalidate(studyHighlightsProvider(widget.bookId));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.highlightSavedOnPage(section.pageNumber))),
+      SnackBar(
+        duration: const Duration(seconds: 5),
+        content: Text(l10n.highlightSavedOnPage(section.pageNumber)),
+      ),
     );
   }
 
@@ -831,9 +841,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       items = await ref.read(studyHighlightsProvider(widget.bookId).future);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.highlightsUnavailable)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(l10n.highlightsUnavailable),
+        ),
+      );
       return;
     }
     if (!mounted) return;
@@ -887,9 +900,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       ref.invalidate(offlineBookCachedProvider(widget.bookId));
       ref.invalidate(offlineBookCountProvider);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.offlineCopyRemoved)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            duration: const Duration(seconds: 5),
+            content: Text(l10n.offlineCopyRemoved),
+          ),
+        );
       }
       return;
     }
@@ -933,9 +949,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     ref.invalidate(offlineBookCachedProvider(widget.bookId));
     ref.invalidate(offlineBookCountProvider);
     if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.savedOfflineReading)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(l10n.savedOfflineReading),
+        ),
+      );
     }
   }
 
@@ -1940,11 +1959,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
         return ContentProtectionLifecycle(
           child: PopScope(
-          canPop: false,
-          onPopInvokedWithResult: (didPop, _) {
-            if (didPop) return;
-            _handleReaderBack();
-          },
+            canPop: false,
+            onPopInvokedWithResult: (didPop, _) {
+              if (didPop) return;
+              _handleReaderBack();
+            },
             child: Scaffold(
               backgroundColor: bg,
               resizeToAvoidBottomInset: true,

@@ -40,8 +40,9 @@ const _avatarPalette = <Color>[
   AppColors.crimson,
 ];
 
-Color _avatarColor(String seed) =>
-    seed.isEmpty ? AppColors.primary : _avatarPalette[seed.codeUnitAt(0) % _avatarPalette.length];
+Color _avatarColor(String seed) => seed.isEmpty
+    ? AppColors.primary
+    : _avatarPalette[seed.codeUnitAt(0) % _avatarPalette.length];
 
 String _initial(String text) {
   final t = text.trim();
@@ -93,17 +94,33 @@ List<PopupMenuEntry<String>> _rowMenuEntries(
   }
 
   return [
-    item('review', Icons.visibility_outlined, l10n.adminReview,
-        AppColors.textPrimary),
+    item(
+      'review',
+      Icons.visibility_outlined,
+      l10n.adminReview,
+      AppColors.textPrimary,
+    ),
     if (canAct)
-      item('approve', Icons.check_circle_outline, l10n.adminApprove,
-          AppColors.successText),
+      item(
+        'approve',
+        Icons.check_circle_outline,
+        l10n.adminApprove,
+        AppColors.successText,
+      ),
     if (canAct)
-      item('reject', Icons.cancel_outlined, l10n.adminReject,
-          AppColors.errorText),
+      item(
+        'reject',
+        Icons.cancel_outlined,
+        l10n.adminReject,
+        AppColors.errorText,
+      ),
     if (txn.transactionReference.trim().isNotEmpty)
-      item('copy_ref', Icons.copy_outlined, l10n.adminCopyReference,
-          AppColors.textPrimary),
+      item(
+        'copy_ref',
+        Icons.copy_outlined,
+        l10n.adminCopyReference,
+        AppColors.textPrimary,
+      ),
   ];
 }
 
@@ -151,7 +168,7 @@ class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
   int _page = 0;
   int _rowsPerPage = 10;
 
-  static const _rowsPerPageOptions = <int>[5,10, 25, 50, 100];
+  static const _rowsPerPageOptions = <int>[5, 10, 25, 50, 100];
 
   static const _filters = <PaymentStatus?>[
     null, // All
@@ -180,17 +197,20 @@ class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
     final list = q.isEmpty
         ? List<PaymentTransaction>.of(src)
         : src
-            .where((t) =>
-                t.userEmail.toLowerCase().contains(q) ||
-                t.bookTitle.toLowerCase().contains(q) ||
-                t.transactionReference.toLowerCase().contains(q))
-            .toList();
+              .where(
+                (t) =>
+                    t.userEmail.toLowerCase().contains(q) ||
+                    t.bookTitle.toLowerCase().contains(q) ||
+                    t.transactionReference.toLowerCase().contains(q),
+              )
+              .toList();
 
     int base(PaymentTransaction a, PaymentTransaction b) {
       switch (_sortCol) {
         case _SortCol.date:
-          return (a.createdAt?.millisecondsSinceEpoch ?? 0)
-              .compareTo(b.createdAt?.millisecondsSinceEpoch ?? 0);
+          return (a.createdAt?.millisecondsSinceEpoch ?? 0).compareTo(
+            b.createdAt?.millisecondsSinceEpoch ?? 0,
+          );
         case _SortCol.customer:
           return a.userEmail.toLowerCase().compareTo(b.userEmail.toLowerCase());
         case _SortCol.book:
@@ -219,37 +239,42 @@ class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
   }
 
   void _setFilter(String value) => setState(() {
-        _filter = value;
-        _page = 0;
-      });
+    _filter = value;
+    _page = 0;
+  });
 
   void _setQuery(String value) => setState(() {
-        _query = value;
-        _page = 0;
-      });
+    _query = value;
+    _page = 0;
+  });
 
   void _setRowsPerPage(int value) => setState(() {
-        _rowsPerPage = value;
-        _page = 0;
-      });
+    _rowsPerPage = value;
+    _page = 0;
+  });
 
   // --- Row actions (context menu) ----------------------------------------
 
-  Future<void> _runAction(
-    Future<void> Function() op,
-    String successMsg,
-  ) async {
+  Future<void> _runAction(Future<void> Function() op, String successMsg) async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     try {
       await op();
       refreshAdminPaymentsW(ref);
       if (!mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text(successMsg)));
+      messenger.showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(successMsg),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text(paymentErrorMessage(e, l10n.paymentErrorGeneric))),
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(paymentErrorMessage(e, l10n.paymentErrorGeneric)),
+        ),
       );
     }
   }
@@ -335,15 +360,20 @@ class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
     final messenger = ScaffoldMessenger.of(context);
     await Clipboard.setData(ClipboardData(text: txn.transactionReference));
     if (!mounted) return;
-    messenger.showSnackBar(SnackBar(content: Text(l10n.paymentCopied)));
+    messenger.showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 5),
+        content: Text(l10n.paymentCopied),
+      ),
+    );
   }
 
   _RowActions get _rowActions => _RowActions(
-        onReview: _openReview,
-        onApprove: _approve,
-        onReject: _reject,
-        onCopyReference: _copyReference,
-      );
+    onReview: _openReview,
+    onApprove: _approve,
+    onReject: _reject,
+    onCopyReference: _copyReference,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -365,81 +395,80 @@ class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
     // Dashboard + status tabs + search + active-filter chips. Shown above every
     // state (loading / error / data) so the controls never jump around.
     List<Widget> controls() => [
-          dashAsync.when(
-            loading: () => const SizedBox(
-              height: 90,
-              child: Center(child: CircularProgressIndicator()),
+      dashAsync.when(
+        loading: () => const SizedBox(
+          height: 90,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+        error: (_, __) => const SizedBox.shrink(),
+        data: (d) => _DashboardSummary(dashboard: d),
+      ),
+      const SizedBox(height: AppSpace.lg),
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final s in _filters)
+            ChoiceChip(
+              label: Text(
+                s == null
+                    ? l10n.adminOrdersAllStatuses
+                    : paymentStatusLabel(s, l10n),
+              ),
+              selected: _filter == (s?.apiValue ?? ''),
+              showCheckmark: false,
+              selectedColor: AppColors.primary.withValues(alpha: 0.14),
+              side: BorderSide(
+                color: _filter == (s?.apiValue ?? '')
+                    ? AppColors.primary
+                    : AppColors.border,
+              ),
+              labelStyle: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: _filter == (s?.apiValue ?? '')
+                    ? AppColors.primaryDeep
+                    : AppColors.textSecondary,
+              ),
+              backgroundColor: AppColors.surfaceCard,
+              onSelected: (_) => _setFilter(s?.apiValue ?? ''),
             ),
-            error: (_, __) => const SizedBox.shrink(),
-            data: (d) => _DashboardSummary(dashboard: d),
-          ),
-          const SizedBox(height: AppSpace.lg),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final s in _filters)
-                ChoiceChip(
-                  label: Text(s == null
-                      ? l10n.adminOrdersAllStatuses
-                      : paymentStatusLabel(s, l10n)),
-                  selected: _filter == (s?.apiValue ?? ''),
-                  showCheckmark: false,
-                  selectedColor: AppColors.primary.withValues(alpha: 0.14),
-                  side: BorderSide(
-                    color: _filter == (s?.apiValue ?? '')
-                        ? AppColors.primary
-                        : AppColors.border,
-                  ),
-                  labelStyle: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: _filter == (s?.apiValue ?? '')
-                        ? AppColors.primaryDeep
-                        : AppColors.textSecondary,
-                  ),
-                  backgroundColor: AppColors.surfaceCard,
-                  onSelected: (_) => _setFilter(s?.apiValue ?? ''),
-                ),
-            ],
-          ),
-          const SizedBox(height: AppSpace.sm),
-          _SearchField(
-            controller: _searchCtrl,
-            hint: l10n.adminSearchOrdersHint,
-            onChanged: _setQuery,
-          ),
-          _ActiveFilters(
-            statusLabel: _statusFilter == null
-                ? null
-                : paymentStatusLabel(_statusFilter!, l10n),
-            query: _query.trim(),
-            onClearStatus: () => _setFilter(''),
-            onClearQuery: () {
-              _searchCtrl.clear();
-              _setQuery('');
-            },
-            onClearAll: () {
-              _searchCtrl.clear();
-              setState(() {
-                _filter = '';
-                _query = '';
-                _page = 0;
-              });
-            },
-          ),
-          const SizedBox(height: AppSpace.md),
-        ];
+        ],
+      ),
+      const SizedBox(height: AppSpace.sm),
+      _SearchField(
+        controller: _searchCtrl,
+        hint: l10n.adminSearchOrdersHint,
+        onChanged: _setQuery,
+      ),
+      _ActiveFilters(
+        statusLabel: _statusFilter == null
+            ? null
+            : paymentStatusLabel(_statusFilter!, l10n),
+        query: _query.trim(),
+        onClearStatus: () => _setFilter(''),
+        onClearQuery: () {
+          _searchCtrl.clear();
+          _setQuery('');
+        },
+        onClearAll: () {
+          _searchCtrl.clear();
+          setState(() {
+            _filter = '';
+            _query = '';
+            _page = 0;
+          });
+        },
+      ),
+      const SizedBox(height: AppSpace.md),
+    ];
 
     final body = LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= 760;
         return txnsAsync.when(
           loading: () => scrollable(
-            children: [
-              ...controls(),
-              const SkeletonCardGroup(count: 3),
-            ],
+            children: [...controls(), const SkeletonCardGroup(count: 3)],
           ),
           error: (e, _) => scrollable(
             children: [
@@ -466,9 +495,11 @@ class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 32),
                     child: Center(
-                      child: Text(items.isEmpty
-                          ? l10n.adminNoOrders
-                          : l10n.adminNoMatchingOrders),
+                      child: Text(
+                        items.isEmpty
+                            ? l10n.adminNoOrders
+                            : l10n.adminNoMatchingOrders,
+                      ),
                     ),
                   ),
                 ],
@@ -478,7 +509,9 @@ class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
             final pageCount = (total + _rowsPerPage - 1) ~/ _rowsPerPage;
             final page = _page.clamp(0, pageCount - 1);
             final start = page * _rowsPerPage;
-            final end = (start + _rowsPerPage) > total ? total : start + _rowsPerPage;
+            final end = (start + _rowsPerPage) > total
+                ? total
+                : start + _rowsPerPage;
             final slice = processed.sublist(start, end);
 
             final pagination = _PaginationBar(
@@ -491,7 +524,8 @@ class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
               rowsPerPage: _rowsPerPage,
               rowsPerPageOptions: _rowsPerPageOptions,
               onRowsPerPageChanged: _setRowsPerPage,
-              onSelect: (p) => setState(() => _page = p.clamp(0, pageCount - 1)),
+              onSelect: (p) =>
+                  setState(() => _page = p.clamp(0, pageCount - 1)),
             );
 
             if (wide) {
@@ -516,10 +550,7 @@ class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
                 for (final txn in slice)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: _AdminOrderCard(
-                      txn: txn,
-                      actions: _rowActions,
-                    ),
+                    child: _AdminOrderCard(txn: txn, actions: _rowActions),
                   ),
                 const SizedBox(height: AppSpace.xs),
                 pagination,
@@ -553,7 +584,10 @@ class _AdminPurchasesViewState extends ConsumerState<AdminPurchasesView> {
         builder: (_) => Dialog(
           backgroundColor: AppColors.surfaceCard,
           clipBehavior: Clip.antiAlias,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 40,
+            vertical: 40,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.panel),
           ),
@@ -607,8 +641,11 @@ class _SearchField extends StatelessWidget {
               fontSize: 13.5,
               color: AppColors.textTertiary,
             ),
-            prefixIcon: const Icon(Icons.search,
-                size: 20, color: AppColors.textTertiary),
+            prefixIcon: const Icon(
+              Icons.search,
+              size: 20,
+              color: AppColors.textTertiary,
+            ),
             suffixIcon: value.text.isEmpty
                 ? null
                 : IconButton(
@@ -633,7 +670,10 @@ class _SearchField extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.sm),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.4,
+              ),
             ),
           ),
         );
@@ -709,7 +749,10 @@ class _ActiveFilters extends StatelessWidget {
             ),
             child: Text(
               l10n.adminClearFilters,
-              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+              style: const TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
@@ -773,7 +816,9 @@ String _completedRevenue(
     if (currency.isEmpty) return amount.toStringAsFixed(2);
     return formatMoney(amount, currency);
   }
-  return slices.map((slice) => formatMoney(pick(slice), slice.currency)).join('\n');
+  return slices
+      .map((slice) => formatMoney(pick(slice), slice.currency))
+      .join('\n');
 }
 
 // ---------------------------------------------------------------------------
@@ -1031,8 +1076,8 @@ class _SortHeader extends StatelessWidget {
     final icon = col == null
         ? null
         : isActive
-            ? (asc ? Icons.arrow_upward : Icons.arrow_downward)
-            : Icons.unfold_more;
+        ? (asc ? Icons.arrow_upward : Icons.arrow_downward)
+        : Icons.unfold_more;
     final content = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1087,8 +1132,7 @@ class _OrderTableRow extends StatelessWidget {
 
   // Desktop/web right-click → same menu as the kebab button.
   Future<void> _showContextMenu(BuildContext context, Offset globalPos) async {
-    final overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
     final value = await showMenu<String>(
       context: context,
       position: RelativeRect.fromRect(
@@ -1102,8 +1146,9 @@ class _OrderTableRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final method =
-        txn.method == null ? '—' : paymentMethodLabel(txn.method!, l10n);
+    final method = txn.method == null
+        ? '—'
+        : paymentMethodLabel(txn.method!, l10n);
     final ref = txn.transactionReference.trim();
     final email = txn.userEmail.isEmpty ? '—' : txn.userEmail;
 
@@ -1215,7 +1260,11 @@ class _RowActionsMenu extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return PopupMenuButton<String>(
       tooltip: l10n.adminActionsTooltip,
-      icon: const Icon(Icons.more_vert, size: 20, color: AppColors.textSecondary),
+      icon: const Icon(
+        Icons.more_vert,
+        size: 20,
+        color: AppColors.textSecondary,
+      ),
       padding: EdgeInsets.zero,
       splashRadius: 20,
       shape: RoundedRectangleBorder(
@@ -1265,10 +1314,7 @@ class _TableCell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       flex: flex,
-      child: Padding(
-        padding: const EdgeInsets.only(right: 12),
-        child: child,
-      ),
+      child: Padding(padding: const EdgeInsets.only(right: 12), child: child),
     );
   }
 }
@@ -1386,8 +1432,13 @@ class _PaginationBar extends StatelessWidget {
     }
 
     // Windowed page numbers: up to 5 around the current page.
-    final windowStart = (page - 2).clamp(0, (pageCount - 5).clamp(0, pageCount));
-    final windowEnd = (windowStart + 5) > pageCount ? pageCount : windowStart + 5;
+    final windowStart = (page - 2).clamp(
+      0,
+      (pageCount - 5).clamp(0, pageCount),
+    );
+    final windowEnd = (windowStart + 5) > pageCount
+        ? pageCount
+        : windowStart + 5;
 
     return Row(
       children: [
@@ -1488,7 +1539,9 @@ class _NavButton extends StatelessWidget {
       child: Icon(
         icon,
         size: 20,
-        color: enabled ? AppColors.textSecondary : AppColors.textTertiary.withValues(alpha: 0.4),
+        color: enabled
+            ? AppColors.textSecondary
+            : AppColors.textTertiary.withValues(alpha: 0.4),
       ),
     );
   }
@@ -1547,9 +1600,7 @@ class _SquareTap extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadius.xs),
-            border: selected
-                ? null
-                : Border.all(color: AppColors.border),
+            border: selected ? null : Border.all(color: AppColors.border),
           ),
           child: child,
         ),
@@ -1718,7 +1769,10 @@ class _ReviewSheetState extends ConsumerState<_ReviewSheet> {
       if (!mounted) return;
       Navigator.of(context).pop();
       messenger.showSnackBar(
-        SnackBar(content: Text(approve ? l10n.adminApproved : l10n.adminRejected)),
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(approve ? l10n.adminApproved : l10n.adminRejected),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -1729,8 +1783,7 @@ class _ReviewSheetState extends ConsumerState<_ReviewSheet> {
   }
 
   bool get _hasReceipt =>
-      widget.txn.method?.isManual == true ||
-      widget.txn.receiptUrl.isNotEmpty;
+      widget.txn.method?.isManual == true || widget.txn.receiptUrl.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -1854,8 +1907,11 @@ class _ReviewSheetState extends ConsumerState<_ReviewSheet> {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.person_outline,
-                size: 15, color: AppColors.textTertiary),
+            const Icon(
+              Icons.person_outline,
+              size: 15,
+              color: AppColors.textTertiary,
+            ),
             const SizedBox(width: 5),
             Flexible(
               child: Text(
@@ -1893,7 +1949,10 @@ class _ReviewSheetState extends ConsumerState<_ReviewSheet> {
     );
 
     return showClose
-        ? Padding(padding: const EdgeInsets.fromLTRB(24, 20, 16, 16), child: row)
+        ? Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 16, 16),
+            child: row,
+          )
         : row;
   }
 
@@ -1989,8 +2048,8 @@ class _ReviewSheetState extends ConsumerState<_ReviewSheet> {
             color: accent
                 ? AppColors.primaryDeep
                 : muted
-                    ? AppColors.textTertiary
-                    : AppColors.textPrimary,
+                ? AppColors.textTertiary
+                : AppColors.textPrimary,
           ),
         ),
       ],
@@ -2034,14 +2093,19 @@ class _ReviewSheetState extends ConsumerState<_ReviewSheet> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.error_outline,
-                  size: 16, color: AppColors.errorText),
+              const Icon(
+                Icons.error_outline,
+                size: 16,
+                color: AppColors.errorText,
+              ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   _error!,
                   style: const TextStyle(
-                      color: AppColors.errorText, fontSize: 13),
+                    color: AppColors.errorText,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             ],
@@ -2144,12 +2208,17 @@ class _ReviewSheetState extends ConsumerState<_ReviewSheet> {
       style: const TextStyle(fontSize: 13.5, color: AppColors.textPrimary),
       decoration: InputDecoration(
         labelText: l10n.adminRejectReason,
-        labelStyle: const TextStyle(fontSize: 13, color: AppColors.textTertiary),
+        labelStyle: const TextStyle(
+          fontSize: 13,
+          color: AppColors.textTertiary,
+        ),
         isDense: true,
         filled: true,
         fillColor: AppColors.surfaceCard,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 12,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.sm),
           borderSide: const BorderSide(color: AppColors.border),

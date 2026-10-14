@@ -7,7 +7,7 @@ import '../providers/download_jobs_provider.dart';
 import '../storage/download_jobs_storage.dart';
 import 'offline_book_download.dart';
 
-const _statusVisibleFor = Duration(seconds: 30);
+const _statusVisibleFor = Duration(seconds: 5);
 final Map<String, Timer> _statusDismissTimers = {};
 
 /// Latest download job for [bookId] that should appear on book detail.

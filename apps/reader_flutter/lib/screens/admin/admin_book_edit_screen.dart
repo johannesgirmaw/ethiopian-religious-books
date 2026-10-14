@@ -544,9 +544,12 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
         _isPdfBook = true;
       });
       _markDirty();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.pdfRemoved)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(l10n.pdfRemoved),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = l10n.pdfRemoveFailed);
@@ -724,9 +727,12 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     final bookId = widget.bookId;
     if (bookId == null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.createBookFirstValidate)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(l10n.createBookFirstValidate),
+        ),
+      );
       return;
     }
     setState(() {
@@ -819,7 +825,8 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
       final chaptersDraftPayload = _chaptersDraft
           .map((e) => e.toDraftPayload())
           .toList();
-      final commissionPercent = ref.read(commissionRateProvider).valueOrNull ??
+      final commissionPercent =
+          ref.read(commissionRateProvider).valueOrNull ??
           AppConfig.defaultCommissionPercent;
       final listedEtb = _pricePayload(_priceEtb, commissionPercent);
       final listedUsd = _pricePayload(_priceUsd, commissionPercent);
@@ -986,7 +993,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   }) {
     final commissionPercent =
         ref.watch(commissionRateProvider).valueOrNull ??
-            AppConfig.defaultCommissionPercent;
+        AppConfig.defaultCommissionPercent;
     final etbAuthor = _parsePriceInput(_priceEtb.text) ?? 0;
     final usdAuthor = _parsePriceInput(_priceUsd.text) ?? 0;
     final etbListed = _listedPriceFromAuthor(etbAuthor, commissionPercent);
@@ -1308,10 +1315,10 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
             onPressed: _busy
                 ? null
                 : () => setState(() {
-                      _pendingPdfBytes = null;
-                      _pendingPdfFilename = null;
-                      _markDirty();
-                    }),
+                    _pendingPdfBytes = null;
+                    _pendingPdfFilename = null;
+                    _markDirty();
+                  }),
             icon: const Icon(Icons.close_rounded),
           ),
         ),
@@ -1323,10 +1330,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
             color: AppColors.primary,
           ),
           title: Text(
-            l10n.pdfReadyLabel(
-              server.filename,
-              _formatBytes(server.sizeBytes),
-            ),
+            l10n.pdfReadyLabel(server.filename, _formatBytes(server.sizeBytes)),
           ),
         ),
       ],

@@ -68,9 +68,12 @@ class MobileDownloadsScreen extends ConsumerWidget {
             ref.invalidate(offlineDownloadsListProvider);
             ref.invalidate(offlineBookCountProvider);
             if (context.mounted) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(l10n.offlineCacheCleared)));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  duration: const Duration(seconds: 5),
+                  content: Text(l10n.offlineCacheCleared),
+                ),
+              );
             }
           },
         ),
@@ -188,14 +191,17 @@ class _OfflineBookCardState extends ConsumerState<_OfflineBookCard> {
       if (mounted) {
         final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error ?? l10n.downloadsSyncDone)),
+          SnackBar(
+            duration: const Duration(seconds: 5),
+            content: Text(error ?? l10n.downloadsSyncDone),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('$e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(duration: const Duration(seconds: 5), content: Text('$e')),
+        );
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -227,9 +233,12 @@ class _OfflineBookCardState extends ConsumerState<_OfflineBookCard> {
     ref.invalidate(offlineBookCountProvider);
     ref.invalidate(offlineBookCachedProvider(widget.entry.id));
     if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.offlineCopyRemoved)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(l10n.offlineCopyRemoved),
+        ),
+      );
     }
   }
 
@@ -490,7 +499,10 @@ class _DownloadJobTile extends ConsumerWidget {
                   onPressed: () async {
                     final messenger = ScaffoldMessenger.of(context);
                     messenger.showSnackBar(
-                      SnackBar(content: Text(l10n.preparingDownload)),
+                      SnackBar(
+                        duration: const Duration(seconds: 5),
+                        content: Text(l10n.preparingDownload),
+                      ),
                     );
                     final error = await runOfflineBookDownload(
                       ref,
@@ -502,10 +514,18 @@ class _DownloadJobTile extends ConsumerWidget {
                     ref.invalidate(offlineDownloadsListProvider);
                     if (error == null) {
                       messenger.showSnackBar(
-                        SnackBar(content: Text(l10n.savedOfflineReading)),
+                        SnackBar(
+                          duration: const Duration(seconds: 5),
+                          content: Text(l10n.savedOfflineReading),
+                        ),
                       );
                     } else {
-                      messenger.showSnackBar(SnackBar(content: Text(error)));
+                      messenger.showSnackBar(
+                        SnackBar(
+                          duration: const Duration(seconds: 5),
+                          content: Text(error),
+                        ),
+                      );
                     }
                   },
                   child: Text(l10n.retry),

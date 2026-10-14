@@ -164,12 +164,19 @@ class _AuthorApplyViewState extends ConsumerState<AuthorApplyView> {
         _photoBytes = null;
         _photoMime = null;
       });
-      messenger.showSnackBar(SnackBar(content: Text(l10n.authorApplySubmitted)));
+      messenger.showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(l10n.authorApplySubmitted),
+        ),
+      );
     } on DioException catch (e) {
-      setState(() => _error =
-          messageFromDioResponse(e.response?.data) ??
-              e.message ??
-              l10n.authorApplyFailed);
+      setState(
+        () => _error =
+            messageFromDioResponse(e.response?.data) ??
+            e.message ??
+            l10n.authorApplyFailed,
+      );
     } catch (e) {
       setState(() => _error = '$e');
     } finally {
@@ -209,7 +216,8 @@ class _AuthorApplyViewState extends ConsumerState<AuthorApplyView> {
       data: (my) {
         // Server says the user is now an author (application approved elsewhere):
         // pull the fresh role into the session so the app unlocks author tools.
-        final approvedSomewhere = my.isAuthor || (my.application?.isApproved == true);
+        final approvedSomewhere =
+            my.isAuthor || (my.application?.isApproved == true);
         if (approvedSomewhere && !_refreshedSession) {
           _refreshedSession = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -371,8 +379,8 @@ class _AuthorApplyViewState extends ConsumerState<AuthorApplyView> {
                     label: (app != null && app.isRejected)
                         ? l10n.authorApplyResubmit
                         : (app != null
-                            ? l10n.authorApplyResubmit
-                            : l10n.authorApplySubmit),
+                              ? l10n.authorApplyResubmit
+                              : l10n.authorApplySubmit),
                     busy: _busy,
                     icon: Icons.send_rounded,
                     onPressed: _busy ? null : _submit,
@@ -576,15 +584,15 @@ class _PhotoPicker extends StatelessWidget {
   }
 
   Widget _placeholder() => const ColoredBox(
-        color: AppColors.surfaceInput,
-        child: SizedBox(
-          width: 76,
-          height: 76,
-          child: Icon(
-            Icons.person_outline_rounded,
-            size: 32,
-            color: AppColors.textTertiary,
-          ),
-        ),
-      );
+    color: AppColors.surfaceInput,
+    child: SizedBox(
+      width: 76,
+      height: 76,
+      child: Icon(
+        Icons.person_outline_rounded,
+        size: 32,
+        color: AppColors.textTertiary,
+      ),
+    ),
+  );
 }

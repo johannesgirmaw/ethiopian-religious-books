@@ -40,14 +40,26 @@ class BookDetailBody extends ConsumerWidget {
   Future<void> _downloadSample(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(SnackBar(content: Text(l10n.preparingDownload)));
+    messenger.showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 5),
+        content: Text(l10n.preparingDownload),
+      ),
+    );
     final error = await runOfflineBookDownload(ref, bookId, l10n: l10n);
     if (!context.mounted) return;
     ref.invalidate(downloadJobsProvider);
     if (error == null) {
-      messenger.showSnackBar(SnackBar(content: Text(l10n.savedOfflineReading)));
+      messenger.showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(l10n.savedOfflineReading),
+        ),
+      );
     } else {
-      messenger.showSnackBar(SnackBar(content: Text(error)));
+      messenger.showSnackBar(
+        SnackBar(duration: const Duration(seconds: 5), content: Text(error)),
+      );
     }
   }
 
@@ -101,7 +113,10 @@ class BookDetailBody extends ConsumerWidget {
                     ?.contains(bookId) ??
                 false);
         final mustBuy =
-            book.requiresPurchase && !owned && !purchasePending && !resumeCheckout;
+            book.requiresPurchase &&
+            !owned &&
+            !purchasePending &&
+            !resumeCheckout;
         // Offline save is only for free books or books the user already owns.
         final canSaveOffline = owned || !book.requiresPurchase;
 
@@ -690,11 +705,7 @@ class _ActionCluster extends StatelessWidget {
       spacing: 10,
       runSpacing: 10,
       crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        primary,
-        if (showDownload) download,
-        share,
-      ],
+      children: [primary, if (showDownload) download, share],
     );
   }
 }

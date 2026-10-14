@@ -40,10 +40,7 @@ class ChangePasswordScreen extends ConsumerWidget {
         body: body,
       );
     }
-    return AppSubPageScaffold(
-      title: l10n.changePasswordTitle,
-      body: body,
-    );
+    return AppSubPageScaffold(title: l10n.changePasswordTitle, body: body);
   }
 }
 
@@ -80,24 +77,32 @@ class _ChangePasswordBodyState extends ConsumerState<_ChangePasswordBody> {
       _error = null;
     });
     try {
-      final data = await ref.read(authApiProvider).changePassword(
+      final data = await ref
+          .read(authApiProvider)
+          .changePassword(
             currentPassword: _current.text,
             newPassword: _password.text,
           );
       // The server rotates every session; persist the fresh pair so this device
       // stays signed in.
-      await ref.read(sessionNotifierProvider.notifier).updateTokens(
+      await ref
+          .read(sessionNotifierProvider.notifier)
+          .updateTokens(
             accessToken: data['access_token'] as String,
             refreshToken: data['refresh_token'] as String,
           );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.passwordChangedSuccess)),
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(l10n.passwordChangedSuccess),
+        ),
       );
       popOverlayRoute(context);
     } on DioException catch (e) {
       final hint = connectionTroubleshootHint(e);
-      final msg = messageFromDioResponse(e.response?.data) ??
+      final msg =
+          messageFromDioResponse(e.response?.data) ??
           hint ??
           e.message ??
           l10n.changePasswordFailed;

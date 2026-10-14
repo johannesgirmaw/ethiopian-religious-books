@@ -26,7 +26,10 @@ class BookDetailScreen extends ConsumerWidget {
     // Copy the public web detail URL so recipients can open it in the app.
     Clipboard.setData(ClipboardData(text: bookDetailShareUrl(book.id)));
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.bookSharedToClipboard)),
+      SnackBar(
+        duration: const Duration(seconds: 5),
+        content: Text(l10n.bookSharedToClipboard),
+      ),
     );
   }
 

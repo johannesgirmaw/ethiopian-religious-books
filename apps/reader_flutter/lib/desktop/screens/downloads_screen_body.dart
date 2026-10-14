@@ -58,9 +58,12 @@ class DesktopDownloadsScreenBody extends ConsumerWidget {
     ref.invalidate(offlineDownloadsListProvider);
     ref.invalidate(offlineBookCountProvider);
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.offlineCacheCleared)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(l10n.offlineCacheCleared),
+        ),
+      );
     }
   }
 
@@ -308,9 +311,12 @@ class _OfflineRow extends ConsumerWidget {
     ref.invalidate(offlineBookCountProvider);
     ref.invalidate(offlineBookCachedProvider(entry.id));
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.offlineCopyRemoved)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(l10n.offlineCopyRemoved),
+        ),
+      );
     }
   }
 
@@ -360,7 +366,10 @@ class _OfflineRow extends ConsumerWidget {
               );
               if (!context.mounted) return;
               messenger.showSnackBar(
-                SnackBar(content: Text(error ?? l10n.downloadsSyncDone)),
+                SnackBar(
+                  duration: const Duration(seconds: 5),
+                  content: Text(error ?? l10n.downloadsSyncDone),
+                ),
               );
             },
             child: Text(l10n.downloadsSyncCache),

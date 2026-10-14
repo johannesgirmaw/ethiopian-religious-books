@@ -38,8 +38,9 @@ class MobileSettingsScreen extends ConsumerWidget {
           const SizedBox(height: AppLayout.blockGap),
           downloadJobs.when(
             data: (jobs) {
-              final pending =
-                  jobs.where((e) => e.state == 'in_progress').length;
+              final pending = jobs
+                  .where((e) => e.state == 'in_progress')
+                  .length;
               final failed = jobs.where((e) => e.state == 'failed').length;
               return Row(
                 children: [
@@ -58,10 +59,8 @@ class MobileSettingsScreen extends ConsumerWidget {
                 ],
               );
             },
-            loading: () => const SizedBox(
-              height: 96,
-              child: SkeletonCardGroup(count: 2),
-            ),
+            loading: () =>
+                const SizedBox(height: 96, child: SkeletonCardGroup(count: 2)),
             error: (_, __) => Row(
               children: [
                 _SettingsMetricCard(
@@ -114,10 +113,8 @@ class MobileSettingsScreen extends ConsumerWidget {
                 ],
               );
             },
-            loading: () => const SizedBox(
-              height: 96,
-              child: SkeletonCardGroup(count: 2),
-            ),
+            loading: () =>
+                const SizedBox(height: 96, child: SkeletonCardGroup(count: 2)),
             error: (_, __) => Row(
               children: [
                 _SettingsMetricCard(
@@ -231,7 +228,10 @@ class MobileSettingsScreen extends ConsumerWidget {
     ref.invalidate(offlineBookCountProvider);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.offlineCacheCleared)),
+      SnackBar(
+        duration: const Duration(seconds: 5),
+        content: Text(l10n.offlineCacheCleared),
+      ),
     );
   }
 }
@@ -330,11 +330,7 @@ class _SettingsActionRow extends StatelessWidget {
                   color: AppColors.referencePrimary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  size: 22,
-                  color: AppColors.referencePrimary,
-                ),
+                child: Icon(icon, size: 22, color: AppColors.referencePrimary),
               ),
               const SizedBox(width: 12),
               Expanded(

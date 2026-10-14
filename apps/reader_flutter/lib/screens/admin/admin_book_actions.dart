@@ -49,7 +49,10 @@ Future<bool> adminPublishBook({
     ref.invalidate(adminBooksProvider);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.publishedLatestRevision)),
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(l10n.publishedLatestRevision),
+        ),
       );
     }
     return true;
@@ -57,6 +60,7 @@ Future<bool> adminPublishBook({
     if (!context.mounted) return false;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        duration: const Duration(seconds: 5),
         content: Text(
           messageFromDioResponse(e.response?.data) ??
               publishErrorMessage(e) ??
@@ -116,7 +120,10 @@ Future<bool> _postReviewAction({
     ref.invalidate(reviewNotesProvider(bookId));
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(successMessage)),
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(successMessage),
+        ),
       );
     }
     return true;
@@ -124,8 +131,11 @@ Future<bool> _postReviewAction({
     if (!context.mounted) return false;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        duration: const Duration(seconds: 5),
         content: Text(
-          messageFromDioResponse(e.response?.data) ?? e.message ?? fallbackError,
+          messageFromDioResponse(e.response?.data) ??
+              e.message ??
+              fallbackError,
         ),
       ),
     );
@@ -267,8 +277,9 @@ class _ReviewCommentDialogState extends State<_ReviewCommentDialog> {
           children: [
             Text(
               l10n.reviewCommentLabel,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 8),
             ColoredBox(
@@ -308,9 +319,9 @@ class _ReviewCommentDialogState extends State<_ReviewCommentDialog> {
         FilledButton(
           onPressed: _hasText
               ? () => Navigator.pop(
-                    context,
-                    jsonEncode(_controller.document.toDelta().toJson()),
-                  )
+                  context,
+                  jsonEncode(_controller.document.toDelta().toJson()),
+                )
               : null,
           child: Text(l10n.requestChanges),
         ),
@@ -366,7 +377,10 @@ Future<bool> adminDeleteBook({
     ref.invalidate(adminBooksProvider);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.deleteBookSuccess)),
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(l10n.deleteBookSuccess),
+        ),
       );
     }
     return true;
@@ -374,6 +388,7 @@ Future<bool> adminDeleteBook({
     if (!context.mounted) return false;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        duration: const Duration(seconds: 5),
         content: Text(
           messageFromDioResponse(e.response?.data) ??
               e.message ??
@@ -398,7 +413,10 @@ Future<bool> adminUnpublishBook({
     ref.invalidate(adminBooksProvider);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.unpublish)),
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(l10n.unpublish),
+        ),
       );
     }
     return true;
@@ -406,6 +424,7 @@ Future<bool> adminUnpublishBook({
     if (!context.mounted) return false;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        duration: const Duration(seconds: 5),
         content: Text(
           messageFromDioResponse(e.response?.data) ??
               e.message ??

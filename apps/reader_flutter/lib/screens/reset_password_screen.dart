@@ -32,8 +32,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   static const int _resendCooldown = 60;
 
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _email =
-      TextEditingController(text: widget.initialEmail ?? '');
+  late final TextEditingController _email = TextEditingController(
+    text: widget.initialEmail ?? '',
+  );
   final _code = TextEditingController();
   final _password = TextEditingController();
   final _confirm = TextEditingController();
@@ -82,7 +83,10 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       if (!mounted) return;
       _startCooldown();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.resetCodeResent)),
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(l10n.resetCodeResent),
+        ),
       );
     } catch (_) {
       // Resend failures are non-fatal; the user can try again.
@@ -98,19 +102,25 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       _error = null;
     });
     try {
-      await ref.read(authApiProvider).resetPassword(
+      await ref
+          .read(authApiProvider)
+          .resetPassword(
             email: _email.text.trim(),
             code: _code.text.trim(),
             newPassword: _password.text,
           );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.passwordResetSuccess)),
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(l10n.passwordResetSuccess),
+        ),
       );
       context.go('/login');
     } on DioException catch (e) {
       final hint = connectionTroubleshootHint(e);
-      final msg = messageFromDioResponse(e.response?.data) ??
+      final msg =
+          messageFromDioResponse(e.response?.data) ??
           hint ??
           e.message ??
           l10n.resetPasswordFailed;

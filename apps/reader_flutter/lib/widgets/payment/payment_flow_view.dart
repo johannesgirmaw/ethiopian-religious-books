@@ -105,7 +105,9 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
     final txn = _transaction;
     if (txn == null || txn.status != PaymentStatus.pending) return;
     try {
-      final updated = await ref.read(paymentRepositoryProvider).updatePending(
+      final updated = await ref
+          .read(paymentRepositoryProvider)
+          .updatePending(
             transactionId: txn.id,
             bankId: _selectedBankId,
             transactionReference: _referenceCtrl.text.trim(),
@@ -173,7 +175,10 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
     }
 
     if (!mounted) return;
-    if (restored && open == null && _step == _Step.method && _selectedMethod != null) {
+    if (restored &&
+        open == null &&
+        _step == _Step.method &&
+        _selectedMethod != null) {
       showFormDraftRestoredSnackBar(context);
     }
     final saved = _transaction;
@@ -187,7 +192,8 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
 
   void _applyOpenPurchase(PaymentTransaction open) {
     final draftTxnId = _pendingTransactionId;
-    final draftMatches = draftTxnId == null || draftTxnId.isEmpty || draftTxnId == open.id;
+    final draftMatches =
+        draftTxnId == null || draftTxnId.isEmpty || draftTxnId == open.id;
     final draftReference = _referenceCtrl.text;
     _transaction = open;
     _selectedMethod = open.method ?? _selectedMethod;
@@ -590,7 +596,9 @@ class _PaymentFlowViewState extends ConsumerState<PaymentFlowView> {
                 onSelectBank: _onBankSelected,
                 onPickReceipt: _pickReceipt,
                 onSubmit: _canSubmitReceipt ? _submitReceipt : null,
-                onCancel: _transaction == null || _busy ? null : _cancelPurchase,
+                onCancel: _transaction == null || _busy
+                    ? null
+                    : _cancelPurchase,
               ),
               _Step.success => _SuccessStep(
                 transaction: _transaction,
@@ -1295,9 +1303,12 @@ class _CopyableRow extends StatelessWidget {
           color: AppColors.primary,
           onPressed: () {
             Clipboard.setData(ClipboardData(text: value));
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(l10n.paymentCopied)));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                duration: const Duration(seconds: 5),
+                content: Text(l10n.paymentCopied),
+              ),
+            );
           },
         ),
       ],
@@ -1351,10 +1362,7 @@ class _ReceiptDropZone extends StatelessWidget {
                     minScale: 0.5,
                     maxScale: 6,
                     child: Center(
-                      child: Image.memory(
-                        imageBytes,
-                        fit: BoxFit.contain,
-                      ),
+                      child: Image.memory(imageBytes, fit: BoxFit.contain),
                     ),
                   ),
                 ),
@@ -1383,8 +1391,7 @@ class _ReceiptDropZone extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final hasFile = fileName != null && bytes != null && bytes!.isNotEmpty;
-    final showImagePreview =
-        hasFile && _looksLikeImageBytes(bytes!, fileName);
+    final showImagePreview = hasFile && _looksLikeImageBytes(bytes!, fileName);
 
     if (!hasFile) {
       return InkWell(
@@ -1652,11 +1659,7 @@ class _OwnedStep extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: AppSpace.xl),
-        const Icon(
-          Icons.menu_book_rounded,
-          color: AppColors.primary,
-          size: 72,
-        ),
+        const Icon(Icons.menu_book_rounded, color: AppColors.primary, size: 72),
         const SizedBox(height: AppSpace.md),
         Text(
           l10n.paymentAlreadyOwnedTitle,
