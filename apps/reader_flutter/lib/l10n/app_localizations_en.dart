@@ -350,6 +350,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get downloadErrorGeneric => 'Download failed. Please try again.';
 
   @override
+  String get downloadPdfInvalid =>
+      'This file is not a valid PDF and could not be saved for offline reading.';
+
+  @override
+  String get downloadPdfKeptLocal =>
+      'Couldn\'t refresh this PDF. Your saved copy is still on this device.';
+
+  @override
   String get downloadRequiresPurchase =>
       'You need to purchase this book before you can download it.';
 

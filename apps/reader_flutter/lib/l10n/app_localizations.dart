@@ -722,6 +722,18 @@ abstract class AppLocalizations {
   /// **'Download failed. Please try again.'**
   String get downloadErrorGeneric;
 
+  /// No description provided for @downloadPdfInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'This file is not a valid PDF and could not be saved for offline reading.'**
+  String get downloadPdfInvalid;
+
+  /// No description provided for @downloadPdfKeptLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t refresh this PDF. Your saved copy is still on this device.'**
+  String get downloadPdfKeptLocal;
+
   /// No description provided for @downloadRequiresPurchase.
   ///
   /// In en, this message translates to:

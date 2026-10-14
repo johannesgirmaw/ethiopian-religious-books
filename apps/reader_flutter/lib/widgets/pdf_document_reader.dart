@@ -9,7 +9,8 @@ import '../l10n/app_localizations.dart';
 import '../storage/reader_prefs_storage.dart';
 import '../utils/pdf_book_loader.dart';
 import '../utils/pdf_cache_stub.dart'
-    if (dart.library.io) '../utils/pdf_cache_io.dart' as pdf_cache;
+    if (dart.library.io) '../utils/pdf_cache_io.dart'
+    as pdf_cache;
 import 'protected_content_scope.dart';
 
 /// Fit mode persisted per book. `custom` means the user zoomed manually.
@@ -17,13 +18,18 @@ enum _PdfFitMode { custom, width, page }
 
 /// In-app PDF reader with navigation, zoom, and text search (ported from gizecare).
 ///
-/// Provide either [filePath] (native cache file) or [uri] (presigned / blob URL on web).
+/// Provide exactly one of [filePath] (native cache file), [uri] (presigned /
+/// blob URL), [bytes], or [read] (offline vault, one range at a time).
 class PdfDocumentReader extends StatefulWidget {
   const PdfDocumentReader({
     super.key,
     this.bookId,
     this.filePath,
     this.uri,
+    this.bytes,
+    this.fileSize,
+    this.read,
+    this.sourceName,
     this.headers,
     this.preferRangeAccess = true,
     this.nativeCacheAccess,
@@ -32,17 +38,35 @@ class PdfDocumentReader extends StatefulWidget {
     this.errorTitle = 'Could not open PDF',
     this.onRetry,
   }) : assert(
-          (filePath != null) ^ (uri != null),
-          'Provide exactly one of filePath or uri',
-        );
+         (filePath != null ? 1 : 0) +
+                 (uri != null ? 1 : 0) +
+                 (bytes != null ? 1 : 0) +
+                 (read != null ? 1 : 0) ==
+             1,
+         'Provide exactly one of filePath, uri, bytes, or read',
+       ),
+       assert(
+         bytes == null || sourceName != null,
+         'bytes requires a sourceName',
+       ),
+       assert(
+         read == null || (fileSize != null && sourceName != null),
+         'read requires a fileSize and sourceName',
+       );
 
   /// When set, zoom / fit / page are restored and saved for this book.
   final String? bookId;
   final String? filePath;
   final Uri? uri;
+  final Uint8List? bytes;
+  final int? fileSize;
+  final PdfByteReader? read;
+  final String? sourceName;
   final Map<String, String>? headers;
+
   /// Web: false for non-linearized PDFs (full download). Native: usually true.
   final bool preferRangeAccess;
+
   /// Native only: after first paint, download [uri] into the temp-dir cache.
   final PdfBookAccess? nativeCacheAccess;
   final EdgeInsets padding;
@@ -70,7 +94,8 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
   double _zoom = 1;
   _PdfFitMode _fitMode = _PdfFitMode.custom;
 
-  Object get _sourceKey => widget.filePath ?? widget.uri!;
+  Object get _sourceKey =>
+      widget.filePath ?? widget.uri ?? widget.sourceName ?? '';
 
   @override
   void initState() {
@@ -95,7 +120,7 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
   @override
   void didUpdateWidget(PdfDocumentReader oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final oldKey = oldWidget.filePath ?? oldWidget.uri;
+    final oldKey = oldWidget.filePath ?? oldWidget.uri ?? oldWidget.sourceName;
     if (oldKey != _sourceKey) {
       _teardownSearch();
       setState(() {
@@ -375,8 +400,8 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
               Text(
                 label,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                  color: AppColors.textSecondary,
+                ),
               ),
             ],
           ),
@@ -385,7 +410,8 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
       errorBannerBuilder: (context, error, stackTrace, documentRef) {
         final l10n = AppLocalizations.of(context);
         final raw = '$error';
-        final message = raw.contains('Failed to download') ||
+        final message =
+            raw.contains('Failed to download') ||
                 raw.contains('Timeout') ||
                 raw.contains('SocketException')
             ? l10n.pdfConnectionFailed
@@ -405,17 +431,17 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
                 Text(
                   widget.errorTitle,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: AppSpace.xs),
                 Text(
                   message,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 if (widget.onRetry != null) ...[
                   const SizedBox(height: AppSpace.md),
@@ -500,6 +526,27 @@ class _PdfDocumentReaderState extends State<PdfDocumentReader> {
       ],
     );
 
+    if (widget.read != null) {
+      return PdfViewer.custom(
+        fileSize: widget.fileSize!,
+        read: widget.read!,
+        sourceName: widget.sourceName!,
+        key: ValueKey(widget.sourceName),
+        controller: _controller,
+        params: params,
+        useProgressiveLoading: true,
+      );
+    }
+    if (widget.bytes != null) {
+      return PdfViewer.data(
+        widget.bytes!,
+        sourceName: widget.sourceName!,
+        key: ValueKey(widget.sourceName),
+        controller: _controller,
+        params: params,
+        useProgressiveLoading: true,
+      );
+    }
     if (widget.filePath != null) {
       return PdfViewer.file(
         widget.filePath!,
@@ -655,15 +702,15 @@ class _PdfSearchBar extends StatelessWidget {
           focusNode: focusNode,
           enabled: enabled,
           textInputAction: TextInputAction.search,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textPrimary,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppColors.textPrimary),
           decoration: InputDecoration(
             isDense: true,
             hintText: hintText,
-            hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textTertiary,
-                ),
+            hintStyle: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.textTertiary),
             prefixIcon: const Icon(
               Icons.search_rounded,
               color: AppColors.textSecondary,
@@ -690,7 +737,10 @@ class _PdfSearchBar extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.xs),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.5,
+              ),
             ),
             disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.xs),
@@ -711,9 +761,9 @@ class _PdfSearchBar extends StatelessWidget {
                 statusLabel,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
               ),
             ),
             _ToolbarIcon(
@@ -980,10 +1030,7 @@ class _ToolbarGroup extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: children,
-        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: children),
       ),
     );
   }
@@ -1008,8 +1055,8 @@ class _ToolbarIcon extends StatelessWidget {
     final color = !active
         ? AppColors.textTertiary
         : selected
-            ? AppColors.primary
-            : AppColors.textPrimary;
+        ? AppColors.primary
+        : AppColors.textPrimary;
     return IconButton(
       onPressed: onPressed,
       tooltip: tooltip,
@@ -1046,8 +1093,8 @@ class _FitToolButton extends StatelessWidget {
     final color = !active
         ? AppColors.textTertiary
         : selected
-            ? AppColors.primary
-            : AppColors.textPrimary;
+        ? AppColors.primary
+        : AppColors.textPrimary;
     return Tooltip(
       message: tooltip,
       child: TextButton(
@@ -1104,10 +1151,10 @@ class _PageField extends StatelessWidget {
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w600,
-                  height: 1.1,
-                ),
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
+              height: 1.1,
+            ),
             decoration: InputDecoration(
               isDense: true,
               filled: true,
@@ -1126,7 +1173,10 @@ class _PageField extends StatelessWidget {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.xs),
-                borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 1.5,
+                ),
               ),
               disabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.xs),
@@ -1144,9 +1194,9 @@ class _PageField extends StatelessWidget {
           child: Text(
             '/ $pageCount',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ],
@@ -1186,11 +1236,9 @@ class _ZoomBadge extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: enabled
-                        ? AppColors.primaryDeep
-                        : AppColors.textTertiary,
-                    fontWeight: FontWeight.w700,
-                  ),
+                color: enabled ? AppColors.primaryDeep : AppColors.textTertiary,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),

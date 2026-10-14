@@ -2,7 +2,8 @@ import 'package:flutter/foundation.dart';
 
 import '../config/dev_object_storage_origin.dart';
 import 'pdf_cache_stub.dart'
-    if (dart.library.io) 'pdf_cache_io.dart' as pdf_cache;
+    if (dart.library.io) 'pdf_cache_io.dart'
+    as pdf_cache;
 
 /// Access payload from ``GET /books/{id}/pdf``.
 class PdfBookAccess {
@@ -38,20 +39,58 @@ class PdfBookAccess {
   }
 }
 
+/// Copies plaintext into [buffer] starting at [position]. Returns the number
+/// of bytes written.
+typedef PdfByteReader =
+    Future<int> Function(Uint8List buffer, int position, int size);
+
 /// Where the PDF viewer should load from.
 class PdfViewerSource {
   PdfViewerSource.file(this.filePath)
-      : uri = null,
-        headers = null,
-        preferRangeAccess = true;
-  PdfViewerSource.uri(
-    this.uri, {
-    this.headers,
-    this.preferRangeAccess = true,
-  }) : filePath = null;
+    : uri = null,
+      bytes = null,
+      fileSize = null,
+      read = null,
+      sourceName = null,
+      headers = null,
+      preferRangeAccess = true;
+  PdfViewerSource.uri(this.uri, {this.headers, this.preferRangeAccess = true})
+    : filePath = null,
+      bytes = null,
+      fileSize = null,
+      read = null,
+      sourceName = null;
+  PdfViewerSource.data(this.bytes, {required this.sourceName})
+    : filePath = null,
+      uri = null,
+      fileSize = null,
+      read = null,
+      headers = null,
+      preferRangeAccess = true;
+
+  /// Offline vault. [read] decrypts only the requested range.
+  PdfViewerSource.range({
+    required this.fileSize,
+    required this.read,
+    required this.sourceName,
+  }) : filePath = null,
+       uri = null,
+       bytes = null,
+       headers = null,
+       preferRangeAccess = true;
 
   final String? filePath;
   final Uri? uri;
+
+  /// Decrypted PDF bytes already in memory. Offline books use [read] instead.
+  final Uint8List? bytes;
+
+  /// Plaintext length for [read].
+  final int? fileSize;
+  final PdfByteReader? read;
+
+  /// Stable id for [PdfViewer.data] and [PdfViewer.custom].
+  final String? sourceName;
   final Map<String, String>? headers;
 
   /// When false on web, the worker does a full download (safer for scanned,

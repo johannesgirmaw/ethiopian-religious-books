@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,18 +14,17 @@ import '../../widgets/app_state_view.dart';
 import '../../widgets/primitives/shell_primitives.dart';
 import '../widgets/shell/shell_page_scaffold.dart';
 
-Future<void> _syncOfflineBookCache(WidgetRef ref, String bookId) async {
-  ref.invalidate(bookContentProvider(bookId));
-  await ref.read(bookContentProvider(bookId).future);
-  try {
-    await ref.read(bookDetailProvider(bookId).future);
-  } on DioException {
-    // Meta update is best-effort when offline.
-  }
+Future<String?> _syncOfflineBookCache(
+  WidgetRef ref,
+  String bookId, {
+  AppLocalizations? l10n,
+}) async {
+  final error = await syncOfflineBook(ref, bookId, l10n: l10n);
   ref.invalidate(offlineDownloadsListProvider);
   ref.invalidate(offlineBookCountProvider);
   ref.invalidate(offlineBookCachedProvider(bookId));
   ref.invalidate(bookDetailProvider(bookId));
+  return error;
 }
 
 /// Offline downloads hub — saved books and active download jobs (not the full catalog).
@@ -182,12 +180,15 @@ class _OfflineBookCardState extends ConsumerState<_OfflineBookCard> {
   Future<void> _sync() async {
     setState(() => _busy = true);
     try {
-      await _syncOfflineBookCache(ref, widget.entry.id);
+      final error = await _syncOfflineBookCache(
+        ref,
+        widget.entry.id,
+        l10n: AppLocalizations.of(context),
+      );
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.downloadsSyncDone),
-          ),
+          SnackBar(content: Text(error ?? l10n.downloadsSyncDone)),
         );
       }
     } catch (e) {
@@ -256,7 +257,11 @@ class _OfflineBookCardState extends ConsumerState<_OfflineBookCard> {
                 Text(e.authorCompiler!),
               ],
               const SizedBox(height: 12),
-              Text(l10n.draftChapterPageCounts(e.chapterCount, e.pageCount)),
+              Text(
+                e.isPdf
+                    ? l10n.pdfDocumentSection
+                    : l10n.draftChapterPageCounts(e.chapterCount, e.pageCount),
+              ),
               if (!e.hasReadableContent) ...[
                 const SizedBox(height: 12),
                 Text(
@@ -320,10 +325,12 @@ class _OfflineBookCardState extends ConsumerState<_OfflineBookCard> {
                       [
                         if (e.primaryLanguage?.isNotEmpty == true)
                           e.primaryLanguage!,
-                        l10n.draftChapterPageCounts(
-                          e.chapterCount,
-                          e.pageCount,
-                        ),
+                        e.isPdf
+                            ? l10n.pdfDocumentSection
+                            : l10n.draftChapterPageCounts(
+                                e.chapterCount,
+                                e.pageCount,
+                              ),
                         if (!e.hasReadableContent) l10n.downloadsCacheInvalid,
                       ].join(' · '),
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -352,7 +359,7 @@ class _OfflineBookCardState extends ConsumerState<_OfflineBookCard> {
                     switch (action) {
                       case 'read':
                         if (e.hasReadableContent) {
-                          context.push('/reader/${e.id}');
+                          context.push(e.readPath);
                         }
                       case 'info':
                         if (e.inCatalog) {
@@ -427,7 +434,7 @@ class _OfflineBookCardState extends ConsumerState<_OfflineBookCard> {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: _busy ? null : () => context.push('/reader/${e.id}'),
+                onPressed: _busy ? null : () => context.push(e.readPath),
                 icon: const Icon(Icons.menu_book_outlined, size: 18),
                 label: Text(l10n.actionRead),
               ),
@@ -510,7 +517,7 @@ class _DownloadJobTile extends ConsumerWidget {
                 ),
           onTap: () {
             if (cached.isNotEmpty && cached.first.hasReadableContent) {
-              context.push('/reader/${job.bookId}');
+              context.push(cached.first.readPath);
             } else if (catalogMatches.isNotEmpty) {
               final match = catalogMatches.first;
               context.push(

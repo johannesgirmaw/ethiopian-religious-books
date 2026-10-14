@@ -23,10 +23,14 @@ Future<Directory> _bookDir(String bookId) async {
 
 Future<void> vaultWrite(String bookId, String name, Uint8List bytes) async {
   final dir = await _bookDir(bookId);
+  final target = File('${dir.path}/$name');
+  if (!await target.parent.exists()) {
+    await target.parent.create(recursive: true);
+  }
   // Write-then-rename so a crash mid-write never leaves a half file.
-  final tmp = File('${dir.path}/$name.tmp');
+  final tmp = File('${target.path}.tmp');
   await tmp.writeAsBytes(bytes, flush: true);
-  await tmp.rename('${dir.path}/$name');
+  await tmp.rename(target.path);
 }
 
 Future<Uint8List?> vaultRead(String bookId, String name) async {
@@ -39,6 +43,26 @@ Future<Uint8List?> vaultRead(String bookId, String name) async {
 Future<bool> vaultExists(String bookId, String name) async {
   final lib = await _libraryDir();
   return File('${lib.path}/$bookId/$name').exists();
+}
+
+Future<void> vaultDelete(String bookId, String name) async {
+  final lib = await _libraryDir();
+  final file = File('${lib.path}/$bookId/$name');
+  if (await file.exists()) await file.delete();
+}
+
+/// Deletes a file or a directory under the book folder. Used to drop one
+/// generation of sealed PDF chunks (`pdf_<generation>/`).
+Future<void> vaultDeleteRelative(String bookId, String relative) async {
+  final lib = await _libraryDir();
+  final path = '${lib.path}/$bookId/$relative';
+  final dir = Directory(path);
+  if (await dir.exists()) {
+    await dir.delete(recursive: true);
+    return;
+  }
+  final file = File(path);
+  if (await file.exists()) await file.delete();
 }
 
 Future<void> vaultDeleteBook(String bookId) async {

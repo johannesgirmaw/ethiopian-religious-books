@@ -10,6 +10,7 @@ class BookCacheMeta {
     this.authorCompiler,
     this.primaryLanguage,
     this.savedAtEpochMs,
+    this.contentFormat,
   });
 
   final String title;
@@ -17,12 +18,19 @@ class BookCacheMeta {
   final String? primaryLanguage;
   final int? savedAtEpochMs;
 
+  /// Package format (`pdf`, `html_chunks`, …) so an offline summary still
+  /// knows which reader to open.
+  final String? contentFormat;
+
+  bool get isPdf => (contentFormat ?? '').toLowerCase() == 'pdf';
+
   Map<String, dynamic> toJson() => {
-        'title': title,
-        if (authorCompiler != null) 'author_compiler': authorCompiler,
-        if (primaryLanguage != null) 'primary_language': primaryLanguage,
-        if (savedAtEpochMs != null) 'saved_at': savedAtEpochMs,
-      };
+    'title': title,
+    if (authorCompiler != null) 'author_compiler': authorCompiler,
+    if (primaryLanguage != null) 'primary_language': primaryLanguage,
+    if (savedAtEpochMs != null) 'saved_at': savedAtEpochMs,
+    if (contentFormat != null) 'content_format': contentFormat,
+  };
 
   factory BookCacheMeta.fromJson(Map<String, dynamic> j) {
     return BookCacheMeta(
@@ -32,6 +40,7 @@ class BookCacheMeta {
       authorCompiler: j['author_compiler'] as String?,
       primaryLanguage: j['primary_language'] as String?,
       savedAtEpochMs: (j['saved_at'] as num?)?.toInt(),
+      contentFormat: j['content_format'] as String?,
     );
   }
 }
@@ -57,8 +66,10 @@ class BookContentCacheStorage {
       _migrated = true;
       return;
     }
-    final doomed =
-        prefs.getKeys().where((k) => k.startsWith(_legacyPrefix)).toList();
+    final doomed = prefs
+        .getKeys()
+        .where((k) => k.startsWith(_legacyPrefix))
+        .toList();
     for (final key in doomed) {
       await prefs.remove(key);
     }
@@ -90,7 +101,8 @@ class BookContentCacheStorage {
   }) async {
     await _ensureMigrated();
     final now = DateTime.now().millisecondsSinceEpoch;
-    final resolvedMeta = meta ??
+    final resolvedMeta =
+        meta ??
         BookCacheMeta(
           title: titleFromContentTree(BookContentTree.fromJson(raw)) ?? bookId,
           savedAtEpochMs: now,
@@ -105,7 +117,8 @@ class BookContentCacheStorage {
 
   static Future<bool> hasBookContent(String bookId) async {
     await _ensureMigrated();
-    return SecureBookStore.hasBookContent(bookId);
+    if (await SecureBookStore.hasBookContent(bookId)) return true;
+    return SecureBookStore.hasPdf(bookId);
   }
 
   static Future<List<String>> listCachedBookIds() async {

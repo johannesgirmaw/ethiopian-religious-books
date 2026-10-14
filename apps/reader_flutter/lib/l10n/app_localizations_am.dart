@@ -345,6 +345,14 @@ class AppLocalizationsAm extends AppLocalizations {
   String get downloadErrorGeneric => 'ማውረድ አልተሳካም። እባክዎ እንደገና ይሞክሩ።';
 
   @override
+  String get downloadPdfInvalid =>
+      'ይህ ፋይል ትክክለኛ PDF አይደለም፣ ስለዚህ ያለ ኢንተርኔት ሊቀመጥ አልቻለም።';
+
+  @override
+  String get downloadPdfKeptLocal =>
+      'ይህን PDF ማደስ አልተቻለም። ያስቀመጡት ቅጂ አሁንም በዚህ መሣሪያ ላይ ነው።';
+
+  @override
   String get downloadRequiresPurchase => 'ከማውረድዎ በፊት ይህን መጽሐፍ መግዛት አለብዎት።';
 
   @override

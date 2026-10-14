@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,14 +16,15 @@ import '../layout/app_layout_scope.dart';
 import '../widgets/common/web_page_header.dart';
 import '../widgets/common/web_section.dart';
 
-Future<void> _syncOfflineBookCache(WidgetRef ref, String bookId) async {
-  ref.invalidate(bookContentProvider(bookId));
-  await ref.read(bookContentProvider(bookId).future);
-  try {
-    await ref.read(bookDetailProvider(bookId).future);
-  } on DioException {}
+Future<String?> _syncOfflineBookCache(
+  WidgetRef ref,
+  String bookId, {
+  AppLocalizations? l10n,
+}) async {
+  final error = await syncOfflineBook(ref, bookId, l10n: l10n);
   ref.invalidate(offlineDownloadsListProvider);
   ref.invalidate(offlineBookCountProvider);
+  return error;
 }
 
 class DownloadsScreenBody extends ConsumerWidget {
@@ -41,8 +41,14 @@ class DownloadsScreenBody extends ConsumerWidget {
         title: Text(l10n.clearOfflineCacheTitle),
         content: Text(l10n.clearOfflineCacheBody),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.clear)),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.clear),
+          ),
         ],
       ),
     );
@@ -51,9 +57,9 @@ class DownloadsScreenBody extends ConsumerWidget {
     ref.invalidate(offlineDownloadsListProvider);
     ref.invalidate(offlineBookCountProvider);
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.offlineCacheCleared)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.offlineCacheCleared)));
     }
   }
 
@@ -67,8 +73,9 @@ class DownloadsScreenBody extends ConsumerWidget {
     return offlineAsync.when(
       data: (offlineBooks) {
         final jobs = jobsAsync.valueOrNull ?? const <DownloadJob>[];
-        final activeJobs =
-            jobs.where((j) => j.state == 'in_progress' || j.state == 'pending').toList();
+        final activeJobs = jobs
+            .where((j) => j.state == 'in_progress' || j.state == 'pending')
+            .toList();
         final failedJobs = jobs.where((j) => j.state == 'failed').toList();
 
         if (offlineBooks.isEmpty && activeJobs.isEmpty && failedJobs.isEmpty) {
@@ -178,10 +185,12 @@ class DownloadsScreenBody extends ConsumerWidget {
             subtitle: l10n.downloadsEmptyMessage,
           ),
           const SizedBox(height: 24),
-          const Center(child: Padding(
-            padding: EdgeInsets.all(32),
-            child: CircularProgressIndicator(),
-          )),
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32),
+              child: CircularProgressIndicator(),
+            ),
+          ),
         ],
       ),
       error: (e, _) => ListView(
@@ -212,7 +221,8 @@ class _JobRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final catalog = ref.watch(catalogProvider).valueOrNull;
-    final matches = catalog?.items.where((b) => b.id == job.bookId).toList() ?? [];
+    final matches =
+        catalog?.items.where((b) => b.id == job.bookId).toList() ?? [];
     final title = matches.isNotEmpty ? matches.first.title : job.bookId;
 
     return Padding(
@@ -221,7 +231,12 @@ class _JobRow extends ConsumerWidget {
         children: [
           Icon(failed ? Icons.error_outline : Icons.downloading, size: 20),
           const SizedBox(width: 12),
-          Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.w600))),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
           if (failed)
             TextButton(
               onPressed: () async {
@@ -294,20 +309,40 @@ class _OfflineRow extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(entry.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  entry.title,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
                 if (entry.authorCompiler?.isNotEmpty == true)
-                  Text(entry.authorCompiler!, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                  Text(
+                    entry.authorCompiler!,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
               ],
             ),
           ),
           TextButton(
             onPressed: entry.hasReadableContent
-                ? () => context.push('/reader/${entry.id}')
+                ? () => context.push(entry.readPath)
                 : null,
             child: Text(l10n.actionRead),
           ),
           TextButton(
-            onPressed: () => _syncOfflineBookCache(ref, entry.id),
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final error = await _syncOfflineBookCache(
+                ref,
+                entry.id,
+                l10n: l10n,
+              );
+              if (!context.mounted) return;
+              messenger.showSnackBar(
+                SnackBar(content: Text(error ?? l10n.downloadsSyncDone)),
+              );
+            },
             child: Text(l10n.downloadsSyncCache),
           ),
           IconButton(

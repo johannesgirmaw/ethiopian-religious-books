@@ -205,11 +205,8 @@ class _PdfReaderBody extends ConsumerWidget {
             onAction: () => ref.invalidate(pdfViewerSourceProvider(bookId)),
           ),
           data: (source) {
-            final access =
-                ref.watch(pdfBookAccessProvider(bookId)).valueOrNull;
-            final nativeCache = !kIsWeb &&
-                    source.uri != null &&
-                    access != null
+            final access = ref.watch(pdfBookAccessProvider(bookId)).valueOrNull;
+            final nativeCache = !kIsWeb && source.uri != null && access != null
                 ? access
                 : null;
             return ContentProtectionLifecycle(
@@ -219,6 +216,10 @@ class _PdfReaderBody extends ConsumerWidget {
                   bookId: bookId,
                   filePath: source.filePath,
                   uri: source.uri,
+                  bytes: source.bytes,
+                  fileSize: source.fileSize,
+                  read: source.read,
+                  sourceName: source.sourceName,
                   headers: source.headers,
                   preferRangeAccess: source.preferRangeAccess,
                   nativeCacheAccess: nativeCache,

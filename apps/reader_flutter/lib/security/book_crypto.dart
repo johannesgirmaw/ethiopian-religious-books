@@ -25,6 +25,10 @@ class BookCrypto {
   static const _nonceLen = 12; // AES-GCM standard 96-bit nonce
   static const _macLen = 16; // 128-bit GCM tag
 
+  /// Bytes added by [seal]: nonce plus GCM tag. Chunked PDF storage uses this
+  /// so a reader can find each sealed piece without a separate index.
+  static const sealedOverhead = _nonceLen + _macLen;
+
   static final AesGcm _algo = AesGcm.with256bits();
   static SecretKey? _cached;
 
@@ -47,9 +51,11 @@ class BookCrypto {
   static Future<Uint8List> seal(List<int> plain) async {
     final key = await _masterKey();
     final box = await _algo.encrypt(plain, secretKey: key);
-    return Uint8List.fromList(
-      [...box.nonce, ...box.cipherText, ...box.mac.bytes],
-    );
+    return Uint8List.fromList([
+      ...box.nonce,
+      ...box.cipherText,
+      ...box.mac.bytes,
+    ]);
   }
 
   /// Opens a blob produced by [seal]. Throws on tamper / wrong device key.

@@ -35,10 +35,17 @@ Future<bool> vaultExists(String bookId, String name) async {
   return p.containsKey(_key(bookId, name));
 }
 
+Future<void> vaultDelete(String bookId, String name) async {
+  final p = await SharedPreferences.getInstance();
+  await p.remove(_key(bookId, name));
+}
+
 Future<void> vaultDeleteBook(String bookId) async {
   final p = await SharedPreferences.getInstance();
-  final doomed =
-      p.getKeys().where((k) => k.startsWith('$_prefix$bookId/')).toList();
+  final doomed = p
+      .getKeys()
+      .where((k) => k.startsWith('$_prefix$bookId/'))
+      .toList();
   for (final k in doomed) {
     await p.remove(k);
   }

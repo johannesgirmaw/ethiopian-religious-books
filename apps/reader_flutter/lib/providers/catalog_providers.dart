@@ -9,6 +9,7 @@ import '../models/offline_cached_book.dart';
 import '../security/device_identity.dart';
 import '../storage/book_content_cache_storage.dart';
 import '../storage/catalog_cache_storage.dart';
+import '../storage/pdf_vault_reader.dart';
 import '../storage/reader_prefs_storage.dart';
 import '../storage/secure_book_store.dart';
 import '../utils/pdf_book_loader.dart';
@@ -29,28 +30,28 @@ class CatalogBookMeta {
   final bool offlineCached;
 }
 
-final catalogBookMetaProvider =
-    FutureProvider.autoDispose.family<CatalogBookMeta, String>((ref, bookId) async {
-  int? chapterCount;
-  final cached = await BookContentCacheStorage.readBookContent(bookId);
-  if (cached != null && cached.chapters.isNotEmpty) {
-    chapterCount = cached.chapters.length;
-  } else {
-    try {
-      final chapters = await ref.watch(bookChaptersProvider(bookId).future);
-      if (chapters.isNotEmpty) chapterCount = chapters.length;
-    } catch (_) {}
-  }
+final catalogBookMetaProvider = FutureProvider.autoDispose
+    .family<CatalogBookMeta, String>((ref, bookId) async {
+      int? chapterCount;
+      final cached = await BookContentCacheStorage.readBookContent(bookId);
+      if (cached != null && cached.chapters.isNotEmpty) {
+        chapterCount = cached.chapters.length;
+      } else {
+        try {
+          final chapters = await ref.watch(bookChaptersProvider(bookId).future);
+          if (chapters.isNotEmpty) chapterCount = chapters.length;
+        } catch (_) {}
+      }
 
-  final progress = await ReaderPrefsStorage.readProgress(bookId);
-  final offline = await ref.watch(offlineBookCachedProvider(bookId).future);
+      final progress = await ReaderPrefsStorage.readProgress(bookId);
+      final offline = await ref.watch(offlineBookCachedProvider(bookId).future);
 
-  return CatalogBookMeta(
-    chapterCount: chapterCount,
-    progress: progress,
-    offlineCached: offline,
-  );
-});
+      return CatalogBookMeta(
+        chapterCount: chapterCount,
+        progress: progress,
+        offlineCached: offline,
+      );
+    });
 
 /// A dynamic book category from the `/genres` lookup table.
 class GenreOption {
@@ -67,15 +68,17 @@ class GenreOption {
   final String? icon;
 
   factory GenreOption.fromJson(Map<String, dynamic> j) => GenreOption(
-        slug: j['slug'] as String? ?? '',
-        label: j['label'] as String? ?? '',
-        labelAm: j['label_am'] as String?,
-        icon: j['icon'] as String?,
-      );
+    slug: j['slug'] as String? ?? '',
+    label: j['label'] as String? ?? '',
+    labelAm: j['label_am'] as String?,
+    icon: j['icon'] as String?,
+  );
 }
 
 /// Available book genres/categories (managed server-side).
-final genresProvider = FutureProvider.autoDispose<List<GenreOption>>((ref) async {
+final genresProvider = FutureProvider.autoDispose<List<GenreOption>>((
+  ref,
+) async {
   final dio = ref.watch(apiDioProvider);
   final res = await dio.get<Map<String, dynamic>>('genres');
   final items = res.data?['items'] as List<dynamic>? ?? const [];
@@ -92,9 +95,9 @@ class TagOption {
   final String label;
 
   factory TagOption.fromJson(Map<String, dynamic> j) => TagOption(
-        slug: j['slug'] as String? ?? '',
-        label: j['label'] as String? ?? '',
-      );
+    slug: j['slug'] as String? ?? '',
+    label: j['label'] as String? ?? '',
+  );
 }
 
 /// Existing tags, for the admin tag picker.
@@ -149,11 +152,7 @@ final catalogProvider = FutureProvider.autoDispose<CatalogPage>((ref) async {
 });
 
 class CatalogSearchFilters {
-  const CatalogSearchFilters({
-    this.query = '',
-    this.chapter,
-    this.page,
-  });
+  const CatalogSearchFilters({this.query = '', this.chapter, this.page});
 
   final String query;
   final String? chapter;
@@ -168,8 +167,12 @@ final catalogSearchProvider = FutureProvider.autoDispose
       if ((filters.chapter ?? '').trim().isNotEmpty) {
         params['chapter'] = filters.chapter!.trim();
       }
-      if (filters.page != null && filters.page! > 0) params['page'] = filters.page;
-      final res = await dio.get<Map<String, dynamic>>('books', queryParameters: params);
+      if (filters.page != null && filters.page! > 0)
+        params['page'] = filters.page;
+      final res = await dio.get<Map<String, dynamic>>(
+        'books',
+        queryParameters: params,
+      );
       return CatalogPage.fromJson(res.data!);
     });
 
@@ -178,7 +181,9 @@ final bookChaptersProvider = FutureProvider.autoDispose
       final dio = ref.watch(apiDioProvider);
       final res = await dio.get<Map<String, dynamic>>('books/$bookId/chapters');
       final raw = res.data?['items'] as List<dynamic>? ?? const [];
-      return raw.map((e) => BookChapter.fromJson(e as Map<String, dynamic>)).toList();
+      return raw
+          .map((e) => BookChapter.fromJson(e as Map<String, dynamic>))
+          .toList();
     });
 
 class BookSearchFilters {
@@ -203,7 +208,8 @@ final bookSearchProvider = FutureProvider.autoDispose
       if ((filters.chapter ?? '').trim().isNotEmpty) {
         params['chapter'] = filters.chapter!.trim();
       }
-      if (filters.page != null && filters.page! > 0) params['page'] = filters.page;
+      if (filters.page != null && filters.page! > 0)
+        params['page'] = filters.page;
       final res = await dio.get<Map<String, dynamic>>(
         'books/${filters.bookId}/search',
         queryParameters: params,
@@ -219,7 +225,9 @@ final bookContentProvider = FutureProvider.autoDispose
       final dio = ref.watch(apiDioProvider);
       final cached = await BookContentCacheStorage.readBookContent(bookId);
       try {
-        final res = await dio.get<Map<String, dynamic>>('books/$bookId/content');
+        final res = await dio.get<Map<String, dynamic>>(
+          'books/$bookId/content',
+        );
         final payload = res.data ?? const <String, dynamic>{};
         final remote = BookContentTree.fromJson(payload);
         if (remote.chapters.isNotEmpty) {
@@ -281,14 +289,15 @@ Future<void> _maybeRenewOfflineLicense(Dio dio, String bookId) async {
       'books/$bookId/license',
       data: {'device_id': deviceId},
     );
-    final lic = (res.data?['license'] as Map?)?.cast<String, dynamic>() ??
+    final lic =
+        (res.data?['license'] as Map?)?.cast<String, dynamic>() ??
         const <String, dynamic>{};
     final token = (lic['token'] as String?)?.trim() ?? '';
     if (token.isEmpty) return;
     final expiresIso = lic['expires_at'] as String?;
     final expiresMs = expiresIso != null
         ? (DateTime.tryParse(expiresIso)?.millisecondsSinceEpoch ??
-            existing.expiresAtEpochMs)
+              existing.expiresAtEpochMs)
         : existing.expiresAtEpochMs;
     await SecureBookStore.writeLicense(
       bookId,
@@ -316,48 +325,104 @@ final offlineBookCountProvider = FutureProvider.autoDispose<int>((ref) async {
   return BookContentCacheStorage.cachedBookCount();
 });
 
-final offlineBookCachedProvider =
-    FutureProvider.autoDispose.family<bool, String>((ref, bookId) async {
+final offlineBookCachedProvider = FutureProvider.autoDispose
+    .family<bool, String>((ref, bookId) async {
       return BookContentCacheStorage.hasBookContent(bookId);
     });
 
-final downloadInfoProvider =
-    FutureProvider.autoDispose.family<DownloadPayload, String>((ref, id) async {
-  final dio = ref.watch(apiDioProvider);
-  final res = await dio.get<Map<String, dynamic>>(
-    'books/$id/download',
-    options: Options(headers: devObjectStorageOriginHeaders()),
-  );
-  return DownloadPayload.fromJson(res.data!);
-});
+final downloadInfoProvider = FutureProvider.autoDispose
+    .family<DownloadPayload, String>((ref, id) async {
+      final dio = ref.watch(apiDioProvider);
+      final res = await dio.get<Map<String, dynamic>>(
+        'books/$id/download',
+        options: Options(headers: devObjectStorageOriginHeaders()),
+      );
+      return DownloadPayload.fromJson(res.data!);
+    });
 
-final pdfBookAccessProvider =
-    FutureProvider.autoDispose.family<PdfBookAccess, String>((ref, id) async {
-  final dio = ref.watch(apiDioProvider);
-  // Web: metadata only (no shareable MinIO URL). Native: short-lived presign.
-  final query = kIsWeb ? const {'delivery': 'proxy'} : null;
-  final res = await dio.get<Map<String, dynamic>>(
-    'books/$id/pdf',
-    queryParameters: query,
-    options: Options(headers: devObjectStorageOriginHeaders()),
-  );
-  return PdfBookAccess.fromJson(res.data!);
-});
+final pdfBookAccessProvider = FutureProvider.autoDispose
+    .family<PdfBookAccess, String>((ref, id) async {
+      final dio = ref.watch(apiDioProvider);
+      // Web: metadata only (no shareable MinIO URL). Native: short-lived presign.
+      final query = kIsWeb ? const {'delivery': 'proxy'} : null;
+      final res = await dio.get<Map<String, dynamic>>(
+        'books/$id/pdf',
+        queryParameters: query,
+        options: Options(headers: devObjectStorageOriginHeaders()),
+      );
+      return PdfBookAccess.fromJson(res.data!);
+    });
 
-final pdfViewerSourceProvider =
-    FutureProvider.autoDispose.family<PdfViewerSource, String>((ref, id) async {
-  final access = await ref.watch(pdfBookAccessProvider(id).future);
-  final token =
-      ref.watch(sessionNotifierProvider).valueOrNull?.accessToken;
-  return resolvePdfViewerSource(access, accessToken: token);
-});
+final pdfViewerSourceProvider = FutureProvider.autoDispose
+    .family<PdfViewerSource, String>((ref, id) async {
+      PdfBookAccess? access;
+      Object? accessError;
+      StackTrace? accessStack;
+      var entitlementDenied = false;
+      try {
+        access = await ref.watch(pdfBookAccessProvider(id).future);
+      } catch (e, st) {
+        accessError = e;
+        accessStack = st;
+        if (e is DioException && e.response?.statusCode == 403) {
+          entitlementDenied = true;
+          await SecureBookStore.revokeOfflineLicense(id);
+        }
+      }
+
+      if (access != null) {
+        // Online: renew the lease. A revoked purchase drops the local license.
+        await _maybeRenewOfflineLicense(ref.read(apiDioProvider), id);
+      }
+
+      final local = entitlementDenied ? null : await _licensedOfflinePdf(id);
+      if (local != null) {
+        final serverRevision = access?.revisionId.trim() ?? '';
+        final sameRevision =
+            access == null ||
+            serverRevision.isEmpty ||
+            serverRevision == local.revisionId;
+        if (sameRevision) {
+          return PdfViewerSource.range(
+            fileSize: local.plainSize,
+            read: local.read,
+            sourceName: 'vault:$id:${local.revisionId}',
+          );
+        }
+      }
+
+      if (access != null) {
+        final token = ref
+            .watch(sessionNotifierProvider)
+            .valueOrNull
+            ?.accessToken;
+        return resolvePdfViewerSource(access, accessToken: token);
+      }
+
+      Error.throwWithStackTrace(
+        accessError ?? StateError('PDF is not available offline.'),
+        accessStack ?? StackTrace.current,
+      );
+    });
+
+Future<ChunkedPdfReader?> _licensedOfflinePdf(String bookId) async {
+  final deviceId = await DeviceIdentity.deviceId();
+  final allowed = await SecureBookStore.hasValidOfflineAccess(
+    bookId,
+    deviceId: deviceId,
+  );
+  if (!allowed) return null;
+  return SecureBookStore.openPdfReader(bookId);
+}
 
 /// Warm PDF metadata + first byte range while the user is on book detail.
 ///
 /// Only runs for PDF books the user can already open (free, or purchased).
 /// Failures are swallowed — warmup must never break the detail screen.
-final pdfWarmupProvider =
-    FutureProvider.autoDispose.family<void, String>((ref, bookId) async {
+final pdfWarmupProvider = FutureProvider.autoDispose.family<void, String>((
+  ref,
+  bookId,
+) async {
   try {
     final session = ref.watch(sessionNotifierProvider).valueOrNull;
     final token = session?.accessToken.trim() ?? '';
@@ -367,8 +432,9 @@ final pdfWarmupProvider =
     if (!book.isPdf) return;
 
     if (book.requiresPurchase) {
-      final owned =
-          (await ref.watch(entitledBookIdsProvider.future)).contains(bookId);
+      final owned = (await ref.watch(
+        entitledBookIdsProvider.future,
+      )).contains(bookId);
       if (!owned) return;
     }
 
@@ -391,10 +457,7 @@ final catalogCachedAtProvider = FutureProvider.autoDispose<DateTime?>((ref) {
 });
 
 /// Resolves book metadata: catalog → local meta → cached content → API.
-Future<BookSummary> resolveBookSummary(
-  Ref ref,
-  String bookId,
-) async {
+Future<BookSummary> resolveBookSummary(Ref ref, String bookId) async {
   try {
     final catalog = await ref.read(catalogProvider.future);
     final match = catalog.items.where((b) => b.id == bookId).toList();
@@ -409,6 +472,7 @@ Future<BookSummary> resolveBookSummary(
       title: meta.title,
       authorCompiler: meta.authorCompiler,
       primaryLanguage: meta.primaryLanguage,
+      contentFormat: meta.contentFormat,
     );
   }
   if (cached != null && cached.chapters.isNotEmpty) {
@@ -432,85 +496,93 @@ Future<BookSummary> resolveBookSummary(
       title: book.title,
       authorCompiler: book.authorCompiler,
       primaryLanguage: book.primaryLanguage,
+      contentFormat: book.contentFormat,
       savedAtEpochMs: DateTime.now().millisecondsSinceEpoch,
     ),
   );
   return book;
 }
 
-final bookDetailProvider =
-    FutureProvider.autoDispose.family<BookSummary, String>((ref, id) async {
-  return resolveBookSummary(ref, id);
-});
+final bookDetailProvider = FutureProvider.autoDispose
+    .family<BookSummary, String>((ref, id) async {
+      return resolveBookSummary(ref, id);
+    });
 
 final offlineDownloadsListProvider =
     FutureProvider.autoDispose<List<OfflineCachedBook>>((ref) async {
-  final ids = await BookContentCacheStorage.listCachedBookIds();
-  if (ids.isEmpty) return const [];
+      final ids = await BookContentCacheStorage.listCachedBookIds();
+      if (ids.isEmpty) return const [];
 
-  var catalogById = <String, BookSummary>{};
-  try {
-    final catalog = await ref.watch(catalogProvider.future);
-    catalogById = {for (final b in catalog.items) b.id: b};
-  } catch (_) {}
+      var catalogById = <String, BookSummary>{};
+      try {
+        final catalog = await ref.watch(catalogProvider.future);
+        catalogById = {for (final b in catalog.items) b.id: b};
+      } catch (_) {}
 
-  final rows = <OfflineCachedBook>[];
-  for (final id in ids) {
-    final tree = await BookContentCacheStorage.readBookContent(id);
-    final meta = await BookContentCacheStorage.readBookMeta(id);
-    final catalogBook = catalogById[id];
-    final chapterCount = tree?.chapters.length ?? 0;
-    final pageCount = tree?.chapters.fold<int>(
-          0,
-          (sum, c) => sum + c.pages.length,
-        ) ??
-        0;
-    final hasReadable = chapterCount > 0 && pageCount > 0;
+      final rows = <OfflineCachedBook>[];
+      for (final id in ids) {
+        final tree = await BookContentCacheStorage.readBookContent(id);
+        final meta = await BookContentCacheStorage.readBookMeta(id);
+        final catalogBook = catalogById[id];
+        final chapterCount = tree?.chapters.length ?? 0;
+        final pageCount =
+            tree?.chapters.fold<int>(0, (sum, c) => sum + c.pages.length) ?? 0;
+        final hasPdf = await SecureBookStore.hasPdf(id);
+        final isPdf =
+            hasPdf || (catalogBook?.isPdf ?? false) || (meta?.isPdf ?? false);
+        final hasReadable = OfflineCachedBook.isReadableOffline(
+          chapterCount: chapterCount,
+          pageCount: pageCount,
+          hasPdf: hasPdf,
+        );
 
-    String title;
-    String? author;
-    String? language;
-    if (catalogBook != null) {
-      title = catalogBook.title;
-      author = catalogBook.authorCompiler;
-      language = catalogBook.primaryLanguage;
-    } else if (meta != null && meta.title.isNotEmpty) {
-      title = meta.title;
-      author = meta.authorCompiler;
-      language = meta.primaryLanguage;
-    } else {
-      title = BookContentCacheStorage.titleFromContentTree(tree) ?? id;
-    }
+        String title;
+        String? author;
+        String? language;
+        if (catalogBook != null) {
+          title = catalogBook.title;
+          author = catalogBook.authorCompiler;
+          language = catalogBook.primaryLanguage;
+        } else if (meta != null && meta.title.isNotEmpty) {
+          title = meta.title;
+          author = meta.authorCompiler;
+          language = meta.primaryLanguage;
+        } else {
+          title = BookContentCacheStorage.titleFromContentTree(tree) ?? id;
+        }
 
-    if (catalogBook != null &&
-        (meta == null || meta.title.isEmpty || meta.title == id)) {
-      await BookContentCacheStorage.writeBookMeta(
-        id,
-        BookCacheMeta(
-          title: catalogBook.title,
-          authorCompiler: catalogBook.authorCompiler,
-          primaryLanguage: catalogBook.primaryLanguage,
-          savedAtEpochMs: meta?.savedAtEpochMs,
-        ),
+        if (catalogBook != null &&
+            (meta == null || meta.title.isEmpty || meta.title == id)) {
+          await BookContentCacheStorage.writeBookMeta(
+            id,
+            BookCacheMeta(
+              title: catalogBook.title,
+              authorCompiler: catalogBook.authorCompiler,
+              primaryLanguage: catalogBook.primaryLanguage,
+              contentFormat: catalogBook.contentFormat ?? meta?.contentFormat,
+              savedAtEpochMs: meta?.savedAtEpochMs,
+            ),
+          );
+        }
+
+        rows.add(
+          OfflineCachedBook(
+            id: id,
+            title: title,
+            authorCompiler: author,
+            primaryLanguage: language,
+            chapterCount: chapterCount,
+            pageCount: pageCount,
+            hasReadableContent: hasReadable,
+            isPdf: isPdf,
+            inCatalog: catalogBook != null,
+            catalogBook: catalogBook,
+            savedAtEpochMs: meta?.savedAtEpochMs,
+          ),
+        );
+      }
+      rows.sort(
+        (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
       );
-    }
-
-    rows.add(
-      OfflineCachedBook(
-        id: id,
-        title: title,
-        authorCompiler: author,
-        primaryLanguage: language,
-        chapterCount: chapterCount,
-        pageCount: pageCount,
-        hasReadableContent: hasReadable,
-        inCatalog: catalogBook != null,
-        catalogBook: catalogBook,
-        savedAtEpochMs: meta?.savedAtEpochMs,
-      ),
-    );
-  }
-  rows.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
-  return rows;
-});
-
+      return rows;
+    });

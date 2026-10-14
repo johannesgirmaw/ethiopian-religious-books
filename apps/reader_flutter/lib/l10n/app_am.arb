@@ -168,6 +168,8 @@
   "downloadErrorConnection": "መጽሐፉን ለማውረድ መገናኘት አልተቻለም። ኢንተርኔትዎን ይፈትሹና እንደገና ይሞክሩ።",
   "downloadErrorTimeout": "ማውረዱ ጊዜው አልፏል። ኢንተርኔት ሲረጋጋ እንደገና ይሞክሩ።",
   "downloadErrorGeneric": "ማውረድ አልተሳካም። እባክዎ እንደገና ይሞክሩ።",
+  "downloadPdfInvalid": "ይህ ፋይል ትክክለኛ PDF አይደለም፣ ስለዚህ ያለ ኢንተርኔት ሊቀመጥ አልቻለም።",
+  "downloadPdfKeptLocal": "ይህን PDF ማደስ አልተቻለም። ያስቀመጡት ቅጂ አሁንም በዚህ መሣሪያ ላይ ነው።",
   "downloadRequiresPurchase": "ከማውረድዎ በፊት ይህን መጽሐፍ መግዛት አለብዎት።",
   "downloadsSyncCache": "አዲሱን አምጣ",
   "downloadsClearBookCache": "ያለ ኢንተርኔት ቅጂ አንሳ",

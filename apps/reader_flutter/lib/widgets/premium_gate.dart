@@ -6,6 +6,8 @@ import '../design/app_tokens.dart';
 import '../l10n/app_localizations.dart';
 import '../models/book_models.dart';
 import '../providers/payment_providers.dart';
+import '../security/device_identity.dart';
+import '../storage/secure_book_store.dart';
 import 'cover_badges.dart';
 
 /// Returns true if [book] may be opened directly.
@@ -23,6 +25,18 @@ Future<bool> ensureBookUnlocked(
   // Managers previewing an unpublished draft skip checkout.
   if (!book.isCatalogPublished && book.catalogVisibility != null) return true;
 
+  // A saved copy with a valid lease opens without a live entitlements call.
+  // Refunds are enforced the next time that lease is renewed online.
+  try {
+    final deviceId = await DeviceIdentity.deviceId();
+    if (await SecureBookStore.hasValidOfflineAccess(
+      book.id,
+      deviceId: deviceId,
+    )) {
+      return true;
+    }
+  } catch (_) {}
+
   // A completed purchase entitles the user to read.
   if (await userOwnsBook(ref, book.id)) return true;
 
@@ -34,9 +48,9 @@ Future<bool> ensureBookUnlocked(
       if (active != null && active.status.isSuccessful) return true;
       if (active != null && active.status.isAwaitingReview) {
         final l10n = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.paymentInReviewBlocked)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.paymentInReviewBlocked)));
         return false;
       }
       if (active != null && active.status.resumesCheckout) {
@@ -62,10 +76,7 @@ Future<bool> ensureBookUnlocked(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: PremiumBadge(),
-            ),
+            const Align(alignment: Alignment.centerLeft, child: PremiumBadge()),
             const SizedBox(height: 14),
             Text(
               l10n.premiumLockedTitle,

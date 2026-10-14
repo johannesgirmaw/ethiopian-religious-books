@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,14 +17,15 @@ import '../widgets/common/desktop_page_header.dart';
 import '../widgets/common/desktop_scroll_body.dart';
 import '../widgets/common/desktop_section.dart';
 
-Future<void> _syncOfflineBookCache(WidgetRef ref, String bookId) async {
-  ref.invalidate(bookContentProvider(bookId));
-  await ref.read(bookContentProvider(bookId).future);
-  try {
-    await ref.read(bookDetailProvider(bookId).future);
-  } on DioException {}
+Future<String?> _syncOfflineBookCache(
+  WidgetRef ref,
+  String bookId, {
+  AppLocalizations? l10n,
+}) async {
+  final error = await syncOfflineBook(ref, bookId, l10n: l10n);
   ref.invalidate(offlineDownloadsListProvider);
   ref.invalidate(offlineBookCountProvider);
+  return error;
 }
 
 class DesktopDownloadsScreenBody extends ConsumerWidget {
@@ -58,9 +58,9 @@ class DesktopDownloadsScreenBody extends ConsumerWidget {
     ref.invalidate(offlineDownloadsListProvider);
     ref.invalidate(offlineBookCountProvider);
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.offlineCacheCleared)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.offlineCacheCleared)));
     }
   }
 
@@ -75,8 +75,9 @@ class DesktopDownloadsScreenBody extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final offlineAsync = ref.watch(offlineDownloadsListProvider);
     final jobsAsync = ref.watch(downloadJobsProvider);
-    final padding =
-        DesktopTokens.pagePadding(DesktopLayoutScope.tierOf(context));
+    final padding = DesktopTokens.pagePadding(
+      DesktopLayoutScope.tierOf(context),
+    );
 
     return offlineAsync.when(
       data: (offlineBooks) {
@@ -86,9 +87,7 @@ class DesktopDownloadsScreenBody extends ConsumerWidget {
             .toList();
         final failedJobs = jobs.where((j) => j.state == 'failed').toList();
         final isEmpty =
-            offlineBooks.isEmpty &&
-            activeJobs.isEmpty &&
-            failedJobs.isEmpty;
+            offlineBooks.isEmpty && activeJobs.isEmpty && failedJobs.isEmpty;
 
         if (isEmpty) {
           return DesktopScrollBody(
@@ -252,10 +251,7 @@ class _JobRow extends ConsumerWidget {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
             ),
           ),
           if (failed)
@@ -350,12 +346,23 @@ class _OfflineRow extends ConsumerWidget {
           ),
           TextButton(
             onPressed: entry.hasReadableContent
-                ? () => context.push('/reader/${entry.id}')
+                ? () => context.push(entry.readPath)
                 : null,
             child: Text(l10n.actionRead),
           ),
           TextButton(
-            onPressed: () => _syncOfflineBookCache(ref, entry.id),
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final error = await _syncOfflineBookCache(
+                ref,
+                entry.id,
+                l10n: l10n,
+              );
+              if (!context.mounted) return;
+              messenger.showSnackBar(
+                SnackBar(content: Text(error ?? l10n.downloadsSyncDone)),
+              );
+            },
             child: Text(l10n.downloadsSyncCache),
           ),
           IconButton(
