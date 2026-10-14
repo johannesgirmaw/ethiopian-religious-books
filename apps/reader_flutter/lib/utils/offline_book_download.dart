@@ -7,6 +7,7 @@ import '../models/book_models.dart';
 import '../models/download_job.dart';
 import '../providers/api_client.dart';
 import '../providers/catalog_providers.dart';
+import '../providers/download_jobs_provider.dart';
 import '../security/device_identity.dart';
 import '../storage/book_content_cache_storage.dart';
 import '../storage/download_jobs_storage.dart';
@@ -53,6 +54,7 @@ Future<String?> runOfflineBookDownload(
       updatedAtEpochMs: DateTime.now().millisecondsSinceEpoch,
     ),
   );
+  ref.invalidate(downloadJobsProvider);
   try {
     final dio = ref.read(apiDioProvider);
     await DeviceIdentity.ensureRegistered(dio);

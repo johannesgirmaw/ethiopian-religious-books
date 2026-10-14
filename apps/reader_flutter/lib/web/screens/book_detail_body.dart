@@ -19,6 +19,7 @@ import '../../utils/offline_book_download.dart';
 import '../../widgets/app_state_view.dart';
 import '../../widgets/book_reviews_section.dart';
 import '../../widgets/cover_badges.dart';
+import '../../widgets/offline_save_icon.dart';
 import '../../widgets/premium_gate.dart';
 import '../../widgets/reference/book_detail_cover.dart';
 import '../../widgets/skeleton_loader.dart';
@@ -147,6 +148,7 @@ class BookDetailBody extends ConsumerWidget {
           onRead: purchasePending ? null : onRead,
           onDownload: () => _downloadSample(context, ref),
           onShare: () => onShare(book),
+          savingOffline: currentJob?.state == 'in_progress',
         );
 
         final header = _TitleBlock(
@@ -605,6 +607,7 @@ class _ActionCluster extends StatelessWidget {
     required this.onRead,
     required this.onDownload,
     required this.onShare,
+    required this.savingOffline,
   });
 
   final AppLocalizations l10n;
@@ -616,6 +619,7 @@ class _ActionCluster extends StatelessWidget {
   final VoidCallback? onRead;
   final VoidCallback onDownload;
   final VoidCallback onShare;
+  final bool savingOffline;
 
   static const _radius = BorderRadius.all(Radius.circular(12));
 
@@ -654,7 +658,7 @@ class _ActionCluster extends StatelessWidget {
     );
 
     final download = OutlinedButton.icon(
-      onPressed: onDownload,
+      onPressed: savingOffline ? null : onDownload,
       style: OutlinedButton.styleFrom(
         backgroundColor: WebTokens.surfaceBg,
         foregroundColor: AppColors.textPrimary,
@@ -665,7 +669,7 @@ class _ActionCluster extends StatelessWidget {
         textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         shape: const RoundedRectangleBorder(borderRadius: _radius),
       ),
-      icon: const Icon(Icons.download_outlined, size: 18),
+      icon: OfflineSaveIcon(saving: savingOffline),
       label: Text(l10n.downloadOfflineShort),
     );
 

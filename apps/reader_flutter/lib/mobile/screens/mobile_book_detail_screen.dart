@@ -21,6 +21,7 @@ import '../../utils/offline_book_download.dart';
 import '../../widgets/app_state_view.dart';
 import '../../widgets/book_reviews_section.dart';
 import '../../widgets/cover_badges.dart';
+import '../../widgets/offline_save_icon.dart';
 import '../../widgets/premium_gate.dart';
 import '../../widgets/primitives/shell_primitives.dart';
 import '../../widgets/reference/book_detail_cover.dart';
@@ -301,8 +302,9 @@ class MobileBookDetailScreen extends ConsumerWidget {
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
-                          onPressed: () =>
-                              _downloadSample(context, ref, bookId),
+                          onPressed: currentJob?.state == 'in_progress'
+                              ? null
+                              : () => _downloadSample(context, ref, bookId),
                           style: OutlinedButton.styleFrom(
                             backgroundColor: AppColors.surfaceCard,
                             foregroundColor: AppColors.textPrimary,
@@ -314,7 +316,10 @@ class MobileBookDetailScreen extends ConsumerWidget {
                               ),
                             ),
                           ),
-                          icon: const Icon(Icons.download_outlined, size: 20),
+                          icon: OfflineSaveIcon(
+                            saving: currentJob?.state == 'in_progress',
+                            size: 20,
+                          ),
                           label: Text(l10n.downloadOffline),
                         ),
                       ),

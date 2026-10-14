@@ -19,6 +19,7 @@ import '../../utils/offline_book_download.dart';
 import '../../widgets/app_state_view.dart';
 import '../../widgets/book_reviews_section.dart';
 import '../../widgets/cover_badges.dart';
+import '../../widgets/offline_save_icon.dart';
 import '../../widgets/premium_gate.dart';
 import '../../widgets/reference/book_detail_cover.dart';
 import '../../widgets/skeleton_loader.dart';
@@ -311,6 +312,7 @@ class _LeftRail extends StatelessWidget {
           purchasePending: purchasePending,
           resumeCheckout: resumeCheckout,
           showDownload: showDownload,
+          savingOffline: downloadJob?.state == 'in_progress',
         ),
         if (downloadJob != null) ...[
           const SizedBox(height: 16),
@@ -401,6 +403,7 @@ class _ActionButtons extends StatelessWidget {
     required this.purchasePending,
     required this.resumeCheckout,
     required this.showDownload,
+    required this.savingOffline,
   });
 
   final AppLocalizations l10n;
@@ -411,6 +414,7 @@ class _ActionButtons extends StatelessWidget {
   final bool purchasePending;
   final bool resumeCheckout;
   final bool showDownload;
+  final bool savingOffline;
 
   @override
   Widget build(BuildContext context) {
@@ -458,7 +462,7 @@ class _ActionButtons extends StatelessWidget {
             if (showDownload) ...[
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: onDownload,
+                  onPressed: savingOffline ? null : onDownload,
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.textPrimary,
                     side: const BorderSide(color: DesktopTokens.borderColor),
@@ -470,7 +474,7 @@ class _ActionButtons extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  icon: const Icon(Icons.download_outlined, size: 18),
+                  icon: OfflineSaveIcon(saving: savingOffline),
                   label: Text(l10n.downloadOfflineShort),
                 ),
               ),
