@@ -90,6 +90,17 @@ class ChunkedPdfReader {
     return filled;
   }
 
+  /// Whole plaintext document. Web's PDF engine cannot read a custom range
+  /// source, so the saved book is assembled once and opened as bytes.
+  Future<Uint8List> readAll() async {
+    final out = Uint8List(plainSize);
+    final n = await read(out, 0, plainSize);
+    if (n != plainSize) {
+      throw StateError('offline pdf read $n of $plainSize bytes');
+    }
+    return out;
+  }
+
   Future<Uint8List> _plainChunk(int index) async {
     final existing = _openings[index];
     if (existing != null) {

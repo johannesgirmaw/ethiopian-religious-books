@@ -73,6 +73,14 @@ void main() {
     expect(tail.sublist(0, 4), plain.sublist(16));
 
     expect(await reader.read(Uint8List(4), plain.length, 4), 0);
+
+    final copy = ChunkedPdfReader(
+      plainSize: plain.length,
+      revisionId: 'rev',
+      chunkSize: chunkSize,
+      readSealed: (index) async => sealed[index],
+    );
+    expect(await copy.readAll(), plain);
   });
 
   test('a tampered chunk is rejected', () async {
