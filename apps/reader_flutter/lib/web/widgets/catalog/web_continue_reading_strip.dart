@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../design/app_tokens.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../providers/catalog_providers.dart';
+import '../../../providers/continue_reading_provider.dart';
+import '../../../router/app_navigation.dart';
 import '../../design/web_tokens.dart';
 
 /// Full-width continue reading strip for the web library.
@@ -19,6 +21,12 @@ class WebContinueReadingStrip extends ConsumerWidget {
     final catalog = ref.watch(catalogProvider).valueOrNull;
     final book = catalog?.items.where((b) => b.id == bookId).firstOrNull;
     final title = book?.title ?? l10n.resumeReading;
+    final meta = ref.watch(catalogBookMetaProvider(bookId)).valueOrNull;
+    final progress = (meta?.progress ?? 0).clamp(0.0, 1.0);
+    final percent = (progress * 100).round();
+    final lastOpened = ref.watch(lastOpenedBookProvider).valueOrNull;
+    final isPdf = book?.isPdf ?? lastOpened?.isPdf ?? false;
+    final path = readingPathForBook(bookId, isPdf: isPdf);
 
     return DecoratedBox(
       decoration: WebTokens.panelDecoration(),
@@ -80,7 +88,7 @@ class WebContinueReadingStrip extends ConsumerWidget {
                     if (!compact) ...[
                       const SizedBox(width: 12),
                       FilledButton(
-                        onPressed: () => context.push('/reader/$bookId'),
+                        onPressed: () => context.push(path),
                         style: FilledButton.styleFrom(
                           backgroundColor: AppColors.referencePrimary,
                           padding: const EdgeInsets.symmetric(
@@ -98,12 +106,41 @@ class WebContinueReadingStrip extends ConsumerWidget {
                     ],
                   ],
                 ),
+                if (percent > 0) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            minHeight: 5,
+                            backgroundColor: AppColors.primary.withValues(
+                              alpha: 0.12,
+                            ),
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.readingProgressPercent(percent),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 if (compact) ...[
                   const SizedBox(height: 12),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: FilledButton(
-                      onPressed: () => context.push('/reader/$bookId'),
+                      onPressed: () => context.push(path),
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.referencePrimary,
                         padding: const EdgeInsets.symmetric(

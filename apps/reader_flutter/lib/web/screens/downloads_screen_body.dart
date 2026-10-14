@@ -243,7 +243,12 @@ class _JobRow extends ConsumerWidget {
           if (failed)
             TextButton(
               onPressed: () async {
-                await runOfflineBookDownload(ref, job.bookId, l10n: l10n);
+                await runOfflineBookDownload(
+                  ref,
+                  job.bookId,
+                  l10n: l10n,
+                  context: context,
+                );
                 ref.invalidate(downloadJobsProvider);
               },
               child: Text(l10n.retry),

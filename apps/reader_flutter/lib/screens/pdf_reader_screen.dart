@@ -34,6 +34,7 @@ class PdfReaderScreen extends ConsumerStatefulWidget {
 
 class _PdfReaderScreenState extends ConsumerState<PdfReaderScreen> {
   var _unlockChecked = false;
+  int? _initialPage;
 
   @override
   void initState() {
@@ -50,29 +51,45 @@ class _PdfReaderScreenState extends ConsumerState<PdfReaderScreen> {
       leaveReaderToBookDetail(context, widget.bookId);
       return;
     }
-    setState(() => _unlockChecked = true);
-    unawaited(_recordStarted(book));
+    final page = await _resolveInitialPage();
+    if (!mounted) return;
+    setState(() {
+      _unlockChecked = true;
+      _initialPage = page;
+    });
+    unawaited(_recordOpened(book));
   }
 
-  Future<void> _recordStarted(BookSummary book) async {
+  Future<int?> _resolveInitialPage() async {
+    final query = GoRouterState.of(context).uri.queryParameters['page'];
+    final fromQuery = int.tryParse(query ?? '');
+    if (fromQuery != null && fromQuery > 0) return fromQuery;
+
+    try {
+      final cloud = await ref.read(
+        readingProgressProvider(widget.bookId).future,
+      );
+      if (cloud.chapterKey == 'pdf' &&
+          cloud.pageNumber != null &&
+          cloud.pageNumber! > 0) {
+        return cloud.pageNumber;
+      }
+    } catch (_) {}
+
+    return ReaderPrefsStorage.readPdfPage(widget.bookId);
+  }
+
+  Future<void> _recordOpened(BookSummary book) async {
     try {
       await ReaderPrefsStorage.writeLastOpenedBook(
         LastOpenedBook(
           bookId: book.id,
           title: book.title,
           updatedAtEpochMs: DateTime.now().millisecondsSinceEpoch,
+          isPdf: true,
         ),
       );
       if (mounted) ref.invalidate(lastOpenedBookProvider);
-    } catch (_) {}
-    try {
-      await saveReadingProgress(
-        ref,
-        book.id,
-        chapterKey: 'pdf',
-        pageNumber: 1,
-        progressPercent: 1,
-      );
     } catch (_) {}
     unawaited(
       trackReaderEvent(
@@ -80,7 +97,7 @@ class _PdfReaderScreenState extends ConsumerState<PdfReaderScreen> {
         bookId: book.id,
         eventName: 'chapter_open',
         chapterKey: 'pdf',
-        pageNumber: 1,
+        pageNumber: _initialPage ?? 1,
       ),
     );
   }
@@ -95,7 +112,11 @@ class _PdfReaderScreenState extends ConsumerState<PdfReaderScreen> {
     if (!_unlockChecked) {
       body = const Center(child: CircularProgressIndicator());
     } else {
-      body = _PdfReaderBody(bookId: widget.bookId);
+      body = _PdfReaderBody(
+        bookId: widget.bookId,
+        bookTitle: asyncBook.valueOrNull?.title,
+        initialPage: _initialPage,
+      );
     }
 
     return PopScope(
@@ -141,9 +162,15 @@ class _PdfReaderScreenState extends ConsumerState<PdfReaderScreen> {
 }
 
 class _PdfReaderBody extends ConsumerWidget {
-  const _PdfReaderBody({required this.bookId});
+  const _PdfReaderBody({
+    required this.bookId,
+    this.bookTitle,
+    this.initialPage,
+  });
 
   final String bookId;
+  final String? bookTitle;
+  final int? initialPage;
 
   String _errorText(Object e, AppLocalizations l10n) {
     if (e is DioException) {
@@ -165,6 +192,7 @@ class _PdfReaderBody extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final asyncBook = ref.watch(bookDetailProvider(bookId));
     final asyncSource = ref.watch(pdfViewerSourceProvider(bookId));
+    final dense = useMobileShell(context);
 
     return asyncBook.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -204,30 +232,53 @@ class _PdfReaderBody extends ConsumerWidget {
             onAction: () => ref.invalidate(pdfViewerSourceProvider(bookId)),
           ),
           data: (source) {
-            return ContentProtectionLifecycle(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                child: PdfDocumentReader(
-                  bookId: bookId,
-                  filePath: source.filePath,
-                  uri: source.uri,
-                  bytes: source.bytes,
-                  fileSize: source.fileSize,
-                  read: source.read,
-                  sourceName: source.sourceName,
-                  headers: source.headers,
-                  preferRangeAccess: source.preferRangeAccess,
-                  // Plaintext temp-dir caching is disabled; sealed vault only.
-                  nativeCacheAccess: null,
-                  loadingLabel: l10n.pdfLoadingLabel,
-                  errorTitle: l10n.pdfOpenFailed,
-                  onRetry: () {
-                    ref.invalidate(pdfBookAccessProvider(bookId));
-                    ref.invalidate(pdfViewerSourceProvider(bookId));
-                  },
-                ),
-              ),
+            final reader = PdfDocumentReader(
+              bookId: bookId,
+              bookTitle: bookTitle ?? book.title,
+              initialPage: initialPage,
+              filePath: source.filePath,
+              uri: source.uri,
+              bytes: source.bytes,
+              fileSize: source.fileSize,
+              read: source.read,
+              sourceName: source.sourceName,
+              headers: source.headers,
+              preferRangeAccess: source.preferRangeAccess,
+              nativeCacheAccess: null,
+              loadingLabel: l10n.pdfLoadingLabel,
+              errorTitle: l10n.pdfOpenFailed,
+              onRetry: () {
+                ref.invalidate(pdfBookAccessProvider(bookId));
+                ref.invalidate(pdfViewerSourceProvider(bookId));
+              },
             );
+            // Cap extreme wide desktop/web canvases so pages stay readable.
+            final wide = useWebShell(context) || useDesktopShell(context);
+            final padded = Padding(
+              padding: EdgeInsets.fromLTRB(
+                dense ? 4 : 8,
+                0,
+                dense ? 4 : 8,
+                dense ? 4 : 8,
+              ),
+              child: wide
+                  ? LayoutBuilder(
+                      builder: (context, constraints) {
+                        final width = constraints.maxWidth > 1400
+                            ? 1400.0
+                            : constraints.maxWidth;
+                        return Center(
+                          child: SizedBox(
+                            width: width,
+                            height: constraints.maxHeight,
+                            child: reader,
+                          ),
+                        );
+                      },
+                    )
+                  : reader,
+            );
+            return ContentProtectionLifecycle(child: padded);
           },
         );
       },

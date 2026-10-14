@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/app_localizations.dart';
@@ -41,10 +42,14 @@ int? _expiryEpochMs(String? iso) {
 /// are downloaded in full and sealed as ciphertext. Then store the license.
 /// Plaintext is never written to disk, and the book only opens offline while
 /// the lease is valid.
+/// Web offline PDFs are fully decrypted in memory. Warn before saving large ones.
+const _webOfflineWarnBytes = 25 * 1024 * 1024;
+
 Future<String?> runOfflineBookDownload(
   WidgetRef ref,
   String bookId, {
   AppLocalizations? l10n,
+  BuildContext? context,
 }) async {
   await DownloadJobsStorage.upsertJob(
     DownloadJob(
@@ -101,6 +106,24 @@ Future<String?> runOfflineBookDownload(
     // is the readable content.
     final book = await ref.read(bookDetailProvider(bookId).future);
     if (book.isPdf) {
+      if (kIsWeb && context != null && context.mounted) {
+        final access = await ref.read(pdfBookAccessProvider(bookId).future);
+        final size = access.sizeBytes;
+        if (size >= _webOfflineWarnBytes) {
+          final dialogContext = context;
+          if (!dialogContext.mounted) {
+            await DownloadJobsStorage.removeJob(bookId);
+            ref.invalidate(downloadJobsProvider);
+            return null;
+          }
+          final ok = await _confirmLargeWebPdf(dialogContext, size, l10n);
+          if (ok != true) {
+            await DownloadJobsStorage.removeJob(bookId);
+            ref.invalidate(downloadJobsProvider);
+            return null;
+          }
+        }
+      }
       await _storeOfflinePdf(ref, book, l10n: l10n);
     } else {
       final tree = await ref.read(bookContentProvider(bookId).future);
@@ -167,6 +190,34 @@ Future<String?> runOfflineBookDownload(
 }
 
 const _pdfDownloadTimeout = Duration(minutes: 10);
+
+Future<bool?> _confirmLargeWebPdf(
+  BuildContext context,
+  int sizeBytes,
+  AppLocalizations? l10n,
+) {
+  final mb = (sizeBytes / (1024 * 1024)).toStringAsFixed(0);
+  final sizeLabel = '$mb MB';
+  return showDialog<bool>(
+    context: context,
+    builder: (context) {
+      final loc = l10n ?? AppLocalizations.of(context);
+      return AlertDialog(
+        content: Text(loc.pdfOfflineLargeWarning(sizeLabel)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(loc.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(loc.pdfOfflineLargeContinue),
+          ),
+        ],
+      );
+    },
+  );
+}
 
 Future<bool> _savedPdfStillReadable(String bookId) async {
   if (!await SecureBookStore.hasPdf(bookId)) return false;
@@ -301,6 +352,7 @@ Future<String?> syncOfflineBook(
   WidgetRef ref,
   String bookId, {
   AppLocalizations? l10n,
+  BuildContext? context,
 }) async {
   final hasPdf = await SecureBookStore.hasPdf(bookId);
   var isPdf = hasPdf;
@@ -310,7 +362,12 @@ Future<String?> syncOfflineBook(
     } catch (_) {}
   }
   if (isPdf) {
-    return runOfflineBookDownload(ref, bookId, l10n: l10n);
+    return runOfflineBookDownload(
+      ref,
+      bookId,
+      l10n: l10n,
+      context: context,
+    );
   }
   ref.invalidate(bookContentProvider(bookId));
   await ref.read(bookContentProvider(bookId).future);

@@ -508,6 +508,7 @@ class _DownloadJobTile extends ConsumerWidget {
                       ref,
                       job.bookId,
                       l10n: l10n,
+                      context: context,
                     );
                     if (!context.mounted) return;
                     ref.invalidate(downloadJobsProvider);

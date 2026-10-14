@@ -6,6 +6,7 @@ import '../../../design/app_tokens.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/book_models.dart';
 import '../../../providers/catalog_providers.dart';
+import '../../../router/app_navigation.dart';
 import 'book_cover_poster.dart';
 
 /// Wide "Continue Reading" strip with a progress bar (reference home).
@@ -28,7 +29,7 @@ class ContinueReadingCard extends ConsumerWidget {
     final author = book.authorCompiler?.trim();
 
     return GestureDetector(
-      onTap: () => context.push('/reader/${book.id}'),
+      onTap: () => context.push(readingPathForBook(book.id, isPdf: book.isPdf)),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(

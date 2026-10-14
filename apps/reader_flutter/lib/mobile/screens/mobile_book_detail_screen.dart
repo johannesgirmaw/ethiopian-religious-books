@@ -41,7 +41,12 @@ Future<void> _downloadSample(
       content: Text(l10n.preparingDownload),
     ),
   );
-  final error = await runOfflineBookDownload(ref, bookId, l10n: l10n);
+  final error = await runOfflineBookDownload(
+    ref,
+    bookId,
+    l10n: l10n,
+    context: context,
+  );
   if (!context.mounted) return;
   ref.invalidate(downloadJobsProvider);
   if (error == null) {

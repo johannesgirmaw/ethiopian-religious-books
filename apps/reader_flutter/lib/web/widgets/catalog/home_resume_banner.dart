@@ -1,25 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../design/app_tokens.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../providers/catalog_providers.dart';
+import '../../../providers/continue_reading_provider.dart';
+import '../../../router/app_navigation.dart';
 
 /// Slim resume-reading banner for web home (replaces FAB).
-class HomeResumeBanner extends StatelessWidget {
+class HomeResumeBanner extends ConsumerWidget {
   const HomeResumeBanner({super.key, required this.bookId});
 
   final String bookId;
 
   @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final book = ref
+        .watch(catalogProvider)
+        .valueOrNull
+        ?.items
+        .where((b) => b.id == bookId)
+        .firstOrNull;
+    final lastOpened = ref.watch(lastOpenedBookProvider).valueOrNull;
+    final isPdf = book?.isPdf ?? lastOpened?.isPdf ?? false;
 
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => context.push('/reader/$bookId'),
+          onTap: () => context.push(readingPathForBook(bookId, isPdf: isPdf)),
           borderRadius: BorderRadius.circular(AppRadius.cardV2),
           child: Ink(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -60,7 +72,7 @@ class HomeResumeBanner extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        l10n.splashTagline,
+                        book?.title ?? l10n.splashTagline,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(

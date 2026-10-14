@@ -16,15 +16,46 @@ class ReaderBookmark {
   final int savedAtEpochMs;
 
   Map<String, dynamic> toJson() => {
-        'progress': progress,
-        'label': label,
-        'snippet': snippet,
-        'saved_at': savedAtEpochMs,
-      };
+    'progress': progress,
+    'label': label,
+    'snippet': snippet,
+    'saved_at': savedAtEpochMs,
+  };
 
   factory ReaderBookmark.fromJson(Map<String, dynamic> json) {
     return ReaderBookmark(
       progress: (json['progress'] as num?)?.toDouble() ?? 0,
+      label: json['label'] as String? ?? 'Bookmark',
+      snippet: json['snippet'] as String?,
+      savedAtEpochMs: (json['saved_at'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
+/// A page pin for PDF books (local).
+class PdfPageBookmark {
+  PdfPageBookmark({
+    required this.pageNumber,
+    required this.label,
+    this.snippet,
+    required this.savedAtEpochMs,
+  });
+
+  final int pageNumber;
+  final String label;
+  final String? snippet;
+  final int savedAtEpochMs;
+
+  Map<String, dynamic> toJson() => {
+    'page_number': pageNumber,
+    'label': label,
+    'snippet': snippet,
+    'saved_at': savedAtEpochMs,
+  };
+
+  factory PdfPageBookmark.fromJson(Map<String, dynamic> json) {
+    return PdfPageBookmark(
+      pageNumber: (json['page_number'] as num?)?.toInt() ?? 1,
       label: json['label'] as String? ?? 'Bookmark',
       snippet: json['snippet'] as String?,
       savedAtEpochMs: (json['saved_at'] as num?)?.toInt() ?? 0,
@@ -37,23 +68,29 @@ class LastOpenedBook {
     required this.bookId,
     required this.title,
     required this.updatedAtEpochMs,
+    this.isPdf = false,
   });
 
   final String bookId;
   final String title;
   final int updatedAtEpochMs;
 
+  /// True when the last opened book opens in the PDF reader.
+  final bool isPdf;
+
   Map<String, dynamic> toJson() => {
-        'book_id': bookId,
-        'title': title,
-        'updated_at': updatedAtEpochMs,
-      };
+    'book_id': bookId,
+    'title': title,
+    'updated_at': updatedAtEpochMs,
+    'is_pdf': isPdf,
+  };
 
   factory LastOpenedBook.fromJson(Map<String, dynamic> json) {
     return LastOpenedBook(
       bookId: json['book_id'] as String? ?? '',
       title: json['title'] as String? ?? '',
       updatedAtEpochMs: (json['updated_at'] as num?)?.toInt() ?? 0,
+      isPdf: json['is_pdf'] as bool? ?? false,
     );
   }
 }
@@ -71,8 +108,19 @@ class ReaderPrefsStorage {
   static String _pdfZoomKey(String bookId) => 'reader_pdf_zoom_$bookId';
   static String _pdfFitKey(String bookId) => 'reader_pdf_fit_$bookId';
   static String _pdfPageKey(String bookId) => 'reader_pdf_page_$bookId';
+  static String _pdfThemeKey(String bookId) => 'reader_pdf_theme_$bookId';
+  static String _pdfPageModeKey(String bookId) =>
+      'reader_pdf_page_mode_$bookId';
+  static String _pdfBookmarksKey(String bookId) =>
+      'reader_pdf_bookmarks_$bookId';
 
   /// PDF view fit mode: `width`, `page`, or `custom` (manual zoom).
+  /// Empty means the user has not chosen yet (caller picks a platform default).
+  static Future<String?> readPdfFitOrNull(String bookId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_pdfFitKey(bookId));
+  }
+
   static Future<String> readPdfFit(String bookId) async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_pdfFitKey(bookId)) ?? 'custom';
@@ -101,6 +149,47 @@ class ReaderPrefsStorage {
   static Future<void> writePdfPage(String bookId, int page) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_pdfPageKey(bookId), page < 1 ? 1 : page);
+  }
+
+  /// PDF paper theme: `light`, `sepia`, or `dark`.
+  static Future<String> readPdfTheme(String bookId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_pdfThemeKey(bookId)) ?? 'light';
+  }
+
+  static Future<void> writePdfTheme(String bookId, String mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_pdfThemeKey(bookId), mode);
+  }
+
+  /// PDF layout: `scroll` (continuous) or `single` (one page / horizontal).
+  static Future<String> readPdfPageMode(String bookId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_pdfPageModeKey(bookId)) ?? 'scroll';
+  }
+
+  static Future<void> writePdfPageMode(String bookId, String mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_pdfPageModeKey(bookId), mode);
+  }
+
+  static Future<List<PdfPageBookmark>> readPdfBookmarks(String bookId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_pdfBookmarksKey(bookId));
+    if (raw == null || raw.isEmpty) return const [];
+    final parsed = jsonDecode(raw) as List<dynamic>;
+    return parsed
+        .map((e) => PdfPageBookmark.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  static Future<void> writePdfBookmarks(
+    String bookId,
+    List<PdfPageBookmark> bookmarks,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = jsonEncode(bookmarks.map((e) => e.toJson()).toList());
+    await prefs.setString(_pdfBookmarksKey(bookId), raw);
   }
 
   static Future<double> readProgress(String bookId) async {
@@ -167,9 +256,7 @@ class ReaderPrefsStorage {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_lastOpenedKey);
     if (raw == null || raw.isEmpty) return null;
-    return LastOpenedBook.fromJson(
-      jsonDecode(raw) as Map<String, dynamic>,
-    );
+    return LastOpenedBook.fromJson(jsonDecode(raw) as Map<String, dynamic>);
   }
 
   static Future<void> writeLastOpenedBook(LastOpenedBook book) async {

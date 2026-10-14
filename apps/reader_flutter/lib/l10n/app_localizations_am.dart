@@ -1088,6 +1088,106 @@ class AppLocalizationsAm extends AppLocalizations {
   String get pdfSearching => 'እየፈለገ ነው…';
 
   @override
+  String get pdfNoTextLayer => 'ይህ PDF የሚፈለግ ጽሑፍ የለውም። ምናልባት የተቃኘ ምስል ነው።';
+
+  @override
+  String get pdfFirstPage => 'መጀመሪያ ገጽ';
+
+  @override
+  String get pdfPreviousPage => 'ቀዳሚ ገጽ';
+
+  @override
+  String get pdfNextPage => 'ቀጣይ ገጽ';
+
+  @override
+  String get pdfLastPage => 'መጨረሻ ገጽ';
+
+  @override
+  String get pdfZoomOut => 'አሳንስ';
+
+  @override
+  String get pdfZoomIn => 'አጉላ';
+
+  @override
+  String get pdfFitWidth => 'ስፋት አስማማ';
+
+  @override
+  String get pdfFitPage => 'ገጽ አስማማ';
+
+  @override
+  String get pdfFitWidthShort => 'Max';
+
+  @override
+  String get pdfFitPageShort => 'Min';
+
+  @override
+  String get pdfThemeTooltip => 'የንባብ ገጽታ';
+
+  @override
+  String get pdfPageModeScroll => 'ቀጣይነት ያለው መሸብለል';
+
+  @override
+  String get pdfPageModeSingle => 'አንድ ገጽ በአንድ ጊዜ';
+
+  @override
+  String get pdfOutlineTitle => 'ይዘቶች';
+
+  @override
+  String get pdfOutlineEmpty => 'ይህ PDF የይዘት ሠንጠረዥ የለውም።';
+
+  @override
+  String get pdfBookmarksTitle => 'የገጽ ዕልባቶች';
+
+  @override
+  String pdfBookmarkAdded(int page) {
+    return 'ገጽ $page ተመዝግቧል';
+  }
+
+  @override
+  String get pdfBookmarkRemoved => 'ዕልባቱ ተወግዷል';
+
+  @override
+  String pdfBookmarkLabel(int page) {
+    return 'ገጽ $page';
+  }
+
+  @override
+  String get pdfNoBookmarksYet => 'እስካሁን የገጽ ዕልባት የለም።';
+
+  @override
+  String get pdfAddBookmarkTooltip => 'ይህን ገጽ ምልክት አድርግ';
+
+  @override
+  String get pdfRemoveBookmarkTooltip => 'የገጽ ዕልባት አስወግድ';
+
+  @override
+  String get pdfCiteShare => 'ይህን ገጽ አጋራ';
+
+  @override
+  String pdfCiteShareBody(String title, int page, String link) {
+    return '“$title” · ገጽ $page\n$link';
+  }
+
+  @override
+  String get pdfHideControls => 'መቆጣጠሪያዎችን ደብቅ';
+
+  @override
+  String get pdfShowControls => 'መቆጣጠሪያዎችን አሳይ';
+
+  @override
+  String pdfOfflineLargeWarning(String size) {
+    return 'ይህ PDF ትልቅ ነው ($size)። ከመስመር ውጭ ማስቀመጥ በድረ-ገጽ ላይ ብዙ ማህደረ ትውስታ ሊጠቀም ይችላል። ይቀጥሉ?';
+  }
+
+  @override
+  String get pdfOfflineLargeContinue => 'ከመስመር ውጭ አስቀምጥ';
+
+  @override
+  String pdfPageOf(int page, int count) {
+    return '$page / $count';
+  }
+
+  @override
   String get typographyCompact => 'ጠባብ';
 
   @override

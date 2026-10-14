@@ -1108,6 +1108,107 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pdfSearching => 'Searching…';
 
   @override
+  String get pdfNoTextLayer =>
+      'This PDF has no searchable text. It may be a scanned image.';
+
+  @override
+  String get pdfFirstPage => 'First page';
+
+  @override
+  String get pdfPreviousPage => 'Previous page';
+
+  @override
+  String get pdfNextPage => 'Next page';
+
+  @override
+  String get pdfLastPage => 'Last page';
+
+  @override
+  String get pdfZoomOut => 'Zoom out';
+
+  @override
+  String get pdfZoomIn => 'Zoom in';
+
+  @override
+  String get pdfFitWidth => 'Fit width';
+
+  @override
+  String get pdfFitPage => 'Fit page';
+
+  @override
+  String get pdfFitWidthShort => 'Max';
+
+  @override
+  String get pdfFitPageShort => 'Min';
+
+  @override
+  String get pdfThemeTooltip => 'Reading theme';
+
+  @override
+  String get pdfPageModeScroll => 'Continuous scroll';
+
+  @override
+  String get pdfPageModeSingle => 'One page at a time';
+
+  @override
+  String get pdfOutlineTitle => 'Contents';
+
+  @override
+  String get pdfOutlineEmpty => 'This PDF has no table of contents.';
+
+  @override
+  String get pdfBookmarksTitle => 'Page bookmarks';
+
+  @override
+  String pdfBookmarkAdded(int page) {
+    return 'Page $page bookmarked';
+  }
+
+  @override
+  String get pdfBookmarkRemoved => 'Bookmark removed';
+
+  @override
+  String pdfBookmarkLabel(int page) {
+    return 'Page $page';
+  }
+
+  @override
+  String get pdfNoBookmarksYet => 'No page bookmarks yet.';
+
+  @override
+  String get pdfAddBookmarkTooltip => 'Bookmark this page';
+
+  @override
+  String get pdfRemoveBookmarkTooltip => 'Remove page bookmark';
+
+  @override
+  String get pdfCiteShare => 'Share this page';
+
+  @override
+  String pdfCiteShareBody(String title, int page, String link) {
+    return '“$title” · page $page\n$link';
+  }
+
+  @override
+  String get pdfHideControls => 'Hide controls';
+
+  @override
+  String get pdfShowControls => 'Show controls';
+
+  @override
+  String pdfOfflineLargeWarning(String size) {
+    return 'This PDF is large ($size). Saving offline may use a lot of memory on the web. Continue?';
+  }
+
+  @override
+  String get pdfOfflineLargeContinue => 'Save offline';
+
+  @override
+  String pdfPageOf(int page, int count) {
+    return '$page / $count';
+  }
+
+  @override
   String get typographyCompact => 'Compact';
 
   @override

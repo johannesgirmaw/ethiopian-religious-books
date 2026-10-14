@@ -22,8 +22,20 @@ void popOverlayRoute(BuildContext context) {
 }
 
 /// Opens the text reader or PDF reader depending on the book package format.
-String readingPathForBook(String bookId, {required bool isPdf, String? query}) {
-  if (isPdf) return '/pdf/$bookId';
+String readingPathForBook(
+  String bookId, {
+  required bool isPdf,
+  String? query,
+  int? page,
+}) {
+  if (isPdf) {
+    final parts = <String>[
+      if (page != null && page > 0) 'page=$page',
+      if (query != null && query.isNotEmpty) query,
+    ];
+    final q = parts.isEmpty ? '' : '?${parts.join('&')}';
+    return '/pdf/$bookId$q';
+  }
   final q = (query == null || query.isEmpty) ? '' : '?$query';
   return '/reader/$bookId$q';
 }

@@ -2078,6 +2078,186 @@ abstract class AppLocalizations {
   /// **'Searching…'**
   String get pdfSearching;
 
+  /// No description provided for @pdfNoTextLayer.
+  ///
+  /// In en, this message translates to:
+  /// **'This PDF has no searchable text. It may be a scanned image.'**
+  String get pdfNoTextLayer;
+
+  /// No description provided for @pdfFirstPage.
+  ///
+  /// In en, this message translates to:
+  /// **'First page'**
+  String get pdfFirstPage;
+
+  /// No description provided for @pdfPreviousPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous page'**
+  String get pdfPreviousPage;
+
+  /// No description provided for @pdfNextPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Next page'**
+  String get pdfNextPage;
+
+  /// No description provided for @pdfLastPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Last page'**
+  String get pdfLastPage;
+
+  /// No description provided for @pdfZoomOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get pdfZoomOut;
+
+  /// No description provided for @pdfZoomIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get pdfZoomIn;
+
+  /// No description provided for @pdfFitWidth.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit width'**
+  String get pdfFitWidth;
+
+  /// No description provided for @pdfFitPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit page'**
+  String get pdfFitPage;
+
+  /// No description provided for @pdfFitWidthShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Max'**
+  String get pdfFitWidthShort;
+
+  /// No description provided for @pdfFitPageShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Min'**
+  String get pdfFitPageShort;
+
+  /// No description provided for @pdfThemeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading theme'**
+  String get pdfThemeTooltip;
+
+  /// No description provided for @pdfPageModeScroll.
+  ///
+  /// In en, this message translates to:
+  /// **'Continuous scroll'**
+  String get pdfPageModeScroll;
+
+  /// No description provided for @pdfPageModeSingle.
+  ///
+  /// In en, this message translates to:
+  /// **'One page at a time'**
+  String get pdfPageModeSingle;
+
+  /// No description provided for @pdfOutlineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Contents'**
+  String get pdfOutlineTitle;
+
+  /// No description provided for @pdfOutlineEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'This PDF has no table of contents.'**
+  String get pdfOutlineEmpty;
+
+  /// No description provided for @pdfBookmarksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Page bookmarks'**
+  String get pdfBookmarksTitle;
+
+  /// No description provided for @pdfBookmarkAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {page} bookmarked'**
+  String pdfBookmarkAdded(int page);
+
+  /// No description provided for @pdfBookmarkRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookmark removed'**
+  String get pdfBookmarkRemoved;
+
+  /// No description provided for @pdfBookmarkLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {page}'**
+  String pdfBookmarkLabel(int page);
+
+  /// No description provided for @pdfNoBookmarksYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No page bookmarks yet.'**
+  String get pdfNoBookmarksYet;
+
+  /// No description provided for @pdfAddBookmarkTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookmark this page'**
+  String get pdfAddBookmarkTooltip;
+
+  /// No description provided for @pdfRemoveBookmarkTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove page bookmark'**
+  String get pdfRemoveBookmarkTooltip;
+
+  /// No description provided for @pdfCiteShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share this page'**
+  String get pdfCiteShare;
+
+  /// No description provided for @pdfCiteShareBody.
+  ///
+  /// In en, this message translates to:
+  /// **'“{title}” · page {page}\n{link}'**
+  String pdfCiteShareBody(String title, int page, String link);
+
+  /// No description provided for @pdfHideControls.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide controls'**
+  String get pdfHideControls;
+
+  /// No description provided for @pdfShowControls.
+  ///
+  /// In en, this message translates to:
+  /// **'Show controls'**
+  String get pdfShowControls;
+
+  /// No description provided for @pdfOfflineLargeWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This PDF is large ({size}). Saving offline may use a lot of memory on the web. Continue?'**
+  String pdfOfflineLargeWarning(String size);
+
+  /// No description provided for @pdfOfflineLargeContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Save offline'**
+  String get pdfOfflineLargeContinue;
+
+  /// No description provided for @pdfPageOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{page} / {count}'**
+  String pdfPageOf(int page, int count);
+
   /// No description provided for @typographyCompact.
   ///
   /// In en, this message translates to:

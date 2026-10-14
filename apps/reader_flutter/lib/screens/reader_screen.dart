@@ -112,6 +112,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           bookId: widget.bookId,
           title: book.title,
           updatedAtEpochMs: DateTime.now().millisecondsSinceEpoch,
+          isPdf: book.isPdf,
         ),
       );
       ref.invalidate(lastOpenedBookProvider);
@@ -912,7 +913,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     }
     // Must go through the entitlement-checked license pipeline so offline
     // opens satisfy hasValidOfflineAccess (seal alone is not enough).
-    final err = await runOfflineBookDownload(ref, widget.bookId, l10n: l10n);
+    final err = await runOfflineBookDownload(
+      ref,
+      widget.bookId,
+      l10n: l10n,
+      context: context,
+    );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

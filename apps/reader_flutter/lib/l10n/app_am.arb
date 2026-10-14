@@ -602,6 +602,64 @@
     }
   },
   "pdfSearching": "እየፈለገ ነው…",
+  "pdfNoTextLayer": "ይህ PDF የሚፈለግ ጽሑፍ የለውም። ምናልባት የተቃኘ ምስል ነው።",
+  "pdfFirstPage": "መጀመሪያ ገጽ",
+  "pdfPreviousPage": "ቀዳሚ ገጽ",
+  "pdfNextPage": "ቀጣይ ገጽ",
+  "pdfLastPage": "መጨረሻ ገጽ",
+  "pdfZoomOut": "አሳንስ",
+  "pdfZoomIn": "አጉላ",
+  "pdfFitWidth": "ስፋት አስማማ",
+  "pdfFitPage": "ገጽ አስማማ",
+  "pdfFitWidthShort": "Max",
+  "pdfFitPageShort": "Min",
+  "pdfThemeTooltip": "የንባብ ገጽታ",
+  "pdfPageModeScroll": "ቀጣይነት ያለው መሸብለል",
+  "pdfPageModeSingle": "አንድ ገጽ በአንድ ጊዜ",
+  "pdfOutlineTitle": "ይዘቶች",
+  "pdfOutlineEmpty": "ይህ PDF የይዘት ሠንጠረዥ የለውም።",
+  "pdfBookmarksTitle": "የገጽ ዕልባቶች",
+  "pdfBookmarkAdded": "ገጽ {page} ተመዝግቧል",
+  "@pdfBookmarkAdded": {
+    "placeholders": {
+      "page": {"type": "int"}
+    }
+  },
+  "pdfBookmarkRemoved": "ዕልባቱ ተወግዷል",
+  "pdfBookmarkLabel": "ገጽ {page}",
+  "@pdfBookmarkLabel": {
+    "placeholders": {
+      "page": {"type": "int"}
+    }
+  },
+  "pdfNoBookmarksYet": "እስካሁን የገጽ ዕልባት የለም።",
+  "pdfAddBookmarkTooltip": "ይህን ገጽ ምልክት አድርግ",
+  "pdfRemoveBookmarkTooltip": "የገጽ ዕልባት አስወግድ",
+  "pdfCiteShare": "ይህን ገጽ አጋራ",
+  "pdfCiteShareBody": "“{title}” · ገጽ {page}\n{link}",
+  "@pdfCiteShareBody": {
+    "placeholders": {
+      "title": {"type": "String"},
+      "page": {"type": "int"},
+      "link": {"type": "String"}
+    }
+  },
+  "pdfHideControls": "መቆጣጠሪያዎችን ደብቅ",
+  "pdfShowControls": "መቆጣጠሪያዎችን አሳይ",
+  "pdfOfflineLargeWarning": "ይህ PDF ትልቅ ነው ({size})። ከመስመር ውጭ ማስቀመጥ በድረ-ገጽ ላይ ብዙ ማህደረ ትውስታ ሊጠቀም ይችላል። ይቀጥሉ?",
+  "@pdfOfflineLargeWarning": {
+    "placeholders": {
+      "size": {"type": "String"}
+    }
+  },
+  "pdfOfflineLargeContinue": "ከመስመር ውጭ አስቀምጥ",
+  "pdfPageOf": "{page} / {count}",
+  "@pdfPageOf": {
+    "placeholders": {
+      "page": {"type": "int"},
+      "count": {"type": "int"}
+    }
+  },
   "typographyCompact": "ጠባብ",
   "typographyComfort": "ምቹ",
   "typographyLarge": "ትልቅ",

@@ -520,6 +520,64 @@
     }
   },
   "pdfSearching": "Searching…",
+  "pdfNoTextLayer": "This PDF has no searchable text. It may be a scanned image.",
+  "pdfFirstPage": "First page",
+  "pdfPreviousPage": "Previous page",
+  "pdfNextPage": "Next page",
+  "pdfLastPage": "Last page",
+  "pdfZoomOut": "Zoom out",
+  "pdfZoomIn": "Zoom in",
+  "pdfFitWidth": "Fit width",
+  "pdfFitPage": "Fit page",
+  "pdfFitWidthShort": "Max",
+  "pdfFitPageShort": "Min",
+  "pdfThemeTooltip": "Reading theme",
+  "pdfPageModeScroll": "Continuous scroll",
+  "pdfPageModeSingle": "One page at a time",
+  "pdfOutlineTitle": "Contents",
+  "pdfOutlineEmpty": "This PDF has no table of contents.",
+  "pdfBookmarksTitle": "Page bookmarks",
+  "pdfBookmarkAdded": "Page {page} bookmarked",
+  "@pdfBookmarkAdded": {
+    "placeholders": {
+      "page": {"type": "int"}
+    }
+  },
+  "pdfBookmarkRemoved": "Bookmark removed",
+  "pdfBookmarkLabel": "Page {page}",
+  "@pdfBookmarkLabel": {
+    "placeholders": {
+      "page": {"type": "int"}
+    }
+  },
+  "pdfNoBookmarksYet": "No page bookmarks yet.",
+  "pdfAddBookmarkTooltip": "Bookmark this page",
+  "pdfRemoveBookmarkTooltip": "Remove page bookmark",
+  "pdfCiteShare": "Share this page",
+  "pdfCiteShareBody": "“{title}” · page {page}\n{link}",
+  "@pdfCiteShareBody": {
+    "placeholders": {
+      "title": {"type": "String"},
+      "page": {"type": "int"},
+      "link": {"type": "String"}
+    }
+  },
+  "pdfHideControls": "Hide controls",
+  "pdfShowControls": "Show controls",
+  "pdfOfflineLargeWarning": "This PDF is large ({size}). Saving offline may use a lot of memory on the web. Continue?",
+  "@pdfOfflineLargeWarning": {
+    "placeholders": {
+      "size": {"type": "String"}
+    }
+  },
+  "pdfOfflineLargeContinue": "Save offline",
+  "pdfPageOf": "{page} / {count}",
+  "@pdfPageOf": {
+    "placeholders": {
+      "page": {"type": "int"},
+      "count": {"type": "int"}
+    }
+  },
   "typographyCompact": "Compact",
   "typographyComfort": "Comfort",
   "typographyLarge": "Large",
