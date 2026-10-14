@@ -1937,6 +1937,42 @@ class AppLocalizationsAm extends AppLocalizations {
   String get installAppRetryHint => 'መተግበሪያውን ማውረድ አልተቻለም። ኢንተርኔትዎን ይፈትሹ።';
 
   @override
+  String appUpdateAvailable(String version) {
+    return 'ስሪት $version ዝግጁ ነው';
+  }
+
+  @override
+  String get appUpdateTitle => 'መተግበሪያውን አዘምን';
+
+  @override
+  String appUpdateBody(String version) {
+    return 'ስሪት $version አሁን ይውረድ? በመውረድ ጊዜ መተግበሪያው ክፍት ይቆያል። ከዚያ ይጫናል እና አዲሱ ስሪት ይከፈታል።';
+  }
+
+  @override
+  String get appUpdateAction => 'አዘምን';
+
+  @override
+  String get appUpdateLater => 'አሁን አይደለም';
+
+  @override
+  String get appUpdateDownloading => 'ዝማኔው እየወረደ ነው…';
+
+  @override
+  String get appUpdateInstalling => 'ዝማኔው እየተጫነ ነው። ሲያልቅ መተግበሪያው እንደገና ይከፈታል።';
+
+  @override
+  String get appUpdateFailed => 'ዝማኔውን መጫን አልተቻለም። ከድረ-ገጹ አውርደው እንደገና ይሞክሩ።';
+
+  @override
+  String get appUpdateNeedPermission =>
+      'ከዚህ መተግበሪያ መጫን በቅንብሮች ይፍቀዱ፣ ከዚያ አዘምንን እንደገና ይንኩ።';
+
+  @override
+  String get appUpdateNotWritable =>
+      'ይህ ቅጂ በማይተካ አቃፊ ውስጥ ነው። አዲሱን ስሪት ከድረ-ገጹ ያውርዱ።';
+
+  @override
   String ratingsCountLabel(int count) {
     return '$count ደረጃዎች';
   }

@@ -95,6 +95,31 @@ fi
 REMOTE
 }
 
+write_releases_json() {
+  local spec="$REPO_ROOT/apps/reader_flutter/pubspec.yaml"
+  local raw name build
+  raw=$(awk '/^version:/ {print $2; exit}' "$spec")
+  name="${raw%%+*}"
+  build="${raw#*+}"
+  if [ "$build" = "$raw" ]; then
+    build=0
+  fi
+  python3 - "$name" "$build" > "$REPO_ROOT/dist/downloads/releases.json" <<'PY'
+import json, sys
+name, build = sys.argv[1], int(sys.argv[2])
+base = "https://felegemetsahft.com/downloads"
+json.dump({
+    "version": name,
+    "build": build,
+    "android": f"{base}/felege-metsahft.apk",
+    "windows": f"{base}/felege-metsahft-setup.exe",
+    "macos": f"{base}/felege-metsahft-macos.dmg",
+    "linux": f"{base}/felege-metsahft-linux-x64.tar.gz",
+}, sys.stdout, indent=2)
+sys.stdout.write("\n")
+PY
+}
+
 deploy_downloads() {
   local dist="$REPO_ROOT/dist/downloads"
   if [ ! -d "$dist" ] || [ -z "$(ls -A "$dist" 2>/dev/null)" ]; then
@@ -102,6 +127,7 @@ deploy_downloads() {
     echo "   (e.g. the felege-metsahft-setup.exe artifact from the GitHub Actions run)."
     exit 1
   fi
+  write_releases_json
   echo "==> Uploading installers from dist/downloads/"
   ls -1 "$dist"
   # No --delete: keep installers for other platforms already on the server.

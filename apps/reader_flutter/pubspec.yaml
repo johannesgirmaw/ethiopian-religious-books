@@ -1,7 +1,7 @@
 name: ethiopian_reader
 description: ፈለገ መጻሕፍት — Ethiopian religious books reader (Android, iOS, web, desktop).
 publish_to: "none"
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ">=3.10.0 <4.0.0"
@@ -20,6 +20,7 @@ dependencies:
   cryptography_flutter: ^2.3.2
   go_router: ^14.6.2
   path_provider: ^2.1.4
+  package_info_plus: ^9.0.0
   shared_preferences: ^2.5.4
   flutter_quill: ^11.5.1
   image_picker: ^1.1.2

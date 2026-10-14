@@ -911,6 +911,26 @@
   "installAppReady": "Download complete — open the file to install.",
   "installAppRetry": "Try again",
   "installAppRetryHint": "Could not download the app. Check your connection.",
+  "appUpdateAvailable": "Version {version} is ready",
+  "@appUpdateAvailable": {
+    "placeholders": {
+      "version": {"type": "String"}
+    }
+  },
+  "appUpdateTitle": "Update the app",
+  "appUpdateBody": "Download version {version} now? The app stays open while it downloads. It then installs and opens the new version.",
+  "@appUpdateBody": {
+    "placeholders": {
+      "version": {"type": "String"}
+    }
+  },
+  "appUpdateAction": "Update",
+  "appUpdateLater": "Not now",
+  "appUpdateDownloading": "Downloading the update…",
+  "appUpdateInstalling": "Installing the update. The app will reopen when it finishes.",
+  "appUpdateFailed": "The update could not be installed. Download it from the website and try again.",
+  "appUpdateNeedPermission": "Allow installs from this app in Settings, then tap Update again.",
+  "appUpdateNotWritable": "This copy of the app is in a folder it cannot replace. Download the new version from the website.",
   "ratingsCountLabel": "{count} ratings",
   "@ratingsCountLabel": {
     "placeholders": {"count": {"type": "int"}}

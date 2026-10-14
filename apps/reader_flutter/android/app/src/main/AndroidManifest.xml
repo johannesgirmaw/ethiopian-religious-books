@@ -9,6 +9,7 @@ found in the LICENSE file. -->
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
 
     <application
         android:label="ፈለገ መጻሕፍት"
@@ -25,6 +26,11 @@ found in the LICENSE file. -->
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <activity
+            android:name=".UpdateTrampolineActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
     <!-- Don't delete the meta-data below.
          This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

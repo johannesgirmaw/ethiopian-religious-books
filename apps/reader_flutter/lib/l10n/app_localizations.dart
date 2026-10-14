@@ -3674,6 +3674,66 @@ abstract class AppLocalizations {
   /// **'Could not download the app. Check your connection.'**
   String get installAppRetryHint;
 
+  /// No description provided for @appUpdateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version} is ready'**
+  String appUpdateAvailable(String version);
+
+  /// No description provided for @appUpdateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update the app'**
+  String get appUpdateTitle;
+
+  /// No description provided for @appUpdateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Download version {version} now? The app stays open while it downloads. It then installs and opens the new version.'**
+  String appUpdateBody(String version);
+
+  /// No description provided for @appUpdateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get appUpdateAction;
+
+  /// No description provided for @appUpdateLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get appUpdateLater;
+
+  /// No description provided for @appUpdateDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading the update…'**
+  String get appUpdateDownloading;
+
+  /// No description provided for @appUpdateInstalling.
+  ///
+  /// In en, this message translates to:
+  /// **'Installing the update. The app will reopen when it finishes.'**
+  String get appUpdateInstalling;
+
+  /// No description provided for @appUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The update could not be installed. Download it from the website and try again.'**
+  String get appUpdateFailed;
+
+  /// No description provided for @appUpdateNeedPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow installs from this app in Settings, then tap Update again.'**
+  String get appUpdateNeedPermission;
+
+  /// No description provided for @appUpdateNotWritable.
+  ///
+  /// In en, this message translates to:
+  /// **'This copy of the app is in a folder it cannot replace. Download the new version from the website.'**
+  String get appUpdateNotWritable;
+
   /// No description provided for @ratingsCountLabel.
   ///
   /// In en, this message translates to:

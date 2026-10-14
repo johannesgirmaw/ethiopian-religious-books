@@ -95,8 +95,20 @@ jobs:
         with: { flutter-version: '3.44.0', channel: stable }
       - run: flutter pub get
         working-directory: ${{ env.APP_DIR }}
-      # NOTE: builds with debug signing unless you add a release keystore + key.properties
-      # via secrets. See scripts/ and android/app/build.gradle.kts.
+      # The release keystore file is in the repo. The password is a secret so an
+      # APK can update the copy already installed on phones.
+      - name: Configure release signing
+        working-directory: ${{ env.APP_DIR }}
+        env:
+          STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -z "$STORE_PASSWORD" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "Android signing secrets are missing. Refusing a debug-signed APK."
+            exit 1
+          fi
+          python3 -c 'import os; from pathlib import Path; alias=os.environ.get("KEY_ALIAS") or "felege"; Path("android/key.properties").write_text("storePassword="+os.environ["STORE_PASSWORD"]+"\nkeyPassword="+os.environ["KEY_PASSWORD"]+"\nkeyAlias="+alias+"\nstoreFile=keystore/felege-release.jks\n")'
       - run: flutter build apk --release --dart-define=API_BASE_URL=${{ inputs.api_base_url }}
         working-directory: ${{ env.APP_DIR }}
       - uses: actions/upload-artifact@v4

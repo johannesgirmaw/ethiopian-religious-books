@@ -1061,6 +1061,26 @@
   "installAppReady": "ወርዷል — ፋይሉን ከፍተው ይጫኑ።",
   "installAppRetry": "እንደገና ሞክር",
   "installAppRetryHint": "መተግበሪያውን ማውረድ አልተቻለም። ኢንተርኔትዎን ይፈትሹ።",
+  "appUpdateAvailable": "ስሪት {version} ዝግጁ ነው",
+  "@appUpdateAvailable": {
+    "placeholders": {
+      "version": {"type": "String"}
+    }
+  },
+  "appUpdateTitle": "መተግበሪያውን አዘምን",
+  "appUpdateBody": "ስሪት {version} አሁን ይውረድ? በመውረድ ጊዜ መተግበሪያው ክፍት ይቆያል። ከዚያ ይጫናል እና አዲሱ ስሪት ይከፈታል።",
+  "@appUpdateBody": {
+    "placeholders": {
+      "version": {"type": "String"}
+    }
+  },
+  "appUpdateAction": "አዘምን",
+  "appUpdateLater": "አሁን አይደለም",
+  "appUpdateDownloading": "ዝማኔው እየወረደ ነው…",
+  "appUpdateInstalling": "ዝማኔው እየተጫነ ነው። ሲያልቅ መተግበሪያው እንደገና ይከፈታል።",
+  "appUpdateFailed": "ዝማኔውን መጫን አልተቻለም። ከድረ-ገጹ አውርደው እንደገና ይሞክሩ።",
+  "appUpdateNeedPermission": "ከዚህ መተግበሪያ መጫን በቅንብሮች ይፍቀዱ፣ ከዚያ አዘምንን እንደገና ይንኩ።",
+  "appUpdateNotWritable": "ይህ ቅጂ በማይተካ አቃፊ ውስጥ ነው። አዲሱን ስሪት ከድረ-ገጹ ያውርዱ።",
   "ratingsCountLabel": "{count} ደረጃዎች",
   "@ratingsCountLabel": {
     "placeholders": {

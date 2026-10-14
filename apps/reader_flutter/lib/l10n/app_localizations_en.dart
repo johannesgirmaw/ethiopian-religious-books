@@ -1980,6 +1980,44 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not download the app. Check your connection.';
 
   @override
+  String appUpdateAvailable(String version) {
+    return 'Version $version is ready';
+  }
+
+  @override
+  String get appUpdateTitle => 'Update the app';
+
+  @override
+  String appUpdateBody(String version) {
+    return 'Download version $version now? The app stays open while it downloads. It then installs and opens the new version.';
+  }
+
+  @override
+  String get appUpdateAction => 'Update';
+
+  @override
+  String get appUpdateLater => 'Not now';
+
+  @override
+  String get appUpdateDownloading => 'Downloading the update…';
+
+  @override
+  String get appUpdateInstalling =>
+      'Installing the update. The app will reopen when it finishes.';
+
+  @override
+  String get appUpdateFailed =>
+      'The update could not be installed. Download it from the website and try again.';
+
+  @override
+  String get appUpdateNeedPermission =>
+      'Allow installs from this app in Settings, then tap Update again.';
+
+  @override
+  String get appUpdateNotWritable =>
+      'This copy of the app is in a folder it cannot replace. Download the new version from the website.';
+
+  @override
   String ratingsCountLabel(int count) {
     return '$count ratings';
   }

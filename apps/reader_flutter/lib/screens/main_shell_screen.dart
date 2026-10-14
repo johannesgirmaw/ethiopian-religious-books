@@ -11,6 +11,7 @@ import '../web/layout/app_layout_scope.dart';
 import '../web/widgets/shell/web_shell_scaffold.dart';
 import '../mobile/widgets/shell/install_app_banner.dart';
 import '../mobile/widgets/shell/liquid_glass_nav_bar.dart';
+import '../widgets/app_update_banner.dart';
 
 class MainShellScreen extends ConsumerWidget {
   const MainShellScreen({super.key, required this.child});
@@ -53,7 +54,12 @@ class MainShellScreen extends ConsumerWidget {
             right: 0,
             top: 0,
             bottom: LiquidGlassNavBar.bottomInset,
-            child: child,
+            child: Column(
+              children: [
+                const AppUpdateBanner(),
+                Expanded(child: child),
+              ],
+            ),
           ),
           const Positioned(
             left: 0,

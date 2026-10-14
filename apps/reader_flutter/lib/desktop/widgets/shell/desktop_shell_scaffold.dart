@@ -3,15 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../../widgets/app_update_banner.dart';
 import 'desktop_app_shell.dart';
 import 'desktop_sidebar.dart';
 
 /// Shell routes use [DesktopAppShell] with persistent sidebar navigation.
 class DesktopShellScaffold extends ConsumerWidget {
-  const DesktopShellScaffold({
-    super.key,
-    required this.child,
-  });
+  const DesktopShellScaffold({super.key, required this.child});
 
   final Widget child;
 
@@ -19,7 +17,8 @@ class DesktopShellScaffold extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final location = GoRouterState.of(context).matchedLocation;
-    final isAdminList = location.startsWith('/admin/books') &&
+    final isAdminList =
+        location.startsWith('/admin/books') &&
         !location.contains('/edit') &&
         !location.endsWith('/new');
 
@@ -36,7 +35,12 @@ class DesktopShellScaffold extends ConsumerWidget {
               }
             }
           : null,
-      child: child,
+      child: Column(
+        children: [
+          const AppUpdateBanner(),
+          Expanded(child: child),
+        ],
+      ),
     );
   }
 }

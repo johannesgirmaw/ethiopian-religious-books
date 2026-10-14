@@ -51,6 +51,7 @@ MinVersion=10.0.17763
 WizardStyle=modern
 PrivilegesRequired=admin
 ; Cleanly close a running instance so upgrades don't hit locked files.
+; The in-app updater launches this setup, then starts the new exe itself.
 CloseApplications=yes
 RestartApplications=no
 
