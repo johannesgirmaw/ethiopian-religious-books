@@ -7,13 +7,13 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-app}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-app}
-      POSTGRES_DB: ${POSTGRES_DB:-religious_books}
+      POSTGRES_DB: ${POSTGRES_DB:-felegemetsahft}
     ports:
       - "${POSTGRES_PORT:-15432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app} -d ${POSTGRES_DB:-religious_books}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app} -d ${POSTGRES_DB:-felegemetsahft}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -57,7 +57,7 @@ services:
       DJANGO_SETTINGS_MODULE: config.settings.dev
       DEBUG: "True"
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-dev-insecure-change-me}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app}@postgres:5432/${POSTGRES_DB:-religious_books}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app}@postgres:5432/${POSTGRES_DB:-felegemetsahft}
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
       EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
@@ -65,7 +65,7 @@ services:
       EMAIL_PORT: 1025
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minio}
       AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minio_secret_change_me}
-      AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME:-religious-books-dev}
+      AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME:-felegemetsahft-dev}
       AWS_S3_ENDPOINT_URL: http://minio:9000
       # Must match published MinIO port (override in .env for LAN IP / emulators).
       AWS_S3_PRESIGN_ENDPOINT_URL: ${AWS_S3_PRESIGN_ENDPOINT_URL:-http://localhost:${MINIO_API_PORT:-19000}}
@@ -92,12 +92,12 @@ services:
       DJANGO_SETTINGS_MODULE: config.settings.dev
       DEBUG: "True"
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-dev-insecure-change-me}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app}@postgres:5432/${POSTGRES_DB:-religious_books}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app}@postgres:5432/${POSTGRES_DB:-felegemetsahft}
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minio}
       AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minio_secret_change_me}
-      AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME:-religious-books-dev}
+      AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME:-felegemetsahft-dev}
       AWS_S3_ENDPOINT_URL: http://minio:9000
       AWS_S3_PRESIGN_ENDPOINT_URL: ${AWS_S3_PRESIGN_ENDPOINT_URL:-http://localhost:${MINIO_API_PORT:-19000}}
       AWS_S3_REGION_NAME: us-east-1

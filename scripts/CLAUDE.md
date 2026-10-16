@@ -43,7 +43,7 @@
 - Actions → "Deploy production" — preferred prod deploy path (`workflow_dispatch` or auto on `main`); local `deploy-prod.sh` still works with SSH alias `felegemetsahft`.
 
 ## Gotchas
-- CRITICAL: `flutter_reader_common.sh` still defaults `PRODUCTION_API_BASE_URL` to the RETIRED Render host `https://religious-books-api-wz6y.onrender.com/v1/`, NOT `https://api.felegemetsahft.com/v1/` (its "keep in sync with `app_config.dart`" comment is stale — `_productionApiBaseUrl` there is already correct). Local desktop/mobile release builds bake the WRONG URL unless you pass `API_BASE_URL=https://api.felegemetsahft.com/v1/`. `deploy-prod.sh web` hardcodes the correct URL and `build-apps.yml` defaults its `api_base_url` input to it, so only local release scripts are affected.
+- Release builds default `PRODUCTION_API_BASE_URL` to `https://api.felegemetsahft.com/v1/`, matching `_productionApiBaseUrl` in `app_config.dart`. `deploy-prod.sh web` and `build-apps.yml` use that same URL.
 - Windows `.exe` can't build on macOS/Linux (enforced). Flow: Actions → download `felege-metsahft-windows` → `dist/downloads/` → `deploy-prod.sh downloads` → `deploy-prod.sh landing`. Build is unsigned (SmartScreen).
 - `deploy-prod.sh` builds web (`flutter build web`) and landing (`npm run build`) on YOUR machine (need flutter + node); only the API image builds server-side from rsynced source — confirm your branch/commit first.
 - `web`/`landing`/`api` rsync with `--delete` (mirror); `downloads` omits it so other-platform installers survive. `dist/downloads/` is git-ignored — populate before deploying.

@@ -1,7 +1,7 @@
 Name:           felege-metsahft
 Version:        @VERSION@
 Release:        1%{?dist}
-Summary:        Ethiopian religious books reader
+Summary:        Felege Metsahft reader
 
 License:        Proprietary
 URL:            https://felegemetsahft.com
@@ -18,7 +18,7 @@ AutoReqProv:    no
 %global __os_install_post %{nil}
 
 %description
-Felege Metsahft is a reader for Ethiopian religious books, with offline
+Felege Metsahft is a reader, with offline
 access to a personal encrypted library, bookmarks, highlights, notes and
 reading plans. Supports Amharic and English interfaces.
 

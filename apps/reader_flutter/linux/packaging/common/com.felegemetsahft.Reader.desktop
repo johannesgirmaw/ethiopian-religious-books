@@ -1,11 +1,11 @@
 [Desktop Entry]
 Type=Application
 Name=ፈለገ መጻሕፍት
-GenericName=Ethiopian Religious Books Reader
-Comment=Read Ethiopian religious books offline
+GenericName=Felege Metsahft
+Comment=Read with Felege Metsahft offline
 Exec=felege-metsahft %U
 Icon=com.felegemetsahft.Reader
 Terminal=false
 Categories=Education;Literature;Viewer;
-Keywords=books;reader;ethiopian;religious;amharic;geez;
+Keywords=books;reader;felegemetsahft;amharic;geez;
 StartupWMClass=ethiopian_reader

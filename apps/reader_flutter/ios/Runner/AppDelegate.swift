@@ -19,7 +19,7 @@ import UIKit
     contentProtection = ContentProtectionHandler(window: window)
 
     let channel = FlutterMethodChannel(
-      name: "com.ethiopianreligious.reader/content_protection",
+      name: "com.felegemetsahft/content_protection",
       binaryMessenger: messenger
     )
     channel.setMethodCallHandler { [weak self] call, result in

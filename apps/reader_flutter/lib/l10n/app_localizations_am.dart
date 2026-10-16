@@ -237,7 +237,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get aboutDevelopersSectionTitle => 'ያዘጋጁት';
 
   @override
-  String get aboutDevelopersBody => 'የኢትዮጵያ ኦርቶዶክስ ተዋሕዶ ቤተ መጻሕፍት ሥራ';
+  String get aboutDevelopersBody => 'የፈለገ መጻሕፍት ሥራ';
 
   @override
   String get homeQuickProfile => 'መገለጫዎ';

@@ -18,7 +18,7 @@ from apps.catalog.storage_s3 import is_object_storage_configured, put_bytes
 
 logger = logging.getLogger(__name__)
 
-_USER_AGENT = "EthiopianReligiousBooks/1.0 (cover-fetch; +https://github.com/)"
+_USER_AGENT = "FelegeMetsahft/1.0 (cover-fetch; +https://github.com/)"
 _MIN_BYTES = 4_000
 _MIN_SIDE = 120
 
@@ -42,13 +42,13 @@ _SEARCH_HINTS: dict[str, str] = {
     "ጸሎተ ምሕላ": "Ethiopian penitential prayer",
     "የኢትዮጵያ ታሪክ": "History of Ethiopia",
     "የኢትዮጵያ ኦርቶዶክስ": "Ethiopian Orthodox Church history",
-    "Sample Ethiopian religious text": "Ethiopian Orthodox manuscript",
+    "Sample Felege Metsahft text": "Ethiopian Orthodox manuscript",
 }
 
 _WIKI_FALLBACK_QUERIES = (
     "Ethiopian Orthodox manuscript",
     "Ge'ez manuscript bible",
-    "Ethiopian religious book",
+    "Felege Metsahft",
 )
 
 # Titles too vague for Open Library (matches unrelated bestsellers like "After").

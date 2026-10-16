@@ -1,4 +1,4 @@
-package com.ethiopianreligious.reader.ethiopian_reader
+package com.felegemetsahft
 
 import android.app.Activity
 import android.content.Intent

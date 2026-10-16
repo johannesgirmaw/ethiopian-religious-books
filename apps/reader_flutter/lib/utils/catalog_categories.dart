@@ -11,7 +11,7 @@ bool bibleHiddenForGenre(BookSummary book, String? selectedGenre) =>
     book.isBible && selectedGenre != 'bible';
 
 /// Content categories derived from book titles — the meaningful "genre" axis
-/// for Ethiopian religious texts (there is no genre field in the data model,
+/// for Felege Metsahft titles (there is no genre field in the data model,
 /// so we classify by well-known title keywords).
 enum BookCategory {
   psalms,

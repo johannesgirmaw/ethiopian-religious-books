@@ -4,7 +4,7 @@ This document consolidates the product, UX, and implementation requirements into
 
 ## 1) Product Goal
 
-Deliver a world-class, reading-first mobile experience for Ethiopian religious books that is calm, trustworthy, accessible, and resilient offline.
+Deliver a world-class, reading-first mobile experience for Felege Metsahft that is calm, trustworthy, accessible, and resilient offline.
 
 ## 2) Scope
 

@@ -1,4 +1,4 @@
-package com.ethiopianreligious.reader.ethiopian_reader
+package com.felegemetsahft
 
 import android.app.PendingIntent
 import android.content.Intent
@@ -109,7 +109,7 @@ class MainActivity : FlutterActivity() {
     }
 
     companion object {
-        private const val SECURE_CHANNEL = "com.ethiopianreligious.reader/content_protection"
+        private const val SECURE_CHANNEL = "com.felegemetsahft/content_protection"
         private const val UPDATE_CHANNEL = "com.felegemetsahft/updater"
     }
 }

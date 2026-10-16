@@ -1,5 +1,5 @@
 """
-Populate Django admin datasets with realistic Ethiopian religious-catalog examples.
+Populate Django admin datasets with realistic Felege Metsahft catalog examples.
 
 Creates (idempotently via get-or-create keyed fields):
   - 10 Tags

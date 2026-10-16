@@ -1,4 +1,4 @@
-# Ethiopian Religious Books Platform — Requirements & Data Model
+# Felege Metsahft — Requirements & Data Model
 
 **Document version:** 1.0  
 **Status:** MVP (v1) baseline — aligned with product plan §1.1  
@@ -14,7 +14,7 @@ This README is the **authoritative requirements and flow specification** for the
 
 ### 1.1 Product purpose
 
-Deliver a curated library of **Ethiopian religious texts** where:
+Deliver a curated library of **Felege Metsahft** where:
 
 - **Publishers** ingest and publish books through a **web admin** console.
 - **Readers** consume content **only inside** the mobile app, with **offline** support and **baseline digital protection** (no copy/export of book text; screenshot/recording deterrence on Android where the OS allows).
@@ -714,4 +714,4 @@ Keys: `ui_language`, `wifi_only_downloads`, `theme`, `font_scale`.
 
 ## 13. Traceability
 
-This document implements the **MVP (§1.1)** described in the internal product plan *Ethiopian religious books app — product and technical proposal*. Post-MVP features should extend §7 of that plan without changing MVP REQ ids without versioning this README.
+This document implements the **MVP (§1.1)** described in the internal product plan *Felege Metsahft app — product and technical proposal*. Post-MVP features should extend §7 of that plan without changing MVP REQ ids without versioning this README.

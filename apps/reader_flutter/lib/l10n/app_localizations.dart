@@ -521,7 +521,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutDevelopersBody.
   ///
   /// In en, this message translates to:
-  /// **'Ethiopian Religious Books project'**
+  /// **'Felege Metsahft'**
   String get aboutDevelopersBody;
 
   /// No description provided for @homeQuickProfile.

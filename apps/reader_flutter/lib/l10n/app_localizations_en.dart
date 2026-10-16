@@ -240,7 +240,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutDevelopersSectionTitle => 'Developers';
 
   @override
-  String get aboutDevelopersBody => 'Ethiopian Religious Books project';
+  String get aboutDevelopersBody => 'Felege Metsahft';
 
   @override
   String get homeQuickProfile => 'Your profile';

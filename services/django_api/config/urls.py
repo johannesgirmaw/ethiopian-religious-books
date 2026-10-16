@@ -17,7 +17,7 @@ def root(_request):
     """Avoid noisy 404s on `/` for bare API hosts (e.g. Render health checks or curiosity hits)."""
     return JsonResponse(
         {
-            "service": "Ethiopian Religious Books API",
+            "service": "Felege Metsahft API",
             "health": "/healthz/",
             "admin": "/admin/",
             "openapi_schema": "/api/schema/",

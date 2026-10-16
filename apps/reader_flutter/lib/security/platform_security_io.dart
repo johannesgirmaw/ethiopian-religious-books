@@ -7,7 +7,7 @@ PlatformSecurityImpl platformSecurity = _MethodChannelPlatformSecurity();
 
 class _MethodChannelPlatformSecurity implements PlatformSecurityImpl {
   static const _channel = MethodChannel(
-    'com.ethiopianreligious.reader/content_protection',
+    'com.felegemetsahft/content_protection',
   );
 
   @override

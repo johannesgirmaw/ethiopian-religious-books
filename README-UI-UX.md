@@ -1,4 +1,4 @@
-# Ethiopian Religious Books — UI/UX Requirements
+# Felege Metsahft — UI/UX Requirements
 
 **Document version:** 1.0  
 **Companion:** [Functional requirements & data model](README.md) · [Implementation plan](README-IMPLEMENTATION.md) · [Local setup](SETUP.md)  

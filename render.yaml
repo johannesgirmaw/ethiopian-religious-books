@@ -8,13 +8,13 @@
 #   BOOTSTRAP_SUPERUSER_EMAIL, BOOTSTRAP_SUPERUSER_PASSWORD — one-time admin (see below)
 
 databases:
-  - name: religious-books-postgres
+  - name: felegemetsahft-postgres
     plan: free
-    databaseName: religious_books
+    databaseName: felegemetsahft
 
 services:
   - type: web
-    name: religious-books-api
+    name: felegemetsahft-api
     runtime: docker
     plan: free
     region: oregon
@@ -30,7 +30,7 @@ services:
         generateValue: true
       - key: DATABASE_URL
         fromDatabase:
-          name: religious-books-postgres
+          name: felegemetsahft-postgres
           property: connectionString
       # Idempotent: creates superuser only if this email is missing. Rotate the password in admin after login.
       - key: BOOTSTRAP_SUPERUSER_EMAIL

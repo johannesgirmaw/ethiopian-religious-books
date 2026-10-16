@@ -18,7 +18,7 @@ This guide speeds up day-to-day work for **Flutter** + **Django** + **Docker Com
 ## Quick start
 
 ```bash
-# From repo root (ethiopian-religious-books/)
+# From repo root (felege-metsahft/)
 cp infra/.env.example infra/.env          # edit if needed
 cd infra
 docker compose up --build -d              # postgres, redis, minio, mailhog, api, celery

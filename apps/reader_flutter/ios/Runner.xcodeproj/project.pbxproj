@@ -384,7 +384,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.ethiopianreligious.reader;
+				PRODUCT_BUNDLE_IDENTIFIER = com.felegemetsahft;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Profile;
@@ -505,7 +505,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.ethiopianreligious.reader;
+				PRODUCT_BUNDLE_IDENTIFIER = com.felegemetsahft;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -520,7 +520,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.ethiopianreligious.reader;
+				PRODUCT_BUNDLE_IDENTIFIER = com.felegemetsahft;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;

@@ -1,4 +1,4 @@
-# Ethiopian Religious Books — Implementation Plan
+# Felege Metsahft — Implementation Plan
 
 **Document version:** 1.3  
 **Prerequisites:** [Functional requirements & data model](README.md) · [UI/UX requirements](README-UI-UX.md) · [Local setup & dev ergonomics](SETUP.md)  
@@ -218,7 +218,7 @@ flowchart TB
 ## 4. Repository layout (monorepo recommended)
 
 ```
-ethiopian-religious-books/
+felege-metsahft/
 ├── apps/
 │   ├── reader_flutter/          # Flutter app (Android primary)
 │   │   ├── lib/

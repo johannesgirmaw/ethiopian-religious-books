@@ -42,7 +42,7 @@ class Command(BaseCommand):
         reader.save()
 
         book, _ = Book.objects.get_or_create(
-            title="Sample Ethiopian religious text (dev)",
+            title="Sample Felege Metsahft text (dev)",
             defaults={
                 "subtitle": "",
                 "summary": "Placeholder for local development.",

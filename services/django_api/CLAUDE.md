@@ -14,7 +14,7 @@ Django 5.1 + DRF REST API (JWT auth, drf-spectacular schema, Unfold admin, Celer
 | [`apps/study/`](apps/study/) | User activity: bookmarks, highlights, notes, folders, reading plans, reminders, progress, favourites, reviews, notifications. All user-scoped. |
 | [`apps/payments/`](apps/payments/) | `PlatformSettings` (singleton), `GatewayCredential` (Fernet), `AuthorCommission`, `PaymentTransaction`, `RevenueLedger`, `AuditLog`. `services.py`, `crypto.py`, `gateways/` (Stripe/PayPal/Telebirr + `registry.py`). |
 | [`apps/legal/`](apps/legal/) | `LegalDocument` + `LegalAcceptance`; list + acceptance endpoints. |
-| [`config/celery.py`](config/celery.py) | Celery app `religious_books`, Redis broker, `namespace='CELERY'`, autodiscover; exposed as `config.celery_app`. |
+| [`config/celery.py`](config/celery.py) | Celery app `felegemetsahft`, Redis broker, `namespace='CELERY'`, autodiscover; exposed as `config.celery_app`. |
 | [`config/dashboard.py`](config/dashboard.py) [`middleware.py`](config/middleware.py) | Unfold `DASHBOARD_CALLBACK` (`dashboard_callback`); `CollapseDuplicatePathSlashesMiddleware`. |
 | [`docker/entrypoint.sh`](docker/entrypoint.sh) + [`Dockerfile`](Dockerfile) | Prod: `migrate` → `ensure_minio_bucket` (best-effort) → `ensure_superuser` → exec gunicorn. python:3.12-slim, bakes collectstatic. |
 | [`apps/*/management/commands/`](apps/catalog/management/commands/) | `seed_dev`, `seed_book_covers`, `import_bible`, `rebuild_content_index`, `ensure_minio_bucket`, `ensure_superuser` (accounts), etc. |

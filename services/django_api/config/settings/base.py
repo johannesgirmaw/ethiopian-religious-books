@@ -117,7 +117,7 @@ SIMPLE_JWT = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "Ethiopian Religious Books API",
+    "TITLE": "Felege Metsahft API",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
 }
@@ -148,7 +148,7 @@ DEFAULT_FROM_EMAIL = env(
 
 AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID", default="")
 AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY", default="")
-AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME", default="religious-books-dev")
+AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME", default="felegemetsahft-dev")
 AWS_S3_ENDPOINT_URL = env("AWS_S3_ENDPOINT_URL", default="")
 # Presigned URLs must use a host reachable by mobile apps (e.g. http://localhost:19000 with default compose host MinIO port, or LAN IP).
 AWS_S3_PRESIGN_ENDPOINT_URL = env("AWS_S3_PRESIGN_ENDPOINT_URL", default="")
@@ -199,8 +199,8 @@ def _admin_environment(request):
 
 
 UNFOLD = {
-    "SITE_TITLE": _("Ethiopian Religious Books"),
-    "SITE_HEADER": _("Religious Books"),
+    "SITE_TITLE": _("Felege Metsahft"),
+    "SITE_HEADER": _("Felege Metsahft"),
     "SITE_SUBHEADER": _("Catalog, readers, and study tools"),
     "SITE_SYMBOL": "menu_book",
     "SITE_FAVICONS": [

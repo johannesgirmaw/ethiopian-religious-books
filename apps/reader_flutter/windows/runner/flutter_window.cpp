@@ -37,7 +37,7 @@ bool FlutterWindow::OnCreate() {
   content_protection_channel_ =
       std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
           flutter_controller_->engine()->messenger(),
-          "com.ethiopianreligious.reader/content_protection",
+          "com.felegemetsahft/content_protection",
           &flutter::StandardMethodCodec::GetInstance());
   content_protection_channel_->SetMethodCallHandler(
       [this](const flutter::MethodCall<flutter::EncodableValue>& call,

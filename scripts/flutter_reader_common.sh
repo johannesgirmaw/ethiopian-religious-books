@@ -13,7 +13,7 @@ INFRA="${ROOT}/infra"
 ENV_FILE="${INFRA}/.env"
 
 # Keep in sync with apps/reader_flutter/lib/config/app_config.dart
-PRODUCTION_API_BASE_URL="${PRODUCTION_API_BASE_URL:-https://religious-books-api-wz6y.onrender.com/v1/}"
+PRODUCTION_API_BASE_URL="${PRODUCTION_API_BASE_URL:-https://api.felegemetsahft.com/v1/}"
 
 is_darwin() {
   [[ "$(uname -s)" == "Darwin" ]]

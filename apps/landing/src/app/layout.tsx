@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     'Ethiopian Orthodox books',
     'Tewahedo',
     'Amharic Bible',
-    'Ethiopian religious books',
+    'felegemetsahft',
     'Geez',
     'Ethiopian Bible app',
     'ፈለገ መጻሕፍት',
