@@ -23,6 +23,18 @@ void main() {
     expect(uri.queryParameters['r'], '22222222-2222-2222-2222-222222222222');
   });
 
+  test('webPdfBytesUri falls back to same-origin proxy path helper', () {
+    // Without a browser Uri.base from flutter run, direct-API mode is off and
+    // webPdfBytesUri matches the nginx proxy path.
+    final uri = webPdfBytesUri('11111111-1111-1111-1111-111111111111');
+    expect(uri.path, '/pdf-proxy/11111111-1111-1111-1111-111111111111');
+  });
+
+  test('web PDF preview proxy path is book-scoped', () {
+    final uri = webPdfPreviewProxyUri('11111111-1111-1111-1111-111111111111');
+    expect(uri.path, '/pdf-proxy/11111111-1111-1111-1111-111111111111/preview');
+  });
+
   test('PdfBookAccess parses linearized flag (defaults false)', () {
     final missing = PdfBookAccess.fromJson({
       'book_id': 'b1',

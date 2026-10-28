@@ -129,6 +129,7 @@ class DesktopBookDetailBody extends ConsumerWidget {
         final canSaveOffline =
             owned || !book.requiresPurchase || book.viewerCanManage;
 
+        final showLookInside = bookOffersLookInside(book) && !owned;
         final rail = _LeftRail(
           book: book,
           downloadJob: currentJob,
@@ -136,6 +137,7 @@ class DesktopBookDetailBody extends ConsumerWidget {
           purchasePending: purchasePending,
           resumeCheckout: resumeCheckout,
           showDownload: canSaveOffline,
+          showLookInside: showLookInside,
           onRead: purchasePending
               ? null
               : resumeCheckout
@@ -152,6 +154,9 @@ class DesktopBookDetailBody extends ConsumerWidget {
                     );
                   }
                 },
+          onLookInside: showLookInside
+              ? () => openBookLookInside(context, bookId)
+              : null,
           onDownload: () => _downloadSample(context, ref),
           onShare: () => onShare(book),
         );
@@ -278,23 +283,27 @@ class _LeftRail extends StatelessWidget {
     required this.book,
     required this.downloadJob,
     required this.onRead,
+    this.onLookInside,
     required this.onDownload,
     required this.onShare,
     required this.mustBuy,
     required this.purchasePending,
     required this.resumeCheckout,
     required this.showDownload,
+    this.showLookInside = false,
   });
 
   final BookSummary book;
   final DownloadJob? downloadJob;
   final VoidCallback? onRead;
+  final VoidCallback? onLookInside;
   final VoidCallback onDownload;
   final VoidCallback onShare;
   final bool mustBuy;
   final bool purchasePending;
   final bool resumeCheckout;
   final bool showDownload;
+  final bool showLookInside;
 
   @override
   Widget build(BuildContext context) {
@@ -317,12 +326,14 @@ class _LeftRail extends StatelessWidget {
         _ActionButtons(
           l10n: AppLocalizations.of(context),
           onRead: onRead,
+          onLookInside: onLookInside,
           onDownload: onDownload,
           onShare: onShare,
           mustBuy: mustBuy,
           purchasePending: purchasePending,
           resumeCheckout: resumeCheckout,
           showDownload: showDownload,
+          showLookInside: showLookInside,
           savingOffline: downloadJob?.state == 'in_progress',
         ),
         if (downloadJob != null) ...[
@@ -408,23 +419,27 @@ class _ActionButtons extends StatelessWidget {
   const _ActionButtons({
     required this.l10n,
     required this.onRead,
+    this.onLookInside,
     required this.onDownload,
     required this.onShare,
     required this.mustBuy,
     required this.purchasePending,
     required this.resumeCheckout,
     required this.showDownload,
+    this.showLookInside = false,
     required this.savingOffline,
   });
 
   final AppLocalizations l10n;
   final VoidCallback? onRead;
+  final VoidCallback? onLookInside;
   final VoidCallback onDownload;
   final VoidCallback onShare;
   final bool mustBuy;
   final bool purchasePending;
   final bool resumeCheckout;
   final bool showDownload;
+  final bool showLookInside;
   final bool savingOffline;
 
   @override
@@ -467,6 +482,25 @@ class _ActionButtons extends StatelessWidget {
           icon: Icon(primaryIcon, size: 19),
           label: Text(primaryLabel),
         ),
+        if (showLookInside) ...[
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: onLookInside,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.textPrimary,
+              side: const BorderSide(color: DesktopTokens.borderColor),
+              backgroundColor: DesktopTokens.surfaceBg,
+              minimumSize: const Size.fromHeight(46),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            icon: const Icon(Icons.menu_book_outlined, size: 18),
+            label: Text(l10n.lookInside),
+          ),
+        ],
         const SizedBox(height: 10),
         Row(
           children: [

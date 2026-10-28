@@ -74,6 +74,15 @@ Future<void> openCatalogBook(
   context.push('/book/${book.id}');
 }
 
+/// Opens the Look Inside sample PDF (no purchase required).
+void openBookLookInside(BuildContext context, String bookId) {
+  context.push('/pdf/$bookId/preview');
+}
+
+/// True when catalog/detail UIs should offer Look Inside for [book].
+bool bookOffersLookInside(BookSummary book) =>
+    book.isPdf && book.hasPreview;
+
 /// Opens a book in the reader from manage-books (reviewer preview included).
 void openBookInReader(
   BuildContext context, {

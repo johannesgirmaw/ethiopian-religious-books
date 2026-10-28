@@ -17,6 +17,7 @@ import '../screens/author_books_screen.dart';
 import '../screens/favourites_screen.dart';
 import '../screens/notifications_screen.dart';
 import '../screens/payment_screen.dart';
+import '../screens/pdf_preview_screen.dart';
 import '../screens/pdf_reader_screen.dart';
 import '../screens/purchases_screen.dart';
 import '../screens/home_screen.dart';
@@ -393,6 +394,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                 showChapterPicker: showChapterPicker,
               ),
             ),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/pdf/:id/preview',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return _fadeSlide(
+            key: state.pageKey,
+            child: PdfPreviewScreen(bookId: id),
           );
         },
       ),

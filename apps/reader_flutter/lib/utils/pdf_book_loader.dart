@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../config/app_config.dart';
 import '../config/dev_object_storage_origin.dart';
 import 'pdf_cache_stub.dart'
     if (dart.library.io) 'pdf_cache_io.dart'
@@ -115,14 +116,77 @@ Uri webPdfProxyUri(String bookId, {String revisionId = ''}) {
   );
 }
 
+/// Same-origin proxy for Look Inside sample bytes
+/// (``GET /books/{id}/pdf/preview/bytes``).
+Uri webPdfPreviewProxyUri(String bookId, {String revisionId = ''}) {
+  final rev = revisionId.trim();
+  return Uri.base.replace(
+    path: '/pdf-proxy/$bookId/preview',
+    queryParameters: rev.isEmpty ? const <String, String>{} : {'r': rev},
+    fragment: '',
+  );
+}
+
+/// True for `flutter run -d chrome` (and similar): random localhost port, no
+/// nginx `/pdf-proxy` — must load bytes from the API host instead.
+bool webPdfNeedsDirectApiBytes() {
+  if (!kIsWeb) return false;
+  final host = Uri.base.host;
+  if (host != 'localhost' && host != '127.0.0.1') return false;
+  // Production-like local nginx serves on 80/443 (or a fixed app port).
+  final port = Uri.base.hasPort ? Uri.base.port : 0;
+  return port != 80 && port != 443 && port != 0;
+}
+
+/// Authenticated PDF byte URL for the web viewer.
+///
+/// Prod: same-origin `/pdf-proxy/{id}` (nginx → API).
+/// Local `flutter run`: API `/v1/books/{id}/pdf/bytes` (no local nginx).
+Uri webPdfBytesUri(String bookId, {String revisionId = ''}) {
+  final rev = revisionId.trim();
+  final query = rev.isEmpty
+      ? const <String, String>{}
+      : <String, String>{'r': rev};
+  if (webPdfNeedsDirectApiBytes()) {
+    final resolved = Uri.parse(AppConfig.apiBaseUrl).resolve(
+      'books/$bookId/pdf/bytes',
+    );
+    return resolved.replace(
+      queryParameters: query.isEmpty ? null : query,
+      fragment: '',
+    );
+  }
+  return webPdfProxyUri(bookId, revisionId: revisionId);
+}
+
+/// Authenticated Look Inside sample byte URL for the web viewer.
+Uri webPdfPreviewBytesUri(String bookId, {String revisionId = ''}) {
+  final rev = revisionId.trim();
+  final query = rev.isEmpty
+      ? const <String, String>{}
+      : <String, String>{'r': rev};
+  if (webPdfNeedsDirectApiBytes()) {
+    final resolved = Uri.parse(AppConfig.apiBaseUrl).resolve(
+      'books/$bookId/pdf/preview/bytes',
+    );
+    return resolved.replace(
+      queryParameters: query.isEmpty ? null : query,
+      fragment: '',
+    );
+  }
+  return webPdfPreviewProxyUri(bookId, revisionId: revisionId);
+}
+
 /// Resolves a URL (or vault-backed source upstream) for the PDF viewer.
 ///
-/// Web always uses the authenticated same-origin proxy (never a MinIO URL).
+/// Web uses the authenticated same-origin proxy in prod (never a MinIO URL).
+/// Local flutter web hits the API bytes endpoint directly.
 /// Native uses a short-lived presigned URL — plaintext temp-dir caches are
 /// not used (sealed offline copies live in [SecureBookStore] only).
 Future<PdfViewerSource> resolvePdfViewerSource(
   PdfBookAccess access, {
   String? accessToken,
+  bool preview = false,
 }) async {
   if (kIsWeb) {
     final token = (accessToken ?? '').trim();
@@ -130,8 +194,11 @@ Future<PdfViewerSource> resolvePdfViewerSource(
       throw StateError('PDF open requires a signed-in session on web.');
     }
     // Range/first-page only when the blob is linearized. Otherwise full GET.
+    final uri = preview
+        ? webPdfPreviewBytesUri(access.bookId, revisionId: access.revisionId)
+        : webPdfBytesUri(access.bookId, revisionId: access.revisionId);
     return PdfViewerSource.uri(
-      webPdfProxyUri(access.bookId, revisionId: access.revisionId),
+      uri,
       headers: {'Authorization': 'Bearer $token'},
       preferRangeAccess: access.linearized,
     );

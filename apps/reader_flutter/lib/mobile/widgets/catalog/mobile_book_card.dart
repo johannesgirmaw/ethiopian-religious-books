@@ -60,6 +60,13 @@ class MobileBookCard extends ConsumerWidget {
                       const SizedBox(height: 5),
                     ],
                     ReadNowBadge(label: l10n.readNow),
+                    if (bookOffersLookInside(book)) ...[
+                      const SizedBox(height: 5),
+                      LookInsideBadge(
+                        label: l10n.lookInside,
+                        onTap: () => openBookLookInside(context, book.id),
+                      ),
+                    ],
                     if (book.isPremium) ...[
                       const SizedBox(height: 5),
                       const PremiumBadge(),

@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/engagement_providers.dart';
 import '../design/web_tokens.dart';
-import '../layout/app_layout_scope.dart';
 import '../widgets/catalog/catalog_grid_delegate.dart';
 import '../widgets/catalog/web_book_card.dart';
 import '../widgets/common/web_page_header.dart';
@@ -18,7 +17,7 @@ class AuthorBooksScreenBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final padding = WebTokens.pagePadding(AppLayoutScope.tierOf(context));
+    final padding = WebTokens.pagePaddingOf(context);
     final async = ref.watch(booksByAuthorProvider(author));
 
     return async.when(

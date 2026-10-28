@@ -15,11 +15,15 @@ class WebTopHeader extends ConsumerWidget {
   const WebTopHeader({
     super.key,
     this.breadcrumb,
+    this.breadcrumbParent,
+    this.onBreadcrumbParent,
     this.actions,
     this.onBack,
   });
 
   final String? breadcrumb;
+  final String? breadcrumbParent;
+  final VoidCallback? onBreadcrumbParent;
   final List<Widget>? actions;
   final VoidCallback? onBack;
 
@@ -48,16 +52,25 @@ class WebTopHeader extends ConsumerWidget {
                   child: Row(
                     children: [
                       if (onBack != null) ...[
-                        IconButton(
-                          icon: const Icon(Icons.arrow_back_rounded, size: 20),
-                          tooltip: MaterialLocalizations.of(context)
-                              .backButtonTooltip,
-                          onPressed: onBack,
-                          visualDensity: VisualDensity.compact,
+                        _SquareBackButton(
+                          tooltip: MaterialLocalizations.of(
+                            context,
+                          ).backButtonTooltip,
+                          onPressed: onBack!,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 10),
                       ],
-                      if (hasTitle)
+                      if (hasTitle &&
+                          breadcrumbParent != null &&
+                          breadcrumbParent!.isNotEmpty)
+                        Flexible(
+                          child: _BreadcrumbTrail(
+                            parent: breadcrumbParent!,
+                            current: breadcrumb!,
+                            onParent: onBreadcrumbParent,
+                          ),
+                        )
+                      else if (hasTitle)
                         Flexible(
                           child: Text(
                             breadcrumb!,
@@ -99,6 +112,94 @@ class WebTopHeader extends ConsumerWidget {
   }
 }
 
+class _SquareBackButton extends StatelessWidget {
+  const _SquareBackButton({required this.tooltip, required this.onPressed});
+
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: const BorderSide(color: Color(0xFFCBD5E1)),
+        ),
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(10),
+          child: const SizedBox(
+            width: 36,
+            height: 36,
+            child: Icon(
+              Icons.arrow_back_rounded,
+              size: 18,
+              color: Color(0xFF334155),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BreadcrumbTrail extends StatelessWidget {
+  const _BreadcrumbTrail({
+    required this.parent,
+    required this.current,
+    this.onParent,
+  });
+
+  final String parent;
+  final String current;
+  final VoidCallback? onParent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        MouseRegion(
+          cursor: onParent == null
+              ? SystemMouseCursors.basic
+              : SystemMouseCursors.click,
+          child: GestureDetector(
+            onTap: onParent,
+            child: Text(
+              parent,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF64748B),
+              ),
+            ),
+          ),
+        ),
+        const Text(
+          '  /  ',
+          style: TextStyle(fontSize: 14, color: Color(0xFF94A3B8)),
+        ),
+        Flexible(
+          child: Text(
+            current,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _LanguagePill extends StatelessWidget {
   const _LanguagePill({
     required this.code,
@@ -121,14 +222,8 @@ class _LanguagePill extends StatelessWidget {
       onSelected: onSelected,
       offset: const Offset(0, 40),
       itemBuilder: (context) => [
-        PopupMenuItem(
-          value: 'en',
-          child: Text(l10n.languageEnglish),
-        ),
-        PopupMenuItem(
-          value: 'am',
-          child: Text(l10n.languageAmharic),
-        ),
+        PopupMenuItem(value: 'en', child: Text(l10n.languageEnglish)),
+        PopupMenuItem(value: 'am', child: Text(l10n.languageAmharic)),
       ],
       child: _HeaderPill(
         child: Row(

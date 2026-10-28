@@ -42,6 +42,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pdfReaderTitle => 'PDF reader';
 
   @override
+  String get lookInside => 'Look Inside';
+
+  @override
+  String get lookInsideTitle => 'Look Inside';
+
+  @override
+  String lookInsideBanner(int count) {
+    return 'Preview · $count sample pages';
+  }
+
+  @override
+  String get lookInsideUnavailable => 'No preview is available for this book.';
+
+  @override
+  String get pdfPreviewPagesSection => 'Look Inside pages';
+
+  @override
+  String get pdfPreviewPagesHint =>
+      'Choose which PDF pages readers can preview before purchase (max 10).';
+
+  @override
+  String get pdfPreviewPagesSuggest => 'Suggest first 5';
+
+  @override
+  String get pdfPreviewPagesAdd => 'Add page';
+
+  @override
+  String get pdfPreviewPagesSave => 'Save preview pages';
+
+  @override
+  String get pdfPreviewPagesSaved => 'Preview pages saved';
+
+  @override
+  String get pdfPreviewPageField => 'Page number';
+
+  @override
   String get pdfLoadingLabel => 'Loading PDF…';
 
   @override
@@ -61,6 +97,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pdfDocumentSection => 'PDF document';
+
+  @override
+  String get pdfAdminPreviewHeading => 'PDF preview';
+
+  @override
+  String get pdfAdminPreviewEmpty => 'Upload a PDF to preview it here.';
+
+  @override
+  String get pdfLookInsideLivePreviewEmpty =>
+      'Add pages above to preview the Look Inside sample.';
 
   @override
   String get pdfPickFile => 'Choose PDF';
@@ -1152,6 +1198,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pdfPageModeSingle => 'One page at a time';
 
   @override
+  String get pdfAutoScrollStart => 'Auto-scroll';
+
+  @override
+  String get pdfAutoScrollStop => 'Stop auto-scroll';
+
+  @override
+  String get pdfAutoScrollSpeedVerySlow => 'V.Slow';
+
+  @override
+  String get pdfAutoScrollSpeedSlow => 'Slow';
+
+  @override
+  String get pdfAutoScrollSpeedMedium => 'Med';
+
+  @override
+  String get pdfAutoScrollSpeedFast => 'Fast';
+
+  @override
+  String pdfAutoScrollSpeedTooltip(String speed) {
+    return 'Auto-scroll speed: $speed';
+  }
+
+  @override
   String get pdfOutlineTitle => 'Contents';
 
   @override
@@ -1195,6 +1264,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pdfShowControls => 'Show controls';
+
+  @override
+  String get pdfEnterFullscreen => 'Full screen';
+
+  @override
+  String get pdfExitFullscreen => 'Exit full screen';
 
   @override
   String pdfOfflineLargeWarning(String size) {
@@ -1761,6 +1836,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addChapter => 'Add chapter';
 
   @override
+  String get addPage => 'Add page';
+
+  @override
+  String get chapterNameHint => 'Chapter name';
+
+  @override
+  String get selectChapterToManagePages =>
+      'Select a chapter to manage its pages.';
+
+  @override
   String get noPagesYet => 'No pages yet';
 
   @override
@@ -1867,7 +1952,59 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editBookAppBar => 'Edit book';
 
   @override
-  String get metadataSection => 'Metadata';
+  String get newBookPageSubtitle =>
+      'Add the details, cover and chapters for this book.';
+
+  @override
+  String get editBookPageSubtitle =>
+      'Update the details, cover and chapters for this book.';
+
+  @override
+  String get bookDetailsHelp => 'The basics readers see first.';
+
+  @override
+  String get titleFieldLabel => 'Title';
+
+  @override
+  String get titlePlaceholder => 'Enter the book title';
+
+  @override
+  String get subtitlePlaceholder => 'Optional';
+
+  @override
+  String get summaryPlaceholder => 'A short description readers will see';
+
+  @override
+  String get authorPlaceholder => 'Author or compiler name';
+
+  @override
+  String get coverSectionHelp =>
+      'Shown on the home screen and in search results.';
+
+  @override
+  String get genreSectionHelp => 'Helps readers find this book.';
+
+  @override
+  String get bookTypeSection => 'Book type & visibility';
+
+  @override
+  String get bookTypeSectionHelp =>
+      'Control how this book is read and where it appears.';
+
+  @override
+  String get chaptersSectionHelp => 'Reader navigation for this book.';
+
+  @override
+  String get noChaptersYetTitle => 'No chapters yet';
+
+  @override
+  String get createBookAction => 'Create book';
+
+  @override
+  String get addTagTooltip => 'Add tag';
+
+  @override
+  String get metadataSection => 'Book details';
 
   @override
   String get titleLabelRequired => 'Title *';
@@ -1889,7 +2026,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authorCompilerLabel => 'Author / compiler';
 
   @override
-  String get primaryLanguageCodeLabel => 'Primary language code';
+  String get primaryLanguageCodeLabel => 'Primary language';
 
   @override
   String get languageCodeRequired => 'Language code is required';
@@ -1901,8 +2038,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chaptersPagesSection => 'Chapters & pages';
 
   @override
+  String get bookEditSectionBible => 'Bible content';
+
+  @override
   String get noChaptersYetHelp =>
-      'No chapters yet. Add chapters and pages for reader navigation.';
+      'Add chapters and pages for reader navigation.';
 
   @override
   String chapterKeyPageCount(String key, int count) {
@@ -2177,7 +2317,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tagsLabel => 'Tags';
 
   @override
-  String get adminChipAddHint => 'Add and press Enter';
+  String get adminChipAddHint => 'Add a tag and press Enter';
 
   @override
   String get adminIsFeaturedLabel => 'Featured (Popular)';

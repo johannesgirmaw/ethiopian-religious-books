@@ -70,6 +70,14 @@ class WebBookCard extends ConsumerWidget {
                             const SizedBox(height: 6),
                           ],
                           ReadNowBadge(label: l10n.readNow),
+                          if (bookOffersLookInside(book)) ...[
+                            const SizedBox(height: 6),
+                            LookInsideBadge(
+                              label: l10n.lookInside,
+                              onTap: () =>
+                                  openBookLookInside(context, book.id),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -186,7 +194,7 @@ class WebBookListRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final meta = ref.watch(catalogBookMetaProvider(book.id)).valueOrNull;
     final gradient = catalogBookGradient(index);
     final icon = catalogBookIcon(book, index);
@@ -259,6 +267,14 @@ class WebBookListRow extends ConsumerWidget {
                     style: WebTokens.sectionLabelStyle.copyWith(fontSize: 10),
                   ),
                 ),
+              if (bookOffersLookInside(book)) ...[
+                LookInsideBadge(
+                  label: l10n.lookInside,
+                  compact: true,
+                  onTap: () => openBookLookInside(context, book.id),
+                ),
+                const SizedBox(width: 12),
+              ],
               FavouriteHeartButton(bookId: book.id, size: 26),
               const SizedBox(width: 12),
               const Icon(

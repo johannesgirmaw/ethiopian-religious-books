@@ -17,7 +17,6 @@ import '../../widgets/home/home_sections.dart';
 import '../../widgets/skeleton_loader.dart';
 import '../../widgets/telegram_support_banner.dart';
 import '../design/web_tokens.dart';
-import '../layout/app_layout_scope.dart';
 import '../widgets/catalog/catalog_grid_delegate.dart';
 import '../widgets/catalog/web_book_card.dart';
 import '../widgets/catalog/web_continue_reading_strip.dart';
@@ -102,9 +101,8 @@ class _HomeScreenBodyState extends ConsumerState<HomeScreenBody> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final async = ref.watch(catalogProvider);
-    final insets = WebTokens.pagePadding(
-      AppLayoutScope.tierOf(context),
-    ).resolve(Directionality.of(context));
+    final insets =
+        WebTokens.pagePaddingOf(context).resolve(Directionality.of(context));
 
     return Stack(
       children: [

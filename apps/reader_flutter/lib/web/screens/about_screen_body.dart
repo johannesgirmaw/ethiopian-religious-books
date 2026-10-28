@@ -15,7 +15,7 @@ class AboutScreenBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final padding = WebTokens.pagePadding(AppLayoutScope.tierOf(context));
+    final padding = WebTokens.pagePaddingOf(context);
     final tier = AppLayoutScope.tierOf(context);
 
     final sections = [

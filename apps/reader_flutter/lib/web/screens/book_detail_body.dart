@@ -74,7 +74,7 @@ class BookDetailBody extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final asyncBook = ref.watch(bookDetailProvider(bookId));
     final downloadJobs = ref.watch(downloadJobsProvider);
-    final padding = WebTokens.pagePadding(AppLayoutScope.tierOf(context));
+    final padding = WebTokens.pagePaddingOf(context);
     final tier = AppLayoutScope.tierOf(context);
     final expanded = tier == AppLayoutTier.expanded;
     final reviews =
@@ -150,14 +150,21 @@ class BookDetailBody extends ConsumerWidget {
           }
         }
 
+        // Offer Look Inside whenever a sample exists and the user does not
+        // already own the book (including while payment is pending).
+        final showLookInside = bookOffersLookInside(book) && !owned;
         final actions = _ActionCluster(
           l10n: l10n,
           mustBuy: mustBuy,
           purchasePending: purchasePending,
           resumeCheckout: resumeCheckout,
           showDownload: canSaveOffline,
+          showLookInside: showLookInside,
           stretch: expanded,
           onRead: purchasePending ? null : onRead,
+          onLookInside: showLookInside
+              ? () => openBookLookInside(context, bookId)
+              : null,
           onDownload: () => _downloadSample(context, ref),
           onShare: () => onShare(book),
           savingOffline: currentJob?.state == 'in_progress',
@@ -615,8 +622,10 @@ class _ActionCluster extends StatelessWidget {
     required this.purchasePending,
     required this.resumeCheckout,
     required this.showDownload,
+    this.showLookInside = false,
     required this.stretch,
     required this.onRead,
+    this.onLookInside,
     required this.onDownload,
     required this.onShare,
     required this.savingOffline,
@@ -627,8 +636,10 @@ class _ActionCluster extends StatelessWidget {
   final bool purchasePending;
   final bool resumeCheckout;
   final bool showDownload;
+  final bool showLookInside;
   final bool stretch;
   final VoidCallback? onRead;
+  final VoidCallback? onLookInside;
   final VoidCallback onDownload;
   final VoidCallback onShare;
   final bool savingOffline;
@@ -669,6 +680,22 @@ class _ActionCluster extends StatelessWidget {
       label: Text(primaryLabel),
     );
 
+    final lookInside = OutlinedButton.icon(
+      onPressed: onLookInside,
+      style: OutlinedButton.styleFrom(
+        backgroundColor: WebTokens.surfaceBg,
+        foregroundColor: AppColors.textPrimary,
+        side: const BorderSide(color: WebTokens.borderColor),
+        minimumSize: stretch ? const Size.fromHeight(46) : const Size(0, 46),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        shape: const RoundedRectangleBorder(borderRadius: _radius),
+      ),
+      icon: const Icon(Icons.menu_book_outlined, size: 18),
+      label: Text(l10n.lookInside),
+    );
+
     final download = OutlinedButton.icon(
       onPressed: savingOffline ? null : onDownload,
       style: OutlinedButton.styleFrom(
@@ -703,6 +730,10 @@ class _ActionCluster extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           primary,
+          if (showLookInside) ...[
+            const SizedBox(height: 10),
+            lookInside,
+          ],
           const SizedBox(height: 10),
           Row(
             children: [
@@ -721,7 +752,12 @@ class _ActionCluster extends StatelessWidget {
       spacing: 10,
       runSpacing: 10,
       crossAxisAlignment: WrapCrossAlignment.center,
-      children: [primary, if (showDownload) download, share],
+      children: [
+        primary,
+        if (showLookInside) lookInside,
+        if (showDownload) download,
+        share,
+      ],
     );
   }
 }
