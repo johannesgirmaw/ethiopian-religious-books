@@ -164,6 +164,72 @@ abstract class AppLocalizations {
   /// **'PDF reader'**
   String get pdfReaderTitle;
 
+  /// No description provided for @lookInside.
+  ///
+  /// In en, this message translates to:
+  /// **'Look Inside'**
+  String get lookInside;
+
+  /// No description provided for @lookInsideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Look Inside'**
+  String get lookInsideTitle;
+
+  /// No description provided for @lookInsideBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview · {count} sample pages'**
+  String lookInsideBanner(int count);
+
+  /// No description provided for @lookInsideUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No preview is available for this book.'**
+  String get lookInsideUnavailable;
+
+  /// No description provided for @pdfPreviewPagesSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Look Inside pages'**
+  String get pdfPreviewPagesSection;
+
+  /// No description provided for @pdfPreviewPagesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which PDF pages readers can preview before purchase (max 10).'**
+  String get pdfPreviewPagesHint;
+
+  /// No description provided for @pdfPreviewPagesSuggest.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest first 5'**
+  String get pdfPreviewPagesSuggest;
+
+  /// No description provided for @pdfPreviewPagesAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add page'**
+  String get pdfPreviewPagesAdd;
+
+  /// No description provided for @pdfPreviewPagesSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save preview pages'**
+  String get pdfPreviewPagesSave;
+
+  /// No description provided for @pdfPreviewPagesSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview pages saved'**
+  String get pdfPreviewPagesSaved;
+
+  /// No description provided for @pdfPreviewPageField.
+  ///
+  /// In en, this message translates to:
+  /// **'Page number'**
+  String get pdfPreviewPageField;
+
   /// No description provided for @pdfLoadingLabel.
   ///
   /// In en, this message translates to:
@@ -199,6 +265,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'PDF document'**
   String get pdfDocumentSection;
+
+  /// No description provided for @pdfAdminPreviewHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF preview'**
+  String get pdfAdminPreviewHeading;
+
+  /// No description provided for @pdfAdminPreviewEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload a PDF to preview it here.'**
+  String get pdfAdminPreviewEmpty;
+
+  /// No description provided for @pdfLookInsideLivePreviewEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Add pages above to preview the Look Inside sample.'**
+  String get pdfLookInsideLivePreviewEmpty;
 
   /// No description provided for @pdfPickFile.
   ///
@@ -2162,6 +2246,48 @@ abstract class AppLocalizations {
   /// **'One page at a time'**
   String get pdfPageModeSingle;
 
+  /// No description provided for @pdfAutoScrollStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-scroll'**
+  String get pdfAutoScrollStart;
+
+  /// No description provided for @pdfAutoScrollStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop auto-scroll'**
+  String get pdfAutoScrollStop;
+
+  /// No description provided for @pdfAutoScrollSpeedVerySlow.
+  ///
+  /// In en, this message translates to:
+  /// **'V.Slow'**
+  String get pdfAutoScrollSpeedVerySlow;
+
+  /// No description provided for @pdfAutoScrollSpeedSlow.
+  ///
+  /// In en, this message translates to:
+  /// **'Slow'**
+  String get pdfAutoScrollSpeedSlow;
+
+  /// No description provided for @pdfAutoScrollSpeedMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Med'**
+  String get pdfAutoScrollSpeedMedium;
+
+  /// No description provided for @pdfAutoScrollSpeedFast.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast'**
+  String get pdfAutoScrollSpeedFast;
+
+  /// No description provided for @pdfAutoScrollSpeedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-scroll speed: {speed}'**
+  String pdfAutoScrollSpeedTooltip(String speed);
+
   /// No description provided for @pdfOutlineTitle.
   ///
   /// In en, this message translates to:
@@ -2239,6 +2365,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show controls'**
   String get pdfShowControls;
+
+  /// No description provided for @pdfEnterFullscreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Full screen'**
+  String get pdfEnterFullscreen;
+
+  /// No description provided for @pdfExitFullscreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit full screen'**
+  String get pdfExitFullscreen;
 
   /// No description provided for @pdfOfflineLargeWarning.
   ///
@@ -3266,6 +3404,24 @@ abstract class AppLocalizations {
   /// **'Add chapter'**
   String get addChapter;
 
+  /// No description provided for @addPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Add page'**
+  String get addPage;
+
+  /// No description provided for @chapterNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter name'**
+  String get chapterNameHint;
+
+  /// No description provided for @selectChapterToManagePages.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a chapter to manage its pages.'**
+  String get selectChapterToManagePages;
+
   /// No description provided for @noPagesYet.
   ///
   /// In en, this message translates to:
@@ -3458,10 +3614,106 @@ abstract class AppLocalizations {
   /// **'Edit book'**
   String get editBookAppBar;
 
+  /// No description provided for @newBookPageSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the details, cover and chapters for this book.'**
+  String get newBookPageSubtitle;
+
+  /// No description provided for @editBookPageSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update the details, cover and chapters for this book.'**
+  String get editBookPageSubtitle;
+
+  /// No description provided for @bookDetailsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The basics readers see first.'**
+  String get bookDetailsHelp;
+
+  /// No description provided for @titleFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get titleFieldLabel;
+
+  /// No description provided for @titlePlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the book title'**
+  String get titlePlaceholder;
+
+  /// No description provided for @subtitlePlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get subtitlePlaceholder;
+
+  /// No description provided for @summaryPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'A short description readers will see'**
+  String get summaryPlaceholder;
+
+  /// No description provided for @authorPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Author or compiler name'**
+  String get authorPlaceholder;
+
+  /// No description provided for @coverSectionHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown on the home screen and in search results.'**
+  String get coverSectionHelp;
+
+  /// No description provided for @genreSectionHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Helps readers find this book.'**
+  String get genreSectionHelp;
+
+  /// No description provided for @bookTypeSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Book type & visibility'**
+  String get bookTypeSection;
+
+  /// No description provided for @bookTypeSectionHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Control how this book is read and where it appears.'**
+  String get bookTypeSectionHelp;
+
+  /// No description provided for @chaptersSectionHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Reader navigation for this book.'**
+  String get chaptersSectionHelp;
+
+  /// No description provided for @noChaptersYetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No chapters yet'**
+  String get noChaptersYetTitle;
+
+  /// No description provided for @createBookAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create book'**
+  String get createBookAction;
+
+  /// No description provided for @addTagTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add tag'**
+  String get addTagTooltip;
+
   /// No description provided for @metadataSection.
   ///
   /// In en, this message translates to:
-  /// **'Metadata'**
+  /// **'Book details'**
   String get metadataSection;
 
   /// No description provided for @titleLabelRequired.
@@ -3503,7 +3755,7 @@ abstract class AppLocalizations {
   /// No description provided for @primaryLanguageCodeLabel.
   ///
   /// In en, this message translates to:
-  /// **'Primary language code'**
+  /// **'Primary language'**
   String get primaryLanguageCodeLabel;
 
   /// No description provided for @languageCodeRequired.
@@ -3524,10 +3776,16 @@ abstract class AppLocalizations {
   /// **'Chapters & pages'**
   String get chaptersPagesSection;
 
+  /// No description provided for @bookEditSectionBible.
+  ///
+  /// In en, this message translates to:
+  /// **'Bible content'**
+  String get bookEditSectionBible;
+
   /// No description provided for @noChaptersYetHelp.
   ///
   /// In en, this message translates to:
-  /// **'No chapters yet. Add chapters and pages for reader navigation.'**
+  /// **'Add chapters and pages for reader navigation.'**
   String get noChaptersYetHelp;
 
   /// No description provided for @chapterKeyPageCount.
@@ -4025,7 +4283,7 @@ abstract class AppLocalizations {
   /// No description provided for @adminChipAddHint.
   ///
   /// In en, this message translates to:
-  /// **'Add and press Enter'**
+  /// **'Add a tag and press Enter'**
   String get adminChipAddHint;
 
   /// No description provided for @adminIsFeaturedLabel.

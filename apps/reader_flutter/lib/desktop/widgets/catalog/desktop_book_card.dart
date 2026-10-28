@@ -73,6 +73,15 @@ class DesktopBookCard extends ConsumerWidget {
                             const SizedBox(height: 5),
                           ],
                           ReadNowBadge(label: l10n.readNow, compact: true),
+                          if (bookOffersLookInside(book)) ...[
+                            const SizedBox(height: 5),
+                            LookInsideBadge(
+                              label: l10n.lookInside,
+                              compact: true,
+                              onTap: () =>
+                                  openBookLookInside(context, book.id),
+                            ),
+                          ],
                         ],
                       ),
                     ),

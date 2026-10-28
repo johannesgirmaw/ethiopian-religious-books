@@ -254,6 +254,23 @@ Future<void> uploadPdfPackageForBook(
   );
 }
 
+/// Persist Look Inside page numbers and rebuild the sample PDF on the server.
+Future<AdminPdfDraft?> savePdfPreviewPages(
+  Dio dio, {
+  required String bookId,
+  required List<int> pageNumbers,
+}) async {
+  final res = await dio.patch<Map<String, dynamic>>(
+    'admin/books/$bookId/pdf/preview-pages',
+    data: {'preview_page_numbers': pageNumbers},
+  );
+  final draft = res.data?['pdf_draft'];
+  if (draft is Map) {
+    return AdminPdfDraft.fromJson(Map<String, dynamic>.from(draft));
+  }
+  return null;
+}
+
 /// Creates a hidden draft PDF book via multipart upload (works on Flutter web).
 Future<AdminBook> importBookFromPdf(
   Dio dio, {

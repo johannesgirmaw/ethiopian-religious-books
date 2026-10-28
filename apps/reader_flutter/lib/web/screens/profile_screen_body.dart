@@ -11,7 +11,6 @@ import '../../providers/session_notifier.dart';
 import '../../utils/open_support_link.dart';
 import '../../widgets/telegram_icon.dart';
 import '../design/web_tokens.dart';
-import '../layout/app_layout_scope.dart';
 import '../widgets/common/web_page_header.dart';
 import '../widgets/common/web_section.dart';
 
@@ -23,7 +22,7 @@ class ProfileScreenBody extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final session = ref.watch(sessionNotifierProvider).valueOrNull;
     final user = session?.user;
-    final padding = WebTokens.pagePadding(AppLayoutScope.tierOf(context));
+    final padding = WebTokens.pagePaddingOf(context);
 
     return ListView(
       padding: padding,

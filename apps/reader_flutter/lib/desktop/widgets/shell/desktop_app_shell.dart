@@ -13,6 +13,8 @@ class DesktopAppShell extends StatelessWidget {
     required this.sidebarItems,
     required this.child,
     this.breadcrumb,
+    this.breadcrumbParent,
+    this.onBreadcrumbParent,
     this.actions,
     this.onBack,
   });
@@ -21,6 +23,8 @@ class DesktopAppShell extends StatelessWidget {
   final List<DesktopSidebarItem> sidebarItems;
   final Widget child;
   final String? breadcrumb;
+  final String? breadcrumbParent;
+  final VoidCallback? onBreadcrumbParent;
   final List<Widget>? actions;
   final VoidCallback? onBack;
 
@@ -44,6 +48,8 @@ class DesktopAppShell extends StatelessWidget {
                   children: [
                     DesktopTopHeader(
                       breadcrumb: breadcrumb,
+                      breadcrumbParent: breadcrumbParent,
+                      onBreadcrumbParent: onBreadcrumbParent,
                       actions: actions,
                       onBack: onBack,
                     ),

@@ -5,6 +5,7 @@ import '../../../design/app_tokens.dart';
 import '../../../router/app_navigation.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../models/book_models.dart';
+import '../../../widgets/cover_badges.dart';
 import 'book_cover_poster.dart';
 
 /// The "Popular" featured banner at the top of the home screen.
@@ -114,23 +115,35 @@ class FeaturedBookCard extends ConsumerWidget {
                     ),
                   ],
                   const SizedBox(height: 12),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Text(
-                        l10n.homeReadMore,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            l10n.homeReadMore,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                          const Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 15,
+                            color: AppColors.primary,
+                          ),
+                        ],
+                      ),
+                      if (bookOffersLookInside(book))
+                        LookInsideBadge(
+                          label: l10n.lookInside,
+                          onTap: () => openBookLookInside(context, book.id),
                         ),
-                      ),
-                      const SizedBox(width: 3),
-                      const Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 15,
-                        color: AppColors.primary,
-                      ),
                     ],
                   ),
                 ],

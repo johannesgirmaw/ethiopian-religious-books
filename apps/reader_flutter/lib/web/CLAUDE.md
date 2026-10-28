@@ -7,11 +7,11 @@ Flutter Web-only UI: shell/catalog/reader/auth widgets + `*_body` screen content
 ```
 lib/web/
   design/web_tokens.dart          # WebTokens: maxContentWidth 1200, readerColumnWidth 720,
-                                   #   sidebarWidth 260, breakpoints 720/1100, colors + decoration helpers
+                                   #   sidebarWidth 260, breakpoints 720/1100, WebContentInsets + pagePaddingOf
   layout/
     app_layout_scope.dart         # AppLayoutTier{compact,medium,expanded}, tierForWidth, useWebShell,
                                    #   AppLayoutScope (Inherited) + AppLayoutScopeBuilder (LayoutBuilder)
-    web_content_frame.dart        # WebContentFrame: clamp to maxContentWidth, top-center
+    web_content_frame.dart        # WebContentFrame: full-bleed scroll + side gutters for 1200px content
   screens/                        # *_body page content (no scaffold): home, book_detail, profile,
                                    #   settings, about, downloads, admin_books
   widgets/
@@ -33,7 +33,7 @@ Entry points live OUTSIDE this folder: adapters in `lib/screens/*.dart`; shell s
 - **Wrap `AppLayoutScopeBuilder` above** anything reading `tierOf`/`widthOf`/`useWebShell`. Shell + auth routes get it via `WebAppShell`/`web_auth_*`; standalone adapters (`book_detail_screen`, `payment_screen`) wrap it themselves.
 - **Name content classes `<Name>ScreenBody`/`<Name>Body`** — pure content, local state only (controllers, debounce `Timer`s, filters). Data comes from imported root providers via Riverpod `ref`.
 - **Web-only interaction lives here**: `WebBookTileHover` (FocusableActionDetector, Enter/Space → ActivateIntent → `context.push`), multi-column SliverGrid via `catalogGridDelegate(context)` (2/3/5 cols by tier, aspectRatio 0.56), persistent `WebSidebar`.
-- **Style with `WebTokens.*` + helpers** (`panelDecoration`, `sidebarDecoration`, `pagePadding`); brand colors come from `AppColors` in `lib/design/app_tokens.dart`, and WebTokens reuses `AppLayout.pageHorizontal` from there while adding its own web surface colors.
+- **Style with `WebTokens.*` + helpers** (`panelDecoration`, `sidebarDecoration`, `pagePaddingOf`); brand colors come from `AppColors` in `lib/design/app_tokens.dart`, and WebTokens reuses `AppLayout.pageHorizontal` from there while adding its own web surface colors.
 - Shared reader code (`lib/screens/reader_screen.dart`) calls `webConstrainReaderContent`/`webReaderHorizontalPadding`/`webReaderTopInset` inline — those self-guard with `if (!useWebShell(context))`.
 
 ## Commands
@@ -46,7 +46,7 @@ Entry points live OUTSIDE this folder: adapters in `lib/screens/*.dart`; shell s
 
 - **Narrow web (<720px) renders `lib/mobile/`, NOT `lib/web/`.** Any feature must also exist in mobile UI or it silently vanishes on small browser windows — never assume sidebar/hover/grid exist.
 - `useWebShell` reads `AppLayoutScope.width` when a scope is present (>0), else falls back to `MediaQuery.sizeOf(context).width` (full window) — reading tier without a scope above can disagree with the bounded content column.
-- `WebPageScaffold` does NOT provide an `AppLayoutScope` (only width-clamping via `WebContentFrame`). New tier-aware `*_body`s need `AppLayoutScopeBuilder` in their route adapter.
+- `WebPageScaffold` does NOT provide an `AppLayoutScope` (`WebContentFrame` is full-bleed for the scrollbar, with `WebContentInsets` gutters). Prefer `WebTokens.pagePaddingOf(context)` so content stays at `maxContentWidth`. New tier-aware `*_body`s need `AppLayoutScopeBuilder` in their route adapter.
 - `catalogGridDelegate` hardcodes both cross/main axis spacing to 20 and `childAspectRatio` to 0.56 inline — `WebTokens.gridMainSpacing` (24) is NOT used by the grid.
 - `apps/reader_flutter/web/manifest.json` name is branded ("ፈለገ መጻሕፍት"), but `theme_color`/`background_color` are still the Flutter-scaffold default `#0175C2` and description is "A new Flutter project." — not the cyan/orange brand; fix if touching PWA/theming.
 - Flutter web uses hash routing (`app.felegemetsahft.com/#/login`); landing login/register links depend on it.

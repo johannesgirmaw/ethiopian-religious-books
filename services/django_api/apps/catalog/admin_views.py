@@ -61,7 +61,9 @@ from apps.catalog.pdf_books import (
     clear_pdf_package,
     complete_pdf_upload,
     create_pdf_draft_revision,
+    latest_pdf_for_admin,
     pdf_draft_summary,
+    set_preview_page_numbers,
 )
 
 logger = logging.getLogger(__name__)
@@ -643,6 +645,52 @@ class AdminBookPdfCompleteView(APIView):
                 "status": "draft_validated",
                 "revision_id": str(rev.id),
                 "total_bytes": rev.total_bytes,
+                "pdf_draft": pdf_draft_summary(book),
+            }
+        )
+
+
+class AdminBookPdfPreviewPagesView(APIView):
+    """Set Look Inside page numbers for the admin PDF revision and rebuild sample."""
+
+    permission_classes = [IsPublisherOrAuthor]
+
+    def patch(self, request, book_id):
+        book = get_object_or_404(Book, pk=book_id)
+        if not can_manage_book(book, request.user):
+            return _not_book_creator_response()
+        rev = latest_pdf_for_admin(book)
+        if rev is None:
+            return Response(
+                {
+                    "error": {
+                        "code": "NO_PDF",
+                        "message": "Upload a PDF before setting preview pages.",
+                    }
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if "preview_page_numbers" not in request.data:
+            return Response(
+                {
+                    "error": {
+                        "code": "PREVIEW_PAGES_REQUIRED",
+                        "message": "preview_page_numbers is required.",
+                    }
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            set_preview_page_numbers(rev, request.data.get("preview_page_numbers"))
+        except PdfBookError as exc:
+            return Response(
+                {"error": {"code": exc.code, "message": exc.message}},
+                status=exc.status_code,
+            )
+        rev.refresh_from_db()
+        return Response(
+            {
+                "revision_id": str(rev.id),
                 "pdf_draft": pdf_draft_summary(book),
             }
         )

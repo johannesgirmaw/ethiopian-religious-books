@@ -286,6 +286,10 @@ case "${PLATFORM}" in
     echo "    Tip: Desktop uses localhost for API and MinIO."
     ;;
   web)
+    # Custom range worker lives in web/pdfium/; stock client + wasm are gitignored
+    # and must be staged next to it (same step as release web builds).
+    echo "==> Staging pdfrx WASM modules into web/pdfium/"
+    bash tool/stage_pdfium_web.sh
     echo "    Tip: Web uses localhost for API. CORS must allow the dev origin on the API."
     ;;
 esac

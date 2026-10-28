@@ -397,6 +397,30 @@ final pdfBookAccessProvider = FutureProvider.autoDispose
       return PdfBookAccess.fromJson(res.data!);
     });
 
+/// Look Inside sample access — no purchase required (readable catalog book).
+final pdfPreviewAccessProvider = FutureProvider.autoDispose
+    .family<PdfBookAccess, String>((ref, id) async {
+      final dio = ref.watch(apiDioProvider);
+      final query = kIsWeb ? const {'delivery': 'proxy'} : null;
+      final res = await dio.get<Map<String, dynamic>>(
+        'books/$id/pdf/preview',
+        queryParameters: query,
+        options: Options(headers: devObjectStorageOriginHeaders()),
+      );
+      return PdfBookAccess.fromJson(res.data!);
+    });
+
+final pdfPreviewViewerSourceProvider = FutureProvider.autoDispose
+    .family<PdfViewerSource, String>((ref, id) async {
+      final access = await ref.watch(pdfPreviewAccessProvider(id).future);
+      final token = ref.watch(sessionNotifierProvider).valueOrNull?.accessToken;
+      return resolvePdfViewerSource(
+        access,
+        accessToken: token,
+        preview: true,
+      );
+    });
+
 final pdfViewerSourceProvider = FutureProvider.autoDispose
     .family<PdfViewerSource, String>((ref, id) async {
       PdfBookAccess? access;

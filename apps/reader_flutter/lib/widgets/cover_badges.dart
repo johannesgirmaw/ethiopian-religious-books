@@ -162,6 +162,64 @@ class ReadNowBadge extends StatelessWidget {
   }
 }
 
+/// Cover chip for PDF Look Inside samples (opens `/pdf/:id/preview`).
+class LookInsideBadge extends StatelessWidget {
+  const LookInsideBadge({
+    super.key,
+    required this.label,
+    this.compact = false,
+    this.onTap,
+  });
+
+  final String label;
+  final bool compact;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconSize = compact ? 10.0 : 12.0;
+    final chip = Container(
+      padding: EdgeInsets.fromLTRB(
+        compact ? 5 : 6,
+        compact ? 3 : 4,
+        compact ? 7 : 9,
+        compact ? 3 : 4,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.accent,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        boxShadow: AppShadows.listRow,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.preview_outlined, size: iconSize, color: Colors.white),
+          SizedBox(width: compact ? 3 : 4),
+          Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              fontSize: compact ? 8 : 9,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.4,
+              color: Colors.white,
+              height: 1.1,
+            ),
+          ),
+        ],
+      ),
+    );
+    if (onTap == null) return chip;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: chip,
+      ),
+    );
+  }
+}
+
 /// Frosted category icon chip used on gradient placeholder covers.
 class CoverCategoryIcon extends StatelessWidget {
   const CoverCategoryIcon({

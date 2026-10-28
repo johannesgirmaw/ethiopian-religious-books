@@ -5,7 +5,6 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/catalog_providers.dart';
 import '../../providers/engagement_providers.dart';
 import '../design/web_tokens.dart';
-import '../layout/app_layout_scope.dart';
 import '../widgets/catalog/catalog_grid_delegate.dart';
 import '../widgets/catalog/web_book_card.dart';
 import '../widgets/common/web_page_header.dart';
@@ -17,7 +16,7 @@ class FavouritesScreenBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final padding = WebTokens.pagePadding(AppLayoutScope.tierOf(context));
+    final padding = WebTokens.pagePaddingOf(context);
     final catalog = ref.watch(catalogProvider).valueOrNull;
     final favIds = ref.watch(favouriteIdsProvider);
 

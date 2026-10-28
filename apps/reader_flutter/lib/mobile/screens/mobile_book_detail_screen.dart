@@ -379,6 +379,8 @@ class MobileBookDetailScreen extends ConsumerWidget {
                           !owned &&
                           !purchasePending &&
                           !resumeCheckout;
+                      final showLookInside =
+                          bookOffersLookInside(book) && !owned;
                       final label = resumeCheckout
                           ? l10n.paymentContinuePurchase
                           : (purchasePending
@@ -393,42 +395,72 @@ class MobileBookDetailScreen extends ConsumerWidget {
                                       : (book.isPdf
                                             ? Icons.picture_as_pdf_outlined
                                             : Icons.menu_book_rounded)));
-                      return FilledButton.icon(
-                        onPressed: purchasePending
-                            ? null
-                            : resumeCheckout
-                            ? () => context.push('/payment/$bookId')
-                            : () async {
-                                if (await ensureBookUnlocked(
-                                      context,
-                                      ref,
-                                      book,
-                                    ) &&
-                                    context.mounted) {
-                                  context.push(
-                                    readingPathForBook(
-                                      bookId,
-                                      isPdf: book.isPdf,
-                                      query: 'pickChapter=1',
-                                    ),
-                                  );
-                                }
-                              },
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.referencePrimary,
-                          foregroundColor: Colors.white,
-                          disabledBackgroundColor: AppColors.referencePrimary
-                              .withValues(alpha: 0.4),
-                          disabledForegroundColor: Colors.white70,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.cardV2,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FilledButton.icon(
+                            onPressed: purchasePending
+                                ? null
+                                : resumeCheckout
+                                ? () => context.push('/payment/$bookId')
+                                : () async {
+                                    if (await ensureBookUnlocked(
+                                          context,
+                                          ref,
+                                          book,
+                                        ) &&
+                                        context.mounted) {
+                                      context.push(
+                                        readingPathForBook(
+                                          bookId,
+                                          isPdf: book.isPdf,
+                                          query: 'pickChapter=1',
+                                        ),
+                                      );
+                                    }
+                                  },
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.referencePrimary,
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor: AppColors
+                                  .referencePrimary
+                                  .withValues(alpha: 0.4),
+                              disabledForegroundColor: Colors.white70,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.cardV2,
+                                ),
+                              ),
                             ),
+                            icon: Icon(icon, size: 20),
+                            label: Text(label),
                           ),
-                        ),
-                        icon: Icon(icon, size: 20),
-                        label: Text(label),
+                          if (showLookInside) ...[
+                            const SizedBox(height: 10),
+                            OutlinedButton.icon(
+                              onPressed: () =>
+                                  openBookLookInside(context, bookId),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.textPrimary,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.cardV2,
+                                  ),
+                                ),
+                              ),
+                              icon: const Icon(
+                                Icons.menu_book_outlined,
+                                size: 20,
+                              ),
+                              label: Text(l10n.lookInside),
+                            ),
+                          ],
+                        ],
                       );
                     },
                   ),

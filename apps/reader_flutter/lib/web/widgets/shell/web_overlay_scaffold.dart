@@ -13,6 +13,8 @@ class WebOverlayScaffold extends ConsumerWidget {
     required this.title,
     required this.body,
     required this.currentLocation,
+    this.breadcrumbParent,
+    this.onBreadcrumbParent,
     this.actions,
     this.onBack,
   });
@@ -20,6 +22,8 @@ class WebOverlayScaffold extends ConsumerWidget {
   final String title;
   final Widget body;
   final String currentLocation;
+  final String? breadcrumbParent;
+  final VoidCallback? onBreadcrumbParent;
   final List<Widget>? actions;
   final VoidCallback? onBack;
 
@@ -30,8 +34,11 @@ class WebOverlayScaffold extends ConsumerWidget {
       currentLocation: currentLocation,
       sidebarItems: webSidebarItemsFor(ref, l10n),
       breadcrumb: title,
+      breadcrumbParent: breadcrumbParent,
+      onBreadcrumbParent: onBreadcrumbParent,
       actions: actions,
-      onBack: onBack ??
+      onBack:
+          onBack ??
           () {
             if (context.canPop()) {
               context.pop();

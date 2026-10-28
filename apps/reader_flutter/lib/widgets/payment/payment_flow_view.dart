@@ -784,6 +784,23 @@ class _OrderSummary extends StatelessWidget {
                         ),
                       ),
                     ],
+                    if (bookOffersLookInside(book)) ...[
+                      const SizedBox(height: 6),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: () =>
+                              openBookLookInside(context, book.id),
+                          icon: const Icon(Icons.preview_outlined, size: 16),
+                          label: Text(l10n.lookInside),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

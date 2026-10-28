@@ -18,6 +18,7 @@ import '../providers/catalog_providers.dart';
 import '../providers/study_providers.dart';
 import '../storage/reader_prefs_storage.dart';
 import '../utils/book_share.dart';
+import '../utils/browser_fullscreen.dart';
 import '../utils/pdf_book_loader.dart';
 import '../utils/pdf_cache_stub.dart'
     if (dart.library.io) '../utils/pdf_cache_io.dart'
@@ -44,6 +45,8 @@ class PdfDocumentReader extends ConsumerStatefulWidget {
     this.preferRangeAccess = true,
     this.nativeCacheAccess,
     this.initialPage,
+    this.preferFitWidth = false,
+    this.onlyPages,
     this.padding = EdgeInsets.zero,
     this.loadingLabel = 'Loading PDF…',
     this.errorTitle = 'Could not open PDF',
@@ -80,6 +83,14 @@ class PdfDocumentReader extends ConsumerStatefulWidget {
   /// Preferred start page from cloud progress or deep link (overrides local
   /// prefs when greater than 1).
   final int? initialPage;
+
+  /// When true (e.g. admin embeds), first open fits page width instead of
+  /// fit-page so the document uses the full viewer width.
+  final bool preferFitWidth;
+
+  /// Optional 1-based page numbers to show (Look Inside live preview).
+  /// Other pages are laid out off-screen so only these appear in the scroll.
+  final List<int>? onlyPages;
   final EdgeInsets padding;
   final String loadingLabel;
   final String errorTitle;
@@ -94,6 +105,11 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
   static const _maxZoom = 8.0;
   static const _progressDebounce = Duration(seconds: 1);
 
+  static const _autoScrollTick = Duration(milliseconds: 16);
+  static const _autoScrollMinPx = 8.0;
+  static const _autoScrollMaxPx = 80.0;
+  static const _autoScrollDefaultPx = 40.0;
+
   late final PdfViewerController _controller;
   final TextEditingController _pageField = TextEditingController();
   final TextEditingController _searchField = TextEditingController();
@@ -103,6 +119,7 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
   VoidCallback? _removeSearchListener;
   Timer? _persistTimer;
   Timer? _progressTimer;
+  Timer? _autoScrollTimer;
 
   var _ready = false;
   var _showSearch = false;
@@ -111,6 +128,12 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
   var _restoringPrefs = false;
   var _applyingFit = false;
   var _searchHadNoTextLayer = false;
+  var _autoScrollActive = false;
+  var _autoScrollPaused = false;
+  /// Target on-screen scroll rate in viewport px/sec (slider range).
+  double _autoScrollSpeed = _autoScrollDefaultPx;
+  var _fullscreen = false;
+  OverlayEntry? _fullscreenEntry;
   int _pageNumber = 1;
   int _pageCount = 1;
   double _zoom = 1;
@@ -156,7 +179,21 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
   }
 
   @override
+  void setState(VoidCallback fn) {
+    super.setState(fn);
+    _fullscreenEntry?.markNeedsBuild();
+  }
+
+  @override
   void dispose() {
+    _fullscreenEntry?.remove();
+    _fullscreenEntry = null;
+    if (_fullscreen && !kIsWeb) {
+      unawaited(
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge),
+      );
+    }
+    _autoScrollTimer?.cancel();
     _persistTimer?.cancel();
     _progressTimer?.cancel();
     unawaited(_persistViewPrefs(immediate: true));
@@ -176,6 +213,7 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
     super.didUpdateWidget(oldWidget);
     final oldKey = oldWidget.filePath ?? oldWidget.uri ?? oldWidget.sourceName;
     if (oldKey != _sourceKey) {
+      _stopAutoScroll();
       _teardownSearch();
       setState(() {
         _ready = false;
@@ -324,11 +362,19 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
       }
       if (!mounted || !_controller.isReady) return;
 
+      final only = widget.onlyPages;
+      if (only != null && only.isNotEmpty) {
+        targetPage = only.first;
+      }
       if (targetPage != null && targetPage > 1) {
         await _controller.goToPage(pageNumber: targetPage);
       }
 
-      if (fitRaw == 'width') {
+      if (widget.preferFitWidth) {
+        // Admin embeds always fill the viewer width.
+        setState(() => _fitMode = _PdfFitMode.width);
+        await _applyFitWidth();
+      } else if (fitRaw == 'width') {
         setState(() => _fitMode = _PdfFitMode.width);
         await _applyFitWidth();
       } else if (fitRaw == 'page') {
@@ -341,7 +387,7 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
           zoom.clamp(_minZoom, _maxZoom),
         );
       } else if (fitRaw == null) {
-        // First open: fit width on phone / narrow web, fit page on desktop.
+        // First open: fit width on phone / narrow web; fit page on desktop.
         if (_narrow) {
           setState(() => _fitMode = _PdfFitMode.width);
           await _applyFitWidth();
@@ -446,16 +492,57 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
     return l10n.matchPosition(index, total);
   }
 
+  List<int>? get _onlyPagesSorted {
+    final only = widget.onlyPages;
+    if (only == null || only.isEmpty) return null;
+    return [...only]..sort();
+  }
+
+  int get _navPageCount {
+    final only = _onlyPagesSorted;
+    return only?.length ?? _pageCount;
+  }
+
+  /// 1-based index within [onlyPages], or absolute page when unfiltered.
+  int get _navPageNumber {
+    final only = _onlyPagesSorted;
+    if (only == null) return _pageNumber;
+    final i = only.indexOf(_pageNumber);
+    if (i >= 0) return i + 1;
+    for (var i = 0; i < only.length; i++) {
+      if (only[i] >= _pageNumber) return i + 1;
+    }
+    return only.length;
+  }
+
   Future<void> _goToPage(int page) async {
     if (!_controller.isReady) return;
+    final only = _onlyPagesSorted;
+    if (only != null) {
+      // [page] is a 1-based index into the filtered set when filtering.
+      final idx = page.clamp(1, only.length) - 1;
+      await _controller.goToPage(pageNumber: only[idx]);
+      return;
+    }
     final target = page.clamp(1, _controller.pageCount);
     await _controller.goToPage(pageNumber: target);
+  }
+
+  Future<void> _goToAbsolutePage(int page) async {
+    if (!_controller.isReady) return;
+    final only = _onlyPagesSorted;
+    if (only != null) {
+      if (!only.contains(page)) return;
+      await _controller.goToPage(pageNumber: page);
+      return;
+    }
+    await _goToPage(page);
   }
 
   void _submitPageField() {
     final parsed = int.tryParse(_pageField.text.trim());
     if (parsed == null) {
-      _pageField.text = '$_pageNumber';
+      _pageField.text = '$_navPageNumber';
       return;
     }
     unawaited(_goToPage(parsed));
@@ -540,6 +627,54 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
     });
   }
 
+  Future<void> _toggleFullscreen() async {
+    if (_fullscreen) {
+      await _exitFullscreen();
+    } else {
+      await _enterFullscreen();
+    }
+  }
+
+  Future<void> _enterFullscreen() async {
+    if (_fullscreen) return;
+    final overlay = Overlay.maybeOf(context, rootOverlay: true);
+    if (overlay == null) return;
+
+    setState(() => _fullscreen = true);
+    _fullscreenEntry = OverlayEntry(
+      builder: (ctx) {
+        final l10n = AppLocalizations.of(ctx);
+        final theme = _theme;
+        final dense = useMobileShell(ctx);
+        return Material(
+          color: theme.canvas,
+          child: SafeArea(
+            child: _buildReaderShell(l10n, theme, dense),
+          ),
+        );
+      },
+    );
+    overlay.insert(_fullscreenEntry!);
+    await enterBrowserFullscreen();
+    if (!kIsWeb) {
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    }
+  }
+
+  Future<void> _exitFullscreen() async {
+    _fullscreenEntry?.remove();
+    _fullscreenEntry = null;
+    if (_fullscreen && mounted) {
+      setState(() => _fullscreen = false);
+    } else {
+      _fullscreen = false;
+    }
+    await exitBrowserFullscreen();
+    if (!kIsWeb) {
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
+  }
+
   Future<void> _cycleTheme() async {
     final next = switch (_themeMode) {
       'light' => 'sepia',
@@ -555,6 +690,7 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
 
   Future<void> _togglePageMode() async {
     final next = _pageMode == 'scroll' ? 'single' : 'scroll';
+    if (next == 'single') _stopAutoScroll();
     setState(() => _pageMode = next);
     final bookId = widget.bookId;
     if (bookId != null) {
@@ -568,6 +704,92 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
       } else if (_narrow) {
         await _fitWidth();
       }
+    }
+  }
+
+  /// Target on-screen scroll rate (viewport px/sec). Matrix translate is in
+  /// document space, so [_autoScrollStep] divides by current zoom.
+  double get _autoScrollScreenPxPerSec => _autoScrollSpeed;
+
+  String _autoScrollSpeedLabel(AppLocalizations l10n) {
+    final v = _autoScrollSpeed;
+    if (v <= 13) return l10n.pdfAutoScrollSpeedVerySlow;
+    if (v <= 29) return l10n.pdfAutoScrollSpeedSlow;
+    if (v <= 60) return l10n.pdfAutoScrollSpeedMedium;
+    return l10n.pdfAutoScrollSpeedFast;
+  }
+
+  Future<void> _toggleAutoScroll() async {
+    if (!_ready) return;
+    if (_autoScrollActive) {
+      _stopAutoScroll();
+      return;
+    }
+    // Continuous vertical scroll needs stacked pages, not single-page strip.
+    if (_pageMode == 'single') {
+      await _togglePageMode();
+      if (!mounted || _pageMode != 'scroll') return;
+    }
+    setState(() {
+      _autoScrollActive = true;
+      _autoScrollPaused = false;
+      _chromeVisible = true;
+    });
+    _autoScrollTimer?.cancel();
+    _autoScrollTimer = Timer.periodic(_autoScrollTick, (_) => _autoScrollStep());
+  }
+
+  void _stopAutoScroll() {
+    _autoScrollTimer?.cancel();
+    _autoScrollTimer = null;
+    if (!_autoScrollActive && !_autoScrollPaused) return;
+    if (!mounted) {
+      _autoScrollActive = false;
+      _autoScrollPaused = false;
+      return;
+    }
+    setState(() {
+      _autoScrollActive = false;
+      _autoScrollPaused = false;
+    });
+  }
+
+  void _setAutoScrollSpeed(double value) {
+    setState(() {
+      _autoScrollSpeed = value.clamp(_autoScrollMinPx, _autoScrollMaxPx);
+    });
+  }
+
+  void _autoScrollStep() {
+    if (!mounted || !_autoScrollActive || _autoScrollPaused) return;
+    if (!_controller.isReady) return;
+    final visible = _controller.visibleRect;
+    final docHeight = _controller.documentSize.height;
+    if (visible.bottom >= docHeight - 1) {
+      _stopAutoScroll();
+      return;
+    }
+    // Same units as pdfrx arrow-key scroll: negative Y advances downward.
+    // Translate is document-space; divide by zoom so Slow/Med/Fast stay
+    // constant in viewport pixels (otherwise 271% zoom ~3× real speed).
+    final zoom = _controller.currentZoom;
+    final safeZoom = zoom > 0.01 ? zoom : 1.0;
+    final delta = _autoScrollScreenPxPerSec *
+        (_autoScrollTick.inMilliseconds / 1000) /
+        safeZoom;
+    final matrix = _controller.value.clone()..translate(0.0, -delta);
+    _controller.value = matrix;
+  }
+
+  void _onAutoScrollInteractionStart(ScaleStartDetails _) {
+    if (_autoScrollActive) {
+      _autoScrollPaused = true;
+    }
+  }
+
+  void _onAutoScrollInteractionEnd(ScaleEndDetails _) {
+    if (_autoScrollActive && _autoScrollPaused) {
+      _autoScrollPaused = false;
     }
   }
 
@@ -672,7 +894,7 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
                     ),
               onTap: () {
                 Navigator.pop(context);
-                unawaited(_goToPage(mark.pageNumber));
+                unawaited(_goToAbsolutePage(mark.pageNumber));
               },
             );
           },
@@ -753,7 +975,7 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
               ? null
               : () {
                   Navigator.pop(context);
-                  unawaited(_goToPage(page));
+                  unawaited(_goToAbsolutePage(page));
                 },
         ),
       );
@@ -767,16 +989,27 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent || !_ready) return KeyEventResult.ignored;
     final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.escape && _fullscreen) {
+      unawaited(_exitFullscreen());
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.keyF &&
+        !HardwareKeyboard.instance.isControlPressed &&
+        !HardwareKeyboard.instance.isMetaPressed &&
+        !_showSearch) {
+      unawaited(_toggleFullscreen());
+      return KeyEventResult.handled;
+    }
     if (key == LogicalKeyboardKey.arrowRight ||
         key == LogicalKeyboardKey.pageDown ||
         key == LogicalKeyboardKey.audioVolumeDown) {
-      unawaited(_goToPage(_pageNumber + 1));
+      unawaited(_goToPage(_navPageNumber + 1));
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.arrowLeft ||
         key == LogicalKeyboardKey.pageUp ||
         key == LogicalKeyboardKey.audioVolumeUp) {
-      unawaited(_goToPage(_pageNumber - 1));
+      unawaited(_goToPage(_navPageNumber - 1));
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.keyH) {
@@ -785,6 +1018,10 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
       } else {
         _showChrome();
       }
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.space && !_showSearch) {
+      unawaited(_toggleAutoScroll());
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
@@ -805,11 +1042,53 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
     return PdfPageLayout(pageLayouts: layouts, documentSize: Size(x, height));
   }
 
+  /// Stack only [only] (1-based) pages; park the rest off-screen.
+  PdfPageLayout _onlyPagesLayout(
+    List<PdfPage> pages,
+    PdfViewerParams params,
+    List<int> only,
+  ) {
+    final selected = only.where((n) => n >= 1 && n <= pages.length).toSet();
+    final width =
+        pages.fold<double>(0, (w, p) => math.max(w, p.width)) +
+        params.margin * 2;
+    final pageLayout = List<Rect>.filled(pages.length, Rect.zero);
+    var y = params.margin;
+    for (var i = 0; i < pages.length; i++) {
+      final page = pages[i];
+      if (selected.contains(i + 1)) {
+        pageLayout[i] = Rect.fromLTWH(
+          (width - page.width) / 2,
+          y,
+          page.width,
+          page.height,
+        );
+        y += page.height + params.margin;
+      } else {
+        pageLayout[i] = const Rect.fromLTWH(-100000, -100000, 0, 0);
+      }
+    }
+    return PdfPageLayout(
+      pageLayouts: pageLayout,
+      documentSize: Size(width, math.max(y, params.margin * 2)),
+    );
+  }
+
   Widget _buildViewer() {
     final searcher = _searcher;
     final theme = _theme;
     final params = PdfViewerParams(
-      backgroundColor: theme.canvas,
+      // Transparent so the outer desk color stays unfiltered by page themes.
+      backgroundColor: Colors.transparent,
+      // Soft paper lift in both windowed and fullscreen.
+      pageDropShadow: BoxShadow(
+        color: theme.isDark
+            ? Colors.black.withValues(alpha: _fullscreen ? 0.28 : 0.4)
+            : Colors.black.withValues(alpha: _fullscreen ? 0.05 : 0.08),
+        blurRadius: _fullscreen ? 8 : 10,
+        spreadRadius: 0,
+        offset: const Offset(0, 2),
+      ),
       panEnabled: true,
       scaleEnabled: true,
       minScale: _minZoom,
@@ -817,6 +1096,8 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
       useAlternativeFitScaleAsMinScale: false,
       scrollByMouseWheel: 0.25,
       enableKeyboardNavigation: true,
+      onInteractionStart: _onAutoScrollInteractionStart,
+      onInteractionEnd: _onAutoScrollInteractionEnd,
       margin: _pageMode == 'single' ? 24 : 16,
       matchTextColor: AppColors.accent.withValues(alpha: 0.45),
       activeMatchTextColor: AppColors.primary.withValues(alpha: 0.55),
@@ -825,7 +1106,14 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
           ? null
           : [searcher.pageTextMatchPaintCallback],
       calculateInitialZoom: (document, controller, fitZoom, coverZoom) => 1.0,
-      layoutPages: _pageMode == 'single' ? _singlePageLayout : null,
+      layoutPages: () {
+        final only = widget.onlyPages;
+        if (only != null && only.isNotEmpty) {
+          return (List<PdfPage> pages, PdfViewerParams p) =>
+              _onlyPagesLayout(pages, p, only);
+        }
+        return _pageMode == 'single' ? _singlePageLayout : null;
+      }(),
       loadingBannerBuilder: (context, bytesDownloaded, totalBytes) {
         final l10n = AppLocalizations.of(context);
         final label = _downloadLabel(l10n, bytesDownloaded, totalBytes);
@@ -902,7 +1190,7 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
           _pageNumber = controller.pageNumber ?? 1;
           _zoom = controller.currentZoom;
         });
-        _pageField.text = '$_pageNumber';
+        _pageField.text = '$_navPageNumber';
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) unawaited(_restoreViewPrefs());
         });
@@ -921,12 +1209,14 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
       onPageChanged: (pageNumber) {
         if (!mounted || pageNumber == null) return;
         setState(() => _pageNumber = pageNumber);
-        if (_pageField.text != '$pageNumber') {
-          _pageField.text = '$pageNumber';
+        final display = '$_navPageNumber';
+        if (_pageField.text != display) {
+          _pageField.text = display;
         }
         // Do not re-apply Max/Min on every page — that shifts pages left/right.
         // Zoom stays locked until the user clicks Max/Min or pinches.
-        if (!_restoringPrefs) {
+        // Look Inside live preview must not overwrite the reader's position.
+        if (!_restoringPrefs && widget.onlyPages == null) {
           _schedulePersistViewPrefs();
           _scheduleReadingProgress();
         }
@@ -1028,16 +1318,43 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
   }
 
   Widget _viewerPane(PdfReaderTheme theme) {
+    Widget viewer = _buildViewer();
+    final pageFilter = theme.pageColorFilter;
+    if (pageFilter != null) {
+      viewer = ColorFiltered(colorFilter: pageFilter, child: viewer);
+    }
+    // Join the toolbar as one block: square top when chrome is open.
+    final BorderRadius radius;
+    if (_fullscreen) {
+      radius = BorderRadius.zero;
+    } else if (_chromeVisible) {
+      radius = BorderRadius.zero;
+    } else {
+      radius = BorderRadius.circular(AppRadius.sm);
+    }
+    final Border? border;
+    if (_fullscreen) {
+      border = null;
+    } else if (_chromeVisible) {
+      // No top edge — toolbar already draws the outer frame above.
+      border = Border(
+        left: BorderSide(color: theme.border),
+        right: BorderSide(color: theme.border),
+        bottom: BorderSide(color: theme.border),
+      );
+    } else {
+      border = Border.all(color: theme.border);
+    }
     return CopyProtectedContent(
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: theme.canvas,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          border: Border.all(color: theme.border),
+          borderRadius: radius,
+          border: border,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          child: _buildViewer(),
+          borderRadius: radius,
+          child: viewer,
         ),
       ),
     );
@@ -1052,8 +1369,8 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
           theme: theme,
           dense: dense,
           enabled: _ready,
-          pageNumber: _pageNumber,
-          pageCount: _pageCount,
+          pageNumber: _navPageNumber,
+          pageCount: _navPageCount,
           zoom: _zoom,
           fitWidthActive: _fitMode == _PdfFitMode.width,
           fitPageActive: _fitMode == _PdfFitMode.page,
@@ -1062,6 +1379,10 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
           bookmarked: _isBookmarked,
           pageModeSingle: _pageMode == 'single',
           themeMode: _themeMode,
+          autoScrollActive: _autoScrollActive,
+          autoScrollSpeed: _autoScrollSpeed,
+          autoScrollSpeedMin: _autoScrollMinPx,
+          autoScrollSpeedMax: _autoScrollMaxPx,
           searchTooltip: l10n.findInBookLabel,
           firstTooltip: l10n.pdfFirstPage,
           previousTooltip: l10n.pdfPreviousPage,
@@ -1075,6 +1396,12 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
           pageModeTooltip: _pageMode == 'single'
               ? l10n.pdfPageModeScroll
               : l10n.pdfPageModeSingle,
+          autoScrollTooltip: _autoScrollActive
+              ? l10n.pdfAutoScrollStop
+              : l10n.pdfAutoScrollStart,
+          autoScrollSpeedTooltip: l10n.pdfAutoScrollSpeedTooltip(
+            _autoScrollSpeedLabel(l10n),
+          ),
           outlineTooltip: l10n.pdfOutlineTitle,
           bookmarksTooltip: l10n.pdfBookmarksTitle,
           bookmarkTooltip: _isBookmarked
@@ -1082,10 +1409,14 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
               : l10n.pdfAddBookmarkTooltip,
           shareTooltip: l10n.pdfCiteShare,
           hideTooltip: l10n.pdfHideControls,
+          fullscreenActive: _fullscreen,
+          fullscreenTooltip: _fullscreen
+              ? l10n.pdfExitFullscreen
+              : l10n.pdfEnterFullscreen,
           onFirst: () => _goToPage(1),
-          onPrevious: () => _goToPage(_pageNumber - 1),
-          onNext: () => _goToPage(_pageNumber + 1),
-          onLast: () => _goToPage(_pageCount),
+          onPrevious: () => _goToPage(_navPageNumber - 1),
+          onNext: () => _goToPage(_navPageNumber + 1),
+          onLast: () => _goToPage(_navPageCount),
           onSubmitPage: _submitPageField,
           onZoomIn: _zoomIn,
           onZoomOut: _zoomOut,
@@ -1095,11 +1426,14 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
           onToggleSearch: _toggleSearch,
           onCycleTheme: _cycleTheme,
           onTogglePageMode: _togglePageMode,
+          onToggleAutoScroll: _toggleAutoScroll,
+          onAutoScrollSpeedChanged: _setAutoScrollSpeed,
           onOutline: _openOutlineSheet,
           onBookmarks: _openBookmarksSheet,
           onToggleBookmark: widget.bookId == null ? null : _toggleBookmark,
           onShare: _shareCite,
           onHide: _hideChrome,
+          onToggleFullscreen: () => unawaited(_toggleFullscreen()),
         ),
         if (_showSearch) ...[
           const SizedBox(height: AppSpace.xxs),
@@ -1174,12 +1508,11 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = _theme;
-    final dense = useMobileShell(context);
-
+  Widget _buildReaderShell(
+    AppLocalizations l10n,
+    PdfReaderTheme theme,
+    bool dense,
+  ) {
     final body = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1194,7 +1527,6 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
                   child: _hiddenChromeChip(l10n, theme),
                 ),
         ),
-        if (_chromeVisible) const SizedBox(height: AppSpace.xs),
         Expanded(child: _viewerPane(theme)),
       ],
     );
@@ -1203,8 +1535,35 @@ class _PdfDocumentReaderState extends ConsumerState<PdfDocumentReader> {
       focusNode: _keysFocus,
       autofocus: true,
       onKeyEvent: _onKey,
-      child: Padding(padding: widget.padding, child: body),
+      child: Padding(
+        padding: _fullscreen ? EdgeInsets.zero : widget.padding,
+        child: body,
+      ),
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = _theme;
+    final dense = useMobileShell(context);
+
+    // Real UI lives in the root overlay while fullscreen so the PDF
+    // controller is not remounted.
+    if (_fullscreen) {
+      return ColoredBox(
+        color: theme.canvas.withValues(alpha: 0.35),
+        child: Center(
+          child: Icon(
+            Icons.fullscreen_rounded,
+            size: 28,
+            color: theme.toolbarMuted,
+          ),
+        ),
+      );
+    }
+
+    return _buildReaderShell(l10n, theme, dense);
   }
 }
 
@@ -1378,6 +1737,10 @@ class _PdfToolbar extends StatelessWidget {
     required this.bookmarked,
     required this.pageModeSingle,
     required this.themeMode,
+    required this.autoScrollActive,
+    required this.autoScrollSpeed,
+    required this.autoScrollSpeedMin,
+    required this.autoScrollSpeedMax,
     required this.searchTooltip,
     required this.firstTooltip,
     required this.previousTooltip,
@@ -1389,11 +1752,15 @@ class _PdfToolbar extends StatelessWidget {
     required this.fitPageTooltip,
     required this.themeTooltip,
     required this.pageModeTooltip,
+    required this.autoScrollTooltip,
+    required this.autoScrollSpeedTooltip,
     required this.outlineTooltip,
     required this.bookmarksTooltip,
     required this.bookmarkTooltip,
     required this.shareTooltip,
     required this.hideTooltip,
+    required this.fullscreenActive,
+    required this.fullscreenTooltip,
     required this.onFirst,
     required this.onPrevious,
     required this.onNext,
@@ -1407,11 +1774,14 @@ class _PdfToolbar extends StatelessWidget {
     required this.onToggleSearch,
     required this.onCycleTheme,
     required this.onTogglePageMode,
+    required this.onToggleAutoScroll,
+    required this.onAutoScrollSpeedChanged,
     required this.onOutline,
     required this.onBookmarks,
     required this.onToggleBookmark,
     required this.onShare,
     required this.onHide,
+    required this.onToggleFullscreen,
   });
 
   final PdfReaderTheme theme;
@@ -1427,6 +1797,10 @@ class _PdfToolbar extends StatelessWidget {
   final bool bookmarked;
   final bool pageModeSingle;
   final String themeMode;
+  final bool autoScrollActive;
+  final double autoScrollSpeed;
+  final double autoScrollSpeedMin;
+  final double autoScrollSpeedMax;
   final String searchTooltip;
   final String firstTooltip;
   final String previousTooltip;
@@ -1438,11 +1812,15 @@ class _PdfToolbar extends StatelessWidget {
   final String fitPageTooltip;
   final String themeTooltip;
   final String pageModeTooltip;
+  final String autoScrollTooltip;
+  final String autoScrollSpeedTooltip;
   final String outlineTooltip;
   final String bookmarksTooltip;
   final String bookmarkTooltip;
   final String shareTooltip;
   final String hideTooltip;
+  final bool fullscreenActive;
+  final String fullscreenTooltip;
   final VoidCallback onFirst;
   final VoidCallback onPrevious;
   final VoidCallback onNext;
@@ -1456,11 +1834,14 @@ class _PdfToolbar extends StatelessWidget {
   final VoidCallback onToggleSearch;
   final VoidCallback onCycleTheme;
   final VoidCallback onTogglePageMode;
+  final VoidCallback onToggleAutoScroll;
+  final ValueChanged<double> onAutoScrollSpeedChanged;
   final VoidCallback onOutline;
   final VoidCallback onBookmarks;
   final VoidCallback? onToggleBookmark;
   final VoidCallback onShare;
   final VoidCallback onHide;
+  final VoidCallback onToggleFullscreen;
 
   static const _compactBreakpoint = 720.0;
 
@@ -1469,6 +1850,8 @@ class _PdfToolbar extends StatelessWidget {
     'sepia' => Icons.tonality_rounded,
     _ => Icons.light_mode_rounded,
   };
+
+  static const _controlH = 36.0;
 
   @override
   Widget build(BuildContext context) {
@@ -1480,194 +1863,231 @@ class _PdfToolbar extends StatelessWidget {
         final canPrev = enabled && pageNumber > 1;
         final canNext = enabled && pageNumber < pageCount;
 
-        final pageNav = _ToolbarGroup(
-          theme: theme,
-          children: [
-            _ToolbarIcon(
-              theme: theme,
-              tooltip: firstTooltip,
-              icon: Icons.first_page_rounded,
-              onPressed: canPrev ? onFirst : null,
-            ),
-            _ToolbarIcon(
-              theme: theme,
-              tooltip: previousTooltip,
-              icon: Icons.chevron_left_rounded,
-              onPressed: canPrev ? onPrevious : null,
-            ),
-            _PageField(
-              theme: theme,
-              controller: pageField,
-              enabled: enabled,
-              pageCount: pageCount,
-              onSubmit: onSubmitPage,
-            ),
-            _ToolbarIcon(
-              theme: theme,
-              tooltip: nextTooltip,
-              icon: Icons.chevron_right_rounded,
-              onPressed: canNext ? onNext : null,
-            ),
-            _ToolbarIcon(
-              theme: theme,
-              tooltip: lastTooltip,
-              icon: Icons.last_page_rounded,
-              onPressed: canNext ? onLast : null,
-            ),
-          ],
+        Widget zone(List<Widget> children) => Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: children,
         );
 
-        final zoomControls = _ToolbarGroup(
-          theme: theme,
-          children: [
-            _ToolbarIcon(
-              theme: theme,
-              tooltip: zoomOutTooltip,
-              icon: Icons.zoom_out_rounded,
-              onPressed: enabled ? onZoomOut : null,
-            ),
-            _ZoomBadge(
-              theme: theme,
-              label: '$zoomPercent%',
-              enabled: enabled,
-              onPressed: onResetZoom,
-            ),
-            _ToolbarIcon(
-              theme: theme,
-              tooltip: zoomInTooltip,
-              icon: Icons.zoom_in_rounded,
-              onPressed: enabled ? onZoomIn : null,
-            ),
-          ],
-        );
+        final pageNav = zone([
+          _ToolbarIcon(
+            theme: theme,
+            tooltip: firstTooltip,
+            icon: Icons.first_page_rounded,
+            onPressed: canPrev ? onFirst : null,
+          ),
+          _ToolbarIcon(
+            theme: theme,
+            tooltip: previousTooltip,
+            icon: Icons.chevron_left_rounded,
+            onPressed: canPrev ? onPrevious : null,
+          ),
+          _PageField(
+            theme: theme,
+            controller: pageField,
+            enabled: enabled,
+            pageCount: pageCount,
+            onSubmit: onSubmitPage,
+          ),
+          _ToolbarIcon(
+            theme: theme,
+            tooltip: nextTooltip,
+            icon: Icons.chevron_right_rounded,
+            onPressed: canNext ? onNext : null,
+          ),
+          _ToolbarIcon(
+            theme: theme,
+            tooltip: lastTooltip,
+            icon: Icons.last_page_rounded,
+            onPressed: canNext ? onLast : null,
+          ),
+        ]);
 
-        final fitControls = _ToolbarGroup(
-          theme: theme,
-          children: [
-            _ToolbarIcon(
-              theme: theme,
-              tooltip: fitWidthTooltip,
-              icon: Icons.width_wide_rounded,
-              selected: fitWidthActive,
-              onPressed: enabled ? onFitWidth : null,
-            ),
-            _ToolbarIcon(
-              theme: theme,
-              tooltip: fitPageTooltip,
-              icon: Icons.fit_screen_rounded,
-              selected: fitPageActive,
-              onPressed: enabled ? onFitPage : null,
-            ),
-          ],
-        );
+        final viewControls = zone([
+          _ToolbarIcon(
+            theme: theme,
+            tooltip: zoomOutTooltip,
+            icon: Icons.zoom_out_rounded,
+            onPressed: enabled ? onZoomOut : null,
+          ),
+          _ZoomBadge(
+            theme: theme,
+            label: '$zoomPercent%',
+            enabled: enabled,
+            onPressed: onResetZoom,
+          ),
+          _ToolbarIcon(
+            theme: theme,
+            tooltip: zoomInTooltip,
+            icon: Icons.zoom_in_rounded,
+            onPressed: enabled ? onZoomIn : null,
+          ),
+          const SizedBox(width: 4),
+          _ToolbarIcon(
+            theme: theme,
+            tooltip: fitWidthTooltip,
+            icon: Icons.width_wide_rounded,
+            selected: fitWidthActive,
+            onPressed: enabled ? onFitWidth : null,
+          ),
+          _ToolbarIcon(
+            theme: theme,
+            tooltip: fitPageTooltip,
+            icon: Icons.fit_screen_rounded,
+            selected: fitPageActive,
+            onPressed: enabled ? onFitPage : null,
+          ),
+          _ToolbarIcon(
+            theme: theme,
+            tooltip: pageModeTooltip,
+            icon: pageModeSingle
+                ? Icons.view_day_rounded
+                : Icons.view_agenda_rounded,
+            selected: pageModeSingle,
+            onPressed: enabled ? onTogglePageMode : null,
+          ),
+        ]);
 
-        final studyControls = _ToolbarGroup(
-          theme: theme,
-          children: [
-            _ToolbarIcon(
-              theme: theme,
-              tooltip: searchTooltip,
-              icon: searchActive
-                  ? Icons.search_off_rounded
-                  : Icons.search_rounded,
-              selected: searchActive,
-              onPressed: enabled ? onToggleSearch : null,
-            ),
-            _ToolbarIcon(
-              theme: theme,
-              tooltip: outlineTooltip,
-              icon: Icons.list_alt_rounded,
-              onPressed: enabled ? onOutline : null,
-            ),
-            _ToolbarIcon(
-              theme: theme,
-              tooltip: bookmarksTooltip,
-              icon: Icons.bookmarks_outlined,
-              onPressed: enabled ? onBookmarks : null,
-            ),
-            _ToolbarIcon(
-              theme: theme,
-              tooltip: bookmarkTooltip,
-              icon: bookmarked
-                  ? Icons.bookmark_rounded
-                  : Icons.bookmark_border_rounded,
-              selected: bookmarked,
-              onPressed: enabled ? onToggleBookmark : null,
-            ),
-            _ToolbarIcon(
-              theme: theme,
-              tooltip: shareTooltip,
-              icon: Icons.ios_share_rounded,
-              onPressed: enabled ? onShare : null,
-            ),
-          ],
-        );
+        final studyControls = zone([
+          _ToolbarIcon(
+            theme: theme,
+            tooltip: searchTooltip,
+            icon: searchActive
+                ? Icons.search_off_rounded
+                : Icons.search_rounded,
+            selected: searchActive,
+            onPressed: enabled ? onToggleSearch : null,
+          ),
+          _ToolbarIcon(
+            theme: theme,
+            tooltip: outlineTooltip,
+            icon: Icons.list_alt_rounded,
+            onPressed: enabled ? onOutline : null,
+          ),
+          _ToolbarIcon(
+            theme: theme,
+            tooltip: bookmarksTooltip,
+            icon: Icons.bookmarks_outlined,
+            onPressed: enabled ? onBookmarks : null,
+          ),
+          _ToolbarIcon(
+            theme: theme,
+            tooltip: bookmarkTooltip,
+            icon: bookmarked
+                ? Icons.bookmark_rounded
+                : Icons.bookmark_border_rounded,
+            selected: bookmarked,
+            onPressed: enabled ? onToggleBookmark : null,
+          ),
+          _ToolbarIcon(
+            theme: theme,
+            tooltip: shareTooltip,
+            icon: Icons.ios_share_rounded,
+            onPressed: enabled ? onShare : null,
+          ),
+        ]);
 
-        final ambienceControls = _ToolbarGroup(
-          theme: theme,
-          children: [
-            _ToolbarIcon(
-              theme: theme,
-              tooltip: themeTooltip,
-              icon: _themeIcon,
-              onPressed: onCycleTheme,
+        final readingControls = zone([
+          _ToolbarIcon(
+            theme: theme,
+            tooltip: themeTooltip,
+            icon: _themeIcon,
+            onPressed: onCycleTheme,
+          ),
+          _AutoScrollControl(
+            theme: theme,
+            active: autoScrollActive,
+            speed: autoScrollSpeed,
+            speedMin: autoScrollSpeedMin,
+            speedMax: autoScrollSpeedMax,
+            enabled: enabled,
+            playTooltip: autoScrollTooltip,
+            speedTooltip: autoScrollSpeedTooltip,
+            onToggle: onToggleAutoScroll,
+            onSpeedChanged: onAutoScrollSpeedChanged,
+          ),
+          _ToolbarIcon(
+            theme: theme,
+            tooltip: fullscreenTooltip,
+            icon: fullscreenActive
+                ? Icons.fullscreen_exit_rounded
+                : Icons.fullscreen_rounded,
+            selected: fullscreenActive,
+            onPressed: onToggleFullscreen,
+          ),
+          _ToolbarIcon(
+            theme: theme,
+            tooltip: hideTooltip,
+            icon: Icons.visibility_off_rounded,
+            onPressed: onHide,
+          ),
+        ]);
+
+        Widget divider() => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: SizedBox(
+            height: 20,
+            child: VerticalDivider(
+              width: 1,
+              thickness: 1,
+              color: theme.border.withValues(alpha: 0.9),
             ),
-            _ToolbarIcon(
-              theme: theme,
-              tooltip: pageModeTooltip,
-              icon: pageModeSingle
-                  ? Icons.view_day_rounded
-                  : Icons.view_agenda_rounded,
-              selected: pageModeSingle,
-              onPressed: enabled ? onTogglePageMode : null,
-            ),
-            _ToolbarIcon(
-              theme: theme,
-              tooltip: hideTooltip,
-              icon: Icons.visibility_off_rounded,
-              onPressed: onHide,
-            ),
-          ],
+          ),
         );
 
         final toolsRow = Row(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            zoomControls,
-            const SizedBox(width: AppSpace.xs),
-            fitControls,
-            const SizedBox(width: AppSpace.xs),
+            viewControls,
+            divider(),
             studyControls,
-            const SizedBox(width: AppSpace.xs),
-            ambienceControls,
+            divider(),
+            readingControls,
           ],
         );
 
         return Container(
+          height: compact ? null : 48,
           decoration: BoxDecoration(
             color: theme.toolbarBg,
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            border: Border.all(color: theme.border),
+            // Square corners so toolbar + viewer read as one panel.
+            borderRadius: BorderRadius.zero,
+            border: Border(
+              top: BorderSide(color: theme.border),
+              left: BorderSide(color: theme.border),
+              right: BorderSide(color: theme.border),
+              bottom: BorderSide(color: theme.border.withValues(alpha: 0.55)),
+            ),
           ),
           padding: EdgeInsets.symmetric(
-            horizontal: compact ? AppSpace.xs : AppSpace.sm,
-            vertical: AppSpace.xs,
+            horizontal: compact ? 6 : 10,
+            vertical: compact ? 6 : 0,
           ),
+          alignment: Alignment.center,
           child: compact
               ? Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Center(child: pageNav),
-                    const SizedBox(height: AppSpace.xxs),
-                    Center(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: toolsRow,
+                    SizedBox(
+                      height: _controlH,
+                      child: Center(child: pageNav),
+                    ),
+                    const SizedBox(height: 6),
+                    SizedBox(
+                      height: _controlH,
+                      child: Center(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: toolsRow,
+                        ),
                       ),
                     ),
                   ],
                 )
               : Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
                       child: Align(
@@ -1679,38 +2099,19 @@ class _PdfToolbar extends StatelessWidget {
                       ),
                     ),
                     Flexible(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        reverse: true,
-                        child: toolsRow,
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          reverse: true,
+                          child: toolsRow,
+                        ),
                       ),
                     ),
                   ],
                 ),
         );
       },
-    );
-  }
-}
-
-class _ToolbarGroup extends StatelessWidget {
-  const _ToolbarGroup({required this.theme, required this.children});
-
-  final PdfReaderTheme theme;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.fieldFill,
-        borderRadius: BorderRadius.circular(AppRadius.xs),
-        border: Border.all(color: theme.border.withValues(alpha: 0.7)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-        child: Row(mainAxisSize: MainAxisSize.min, children: children),
-      ),
     );
   }
 }
@@ -1734,23 +2135,30 @@ class _ToolbarIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final active = onPressed != null;
     final color = !active
-        ? theme.toolbarMuted.withValues(alpha: 0.5)
+        ? theme.toolbarMuted.withValues(alpha: 0.45)
         : selected
         ? AppColors.primary
         : theme.toolbarFg;
-    return IconButton(
-      onPressed: onPressed,
-      tooltip: tooltip,
-      visualDensity: VisualDensity.compact,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-      iconSize: 22,
-      style: selected
-          ? IconButton.styleFrom(
-              backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-            )
-          : null,
-      icon: Icon(icon, color: color),
+    return SizedBox(
+      width: 36,
+      height: 36,
+      child: IconButton(
+        onPressed: onPressed,
+        tooltip: tooltip,
+        padding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
+        constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+        iconSize: 20,
+        style: IconButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          backgroundColor: selected
+              ? AppColors.primary.withValues(alpha: 0.12)
+              : Colors.transparent,
+        ),
+        icon: Icon(icon, color: color, size: 20),
+      ),
     );
   }
 }
@@ -1770,64 +2178,75 @@ class _PageField extends StatelessWidget {
   final int pageCount;
   final VoidCallback onSubmit;
 
+  /// Wide enough for the longest page index (e.g. 1860).
+  double get _inputWidth {
+    final digits = pageCount.toString().length.clamp(1, 5);
+    return 12.0 + digits * 8.5;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 48,
-          height: 34,
-          child: TextField(
-            controller: controller,
-            enabled: enabled,
-            textAlign: TextAlign.center,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: theme.toolbarFg,
-              fontWeight: FontWeight.w600,
-              height: 1.1,
-            ),
-            decoration: InputDecoration(
-              isDense: true,
-              filled: true,
-              fillColor: theme.fieldFill,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 6,
-                vertical: 8,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.xs),
-                borderSide: BorderSide(color: theme.border),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.xs),
-                borderSide: BorderSide(color: theme.border),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.xs),
-                borderSide: const BorderSide(
-                  color: AppColors.primary,
-                  width: 1.5,
+    final base = TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w600,
+      height: 1.0,
+      letterSpacing: 0,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+
+    // One quiet chip for "N / total" — no separate fill on the digits alone.
+    return Container(
+      height: 32,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: theme.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: _inputWidth,
+            child: Center(
+              child: TextField(
+                controller: controller,
+                enabled: enabled,
+                textAlign: TextAlign.center,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                style: base.copyWith(
+                  color: enabled
+                      ? AppColors.primaryDeep
+                      : theme.toolbarMuted,
                 ),
+                cursorColor: AppColors.primary,
+                cursorHeight: 14,
+                // App theme fills inputs grey — turn that off here.
+                decoration: const InputDecoration(
+                  isCollapsed: true,
+                  filled: false,
+                  fillColor: Colors.transparent,
+                  hoverColor: Colors.transparent,
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                onSubmitted: (_) => onSubmit(),
+                onEditingComplete: onSubmit,
               ),
             ),
-            onSubmitted: (_) => onSubmit(),
-            onEditingComplete: onSubmit,
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6),
-          child: Text(
-            '/ $pageCount',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: theme.toolbarMuted,
-              fontWeight: FontWeight.w500,
-            ),
+          Text(
+            ' / $pageCount',
+            style: base.copyWith(color: theme.toolbarMuted),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -1838,40 +2257,141 @@ class _ZoomBadge extends StatelessWidget {
     required this.label,
     required this.enabled,
     required this.onPressed,
+    this.selected = false,
   });
 
   final PdfReaderTheme theme;
   final String label;
   final bool enabled;
+  final bool selected;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: enabled ? onPressed : null,
-          borderRadius: BorderRadius.circular(AppRadius.xs),
-          child: Container(
-            constraints: const BoxConstraints(minWidth: 52, minHeight: 34),
-            alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            decoration: BoxDecoration(
-              color: theme.fieldFill,
-              borderRadius: BorderRadius.circular(AppRadius.xs),
-              border: Border.all(color: theme.border),
+    final fg = !enabled
+        ? theme.toolbarMuted
+        : selected
+        ? AppColors.primary
+        : AppColors.primaryDeep;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: enabled ? onPressed : null,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          height: 32,
+          constraints: const BoxConstraints(minWidth: 48),
+          alignment: Alignment.center,
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.primary.withValues(alpha: 0.12)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: selected ? AppColors.primary : theme.border,
             ),
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: enabled ? AppColors.primaryDeep : theme.toolbarMuted,
-                fontWeight: FontWeight.w700,
-              ),
+          ),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: fg,
+              fontWeight: FontWeight.w600,
+              height: 1.0,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Play/pause + speed slider as one reading-control unit.
+class _AutoScrollControl extends StatelessWidget {
+  const _AutoScrollControl({
+    required this.theme,
+    required this.active,
+    required this.speed,
+    required this.speedMin,
+    required this.speedMax,
+    required this.enabled,
+    required this.playTooltip,
+    required this.speedTooltip,
+    required this.onToggle,
+    required this.onSpeedChanged,
+  });
+
+  final PdfReaderTheme theme;
+  final bool active;
+  final double speed;
+  final double speedMin;
+  final double speedMax;
+  final bool enabled;
+  final String playTooltip;
+  final String speedTooltip;
+  final VoidCallback onToggle;
+  final ValueChanged<double> onSpeedChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final play = _ToolbarIcon(
+      theme: theme,
+      tooltip: playTooltip,
+      icon: active ? Icons.pause_rounded : Icons.play_arrow_rounded,
+      selected: active,
+      onPressed: enabled ? onToggle : null,
+    );
+
+    if (!active) return play;
+
+    return Container(
+      height: 36,
+      margin: const EdgeInsets.symmetric(horizontal: 2),
+      padding: const EdgeInsets.only(left: 2, right: 8),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.22),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          play,
+          Tooltip(
+            message: speedTooltip,
+            child: SizedBox(
+              width: 96,
+              height: 32,
+              child: SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  trackHeight: 3,
+                  activeTrackColor: AppColors.primary,
+                  inactiveTrackColor: theme.border,
+                  thumbColor: AppColors.primary,
+                  overlayColor: AppColors.primary.withValues(alpha: 0.12),
+                  trackShape: const RoundedRectSliderTrackShape(),
+                  thumbShape: const RoundSliderThumbShape(
+                    enabledThumbRadius: 6,
+                  ),
+                  overlayShape: const RoundSliderOverlayShape(
+                    overlayRadius: 12,
+                  ),
+                ),
+                child: Slider(
+                  value: speed.clamp(speedMin, speedMax),
+                  min: speedMin,
+                  max: speedMax,
+                  onChanged: enabled ? onSpeedChanged : null,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

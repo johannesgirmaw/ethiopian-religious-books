@@ -293,6 +293,9 @@ class AdminPdfDraft {
     required this.sizeBytes,
     required this.ready,
     this.status,
+    this.pageCount,
+    this.previewPageNumbers = const [],
+    this.hasPreview = false,
   });
 
   final String revisionId;
@@ -301,13 +304,32 @@ class AdminPdfDraft {
   final bool ready;
   final String? status;
 
+  /// Total pages in the PDF when known from the server manifest.
+  final int? pageCount;
+
+  /// Admin-chosen 1-based Look Inside page numbers.
+  final List<int> previewPageNumbers;
+
+  final bool hasPreview;
+
   factory AdminPdfDraft.fromJson(Map<String, dynamic> j) {
+    final rawPages = j['preview_page_numbers'];
+    final pages = rawPages is List
+        ? rawPages
+              .map((e) => (e as num?)?.toInt())
+              .whereType<int>()
+              .where((n) => n > 0)
+              .toList()
+        : <int>[];
     return AdminPdfDraft(
       revisionId: j['revision_id'] as String? ?? '',
       filename: j['filename'] as String? ?? 'content.pdf',
       sizeBytes: (j['size_bytes'] as num?)?.toInt() ?? 0,
       ready: j['ready'] as bool? ?? false,
       status: j['status'] as String?,
+      pageCount: (j['page_count'] as num?)?.toInt(),
+      previewPageNumbers: pages,
+      hasPreview: j['has_preview'] as bool? ?? false,
     );
   }
 }
@@ -356,11 +378,18 @@ class AdminDraftPage {
     required this.pageNumber,
     required this.title,
     required this.body,
-  });
+    String? localId,
+  }) : localId = localId ?? _nextLocalId();
 
+  /// Client-only stable id for tab keys / reorder (not sent to the API).
+  final String localId;
   final int pageNumber;
   final String title;
   final String body;
+
+  static int _localIdSeq = 0;
+  static String _nextLocalId() =>
+      'page-${++_localIdSeq}-${DateTime.now().microsecondsSinceEpoch}';
 
   factory AdminDraftPage.fromJson(Map<String, dynamic> j) {
     return AdminDraftPage(

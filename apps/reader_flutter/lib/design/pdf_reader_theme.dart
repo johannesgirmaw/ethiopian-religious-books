@@ -25,6 +25,29 @@ class PdfReaderTheme {
   bool get isDark => mode == 'dark';
   bool get isSepia => mode == 'sepia';
 
+  /// Tints rendered PDF page pixels to match the reading theme.
+  /// Desk/chrome stay on [canvas] / toolbar colors (unfiltered).
+  ColorFilter? get pageColorFilter {
+    switch (mode) {
+      case 'dark':
+        // Invert so white paper → dark, black text → light.
+        return const ColorFilter.matrix(<double>[
+          -1, 0, 0, 0, 255,
+          0, -1, 0, 0, 255,
+          0, 0, -1, 0, 255,
+          0, 0, 0, 1, 0,
+        ]);
+      case 'sepia':
+        // Warm multiply keeps contrast better than a full sepia matrix.
+        return ColorFilter.mode(
+          const Color(0xFFD4B896).withValues(alpha: 0.42),
+          BlendMode.multiply,
+        );
+      default:
+        return null;
+    }
+  }
+
   static PdfReaderTheme forMode(String mode) {
     switch (mode) {
       case 'dark':
@@ -50,11 +73,12 @@ class PdfReaderTheme {
       default:
         return const PdfReaderTheme(
           mode: 'light',
-          canvas: AppColors.surfaceStrong,
+          // Soft desk behind the page — light enough to stay quiet.
+          canvas: Color(0xFFF5F7F9),
           toolbarBg: AppColors.surfaceCard,
           toolbarFg: AppColors.textPrimary,
           toolbarMuted: AppColors.textSecondary,
-          border: AppColors.border,
+          border: AppColors.borderSubtle,
           fieldFill: AppColors.surfaceCard,
         );
     }

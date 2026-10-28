@@ -12,7 +12,6 @@ import '../../providers/download_jobs_provider.dart';
 import '../../storage/book_content_cache_storage.dart';
 import '../../utils/offline_book_download.dart';
 import '../../widgets/app_state_view.dart';
-import '../layout/app_layout_scope.dart';
 import '../widgets/common/web_page_header.dart';
 import '../widgets/common/web_section.dart';
 
@@ -71,7 +70,7 @@ class DownloadsScreenBody extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final offlineAsync = ref.watch(offlineDownloadsListProvider);
     final jobsAsync = ref.watch(downloadJobsProvider);
-    final padding = WebTokens.pagePadding(AppLayoutScope.tierOf(context));
+    final padding = WebTokens.pagePaddingOf(context);
 
     return offlineAsync.when(
       data: (offlineBooks) {

@@ -3,6 +3,30 @@ import 'package:flutter/material.dart';
 import '../../design/app_tokens.dart';
 import '../layout/app_layout_scope.dart';
 
+/// Side gutter that centers content at [WebTokens.maxContentWidth] while the
+/// scroll viewport stays full-bleed (scrollbar on the main-pane edge).
+class WebContentInsets extends InheritedWidget {
+  const WebContentInsets({
+    super.key,
+    required this.sideGutter,
+    required super.child,
+  });
+
+  final double sideGutter;
+
+  static double sideGutterOf(BuildContext context) {
+    return context
+            .dependOnInheritedWidgetOfExactType<WebContentInsets>()
+            ?.sideGutter ??
+        0;
+  }
+
+  @override
+  bool updateShouldNotify(WebContentInsets oldWidget) {
+    return sideGutter != oldWidget.sideGutter;
+  }
+}
+
 /// Web-specific layout and surface tokens.
 class WebTokens {
   WebTokens._();
@@ -40,9 +64,18 @@ class WebTokens {
     }
   }
 
-  static EdgeInsets pagePadding(AppLayoutTier tier) {
-    final h = pageHorizontal(tier);
+  static EdgeInsets pagePadding(AppLayoutTier tier, {double sideGutter = 0}) {
+    final h = pageHorizontal(tier) + sideGutter;
     return EdgeInsets.fromLTRB(h, 28, h, 40);
+  }
+
+  /// Page padding plus [WebContentInsets] gutters so content stays at
+  /// [maxContentWidth] while the scroll viewport (and scrollbar) stay full-bleed.
+  static EdgeInsets pagePaddingOf(BuildContext context) {
+    return pagePadding(
+      AppLayoutScope.tierOf(context),
+      sideGutter: WebContentInsets.sideGutterOf(context),
+    );
   }
 
   static BoxDecoration panelDecoration({bool hover = false}) {

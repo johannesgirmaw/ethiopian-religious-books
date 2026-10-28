@@ -6,6 +6,7 @@ import '../design/app_tokens.dart';
 import '../l10n/app_localizations.dart';
 import '../models/book_models.dart';
 import '../providers/payment_providers.dart';
+import '../router/app_navigation.dart';
 import '../security/device_identity.dart';
 import '../storage/secure_book_store.dart';
 import 'cover_badges.dart';
@@ -33,13 +34,14 @@ Future<bool> ensureBookUnlocked(
     if (!book.isPremium) return true;
     if (!context.mounted) return false;
     final l10n = AppLocalizations.of(context);
+    final hostContext = context;
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.surfaceCard,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
-      builder: (context) => SafeArea(
+      builder: (sheetContext) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
           child: Column(
@@ -66,8 +68,25 @@ Future<bool> ensureBookUnlocked(
                 ),
               ),
               const SizedBox(height: 18),
+              if (bookOffersLookInside(book)) ...[
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.of(sheetContext).pop();
+                    if (hostContext.mounted) {
+                      openBookLookInside(hostContext, book.id);
+                    }
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textPrimary,
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  icon: const Icon(Icons.preview_outlined, size: 18),
+                  label: Text(l10n.lookInside),
+                ),
+                const SizedBox(height: 10),
+              ],
               FilledButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () => Navigator.of(sheetContext).pop(),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,

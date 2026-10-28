@@ -67,6 +67,8 @@ class BookSummary {
     this.finalPrice = 0,
     this.createdAt,
     this.viewerCanManage = false,
+    this.hasPreview = false,
+    this.previewPageCount = 0,
   });
 
   final String id;
@@ -135,6 +137,12 @@ class BookSummary {
   /// Mirrors server ``can_manage_book``; used to unlock reader preview without purchase.
   final bool viewerCanManage;
 
+  /// True when a Look Inside sample PDF exists for the published revision.
+  final bool hasPreview;
+
+  /// Number of pages in the Look Inside sample (0 when [hasPreview] is false).
+  final int previewPageCount;
+
   bool get hasRating => ratingCount > 0;
 
   /// ETB then USD amounts readers see. Includes a legacy single-currency price.
@@ -199,6 +207,8 @@ class BookSummary {
       finalPrice: _toDouble(j['final_price']),
       createdAt: DateTime.tryParse(j['created_at'] as String? ?? ''),
       viewerCanManage: j['viewer_can_manage'] as bool? ?? false,
+      hasPreview: j['has_preview'] as bool? ?? false,
+      previewPageCount: (j['preview_page_count'] as num?)?.toInt() ?? 0,
     );
   }
 }

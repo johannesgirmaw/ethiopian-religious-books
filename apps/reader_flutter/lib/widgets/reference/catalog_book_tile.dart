@@ -7,7 +7,9 @@ import '../../design/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/book_models.dart';
 import '../../providers/catalog_providers.dart';
+import '../../router/app_navigation.dart';
 import '../../utils/catalog_book_visuals.dart';
+import '../cover_badges.dart';
 
 class CatalogBookGridTile extends ConsumerWidget {
   const CatalogBookGridTile({
@@ -89,6 +91,16 @@ class CatalogBookGridTile extends ConsumerWidget {
                       ],
                     ),
                   ),
+                  if (bookOffersLookInside(book))
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: LookInsideBadge(
+                        label: l10n.lookInside,
+                        compact: true,
+                        onTap: () => openBookLookInside(context, book.id),
+                      ),
+                    ),
                   if ((meta?.progress ?? 0) > 0)
                     Positioned(
                       left: 0,
@@ -242,6 +254,14 @@ class CatalogBookListTile extends ConsumerWidget {
                 ],
               ),
             ),
+            if (bookOffersLookInside(book)) ...[
+              LookInsideBadge(
+                label: l10n.lookInside,
+                compact: true,
+                onTap: () => openBookLookInside(context, book.id),
+              ),
+              const SizedBox(width: 8),
+            ],
             const Icon(
               Icons.chevron_right_rounded,
               color: AppColors.textTertiary,

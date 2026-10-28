@@ -12,7 +12,6 @@ import '../../utils/format_catalog_cache_age.dart';
 import '../../widgets/language_preference_card.dart';
 import '../../widgets/number_system_preference_card.dart';
 import '../../widgets/skeleton_loader.dart';
-import '../layout/app_layout_scope.dart';
 import '../widgets/common/web_page_header.dart';
 import '../widgets/common/web_section.dart';
 
@@ -26,7 +25,7 @@ class SettingsScreenBody extends ConsumerWidget {
     final cachedAt = ref.watch(catalogCachedAtProvider).valueOrNull;
     final downloadJobs = ref.watch(downloadJobsProvider);
     final offlineCount = ref.watch(offlineBookCountProvider);
-    final padding = WebTokens.pagePadding(AppLayoutScope.tierOf(context));
+    final padding = WebTokens.pagePaddingOf(context);
 
     return ListView(
       padding: padding,

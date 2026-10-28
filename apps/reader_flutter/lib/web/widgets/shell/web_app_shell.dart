@@ -13,6 +13,8 @@ class WebAppShell extends StatelessWidget {
     required this.sidebarItems,
     required this.child,
     this.breadcrumb,
+    this.breadcrumbParent,
+    this.onBreadcrumbParent,
     this.actions,
     this.onBack,
   });
@@ -21,6 +23,8 @@ class WebAppShell extends StatelessWidget {
   final List<WebSidebarItem> sidebarItems;
   final Widget child;
   final String? breadcrumb;
+  final String? breadcrumbParent;
+  final VoidCallback? onBreadcrumbParent;
   final List<Widget>? actions;
   final VoidCallback? onBack;
 
@@ -32,16 +36,15 @@ class WebAppShell extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            WebSidebar(
-              currentLocation: currentLocation,
-              items: sidebarItems,
-            ),
+            WebSidebar(currentLocation: currentLocation, items: sidebarItems),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   WebTopHeader(
                     breadcrumb: breadcrumb,
+                    breadcrumbParent: breadcrumbParent,
+                    onBreadcrumbParent: onBreadcrumbParent,
                     actions: actions,
                     onBack: onBack,
                   ),

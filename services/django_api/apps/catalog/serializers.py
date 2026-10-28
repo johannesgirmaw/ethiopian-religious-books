@@ -33,6 +33,8 @@ class BookListSerializer(serializers.ModelSerializer):
     final_price = serializers.SerializerMethodField()
     content_format = serializers.SerializerMethodField()
     viewer_can_manage = serializers.SerializerMethodField()
+    has_preview = serializers.SerializerMethodField()
+    preview_page_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Book
@@ -67,6 +69,8 @@ class BookListSerializer(serializers.ModelSerializer):
             "created_at",
             "tags",
             "viewer_can_manage",
+            "has_preview",
+            "preview_page_count",
         )
 
     def get_final_price(self, obj: Book) -> str:
@@ -77,6 +81,28 @@ class BookListSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         user = getattr(request, "user", None) if request is not None else None
         return can_manage_book(obj, user)
+
+    def _preview_rev(self, obj: Book) -> BookRevision | None:
+        rev = obj.published_revision
+        if rev is None:
+            return None
+        if (rev.content_format or "").lower() != "pdf":
+            return None
+        return rev
+
+    def get_has_preview(self, obj: Book) -> bool:
+        rev = self._preview_rev(obj)
+        if rev is None:
+            return False
+        pages = rev.preview_page_numbers if isinstance(rev.preview_page_numbers, list) else []
+        return bool(rev.preview_object_key and pages)
+
+    def get_preview_page_count(self, obj: Book) -> int:
+        rev = self._preview_rev(obj)
+        if rev is None or not rev.preview_object_key:
+            return 0
+        pages = rev.preview_page_numbers if isinstance(rev.preview_page_numbers, list) else []
+        return len(pages)
 
     def get_content_format(self, obj: Book) -> str | None:
         rev = obj.published_revision

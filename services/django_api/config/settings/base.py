@@ -129,7 +129,20 @@ CORS_ALLOWED_ORIGINS = env.list(
 )
 # Allow the app's custom dev header (sent by Flutter web to pick a
 # device-reachable MinIO presign host) through CORS preflight.
-CORS_ALLOW_HEADERS = (*default_headers, "x-dev-s3-origin")
+# ``range`` / ``if-range``: local flutter web loads PDF bytes cross-origin from
+# the API (no nginx /pdf-proxy); the WASM reader sends Range GETs.
+CORS_ALLOW_HEADERS = (
+    *default_headers,
+    "x-dev-s3-origin",
+    "range",
+    "if-range",
+)
+CORS_EXPOSE_HEADERS = [
+    "accept-ranges",
+    "content-range",
+    "content-length",
+    "content-type",
+]
 
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://localhost:6379/0")

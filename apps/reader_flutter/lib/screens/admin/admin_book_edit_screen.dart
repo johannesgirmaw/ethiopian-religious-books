@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -12,10 +13,13 @@ import 'package:image_picker/image_picker.dart';
 import '../../common/platform/platform_shell.dart';
 import '../../config/app_config.dart';
 import '../../design/app_tokens.dart';
+import '../../desktop/design/desktop_tokens.dart';
+import '../../desktop/layout/desktop_content_frame.dart';
+import '../../desktop/layout/desktop_layout_scope.dart';
 import '../../desktop/widgets/shell/desktop_overlay_scaffold.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/app_state_view.dart';
-import '../../widgets/primitives/shell_primitives.dart';
+import '../../widgets/pdf_document_reader.dart';
 import '../../widgets/stored_rich_text_view.dart';
 import '../../models/admin_book.dart';
 import '../../providers/admin_providers.dart';
@@ -27,10 +31,13 @@ import '../../utils/catalog_language_label.dart';
 import '../../utils/form_draft_controller.dart';
 import '../../utils/form_draft_keys.dart';
 import '../../utils/money_format.dart';
+import '../../utils/pdf_book_loader.dart';
 import '../../providers/bible_providers.dart';
 import '../../providers/number_system_provider.dart';
 import '../../utils/geez_numerals.dart';
+import '../../web/design/web_tokens.dart';
 import '../../web/layout/app_layout_scope.dart';
+import '../../web/layout/web_content_frame.dart';
 import '../../web/widgets/shell/web_overlay_scaffold.dart';
 import 'bible_content_editor_screen.dart';
 import '../../utils/rich_text_codec.dart'
@@ -38,6 +45,8 @@ import '../../utils/rich_text_codec.dart'
 
 /// Set true when cover presign + object storage are enabled for publishers.
 const bool kAdminCoverUploadEnabled = true;
+
+enum _BookEditSection { details, content, lookInside }
 
 /// Create (`bookId == null`) or edit existing metadata (`bookId` set).
 class AdminBookEditScreen extends ConsumerStatefulWidget {
@@ -77,6 +86,23 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   AdminPdfDraft? _serverPdfDraft;
   Uint8List? _pendingPdfBytes;
   String? _pendingPdfFilename;
+  List<int> _previewPages = [];
+  final _previewPageInput = TextEditingController();
+
+  /// In-page section: Book details vs Chapters/PDF/Bible (full-width each).
+  _BookEditSection _section = _BookEditSection.details;
+  /// Selected chapter in the Chapters & pages workspace.
+  int? _selectedChapterIndex;
+  /// When set, the sidebar name field renames this chapter; otherwise it adds.
+  int? _renamingChapterIndex;
+  final _chapterTitleInput = TextEditingController();
+  /// Active page tab in the chapter pages pane (always editable).
+  int _previewPageIndex = 0;
+  final _livePageEditorKey = GlobalKey<_DraftPageEditorState>();
+
+  void _flushLivePageEditor() {
+    _livePageEditorKey.currentState?.commitNow();
+  }
   String? _testament; // 'old' | 'new'
   bool _isPremium = false;
   bool _isFeatured = false;
@@ -188,6 +214,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
             )
             .toList(),
       );
+      _selectedChapterIndex = _chaptersDraft.isEmpty ? null : 0;
     }
     _genre = data['genre'] as String?;
     _isPremium = data['isPremium'] as bool? ?? false;
@@ -247,6 +274,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     _persistedIsBible = b.isBible;
     _isPdfBook = b.isPdfBook;
     _serverPdfDraft = b.pdfDraft;
+    _previewPages = [...(b.pdfDraft?.previewPageNumbers ?? const <int>[])];
     _testament = (b.testamentType?.isNotEmpty ?? false)
         ? b.testamentType
         : null;
@@ -259,6 +287,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     _priceUsd.text = usdListed > 0 ? _trimNum(usdListed) : '';
     _pricesAreListedAmounts = etbListed > 0 || usdListed > 0;
     _chaptersDraft = _withConsecutivePageNumbers(b.chaptersDraft);
+    _selectedChapterIndex = _chaptersDraft.isEmpty ? null : 0;
     _visibility = b.catalogVisibility;
     _reviewStatus = b.reviewStatus;
     _latestReviewNote = b.latestReviewNote;
@@ -327,8 +356,82 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     _publishedYear.dispose();
     _priceEtb.dispose();
     _priceUsd.dispose();
+    _previewPageInput.dispose();
+    _chapterTitleInput.dispose();
     _bookDraft.dispose();
     super.dispose();
+  }
+
+  void _syncPreviewPagesFromDraft(AdminPdfDraft? draft) {
+    _previewPages = [...(draft?.previewPageNumbers ?? const <int>[])];
+  }
+
+  void _addPreviewPage() {
+    final n = int.tryParse(_previewPageInput.text.trim());
+    _previewPageInput.clear();
+    if (n == null || n <= 0) return;
+    final maxPages = _serverPdfDraft?.pageCount;
+    if (maxPages != null && n > maxPages) return;
+    if (_previewPages.contains(n)) return;
+    if (_previewPages.length >= 10) return;
+    setState(() {
+      _previewPages = [..._previewPages, n]..sort();
+      _markDirty();
+    });
+  }
+
+  void _suggestFirstFivePreviewPages() {
+    final maxPages = _serverPdfDraft?.pageCount ?? 5;
+    final count = maxPages < 5 ? maxPages : 5;
+    if (count <= 0) return;
+    setState(() {
+      _previewPages = [for (var i = 1; i <= count; i++) i];
+      _markDirty();
+    });
+  }
+
+  Future<void> _savePreviewPages() async {
+    final id = widget.bookId;
+    if (id == null || id.isEmpty) return;
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final draft = await savePdfPreviewPages(
+        ref.read(apiDioProvider),
+        bookId: id,
+        pageNumbers: _previewPages,
+      );
+      if (!mounted) return;
+      setState(() {
+        if (draft != null) {
+          _serverPdfDraft = draft;
+          _syncPreviewPagesFromDraft(draft);
+        }
+        _busy = false;
+      });
+      if (id.isNotEmpty) {
+        ref.invalidate(pdfPreviewAccessProvider(id));
+        ref.invalidate(pdfPreviewViewerSourceProvider(id));
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.pdfPreviewPagesSaved)));
+    } on DioException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = messageFromDioResponse(e.response?.data) ?? e.message;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = e.toString();
+      });
+    }
   }
 
   /// Formats a price/percent for an input field without a trailing `.0`.
@@ -514,14 +617,22 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
         Map<String, dynamic>.from(draftJson),
       );
       _isPdfBook = true;
+      _syncPreviewPagesFromDraft(_serverPdfDraft);
     } else {
       // Fall back to a fresh book fetch so the editor shows the uploaded file.
       final refreshed = await fetchAdminBookByDio(api, bookId);
       if (refreshed != null) {
         _serverPdfDraft = refreshed.pdfDraft;
         _isPdfBook = refreshed.isPdfBook;
+        _syncPreviewPagesFromDraft(_serverPdfDraft);
       }
     }
+    _invalidateAdminPdfPreview(bookId);
+  }
+
+  void _invalidateAdminPdfPreview(String bookId) {
+    ref.invalidate(pdfBookAccessProvider(bookId));
+    ref.invalidate(pdfViewerSourceProvider(bookId));
   }
 
   Future<void> _removeServerPdf() async {
@@ -540,9 +651,11 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
         _serverPdfDraft = null;
         _pendingPdfBytes = null;
         _pendingPdfFilename = null;
+        _previewPages = [];
         // Keep PDF book type on so the author can pick a replacement file.
         _isPdfBook = true;
       });
+      _invalidateAdminPdfPreview(bookId);
       _markDirty();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -577,32 +690,59 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     });
   }
 
-  Future<void> _upsertChapter({int? index}) async {
-    final editing = index != null ? _chaptersDraft[index] : null;
-    final result = await showDialog<AdminDraftChapter>(
-      context: context,
-      builder: (ctx) => _ChapterEditorDialog(
-        draftKey: FormDraftKeys.scope(
-          userId: _draftUserId(),
-          formKey: FormDraftKeys.adminBookChapter(
-            bookId: widget.bookId,
-            chapterKey: editing?.chapterKey,
-            chapterIndex: index,
-            isNew: index == null,
-          ),
-        ),
-        isNew: index == null,
-        initialChapter: editing,
-      ),
-    );
-    if (result == null) return;
-    if (index == null) {
-      _setChaptersDraft([..._chaptersDraft, result]);
-    } else {
+  int? _clampedChapterIndex() {
+    if (_chaptersDraft.isEmpty) return null;
+    final i = _selectedChapterIndex ?? 0;
+    if (i < 0) return 0;
+    if (i >= _chaptersDraft.length) return _chaptersDraft.length - 1;
+    return i;
+  }
+
+  void _beginRenameChapter(int index) {
+    setState(() {
+      _renamingChapterIndex = index;
+      _chapterTitleInput.text = _chaptersDraft[index].title;
+      _selectedChapterIndex = index;
+    });
+  }
+
+  void _resetChapterForm() {
+    setState(() {
+      _renamingChapterIndex = null;
+      _chapterTitleInput.clear();
+    });
+  }
+
+  void _commitChapterInline() {
+    final l10n = AppLocalizations.of(context)!;
+    final title = _chapterTitleInput.text.trim();
+    final resolved = title.isEmpty ? l10n.untitledChapter : title;
+    final renameAt = _renamingChapterIndex;
+    if (renameAt != null) {
       final next = [..._chaptersDraft];
-      next[index] = result;
+      final current = next[renameAt];
+      next[renameAt] = AdminDraftChapter(
+        chapterKey: current.chapterKey,
+        title: resolved,
+        pages: current.pages,
+      );
       _setChaptersDraft(next);
+      setState(() {
+        _selectedChapterIndex = renameAt;
+        _section = _BookEditSection.content;
+      });
+    } else {
+      final next = [
+        ..._chaptersDraft,
+        AdminDraftChapter(chapterKey: '', title: resolved, pages: const []),
+      ];
+      _setChaptersDraft(next);
+      setState(() {
+        _selectedChapterIndex = next.length - 1;
+        _section = _BookEditSection.content;
+      });
     }
+    _resetChapterForm();
   }
 
   List<AdminDraftChapter> _withConsecutivePageNumbers(
@@ -620,6 +760,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                 pageNumber: nextPageNumber++,
                 title: page.title,
                 body: page.body,
+                localId: page.localId,
               ),
           ],
         ),
@@ -632,6 +773,13 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
   }) {
     setState(() {
       _chaptersDraft = _withConsecutivePageNumbers(chapters);
+      if (_chaptersDraft.isEmpty) {
+        _selectedChapterIndex = null;
+      } else if (_selectedChapterIndex == null) {
+        _selectedChapterIndex = 0;
+      } else if (_selectedChapterIndex! >= _chaptersDraft.length) {
+        _selectedChapterIndex = _chaptersDraft.length - 1;
+      }
       if (markDirty) _dirty = true;
     });
     if (markDirty) _bookDraft.onChanged();
@@ -647,70 +795,190 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
           .map((e) => AdminDraftChapter.fromJson(Map<String, dynamic>.from(e)))
           .toList(),
     );
+    if (_chaptersDraft.isEmpty) {
+      _selectedChapterIndex = null;
+    } else if (_selectedChapterIndex == null ||
+        _selectedChapterIndex! >= _chaptersDraft.length) {
+      _selectedChapterIndex = 0;
+    }
   }
 
-  Future<void> _upsertPage(int chapterIndex, {int? pageIndex}) async {
+  int _clampedPreviewPageIndex(AdminDraftChapter chapter) {
+    if (chapter.pages.isEmpty) return 0;
+    if (_previewPageIndex < 0) return 0;
+    if (_previewPageIndex >= chapter.pages.length) {
+      return chapter.pages.length - 1;
+    }
+    return _previewPageIndex;
+  }
+
+  void _patchPageAt(int chapterIndex, int pageIndex, AdminDraftPage page) {
+    if (chapterIndex < 0 || chapterIndex >= _chaptersDraft.length) return;
     final chapter = _chaptersDraft[chapterIndex];
-    final editing = pageIndex != null ? chapter.pages[pageIndex] : null;
-    final result = await Navigator.of(context, rootNavigator: true)
-        .push<AdminDraftPage>(
-          MaterialPageRoute(
-            fullscreenDialog: true,
-            builder: (ctx) => _DraftPageEditorDialog(
-              isNewPage: pageIndex == null,
-              initialTitle: editing?.title ?? '',
-              initialBody: editing?.body ?? '',
-              draftKey: FormDraftKeys.scope(
-                userId: _draftUserId(),
-                formKey: FormDraftKeys.adminBookPage(
-                  bookId: widget.bookId,
-                  chapterIndex: chapterIndex,
-                  pageIndex: pageIndex,
-                  isNew: pageIndex == null,
-                ),
-              ),
-            ),
-          ),
-        );
-    if (result == null) return;
+    if (pageIndex < 0 || pageIndex >= chapter.pages.length) return;
+    final current = chapter.pages[pageIndex];
+    if (current.title == page.title && current.body == page.body) return;
+    final titleChanged = current.title != page.title;
     final chapters = [..._chaptersDraft];
     final pages = [...chapters[chapterIndex].pages];
-    if (pageIndex == null) {
-      pages.add(result);
-    } else {
-      pages[pageIndex] = result;
-    }
+    pages[pageIndex] = AdminDraftPage(
+      pageNumber: pages[pageIndex].pageNumber,
+      title: page.title,
+      body: page.body,
+      localId: current.localId,
+    );
+    chapters[chapterIndex] = AdminDraftChapter(
+      chapterKey: chapters[chapterIndex].chapterKey,
+      title: chapters[chapterIndex].title,
+      pages: pages,
+    );
+    // Avoid setState on body-only edits — rebuilding steals Quill focus into the
+    // title field. Refresh the tree only when the tab label (title) changes.
+    _chaptersDraft = _withConsecutivePageNumbers(chapters);
+    _dirty = true;
+    _bookDraft.onChanged();
+    if (titleChanged && mounted) setState(() {});
+  }
+
+  /// Prefer patching by stable [localId] so dispose/reorder cannot write to the
+  /// wrong index after the list has moved.
+  void _patchPageByLocalId(
+    int chapterIndex,
+    String localId,
+    AdminDraftPage page,
+  ) {
+    if (chapterIndex < 0 || chapterIndex >= _chaptersDraft.length) return;
+    final pages = _chaptersDraft[chapterIndex].pages;
+    final pageIndex = pages.indexWhere((p) => p.localId == localId);
+    if (pageIndex < 0) return;
+    _patchPageAt(
+      chapterIndex,
+      pageIndex,
+      AdminDraftPage(
+        pageNumber: page.pageNumber,
+        title: page.title,
+        body: page.body,
+        localId: localId,
+      ),
+    );
+  }
+
+  void _addBlankPage(int chapterIndex) {
+    final chapters = [..._chaptersDraft];
+    final pages = [
+      ...chapters[chapterIndex].pages,
+      AdminDraftPage(pageNumber: 0, title: '', body: ''),
+    ];
     chapters[chapterIndex] = AdminDraftChapter(
       chapterKey: chapters[chapterIndex].chapterKey,
       title: chapters[chapterIndex].title,
       pages: pages,
     );
     _setChaptersDraft(chapters);
+    setState(() {
+      _section = _BookEditSection.content;
+      _previewPageIndex = pages.length - 1;
+    });
   }
 
   void _moveChapter(int index, int step) {
     final target = index + step;
     if (target < 0 || target >= _chaptersDraft.length) return;
-    final next = [..._chaptersDraft];
-    final item = next.removeAt(index);
-    next.insert(target, item);
-    _setChaptersDraft(next);
+    _reorderChapters(index, target > index ? target + 1 : target);
   }
 
-  void _movePage(int chapterIndex, int pageIndex, int step) {
+  /// [newIndex] uses [ReorderableListView] semantics (may be `length` / after remove).
+  void _reorderChapters(int oldIndex, int newIndex) {
+    if (newIndex > oldIndex) newIndex -= 1;
+    if (oldIndex == newIndex) return;
+    if (oldIndex < 0 || oldIndex >= _chaptersDraft.length) return;
+    if (newIndex < 0 || newIndex >= _chaptersDraft.length) return;
+
+    final next = [..._chaptersDraft];
+    final item = next.removeAt(oldIndex);
+    next.insert(newIndex, item);
+
+    final selected = _selectedChapterIndex;
+    int? nextSelected = selected;
+    if (selected == oldIndex) {
+      nextSelected = newIndex;
+    } else if (selected != null) {
+      if (oldIndex < selected && newIndex >= selected) {
+        nextSelected = selected - 1;
+      } else if (oldIndex > selected && newIndex <= selected) {
+        nextSelected = selected + 1;
+      }
+    }
+
+    final renaming = _renamingChapterIndex;
+    int? nextRenaming = renaming;
+    if (renaming == oldIndex) {
+      nextRenaming = newIndex;
+    } else if (renaming != null) {
+      if (oldIndex < renaming && newIndex >= renaming) {
+        nextRenaming = renaming - 1;
+      } else if (oldIndex > renaming && newIndex <= renaming) {
+        nextRenaming = renaming + 1;
+      }
+    }
+
+    _setChaptersDraft(next);
+    setState(() {
+      _selectedChapterIndex = nextSelected;
+      _renamingChapterIndex = nextRenaming;
+    });
+  }
+
+  void _reorderPages(int chapterIndex, int oldIndex, int newIndex) {
     final pages = _chaptersDraft[chapterIndex].pages;
-    final target = pageIndex + step;
-    if (target < 0 || target >= pages.length) return;
+    if (newIndex > oldIndex) newIndex -= 1;
+    if (oldIndex == newIndex) return;
+    if (oldIndex < 0 || oldIndex >= pages.length) return;
+    if (newIndex < 0 || newIndex >= pages.length) return;
+
+    // Flush the open editor into the page it's bound to (by localId) before
+    // indices move — avoids dispose writing into the wrong slot.
+    _flushLivePageEditor();
+
+    final selectedLocalId = pages[_clampedPreviewPageIndex(
+      _chaptersDraft[chapterIndex],
+    )].localId;
+
     final chapters = [..._chaptersDraft];
     final nextPages = [...chapters[chapterIndex].pages];
-    final item = nextPages.removeAt(pageIndex);
-    nextPages.insert(target, item);
+    final item = nextPages.removeAt(oldIndex);
+    nextPages.insert(newIndex, item);
     chapters[chapterIndex] = AdminDraftChapter(
       chapterKey: chapters[chapterIndex].chapterKey,
       title: chapters[chapterIndex].title,
       pages: nextPages,
     );
+
+    final preview = nextPages.indexWhere((p) => p.localId == selectedLocalId);
     _setChaptersDraft(chapters);
+    setState(() => _previewPageIndex = preview < 0 ? newIndex : preview);
+  }
+
+  void _deletePreviewPage(int chapterIndex) {
+    final chapter = _chaptersDraft[chapterIndex];
+    if (chapter.pages.isEmpty) return;
+    _flushLivePageEditor();
+    final pIndex = _clampedPreviewPageIndex(chapter);
+    final chapters = [..._chaptersDraft];
+    final pages = [...chapters[chapterIndex].pages]..removeAt(pIndex);
+    chapters[chapterIndex] = AdminDraftChapter(
+      chapterKey: chapters[chapterIndex].chapterKey,
+      title: chapters[chapterIndex].title,
+      pages: pages,
+    );
+    _setChaptersDraft(chapters);
+    setState(() {
+      if (pages.isEmpty) {
+        _previewPageIndex = 0;
+      } else if (_previewPageIndex >= pages.length) {
+        _previewPageIndex = pages.length - 1;
+      }
+    });
   }
 
   String? _validateChaptersDraft(AppLocalizations l10n) {
@@ -950,7 +1218,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     return DropdownButtonFormField<String>(
       initialValue: current,
       isExpanded: true,
-      decoration: InputDecoration(labelText: l10n.primaryLanguageCodeLabel),
+      decoration: _inputDecoration(),
       items: [
         for (final c in codes)
           DropdownMenuItem<String>(
@@ -974,7 +1242,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     return DropdownButtonFormField<int?>(
       initialValue: selected,
       isExpanded: true,
-      decoration: InputDecoration(labelText: l10n.adminPublishedYearLabel),
+      decoration: _inputDecoration(),
       items: [
         DropdownMenuItem<int?>(value: null, child: Text(l10n.adminGenreNone)),
         for (final y in years)
@@ -1021,31 +1289,31 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     } else {
       description = l10n.adminServiceFeeEmptyDescription(percentLabel);
     }
-    final etbField = TextFormField(
+    final etbField = _labeled(
+      l10n.adminPriceEtbLabel,
+      TextFormField(
       controller: _priceEtb,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      decoration: InputDecoration(
-        labelText: l10n.adminPriceEtbLabel,
-        prefixText: 'Br ',
-      ),
+        decoration: _inputDecoration().copyWith(prefixText: 'Br '),
       validator: (value) => _validateOptionalPrice(value, l10n),
       onChanged: (_) {
         setState(() {});
         _markDirty();
       },
+      ),
     );
-    final usdField = TextFormField(
+    final usdField = _labeled(
+      l10n.adminPriceUsdLabel,
+      TextFormField(
       controller: _priceUsd,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      decoration: InputDecoration(
-        labelText: l10n.adminPriceUsdLabel,
-        prefixText: r'$ ',
-      ),
+        decoration: _inputDecoration().copyWith(prefixText: r'$ '),
       validator: (value) => _validateOptionalPrice(value, l10n),
       onChanged: (_) {
         setState(() {});
         _markDirty();
       },
+      ),
     );
     final fields = sideBySide
         ? Row(
@@ -1063,15 +1331,6 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          l10n.adminDualPriceHint,
-          style: const TextStyle(
-            fontSize: 13,
-            height: 1.45,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 12),
         fields,
         const SizedBox(height: 12),
         Text(
@@ -1095,65 +1354,18 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     );
   }
 
-  void _openBibleContent() {
-    final id = widget.bookId;
-    if (id == null) return;
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) =>
-            BibleContentEditorScreen(bookId: id, bookTitle: _title.text.trim()),
-      ),
-    );
-  }
-
-  Widget _buildBibleControls(AppLocalizations l10n, bool isNew, bool twoPane) {
+  Widget _buildBibleControls(AppLocalizations l10n, bool isNew) {
+    if (!_isBible) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SwitchListTile.adaptive(
-          contentPadding: EdgeInsets.zero,
-          title: Text(l10n.adminIsBibleLabel),
-          subtitle: Text(l10n.adminIsBibleSubtitle),
-          value: _isBible,
-          onChanged: (v) {
-            setState(() {
-              _isBible = v;
-              if (v) {
-                _isPdfBook = false;
-                _pendingPdfBytes = null;
-                _pendingPdfFilename = null;
-              }
-              if (!v) _testament = null;
-            });
-            _markDirty();
-          },
-        ),
-        if (!_isBible)
-          SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            title: Text(l10n.pdfBookTypeLabel),
-            subtitle: Text(l10n.pdfBookTypeHelp),
-            value: _isPdfBook,
-            onChanged: (v) {
-              setState(() {
-                _isPdfBook = v;
-                if (v) {
-                  _isBible = false;
-                  _testament = null;
-                } else {
-                  _pendingPdfBytes = null;
-                  _pendingPdfFilename = null;
-                }
-              });
-              _markDirty();
-            },
-          ),
-        if (_isBible) ...[
-          const SizedBox(height: 8),
+        const SizedBox(height: 16),
+        _labeled(
+          l10n.adminTestamentLabel,
           DropdownButtonFormField<String?>(
             initialValue: _testament,
             isExpanded: true,
-            decoration: InputDecoration(labelText: l10n.adminTestamentLabel),
+            decoration: _inputDecoration(),
             items: [
               DropdownMenuItem<String?>(
                 value: null,
@@ -1173,28 +1385,24 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
               _markDirty();
             },
           ),
-          // In two-pane the right pane manages content; in single column show
-          // a button that opens the full-screen editor.
-          if (!twoPane) ...[
-            const SizedBox(height: 12),
-            if (isNew || !_persistedIsBible)
+        ),
+        if (isNew || !_persistedIsBible) ...[
+          const SizedBox(height: 8),
               Text(
                 l10n.adminBibleSaveFirst,
-                style: Theme.of(context).textTheme.bodySmall,
-              )
-            else
-              Align(
-                alignment: Alignment.centerLeft,
-                child: FilledButton.tonalIcon(
-                  onPressed: _openBibleContent,
-                  icon: const Icon(Icons.menu_book_outlined),
-                  label: Text(l10n.adminManageBibleContent),
-                ),
-              ),
-          ],
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: _BookFormColors.muted,
+            ),
+          ),
         ],
       ],
     );
+  }
+
+  String _contentSectionLabel(AppLocalizations l10n) {
+    if (_isBible) return l10n.bookEditSectionBible;
+    if (_isPdfBook) return l10n.pdfDocumentSection;
+    return l10n.chaptersPagesSection;
   }
 
   Widget _buildGenreDropdown(AppLocalizations l10n) {
@@ -1209,7 +1417,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     return DropdownButtonFormField<String?>(
       initialValue: _genre,
       isExpanded: true,
-      decoration: InputDecoration(labelText: l10n.adminGenreLabel),
+      decoration: _inputDecoration(),
       items: [
         DropdownMenuItem<String?>(
           value: null,
@@ -1232,55 +1440,60 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     );
   }
 
-  Widget _contentHint(IconData icon, String message) => Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          size: 48,
-          color: AppColors.textTertiary.withValues(alpha: 0.5),
-        ),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Text(
-            message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: AppColors.textTertiary),
-          ),
-        ),
-      ],
-    ),
-  );
-
-  /// Right-pane content: Bible workspace, PDF upload, or chapter editor.
-  Widget _rightContentPane(
+  /// Full-width content section: Bible workspace, PDF upload, or chapters.
+  Widget _contentSectionPane(
     BuildContext context,
     AppLocalizations l10n,
-    bool isNew,
-  ) {
+    bool isNew, {
+    required bool expand,
+  }) {
     if (_isBible) {
       if (isNew || widget.bookId == null || !_persistedIsBible) {
-        return _contentHint(Icons.menu_book_outlined, l10n.adminBibleSaveFirst);
+        return _BookFormCard(
+          title: l10n.bookEditSectionBible,
+          subtitle: l10n.adminBibleSaveFirst,
+          child: const SizedBox(height: 8),
+        );
       }
-      return BibleContentWorkspace(bookId: widget.bookId!);
-    }
-    if (_isPdfBook) {
-      return ListView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-        children: _pdfSectionChildren(context, l10n, isNew),
+      final workspace = BibleContentWorkspace(bookId: widget.bookId!);
+      return _BookFormCard(
+        title: l10n.bookEditSectionBible,
+        subtitle: l10n.adminIsBibleSubtitle,
+        expandChild: expand,
+        child: expand ? workspace : SizedBox(height: 560, child: workspace),
       );
     }
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-      children: [
-        AppSectionHeader(title: l10n.chaptersPagesSection),
-        const SizedBox(height: 12),
-        ..._pagesSectionChildren(context, l10n, isNew),
-      ],
+    if (_isPdfBook) {
+      // Match chapters pane: no bulky card header — rail already names the section.
+      return _BookFormCard(
+        expandChild: expand,
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+        child: expand
+            ? _pdfWorkspace(context, l10n, isNew)
+            : SizedBox(
+                height: 640,
+                child: _pdfWorkspace(context, l10n, isNew),
+              ),
+      );
+    }
+    // Chapters list lives in the section rail; main pane is pages only.
+    // No card header — the bold chapter title in the pages pane is enough.
+    final selected = _clampedChapterIndex();
+    final chapter = selected == null ? null : _chaptersDraft[selected];
+    final pages = _BookFormCard(
+      expandChild: expand,
+      padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
+      child: expand
+          ? _pagesPane(context, l10n, isNew, selected, chapter)
+          : SizedBox(
+              height: 480,
+              child: _pagesPane(context, l10n, isNew, selected, chapter),
+            ),
     );
+    return pages;
   }
+
+  bool get _chaptersLiveInSectionRail => !_isBible && !_isPdfBook;
 
   String _formatBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';
@@ -1290,28 +1503,58 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
-  List<Widget> _pdfSectionChildren(
+  Widget _pdfWorkspace(
     BuildContext context,
     AppLocalizations l10n,
     bool isNew,
   ) {
     final pendingName = _pendingPdfFilename;
     final server = _serverPdfDraft;
-    final hasServerPdf = server != null && server.ready;
+    // Treat any stored draft with a key as present — "ready" can lag after
+    // older uploads that never wrote size_bytes.
+    final hasServerPdf =
+        server != null && (server.ready || server.revisionId.isNotEmpty);
     final hasPending = pendingName != null;
-    return [
-      AppSectionHeader(title: l10n.pdfDocumentSection),
-      const SizedBox(height: 8),
-      Text(l10n.pdfUploadHint, style: Theme.of(context).textTheme.bodySmall),
-      const SizedBox(height: 16),
-      if (hasPending) ...[
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.picture_as_pdf_outlined),
-          title: Text(pendingName),
-          subtitle: Text(l10n.pdfPendingUpload),
-          trailing: IconButton(
+    final theme = Theme.of(context);
+
+    final statusText = hasPending
+        ? pendingName!
+        : hasServerPdf
+            ? l10n.pdfReadyLabel(
+                server.filename,
+                _formatBytes(server.sizeBytes),
+              )
+            : l10n.pdfUploadHint;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Compact toolbar — one row like chapter title bars, not a tall stack.
+        Row(
+          children: [
+            Icon(
+              hasPending || hasServerPdf
+                  ? Icons.picture_as_pdf_outlined
+                  : Icons.upload_file_outlined,
+              size: 20,
+              color: _BookFormColors.accent,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                statusText,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            if (hasPending)
+              IconButton(
             tooltip: l10n.pdfRemoveFile,
+                visualDensity: VisualDensity.compact,
             onPressed: _busy
                 ? null
                 : () => setState(() {
@@ -1319,252 +1562,1698 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
                     _pendingPdfFilename = null;
                     _markDirty();
                   }),
-            icon: const Icon(Icons.close_rounded),
-          ),
-        ),
-      ] else if (hasServerPdf) ...[
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: const Icon(
-            Icons.picture_as_pdf_outlined,
-            color: AppColors.primary,
-          ),
-          title: Text(
-            l10n.pdfReadyLabel(server.filename, _formatBytes(server.sizeBytes)),
-          ),
-        ),
-      ],
-      Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          FilledButton.tonalIcon(
+                icon: const Icon(Icons.close_rounded, size: 20),
+              ),
+            const SizedBox(width: 4),
+            OutlinedButton.icon(
             onPressed: _busy ? null : _pickPdfFile,
-            icon: const Icon(Icons.upload_file_outlined),
+              style: _chapterOutlineButtonStyle(),
+              icon: const Icon(Icons.upload_file_outlined, size: 18),
             label: Text(
               (hasServerPdf || hasPending)
                   ? l10n.pdfReplaceFile
                   : l10n.pdfPickFile,
             ),
           ),
-          if (hasServerPdf && !isNew)
+            if (hasServerPdf && !isNew) ...[
+              const SizedBox(width: 6),
             TextButton.icon(
               onPressed: _busy ? null : _removeServerPdf,
-              icon: const Icon(Icons.delete_outline_rounded),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.crimson,
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                ),
+                icon: const Icon(Icons.delete_outline_rounded, size: 18),
               label: Text(l10n.pdfRemoveFile),
-              style: TextButton.styleFrom(foregroundColor: AppColors.crimson),
             ),
+            ],
         ],
       ),
-      if (isNew) ...[
-        const SizedBox(height: 12),
+        if (hasPending) ...[
+          const SizedBox(height: 4),
         Text(
-          l10n.pdfUploadHint,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
+            l10n.pdfPendingUpload,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: AppColors.textTertiary,
+          ),
         ),
       ],
-    ];
+        const SizedBox(height: 10),
+        Expanded(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _BookFormColors.line),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(11),
+              child: _AdminPdfPreviewPane(
+                bookId: widget.bookId,
+                revisionId: server?.revisionId,
+                pendingBytes: _pendingPdfBytes,
+                pendingName: _pendingPdfFilename,
+                hasServerPdf: hasServerPdf,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
-  List<Widget> _pagesSectionChildren(
+  Widget _lookInsideSectionPane(
+    BuildContext context,
+    AppLocalizations l10n,
+    bool isNew, {
+    required bool expand,
+  }) {
+    final server = _serverPdfDraft;
+    final hasServerPdf =
+        server != null && (server.ready || server.revisionId.isNotEmpty);
+    final theme = Theme.of(context);
+    final pageCount = server?.pageCount;
+
+    // Compact full-width top strip; PDF preview uses the remaining width.
+    final header = SizedBox(
+      height: 40,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.preview_outlined,
+            size: 20,
+            color: _BookFormColors.accent,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              pageCount != null
+                  ? '${l10n.pdfPreviewPagesSection} · $pageCount'
+                  : l10n.pdfPreviewPagesSection,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          if (hasServerPdf && !isNew) ...[
+            OutlinedButton(
+              onPressed: _busy ? null : _suggestFirstFivePreviewPages,
+              style: _chapterOutlineButtonStyle(),
+              child: Text(l10n.pdfPreviewPagesSuggest),
+            ),
+            const SizedBox(width: 6),
+            FilledButton.icon(
+              onPressed: _busy ? null : _savePreviewPages,
+              style: FilledButton.styleFrom(
+                backgroundColor: _BookFormColors.accent,
+                minimumSize: const Size(0, 36),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+              ),
+              icon: const Icon(Icons.save_outlined, size: 18),
+              label: Text(l10n.pdfPreviewPagesSave),
+            ),
+          ],
+        ],
+      ),
+    );
+
+    final pageControls = !hasServerPdf || isNew
+        ? Text(
+            l10n.pdfUploadHint,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+        Text(
+                l10n.pdfPreviewPagesHint,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: AppColors.textTertiary,
+          ),
+        ),
+              const SizedBox(height: 8),
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          for (final page in _previewPages)
+            InputChip(
+              label: Text('$page'),
+                      visualDensity: VisualDensity.compact,
+              onDeleted: _busy
+                  ? null
+                  : () => setState(() {
+                      _previewPages = _previewPages
+                          .where((p) => p != page)
+                          .toList();
+                      _markDirty();
+                    }),
+            ),
+                  SizedBox(
+                    width: 160,
+                    child: TextField(
+        controller: _previewPageInput,
+        enabled: !_busy,
+        keyboardType: TextInputType.number,
+        decoration: InputDecoration(
+          labelText: l10n.pdfPreviewPageField,
+          isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+          suffixIcon: IconButton(
+            tooltip: l10n.pdfPreviewPagesAdd,
+            onPressed: _busy ? null : _addPreviewPage,
+            icon: const Icon(Icons.add),
+          ),
+        ),
+        onSubmitted: (_) => _addPreviewPage(),
+      ),
+                  ),
+                ],
+              ),
+            ],
+          );
+
+    final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        header,
+        const SizedBox(height: 8),
+        pageControls,
+        const SizedBox(height: 10),
+        Expanded(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _BookFormColors.line),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(11),
+              child: _AdminPdfPreviewPane(
+                bookId: widget.bookId,
+                revisionId: server?.revisionId,
+                pendingBytes: _pendingPdfBytes,
+                pendingName: _pendingPdfFilename,
+                hasServerPdf: hasServerPdf,
+                // Live Look Inside: filter the full PDF to the selected
+                // pages so the editor preview updates without saving.
+                onlyPages: _previewPages,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+
+    return _BookFormCard(
+      expandChild: expand,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      child: expand
+          ? body
+          : SizedBox(height: 640, child: body),
+    );
+  }
+
+  ButtonStyle _chapterOutlineButtonStyle() => OutlinedButton.styleFrom(
+    minimumSize: const Size(0, 36),
+    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    foregroundColor: _BookFormColors.accent,
+    backgroundColor: Colors.white,
+    side: const BorderSide(color: _BookFormColors.accent, width: 1.5),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+  );
+
+  /// Narrow layout fallback: chapter list beside pages (no section rail).
+  Widget _chaptersWorkspaceNarrow(
     BuildContext context,
     AppLocalizations l10n,
     bool isNew,
   ) {
-    return [
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+    final selected = _clampedChapterIndex();
+    final chapter = selected == null ? null : _chaptersDraft[selected];
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: _BookFormColors.line),
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              width: 240,
+              child: DecoratedBox(
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF8FAFC),
+                  border: Border(
+                    right: BorderSide(color: _BookFormColors.line),
+                  ),
+                ),
+                child: _chapterSidebar(context, l10n, selected),
+              ),
+            ),
+            Expanded(
+              child: _pagesPane(context, l10n, isNew, selected, chapter),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _chapterSidebarForm(AppLocalizations l10n) {
+    final renaming = _renamingChapterIndex != null;
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: _BookFormColors.line)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              renaming ? l10n.editChapterTooltip : l10n.addChapter,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: _BookFormColors.label,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _chapterTitleInput,
+              autofocus: renaming,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _commitChapterInline(),
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: l10n.chapterNameHint,
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: _BookFormColors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: _BookFormColors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(
+                    color: _BookFormColors.accent,
+                    width: 1.5,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
         children: [
+                if (renaming) ...[
           Expanded(
-            child: Text(
-              l10n.chaptersPagesSection,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-            ),
-          ),
-          if (!isNew)
-            TextButton.icon(
-              onPressed: _busy ? null : _validateDraftOnServer,
-              icon: const Icon(Icons.rule_folder_outlined),
-              label: Text(l10n.validateDraft),
-            ),
-          TextButton.icon(
-            onPressed: () => _upsertChapter(),
-            icon: const Icon(Icons.add),
-            label: Text(l10n.addChapter),
+                    child: TextButton(
+                      onPressed: _resetChapterForm,
+                      child: Text(l10n.cancel),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                Expanded(
+                  flex: renaming ? 1 : 1,
+                  child: FilledButton(
+                    onPressed: _commitChapterInline,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _BookFormColors.accent,
+                      minimumSize: const Size(0, 36),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    child: Text(renaming ? l10n.save : l10n.addChapter),
+                  ),
           ),
         ],
       ),
-      const SizedBox(height: 8),
-      if (_chaptersDraft.isEmpty)
-        Text(
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _chapterSidebar(
+    BuildContext context,
+    AppLocalizations l10n,
+    int? selected, {
+    bool showHeader = true,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (showHeader)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
+            child: Text(
+              l10n.chaptersPagesSection,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        Expanded(
+          child: _chaptersDraft.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                  child: Text(
           l10n.noChaptersYetHelp,
-          style: Theme.of(context).textTheme.bodySmall,
-        )
-      else
-        ..._chaptersDraft.asMap().entries.map((entry) {
-          final cIndex = entry.key;
-          final chapter = entry.value;
-          return Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: AppPanel(
-              padding: EdgeInsets.zero,
-              child: ExpansionTile(
-                // Avoid a wide Row in `trailing`: ListTile often gives it
-                // zero width → zero-size IconButtons → hit-test / mouse_tracker
-                // errors on desktop/web.
-                tilePadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                title: Column(
+                    style: const TextStyle(
+                      fontSize: 13,
+                      height: 1.4,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                )
+              : ReorderableListView.builder(
+                  buildDefaultDragHandles: false,
+                  padding: const EdgeInsets.only(bottom: 8),
+                  itemCount: _chaptersDraft.length,
+                  onReorder: _reorderChapters,
+                  proxyDecorator: (child, index, animation) {
+                    return AnimatedBuilder(
+                      animation: animation,
+                      builder: (context, child) {
+                        final t = Curves.easeInOut.transform(animation.value);
+                        return Material(
+                          elevation: 2 + 4 * t,
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          shadowColor: Colors.black26,
+                          child: child,
+                        );
+                      },
+                      child: child,
+                    );
+                  },
+                  itemBuilder: (context, cIndex) {
+                    final chapter = _chaptersDraft[cIndex];
+                    final isSelected = cIndex == selected;
+                    final key = chapter.chapterKey.isNotEmpty
+                        ? ValueKey('ch-${chapter.chapterKey}')
+                        : ValueKey('ch-i$cIndex-${chapter.title}');
+                    return Material(
+                      key: key,
+                      color: isSelected
+                          ? _BookFormColors.accentSoft
+                          : Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          _flushLivePageEditor();
+                          setState(() {
+                            _selectedChapterIndex = cIndex;
+                            _section = _BookEditSection.content;
+                            _previewPageIndex = 0;
+                            if (_renamingChapterIndex != cIndex) {
+                              _renamingChapterIndex = null;
+                              _chapterTitleInput.clear();
+                            }
+                          });
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(8, 10, 4, 10),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ReorderableDragStartListener(
+                                index: cIndex,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(
+                                    top: 8,
+                                    right: 4,
+                                  ),
+                                  child: Icon(
+                                    Icons.drag_indicator,
+                                    size: 18,
+                                    color: isSelected
+                                        ? _BookFormColors.accent
+                                        : _BookFormColors.muted,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                width: 3,
+                                height: 36,
+                                margin: const EdgeInsets.only(
+                                  right: 8,
+                                  top: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? _BookFormColors.accent
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              Expanded(
+                                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       chapter.title,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 4),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: isSelected
+                                            ? FontWeight.w700
+                                            : FontWeight.w600,
+                                        color: isSelected
+                                            ? _BookFormColors.accent
+                                            : AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
                     Text(
                       l10n.pageCount(chapter.pages.length),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 8),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            tooltip: l10n.moveUpTooltip,
-                            onPressed: cIndex == 0
-                                ? null
-                                : () => _moveChapter(cIndex, -1),
-                            icon: const Icon(Icons.arrow_upward_rounded),
-                          ),
-                          IconButton(
-                            tooltip: l10n.moveDownTooltip,
-                            onPressed: cIndex == _chaptersDraft.length - 1
-                                ? null
-                                : () => _moveChapter(cIndex, 1),
-                            icon: const Icon(Icons.arrow_downward_rounded),
-                          ),
-                          IconButton(
-                            tooltip: l10n.addPageTooltip,
-                            onPressed: () => _upsertPage(cIndex),
-                            icon: const Icon(Icons.note_add_outlined),
-                          ),
-                          IconButton(
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuButton<String>(
                             tooltip: l10n.editChapterTooltip,
-                            onPressed: () => _upsertChapter(index: cIndex),
-                            icon: const Icon(Icons.edit_outlined),
-                          ),
-                          IconButton(
-                            tooltip: l10n.deleteChapterTooltip,
-                            onPressed: () {
+                                padding: EdgeInsets.zero,
+                                icon: Icon(
+                                  Icons.more_vert,
+                                  size: 18,
+                                  color: isSelected
+                                      ? _BookFormColors.accent
+                                      : _BookFormColors.muted,
+                                ),
+                                onSelected: (value) {
+                                  switch (value) {
+                                    case 'up':
+                                      _moveChapter(cIndex, -1);
+                                    case 'down':
+                                      _moveChapter(cIndex, 1);
+                                    case 'rename':
+                                      _beginRenameChapter(cIndex);
+                                    case 'delete':
+                                      if (_renamingChapterIndex == cIndex) {
+                                        _resetChapterForm();
+                                      }
                               final next = [..._chaptersDraft]
                                 ..removeAt(cIndex);
                               _setChaptersDraft(next);
-                            },
-                            icon: const Icon(Icons.delete_outline),
+                                  }
+                                },
+                                itemBuilder: (context) => [
+                                  PopupMenuItem(
+                                    value: 'rename',
+                                    child: Text(l10n.editChapterTooltip),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'up',
+                                    enabled: cIndex > 0,
+                                    child: Text(l10n.moveUpTooltip),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'down',
+                                    enabled:
+                                        cIndex < _chaptersDraft.length - 1,
+                                    child: Text(l10n.moveDownTooltip),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'delete',
+                                    child: Text(l10n.deleteChapterTooltip),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-                children: [
-                  if (chapter.pages.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(l10n.noPagesYet),
-                      ),
-                    ),
-                  ...chapter.pages.asMap().entries.map((pageEntry) {
-                    final pIndex = pageEntry.key;
-                    final page = pageEntry.value;
-                    return ListTile(
-                      title: Text(
-                        l10n.pageListTitle(
-                          page.pageNumber,
-                          page.title.trim().isEmpty
-                              ? l10n.pageTitleFallback(page.pageNumber)
-                              : page.title,
+                            ],
+                          ),
                         ),
                       ),
-                      isThreeLine: true,
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    );
+                  },
+                ),
+        ),
+        _chapterSidebarForm(l10n),
+      ],
+    );
+  }
+
+  Widget _pagesPane(
+    BuildContext context,
+    AppLocalizations l10n,
+    bool isNew,
+    int? selected,
+    AdminDraftChapter? chapter,
+  ) {
+    if (chapter == null || selected == null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            l10n.selectChapterToManagePages,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.4,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final previewIndex = chapter.pages.isEmpty
+        ? 0
+        : _clampedPreviewPageIndex(chapter);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                    Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  chapter.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              if (!isNew)
+                TextButton.icon(
+                  onPressed: _busy ? null : _validateDraftOnServer,
+                  style: TextButton.styleFrom(
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    foregroundColor: _BookFormColors.accent,
+                  ),
+                  icon: const Icon(Icons.rule_folder_outlined, size: 18),
+                  label: Text(l10n.validateDraft),
+                ),
+            ],
+          ),
+        ),
+        _browserPageTabs(context, l10n, selected, chapter, previewIndex),
+        Expanded(
+          child: chapter.pages.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            plainTextFromStoredSummary(page.body),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                          l10n.noPagesYet,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
                           ),
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  tooltip: l10n.moveUpTooltip,
-                                  onPressed: pIndex == 0
-                                      ? null
-                                      : () => _movePage(cIndex, pIndex, -1),
-                                  icon: const Icon(Icons.arrow_upward_rounded),
-                                ),
-                                IconButton(
-                                  tooltip: l10n.moveDownTooltip,
-                                  onPressed: pIndex == chapter.pages.length - 1
-                                      ? null
-                                      : () => _movePage(cIndex, pIndex, 1),
-                                  icon: const Icon(
-                                    Icons.arrow_downward_rounded,
-                                  ),
-                                ),
-                                IconButton(
-                                  tooltip: l10n.editPageTooltip,
-                                  onPressed: () =>
-                                      _upsertPage(cIndex, pageIndex: pIndex),
-                                  icon: const Icon(Icons.edit_outlined),
-                                ),
-                                IconButton(
-                                  tooltip: l10n.deletePageTooltip,
-                                  onPressed: () {
-                                    final chapters = [..._chaptersDraft];
-                                    final pages = [...chapters[cIndex].pages]
-                                      ..removeAt(pIndex);
-                                    chapters[cIndex] = AdminDraftChapter(
-                                      chapterKey: chapters[cIndex].chapterKey,
-                                      title: chapters[cIndex].title,
-                                      pages: pages,
-                                    );
-                                    _setChaptersDraft(chapters);
-                                  },
-                                  icon: const Icon(Icons.delete_outline),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: () => _addBlankPage(selected),
+                          style: _chapterOutlineButtonStyle(),
+                          icon: const Icon(Icons.add, size: 18),
+                          label: Text(l10n.addPage),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : _DraftPageEditor(
+                  key: _livePageEditorKey,
+                  isNewPage: false,
+                  live: true,
+                  pageLocalId: chapter.pages[previewIndex].localId,
+                  initialTitle: chapter.pages[previewIndex].title,
+                  initialBody: chapter.pages[previewIndex].body,
+                  draftKey: FormDraftKeys.scope(
+                    userId: _draftUserId(),
+                    formKey: FormDraftKeys.adminBookPage(
+                      bookId: widget.bookId,
+                      chapterIndex: selected,
+                      pageIndex: previewIndex,
+                      isNew: false,
+                    ),
+                  ),
+                  onLiveCommit: (page) => _patchPageByLocalId(
+                    selected,
+                    page.localId,
+                    page,
+                  ),
+                  onDelete: () => _deletePreviewPage(selected),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _browserPageTabs(
+    BuildContext context,
+    AppLocalizations l10n,
+    int chapterIndex,
+    AdminDraftChapter chapter,
+    int previewIndex,
+  ) {
+    // Restore the clear folder-tab look. Selected tab is white with an
+    // accent crown; a white bridge covers the strip baseline so it opens
+    // into the editor without a line through the active page.
+    const tabRadius = BorderRadius.only(
+      topLeft: Radius.circular(8),
+      topRight: Radius.circular(8),
+    );
+    Widget tabFace({
+      required bool isActive,
+      required String label,
+      required bool showTrailingDivider,
+      required VoidCallback onSelect,
+    }) {
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: tabRadius,
+          onTap: onSelect,
+          child: Ink(
+            // Active: white sheet over the baseline.
+            // Idle: transparent; optional short mid-height divider that does
+            // not touch the strip top/bottom edges.
+            height: isActive ? 36 : 28,
+            width: 132,
+            decoration: BoxDecoration(
+              color: isActive ? Colors.white : Colors.transparent,
+              borderRadius: isActive ? tabRadius : BorderRadius.zero,
+              border: isActive
+                  ? const Border(
+                      top: BorderSide(
+                        color: _BookFormColors.accent,
+                        width: 3,
                       ),
-                    );
-                  }),
+                      left: BorderSide(
+                        color: _BookFormColors.accent,
+                        width: 1.5,
+                      ),
+                      right: BorderSide(
+                        color: _BookFormColors.accent,
+                        width: 1.5,
+                      ),
+                    )
+                  : null,
+            ),
+            padding: EdgeInsets.only(
+              left: 12,
+              right: showTrailingDivider ? 8 : 12,
+            ),
+                            child: Row(
+                              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight:
+                          isActive ? FontWeight.w700 : FontWeight.w600,
+                      color: isActive
+                          ? _BookFormColors.accent
+                          : _BookFormColors.label,
+                    ),
+                  ),
+                ),
+                if (showTrailingDivider)
+                  Container(
+                    width: 2,
+                    height: 14,
+                    margin: const EdgeInsets.only(left: 6),
+                    decoration: BoxDecoration(
+                      color: _BookFormColors.accent.withValues(alpha: 0.55),
+                      borderRadius: BorderRadius.circular(1),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 42,
+      child: Stack(
+        children: [
+          const Positioned.fill(
+            child: ColoredBox(color: _BookFormColors.accentSoft),
+          ),
+          const Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            child: ColoredBox(
+              color: _BookFormColors.line,
+              child: SizedBox(height: 1),
+            ),
+          ),
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: ColoredBox(
+              color: _BookFormColors.accent,
+              child: SizedBox(height: 2),
+            ),
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: chapter.pages.isEmpty
+                    ? const SizedBox.shrink()
+                    : ReorderableListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        buildDefaultDragHandles: false,
+                        padding: const EdgeInsets.fromLTRB(8, 6, 0, 0),
+                        itemCount: chapter.pages.length,
+                        onReorder: (oldIndex, newIndex) =>
+                            _reorderPages(chapterIndex, oldIndex, newIndex),
+                        proxyDecorator: (child, index, animation) {
+                          return Material(
+                            elevation: 4,
+                            color: Colors.white,
+                            borderRadius: tabRadius,
+                            shadowColor: Colors.black26,
+                            child: child,
+                          );
+                        },
+                        itemBuilder: (context, pIndex) {
+                          final page = chapter.pages[pIndex];
+                          final isActive = pIndex == previewIndex;
+                          final label = page.title.trim().isEmpty
+                              ? l10n.pageTitleFallback(page.pageNumber)
+                              : page.title;
+                          // Divider only between idle tabs. Skip when the
+                          // next tab is active (its left frame is enough)
+                          // or when this is the last tab.
+                          final nextIsActive =
+                              pIndex + 1 == previewIndex;
+                          final showTrailingDivider = !isActive &&
+                              pIndex < chapter.pages.length - 1 &&
+                              !nextIsActive;
+                          return ReorderableDragStartListener(
+                            key: ValueKey('tab-${page.localId}'),
+                            index: pIndex,
+                            child: Align(
+                              alignment: Alignment.bottomCenter,
+                              child: Padding(
+                                // Idle clears the 2px accent baseline so it
+                                // does not overflow the strip edge.
+                                padding: EdgeInsets.only(
+                                  right: 6,
+                                  bottom: isActive ? 0 : 2,
+                                ),
+                                child: tabFace(
+                                  isActive: isActive,
+                                  label: label,
+                                  showTrailingDivider: showTrailingDivider,
+                                  onSelect: () {
+                                    if (pIndex == _previewPageIndex) {
+                                      return;
+                                    }
+                                    _flushLivePageEditor();
+                                    setState(
+                                      () => _previewPageIndex = pIndex,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(2, 0, 8, 8),
+                child: Tooltip(
+                  message: l10n.addPage,
+                  child: Material(
+                    color: Colors.white,
+                    shape: const CircleBorder(
+                      side: BorderSide(color: _BookFormColors.accent),
+                    ),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: () => _addBlankPage(chapterIndex),
+                      child: const SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: Icon(
+                          Icons.add,
+                          size: 16,
+                          color: _BookFormColors.accent,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration({String? hintText}) =>
+      _bookFieldDecoration(hintText: hintText);
+
+  Widget _labeled(String label, Widget field, {bool required = false}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _FieldLabel(label, requiredMark: required),
+        const SizedBox(height: 5),
+        field,
+      ],
+    );
+  }
+
+  Widget _pair(bool sideBySide, Widget a, Widget b) {
+    if (!sideBySide) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [a, const SizedBox(height: 14), b],
+      );
+    }
+    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: a),
+        const SizedBox(width: 14),
+                        Expanded(child: b),
+                      ],
+    );
+  }
+
+  bool get _hasCover =>
+      _pendingCoverBytes != null ||
+      (!_clearCoverOnSave &&
+          _serverCoverGetUrl != null &&
+          _serverCoverGetUrl!.isNotEmpty);
+
+  Widget _coverPreview() {
+    final Widget image;
+    if (_pendingCoverBytes != null) {
+      image = Image.memory(_pendingCoverBytes!, fit: BoxFit.cover);
+    } else if (_hasCover && _serverCoverGetUrl != null) {
+      image = Image.network(
+        _serverCoverGetUrl!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const Icon(
+          Icons.broken_image_outlined,
+          color: _BookFormColors.muted,
+        ),
+      );
+    } else {
+      image = const Icon(
+        Icons.image_outlined,
+        size: 32,
+        color: _BookFormColors.muted,
+      );
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 96,
+        height: 128,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: const Color(0xFFEEF2F6),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _BookFormColors.line),
+        ),
+        child: image,
+      ),
+    );
+  }
+
+  Widget _coverDropZone(AppLocalizations l10n) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF94A3B8), width: 1.5),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            OutlinedButton.icon(
+              onPressed: _pickCoverImage,
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(0, 40),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                foregroundColor: _BookFormColors.ink,
+                backgroundColor: Colors.white,
+                side: const BorderSide(color: _BookFormColors.border),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              icon: const Icon(Icons.image_outlined, size: 18),
+              label: Text(l10n.chooseImage),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.coverFormatHelp,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 13,
+                color: _BookFormColors.muted,
+              ),
+            ),
+            TextButton(
+              onPressed: _hasCover ? _clearCover : null,
+              style: TextButton.styleFrom(
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                foregroundColor: _BookFormColors.muted,
+                disabledForegroundColor: _BookFormColors.faint,
+                textStyle: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              child: Text(l10n.removeCover),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _typeCard(AppLocalizations l10n, bool isNew) {
+    return _BookFormCard(
+      title: l10n.bookTypeSection,
+      subtitle: l10n.bookTypeSectionHelp,
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 6),
+      headerGap: 8,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _ToggleRow(
+            title: l10n.adminIsBibleLabel,
+            subtitle: l10n.adminIsBibleSubtitle,
+            value: _isBible,
+            onChanged: (v) {
+              setState(() {
+                _isBible = v;
+                if (v) {
+                  _isPdfBook = false;
+                  _pendingPdfBytes = null;
+                  _pendingPdfFilename = null;
+                  if (_section == _BookEditSection.lookInside) {
+                    _section = _BookEditSection.content;
+                  }
+                }
+                if (!v) _testament = null;
+              });
+              _markDirty();
+            },
+          ),
+          _ToggleRow(
+            title: l10n.pdfBookTypeLabel,
+            subtitle: l10n.pdfBookTypeHelp,
+            value: _isPdfBook,
+            onChanged: (v) {
+              setState(() {
+                _isPdfBook = v;
+                if (v) {
+                  _isBible = false;
+                  _testament = null;
+                } else {
+                  _pendingPdfBytes = null;
+                  _pendingPdfFilename = null;
+                  if (_section == _BookEditSection.lookInside) {
+                    _section = _BookEditSection.content;
+                  }
+                }
+              });
+              _markDirty();
+            },
+          ),
+          _ToggleRow(
+            title: l10n.adminIsPremiumLabel,
+            subtitle: l10n.adminIsPremiumSubtitle,
+            value: _isPremium,
+            onChanged: (v) {
+              setState(() => _isPremium = v);
+              _markDirty();
+            },
+          ),
+          _ToggleRow(
+            title: l10n.adminIsFeaturedLabel,
+            subtitle: l10n.adminIsFeaturedSubtitle,
+            value: _isFeatured,
+            onChanged: (v) {
+              setState(() => _isFeatured = v);
+              _markDirty();
+            },
+          ),
+          _buildBibleControls(l10n, isNew),
+        ],
+      ),
+    );
+  }
+
+  Widget _actionRow(BuildContext context, AppLocalizations l10n, bool isNew) {
+    final busy = _busy || (!_loaded && !isNew);
+    final cancel = OutlinedButton(
+      onPressed: busy ? null : () => Navigator.of(context).maybePop(),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(0, 40),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        foregroundColor: _BookFormColors.label,
+        backgroundColor: Colors.white,
+        side: const BorderSide(color: _BookFormColors.border),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      ),
+      child: Text(l10n.cancel),
+    );
+    final save = FilledButton(
+      onPressed: busy ? null : _save,
+      style: FilledButton.styleFrom(
+        minimumSize: const Size(0, 40),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        padding: const EdgeInsets.symmetric(horizontal: 22),
+        backgroundColor: _BookFormColors.accent,
+        disabledBackgroundColor: _BookFormColors.accent.withValues(alpha: 0.45),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      ),
+      child: _busy
+          ? const SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            )
+          : Text(isNew ? l10n.createBookAction : l10n.saveChanges),
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 420) {
+          return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [cancel, const SizedBox(height: 12), save],
+          );
+        }
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [cancel, const SizedBox(width: 12), save],
+        );
+      },
+    );
+  }
+
+  Widget _formCards(
+    BuildContext context,
+    AppLocalizations l10n,
+    bool isNew, {
+    required bool sideBySide,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+                            if (_latestReviewNote?.isChangesRequested == true &&
+                                _reviewStatus == 'draft') ...[
+                              _ChangesRequestedBanner(
+                                note: _latestReviewNote!,
+            onViewHistory: () =>
+                context.push('/admin/books/${widget.bookId}/review'),
+          ),
+          const SizedBox(height: 14),
+        ],
+        _BookFormCard(
+          title: l10n.metadataSection,
+          subtitle: l10n.bookDetailsHelp,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _labeled(
+                l10n.titleFieldLabel,
+                            TextFormField(
+                              controller: _title,
+                  decoration: _inputDecoration(hintText: l10n.titlePlaceholder),
+                              textCapitalization: TextCapitalization.sentences,
+                              validator: (value) {
+                    if ((value ?? '').trim().isEmpty) return l10n.titleRequired;
+                                return null;
+                              },
+                              onChanged: (_) => _markDirty(),
+                            ),
+                required: true,
+              ),
+              const SizedBox(height: 14),
+              _labeled(
+                l10n.subtitleLabel,
+                            TextField(
+                              controller: _subtitle,
+                  decoration: _inputDecoration(
+                    hintText: l10n.subtitlePlaceholder,
+                              ),
+                              onChanged: (_) => _markDirty(),
+                            ),
+              ),
+              const SizedBox(height: 14),
+              _labeled(
+                l10n.adminSummaryLabel,
+                            TextField(
+                              controller: _summary,
+                  decoration: _inputDecoration(
+                    hintText: l10n.summaryPlaceholder,
+                              ),
+                  minLines: 3,
+                  maxLines: 6,
+                              textCapitalization: TextCapitalization.sentences,
+                              onChanged: (_) => _markDirty(),
+                            ),
+              ),
+              const SizedBox(height: 14),
+              _pair(
+                sideBySide,
+                _labeled(
+                  l10n.authorCompilerLabel,
+                  TextField(
+                    controller: _author,
+                    decoration: _inputDecoration(
+                      hintText: l10n.authorPlaceholder,
+                    ),
+                    onChanged: (_) => _markDirty(),
+                  ),
+                ),
+                _labeled(
+                  l10n.primaryLanguageCodeLabel,
+                  _buildLanguageDropdown(l10n),
+                ),
+              ),
+              const SizedBox(height: 14),
+              _ChipsField(
+                label: l10n.scriptTagsLabel,
+                values: _scriptTagsList,
+                onChanged: (v) {
+                  setState(() => _scriptTagsList = v);
+                  _markDirty();
+                },
+              ),
+            ],
+          ),
+        ),
+        if (kAdminCoverUploadEnabled) ...[
+          const SizedBox(height: 14),
+          _BookFormCard(
+            title: l10n.thumbnailCover,
+            subtitle: l10n.coverSectionHelp,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _coverPreview(),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: SizedBox(
+                    height: 128,
+                    child: _coverDropZone(l10n),
+                  ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+        const SizedBox(height: 14),
+        _BookFormCard(
+          title: l10n.adminGenreLabel,
+          subtitle: l10n.genreSectionHelp,
+          child: _pair(
+            sideBySide,
+            _labeled(l10n.adminGenreLabel, _buildGenreDropdown(l10n)),
+            _labeled(l10n.adminPublishedYearLabel, _buildYearDropdown(l10n)),
+          ),
+        ),
+        const SizedBox(height: 14),
+        _typeCard(l10n, isNew),
+        if (_isPremium) ...[
+          const SizedBox(height: 14),
+          _BookFormCard(
+            title: l10n.adminPricingSection,
+            subtitle: l10n.adminDualPriceHint,
+            child: _buildPricingFields(l10n, sideBySide: sideBySide),
+          ),
+        ],
+      ],
+    );
+  }
+
+  EdgeInsets _editorPagePadding(BuildContext context) {
+    if (useWebShell(context)) {
+      return WebTokens.pagePaddingOf(context);
+    }
+    if (useDesktopShell(context)) {
+      return DesktopTokens.pagePadding(DesktopLayoutScope.tierOf(context));
+    }
+    return const EdgeInsets.fromLTRB(16, 20, 16, 36);
+  }
+
+  Widget _sectionNavItem({
+    required String label,
+    required IconData icon,
+    required bool selected,
+    required VoidCallback onTap,
+    bool compact = false,
+  }) {
+    final fg = selected ? _BookFormColors.accent : _BookFormColors.label;
+    final bg = selected ? _BookFormColors.accentSoft : Colors.transparent;
+    final labelText = Text(
+      label,
+      maxLines: compact ? 1 : 2,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+        color: fg,
+      ),
+    );
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: compact ? 10 : 12,
+          ),
+          child: Row(
+            mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
+            children: [
+              Icon(icon, size: 18, color: fg),
+              const SizedBox(width: 10),
+              if (compact) labelText else Expanded(child: labelText),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _bookEditSectionRail(AppLocalizations l10n) {
+    // Chapter list + add form always sit in the rail for normal books —
+    // no need to click "Chapters & pages" first.
+    final chaptersInRail = _chaptersLiveInSectionRail;
+    final selected = _clampedChapterIndex();
+
+    return SizedBox(
+      width: chaptersInRail ? 280 : 200,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _BookFormColors.line),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Pin section nav to the top edge so the rail matches the
+            // content card top-to-bottom without floating mid-panel.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _sectionNavItem(
+                    label: l10n.metadataSection,
+                    icon: Icons.edit_note_outlined,
+                    selected: _section == _BookEditSection.details,
+                    onTap: _selectDetailsSection,
+                  ),
+                  // Bible / PDF still need a content switcher; chapters live
+                  // in the rail below (no separate "Chapters & pages" item).
+                  if (!chaptersInRail) ...[
+                    const SizedBox(height: 4),
+                    _sectionNavItem(
+                      label: _contentSectionLabel(l10n),
+                      icon: _isBible
+                          ? Icons.menu_book_outlined
+                          : Icons.picture_as_pdf_outlined,
+                      selected: _section == _BookEditSection.content,
+                      onTap: _selectContentSection,
+                    ),
+                    if (_isPdfBook) ...[
+                      const SizedBox(height: 4),
+                      _sectionNavItem(
+                        label: l10n.pdfPreviewPagesSection,
+                        icon: Icons.preview_outlined,
+                        selected: _section == _BookEditSection.lookInside,
+                        onTap: _selectLookInsideSection,
+                      ),
+                    ],
+                  ],
                 ],
               ),
             ),
+            if (chaptersInRail) ...[
+              const Divider(height: 1, color: _BookFormColors.line),
+              Expanded(
+                child: _chapterSidebar(
+                  context,
+                  l10n,
+                  // Only highlight a chapter while the pages pane is active.
+                  _section == _BookEditSection.content ? selected : null,
+                  showHeader: true,
+                ),
+              ),
+            ] else
+              const Spacer(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _selectDetailsSection() {
+    if (_section == _BookEditSection.details) return;
+    _flushLivePageEditor();
+    setState(() => _section = _BookEditSection.details);
+  }
+
+  void _selectContentSection() {
+    if (_section == _BookEditSection.content) return;
+    setState(() => _section = _BookEditSection.content);
+  }
+
+  void _selectLookInsideSection() {
+    if (_section == _BookEditSection.lookInside) return;
+    setState(() => _section = _BookEditSection.lookInside);
+  }
+
+  int get _sectionStackIndex {
+    switch (_section) {
+      case _BookEditSection.details:
+        return 0;
+      case _BookEditSection.content:
+        return 1;
+      case _BookEditSection.lookInside:
+        return _isPdfBook ? 2 : 1;
+    }
+  }
+
+  Widget _bookEditSectionTabs(AppLocalizations l10n) {
+    // Normal books: only Book details in the tab strip (chapters are inline).
+    // Bible / PDF keep a content tab; PDF also has Look Inside.
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _sectionNavItem(
+            label: l10n.metadataSection,
+            icon: Icons.edit_note_outlined,
+            selected: _section == _BookEditSection.details,
+            compact: true,
+            onTap: _selectDetailsSection,
+          ),
+          if (!_chaptersLiveInSectionRail) ...[
+            const SizedBox(width: 6),
+            _sectionNavItem(
+              label: _contentSectionLabel(l10n),
+              icon: _isBible
+                  ? Icons.menu_book_outlined
+                  : Icons.picture_as_pdf_outlined,
+              selected: _section == _BookEditSection.content,
+              compact: true,
+              onTap: _selectContentSection,
+            ),
+            if (_isPdfBook) ...[
+              const SizedBox(width: 6),
+              _sectionNavItem(
+                label: l10n.pdfPreviewPagesSection,
+                icon: Icons.preview_outlined,
+                selected: _section == _BookEditSection.lookInside,
+                compact: true,
+                onTap: _selectLookInsideSection,
+              ),
+            ],
+          ] else ...[
+            const SizedBox(width: 6),
+            _sectionNavItem(
+              label: l10n.chaptersPagesSection,
+              icon: Icons.list_alt_outlined,
+              selected: _section == _BookEditSection.content,
+              compact: true,
+              onTap: _selectContentSection,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _editorFooter(BuildContext context, AppLocalizations l10n, bool isNew) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_error != null) ...[
+          Text(_error!, style: const TextStyle(color: AppColors.errorText)),
+          const SizedBox(height: 8),
+        ],
+        _actionRow(context, l10n, isNew),
+      ],
+    );
+  }
+
+  Widget _editorBody(BuildContext context, AppLocalizations l10n, bool isNew) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+                final screen = MediaQuery.sizeOf(context);
+        var width = constraints.maxWidth.isFinite && constraints.maxWidth > 0
+                    ? constraints.maxWidth
+            : (screen.width.isFinite && screen.width > 0
+                  ? screen.width
+                  : 1400.0);
+        var height = constraints.maxHeight.isFinite && constraints.maxHeight > 0
+                    ? constraints.maxHeight
+            : (screen.height.isFinite && screen.height > 0
+                  ? screen.height
+                  : 900.0);
+        if (!width.isFinite || width <= 0) width = 1400;
+        if (!height.isFinite || height <= 0) height = 900;
+
+        final pagePad = _editorPagePadding(context);
+        final useRail = width >= 720;
+        final sideBySide = width >= 760;
+        final pageTitle = isNew ? l10n.newBookAppBar : l10n.editBookAppBar;
+        final pageSubtitle = isNew
+            ? l10n.newBookPageSubtitle
+            : l10n.editBookPageSubtitle;
+
+        final intro = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+            Text(
+              pageTitle,
+              style: const TextStyle(
+                fontSize: 22,
+                height: 1.2,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.3,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              pageSubtitle,
+              style: const TextStyle(
+                fontSize: 14,
+                height: 1.4,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        );
+
+        // Keep both panes mounted so switching back to Book details does not
+        // rebuild the whole form (that was the main source of jank).
+        final detailsPane = ListView(
+          key: const PageStorageKey<String>('admin-book-edit-details'),
+          padding: EdgeInsets.zero,
+                            children: [
+            intro,
+            const SizedBox(height: 16),
+            _formCards(context, l10n, isNew, sideBySide: sideBySide),
+            const SizedBox(height: 12),
+          ],
+        );
+
+        final Widget contentPane;
+        if (!useRail && _chaptersLiveInSectionRail) {
+          contentPane = Column(
+            key: const PageStorageKey<String>('admin-book-edit-content-narrow'),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              intro,
+              const SizedBox(height: 12),
+              Expanded(
+                child: _BookFormCard(
+                  expandChild: true,
+                  padding: const EdgeInsets.all(4),
+                  child: _chaptersWorkspaceNarrow(context, l10n, isNew),
+                ),
+              ),
+            ],
           );
-        }),
-    ];
+        } else {
+          contentPane = Column(
+            key: const PageStorageKey<String>('admin-book-edit-content'),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (!useRail) ...[intro, const SizedBox(height: 12)],
+              Expanded(
+                child: _contentSectionPane(
+                  context,
+                  l10n,
+                  isNew,
+                  expand: true,
+                ),
+              ),
+            ],
+          );
+        }
+
+        final lookInsidePane = _isPdfBook
+            ? Column(
+                key: const PageStorageKey<String>(
+                  'admin-book-edit-look-inside',
+                ),
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                      Expanded(
+                    child: _lookInsideSectionPane(
+                      context,
+                      l10n,
+                      isNew,
+                      expand: true,
+                    ),
+                  ),
+                ],
+              )
+            : const SizedBox.shrink();
+
+        final mainPane = IndexedStack(
+          index: _sectionStackIndex,
+          sizing: StackFit.expand,
+          children: [
+            detailsPane,
+            contentPane,
+            if (_isPdfBook) lookInsidePane,
+          ],
+        );
+
+        Widget shell;
+        if (useRail) {
+          shell = Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _bookEditSectionRail(l10n),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: mainPane),
+                    const SizedBox(height: 12),
+                    _editorFooter(context, l10n, isNew),
+                  ],
+                ),
+              ),
+            ],
+          );
+        } else {
+          shell = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _bookEditSectionTabs(l10n),
+              const SizedBox(height: 12),
+              Expanded(child: mainPane),
+              const SizedBox(height: 12),
+              _editorFooter(context, l10n, isNew),
+            ],
+          );
+        }
+
+        Widget content = Padding(padding: pagePad, child: shell);
+        if (!constraints.maxHeight.isFinite || !constraints.maxWidth.isFinite) {
+          content = SizedBox(width: width, height: height, child: content);
+        }
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(
+              context,
+            ).colorScheme.copyWith(primary: _BookFormColors.accent),
+          ),
+          child: Form(key: _formKey, child: content),
+              );
+            },
+          );
   }
 
   @override
@@ -1590,10 +3279,7 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
         (currentUserId != null &&
             _createdById != null &&
             _createdById == currentUserId);
-    final trimmedTitle = _title.text.trim();
-    final appBarTitle = isNew
-        ? (trimmedTitle.isEmpty ? l10n.newBookAppBar : trimmedTitle)
-        : (trimmedTitle.isEmpty ? l10n.editBookAppBar : trimmedTitle);
+    final pageTitle = isNew ? l10n.newBookAppBar : l10n.editBookAppBar;
     final editBody = (!isNew && !_loaded)
         ? const Center(child: CircularProgressIndicator())
         : (!isNew && _visibility == 'published')
@@ -1620,340 +3306,51 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
             actionLabel: l10n.goBack,
             onAction: () => context.pop(),
           )
-        : LayoutBuilder(
-            builder: (context, constraints) {
-              final wide = constraints.maxWidth >= 760;
-              // Two-pane on desktop: details left, content right. Treat
-              // unbounded width (which the shell can hand us) as wide;
-              // the two-pane branch bounds the size explicitly.
-              final twoPane =
-                  !constraints.maxWidth.isFinite ||
-                  constraints.maxWidth >= 1040;
-              Widget pair(Widget a, Widget b) => (wide && !twoPane)
-                  ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: a),
-                        const SizedBox(width: 16),
-                        Expanded(child: b),
-                      ],
-                    )
-                  : Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [a, const SizedBox(height: 12), b],
-                    );
-              final formContent = Form(
-                key: _formKey,
-                child: ListView(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: wide ? 32 : 16,
-                    vertical: 24,
-                  ),
-                  children: [
-                    Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 880),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (_latestReviewNote?.isChangesRequested == true &&
-                                _reviewStatus == 'draft') ...[
-                              _ChangesRequestedBanner(
-                                note: _latestReviewNote!,
-                                onViewHistory: () => context.push(
-                                  '/admin/books/${widget.bookId}/review',
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
-                            AppSectionHeader(title: l10n.metadataSection),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _title,
-                              decoration: InputDecoration(
-                                labelText: l10n.titleLabelRequired,
-                              ),
-                              textCapitalization: TextCapitalization.sentences,
-                              validator: (value) {
-                                if ((value ?? '').trim().isEmpty)
-                                  return l10n.titleRequired;
-                                return null;
-                              },
-                              onChanged: (_) => _markDirty(),
-                            ),
-                            const SizedBox(height: 12),
-                            TextField(
-                              controller: _subtitle,
-                              decoration: InputDecoration(
-                                labelText: l10n.subtitleLabel,
-                              ),
-                              onChanged: (_) => _markDirty(),
-                            ),
-                            const SizedBox(height: 12),
-                            TextField(
-                              controller: _summary,
-                              decoration: InputDecoration(
-                                labelText: l10n.adminSummaryLabel,
-                                alignLabelWithHint: true,
-                              ),
-                              minLines: 2,
-                              maxLines: 5,
-                              textCapitalization: TextCapitalization.sentences,
-                              onChanged: (_) => _markDirty(),
-                            ),
-                            const SizedBox(height: 16),
-                            if (kAdminCoverUploadEnabled) ...[
-                              Text(
-                                l10n.thumbnailCover,
-                                style: Theme.of(context).textTheme.titleSmall
-                                    ?.copyWith(fontWeight: FontWeight.w700),
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Container(
-                                      width: 96,
-                                      height: 128,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.surfaceContainerHigh,
-                                      child: _pendingCoverBytes != null
-                                          ? Image.memory(
-                                              _pendingCoverBytes!,
-                                              fit: BoxFit.cover,
-                                            )
-                                          : (!_clearCoverOnSave &&
-                                                _serverCoverGetUrl != null &&
-                                                _serverCoverGetUrl!.isNotEmpty)
-                                          ? Image.network(
-                                              _serverCoverGetUrl!,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) =>
-                                                  const Center(
-                                                    child: Icon(
-                                                      Icons
-                                                          .broken_image_outlined,
-                                                    ),
-                                                  ),
-                                            )
-                                          : const Center(
-                                              child: Icon(
-                                                Icons.image_outlined,
-                                                size: 36,
-                                              ),
-                                            ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: [
-                                        OutlinedButton.icon(
-                                          onPressed: _pickCoverImage,
-                                          icon: const Icon(
-                                            Icons.photo_library_outlined,
-                                          ),
-                                          label: Text(l10n.chooseImage),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        TextButton(
-                                          onPressed:
-                                              (_pendingCoverBytes != null ||
-                                                  (!_clearCoverOnSave &&
-                                                      (_serverCoverGetUrl !=
-                                                              null &&
-                                                          _serverCoverGetUrl!
-                                                              .isNotEmpty)))
-                                              ? _clearCover
-                                              : null,
-                                          child: Text(l10n.removeCover),
-                                        ),
-                                        Text(
-                                          l10n.coverFormatHelp,
-                                          style: Theme.of(
-                                            context,
-                                          ).textTheme.bodySmall,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                            ],
-                            pair(
-                              TextField(
-                                controller: _author,
-                                decoration: InputDecoration(
-                                  labelText: l10n.authorCompilerLabel,
-                                ),
-                                onChanged: (_) => _markDirty(),
-                              ),
-                              _buildLanguageDropdown(l10n),
-                            ),
-                            const SizedBox(height: 12),
-                            _ChipsField(
-                              label: l10n.scriptTagsLabel,
-                              values: _scriptTagsList,
-                              onChanged: (v) {
-                                setState(() => _scriptTagsList = v);
-                                _markDirty();
-                              },
-                            ),
-                            const SizedBox(height: 18),
-                            AppSectionHeader(title: l10n.adminGenreLabel),
-                            const SizedBox(height: 12),
-                            pair(
-                              _buildGenreDropdown(l10n),
-                              _buildYearDropdown(l10n),
-                            ),
-                            const SizedBox(height: 8),
-                            _buildBibleControls(l10n, isNew, twoPane),
-                            const SizedBox(height: 12),
-                            pair(
-                              SwitchListTile.adaptive(
-                                contentPadding: EdgeInsets.zero,
-                                title: Text(l10n.adminIsPremiumLabel),
-                                subtitle: Text(l10n.adminIsPremiumSubtitle),
-                                value: _isPremium,
-                                onChanged: (v) {
-                                  setState(() => _isPremium = v);
-                                  _markDirty();
-                                },
-                              ),
-                              SwitchListTile.adaptive(
-                                contentPadding: EdgeInsets.zero,
-                                title: Text(l10n.adminIsFeaturedLabel),
-                                subtitle: Text(l10n.adminIsFeaturedSubtitle),
-                                value: _isFeatured,
-                                onChanged: (v) {
-                                  setState(() => _isFeatured = v);
-                                  _markDirty();
-                                },
-                              ),
-                            ),
-                            if (_isPremium) ...[
-                              const SizedBox(height: 18),
-                              AppSectionHeader(title: l10n.adminPricingSection),
-                              const SizedBox(height: 12),
-                              _buildPricingFields(
-                                l10n,
-                                sideBySide: wide || twoPane,
-                              ),
-                            ],
-                            if (!twoPane && !_isBible && !_isPdfBook) ...[
-                              const SizedBox(height: 18),
-                              ..._pagesSectionChildren(context, l10n, isNew),
-                            ],
-                            if (!twoPane && !_isBible && _isPdfBook) ...[
-                              const SizedBox(height: 18),
-                              ..._pdfSectionChildren(context, l10n, isNew),
-                            ],
-                            if (_error != null) ...[
-                              const SizedBox(height: 16),
-                              Text(
-                                _error!,
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.error,
-                                ),
-                              ),
-                            ],
-                            const SizedBox(height: 24),
-                            FilledButton(
-                              onPressed: _busy || (!_loaded && !isNew)
-                                  ? null
-                                  : _save,
-                              child: _busy
-                                  ? const SizedBox(
-                                      width: 22,
-                                      height: 22,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : Text(
-                                      isNew ? l10n.create : l10n.saveChanges,
-                                    ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-              if (twoPane) {
-                // The shell can hand this screen fully unconstrained
-                // constraints; Row/Expanded/ListView need BOTH axes
-                // bounded, so fall back to the real screen size.
-                final screen = MediaQuery.sizeOf(context);
-                var w = constraints.maxWidth.isFinite
-                    ? constraints.maxWidth
-                    : screen.width;
-                var h = constraints.maxHeight.isFinite
-                    ? constraints.maxHeight
-                    : screen.height;
-                // Last resort: the shell can report an infinite size
-                // via BOTH constraints and MediaQuery. A finite value
-                // is mandatory for Row/Expanded to lay out.
-                if (!w.isFinite || w <= 0) w = 1400;
-                if (!h.isFinite || h <= 0) h = 900;
-                return SizedBox(
-                  width: w,
-                  height: h,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(flex: 4, child: formContent),
-                      const VerticalDivider(width: 1, color: AppColors.border),
-                      Expanded(
-                        flex: 5,
-                        child: _rightContentPane(context, l10n, isNew),
-                      ),
-                    ],
-                  ),
-                );
-              }
-              return formContent;
-            },
-          );
+        : _editorBody(context, l10n, isNew);
 
     void handleBack() => Navigator.of(context).maybePop();
+    void openBooks() {
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).maybePop();
+      } else {
+        context.go('/admin/books');
+      }
+    }
 
     late final Widget chrome;
     if (useWebShell(context)) {
       chrome = WebOverlayScaffold(
-        title: appBarTitle,
+        title: pageTitle,
         currentLocation: GoRouterState.of(context).matchedLocation,
         onBack: handleBack,
-        body: ColoredBox(color: AppColors.referencePageBg, child: editBody),
+        breadcrumbParent: l10n.adminBooksMenuTitle,
+        onBreadcrumbParent: openBooks,
+        body: ColoredBox(
+          color: WebTokens.canvasBg,
+          child: WebContentFrame(child: editBody),
+        ),
       );
     } else if (useDesktopShell(context)) {
       chrome = DesktopOverlayScaffold(
-        title: appBarTitle,
+        title: pageTitle,
         currentLocation: GoRouterState.of(context).matchedLocation,
         onBack: handleBack,
-        body: ColoredBox(color: AppColors.referencePageBg, child: editBody),
+        breadcrumbParent: l10n.adminBooksMenuTitle,
+        onBreadcrumbParent: openBooks,
+        body: ColoredBox(
+          color: DesktopTokens.canvasBg,
+          child: DesktopContentFrame(child: editBody),
+        ),
       );
     } else {
       chrome = Scaffold(
-        backgroundColor: AppColors.referencePageBg,
+        backgroundColor: _BookFormColors.canvas,
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: handleBack,
           ),
-          title: Text(
-            appBarTitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+          title: Text(pageTitle, maxLines: 1, overflow: TextOverflow.ellipsis),
         ),
         body: editBody,
       );
@@ -2005,6 +3402,276 @@ class _AdminBookEditScreenState extends ConsumerState<AdminBookEditScreen> {
 
 /// Editable list of string values rendered as deletable chips, with a text
 /// field to add new ones and optional tap-to-add suggestions.
+InputDecoration _bookFieldDecoration({String? hintText}) {
+  const radius = BorderRadius.all(Radius.circular(10));
+  const side = BorderSide(color: _BookFormColors.border);
+  return InputDecoration(
+    hintText: hintText,
+    isDense: true,
+    filled: true,
+    fillColor: Colors.white,
+    hoverColor: Colors.white,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    hintStyle: const TextStyle(color: _BookFormColors.muted, fontSize: 14),
+    border: const OutlineInputBorder(borderRadius: radius, borderSide: side),
+    enabledBorder: const OutlineInputBorder(
+      borderRadius: radius,
+      borderSide: side,
+    ),
+    focusedBorder: const OutlineInputBorder(
+      borderRadius: radius,
+      borderSide: BorderSide(color: _BookFormColors.accent, width: 1.5),
+    ),
+    errorBorder: const OutlineInputBorder(
+      borderRadius: radius,
+      borderSide: BorderSide(color: AppColors.errorBorder),
+    ),
+    focusedErrorBorder: const OutlineInputBorder(
+      borderRadius: radius,
+      borderSide: BorderSide(color: AppColors.errorText, width: 1.5),
+    ),
+  );
+}
+
+class _BookFormColors {
+  static const accent = Color(0xFF0277A8);
+  static const accentSoft = Color(0xFFE6F4FA);
+  static const ink = Color(0xFF0F172A);
+  static const label = Color(0xFF334155);
+  static const muted = Color(0xFF64748B);
+  static const faint = Color(0xFF94A3B8);
+  static const line = Color(0xFFE2E8F0);
+  static const border = Color(0xFFCBD5E1);
+  static const canvas = Color(0xFFF4F7FA);
+}
+
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel(this.text, {this.requiredMark = false});
+
+  final String text;
+  final bool requiredMark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text.rich(
+      TextSpan(
+        text: text,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: _BookFormColors.label,
+        ),
+        children: [
+          if (requiredMark)
+            const TextSpan(
+              text: ' *',
+              style: TextStyle(
+                color: Color(0xFFB42318),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BookFormCard extends StatelessWidget {
+  const _BookFormCard({
+    this.title,
+    this.subtitle,
+    required this.child,
+    this.padding = const EdgeInsets.all(18),
+    this.headerGap = 14,
+    this.expandChild = false,
+  });
+
+  final String? title;
+  final String? subtitle;
+  final Widget child;
+  final EdgeInsets padding;
+  final double headerGap;
+  final bool expandChild;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasHeader = title != null;
+    final header = !hasHeader
+        ? null
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title!,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle!,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.35,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+              SizedBox(height: headerGap),
+            ],
+          );
+    final body = expandChild
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (header != null) header,
+              Expanded(child: child),
+            ],
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (header != null) header,
+              child,
+            ],
+          );
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _BookFormColors.line),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(padding: padding, child: body),
+    );
+  }
+}
+
+class _ToggleRow extends StatelessWidget {
+  const _ToggleRow({
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: _BookFormColors.line)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () => onChanged(!value),
+              behavior: HitTestBehavior.opaque,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.35,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          _BookSwitch(value: value, onChanged: onChanged),
+        ],
+      ),
+    );
+  }
+}
+
+/// Compact pill toggle (matches the New book mockup; avoids M3 Switch
+/// shrink-wrap misalignment on web).
+class _BookSwitch extends StatelessWidget {
+  const _BookSwitch({required this.value, required this.onChanged});
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  static const _width = 44.0;
+  static const _height = 26.0;
+  static const _thumb = 20.0;
+  static const _pad = 3.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final track = value ? _BookFormColors.accent : const Color(0xFF7C8AA0);
+    return Semantics(
+      toggled: value,
+      button: true,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: () => onChanged(!value),
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            curve: Curves.easeOut,
+            width: _width,
+            height: _height,
+            padding: const EdgeInsets.all(_pad),
+            decoration: BoxDecoration(
+              color: track,
+              borderRadius: BorderRadius.circular(_height / 2),
+            ),
+            alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+            child: Container(
+              width: _thumb,
+              height: _thumb,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0x1A0F172A),
+                    blurRadius: 2,
+                    offset: Offset(0, 1),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ChipsField extends StatefulWidget {
   const _ChipsField({
     required this.label,
@@ -2044,41 +3711,66 @@ class _ChipsFieldState extends State<_ChipsField> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
     final available = widget.suggestions
         .where((s) => !widget.values.contains(s))
         .toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.label,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 8),
-        if (widget.values.isNotEmpty)
+        _FieldLabel(widget.label),
+        const SizedBox(height: 6),
+        if (widget.values.isNotEmpty) ...[
           Wrap(
             spacing: 8,
-            runSpacing: 4,
+            runSpacing: 8,
             children: [
               for (final v in widget.values)
-                InputChip(label: Text(v), onDeleted: () => _remove(v)),
+                InputChip(
+                  label: Text(v),
+                  onDeleted: () => _remove(v),
+                  visualDensity: VisualDensity.compact,
+                ),
             ],
           ),
-        TextField(
+          const SizedBox(height: 8),
+        ],
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: TextField(
           controller: _ctrl,
-          decoration: InputDecoration(
-            isDense: true,
+                decoration: _bookFieldDecoration(
             hintText: l10n.adminChipAddHint,
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: () => _add(_ctrl.text),
-            ),
           ),
           textInputAction: TextInputAction.done,
           onSubmitted: _add,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Tooltip(
+              message: l10n.addTagTooltip,
+              child: SizedBox(
+                width: 38,
+                height: 38,
+                child: OutlinedButton(
+                  onPressed: () => _add(_ctrl.text),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(38, 38),
+                    padding: EdgeInsets.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    foregroundColor: _BookFormColors.label,
+                    backgroundColor: Colors.white,
+                    side: const BorderSide(color: _BookFormColors.border),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Icon(Icons.add, size: 16),
+                ),
+              ),
+            ),
+          ],
         ),
         if (available.isNotEmpty) ...[
           const SizedBox(height: 6),
@@ -2100,121 +3792,74 @@ class _ChipsFieldState extends State<_ChipsField> {
   }
 }
 
-class _ChapterEditorDialog extends StatefulWidget {
-  const _ChapterEditorDialog({
-    required this.draftKey,
-    required this.isNew,
-    this.initialChapter,
-  });
-
-  final String draftKey;
-  final bool isNew;
-  final AdminDraftChapter? initialChapter;
-
-  @override
-  State<_ChapterEditorDialog> createState() => _ChapterEditorDialogState();
-}
-
-class _ChapterEditorDialogState extends State<_ChapterEditorDialog> {
-  late final TextEditingController _title;
-  late final FormDraftController _draft;
-
-  @override
-  void initState() {
-    super.initState();
-    _title = TextEditingController(text: widget.initialChapter?.title ?? '');
-    _draft = FormDraftController(
-      draftKey: widget.draftKey,
-      capture: () => {'title': _title.text},
-      restore: (data) {
-        _title.text = data['title'] as String? ?? '';
-      },
-      isEmpty: (data) => (data['title'] as String? ?? '').trim().isEmpty,
-    );
-    _title.addListener(_draft.onChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final restored = await _draft.restoreIfPresent();
-      if (!mounted || !restored) return;
-      setState(() {});
-      showFormDraftRestoredSnackBar(context);
-    });
-  }
-
-  @override
-  void dispose() {
-    _title.removeListener(_draft.onChanged);
-    _title.dispose();
-    _draft.dispose();
-    super.dispose();
-  }
-
-  Future<void> _cancel() async {
-    await _draft.persistNow();
-    if (!mounted) return;
-    Navigator.of(context).pop();
-  }
-
-  Future<void> _save() async {
-    final l10n = AppLocalizations.of(context)!;
-    final title = _title.text.trim();
-    await _draft.clear();
-    if (!mounted) return;
-    Navigator.of(context).pop(
-      AdminDraftChapter(
-        chapterKey: widget.initialChapter?.chapterKey ?? '',
-        title: title.isEmpty ? l10n.untitledChapter : title,
-        pages: widget.initialChapter?.pages ?? const [],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return AlertDialog(
-      title: Text(widget.isNew ? l10n.addChapterTitle : l10n.editChapterTitle),
-      content: SizedBox(
-        width: 420,
-        child: TextField(
-          controller: _title,
-          decoration: InputDecoration(labelText: l10n.chapterTitleLabel),
-        ),
-      ),
-      actions: [
-        TextButton(onPressed: _cancel, child: Text(l10n.cancel)),
-        FilledButton(onPressed: _save, child: Text(l10n.save)),
-      ],
-    );
-  }
-}
-
-class _DraftPageEditorDialog extends StatefulWidget {
-  const _DraftPageEditorDialog({
+class _DraftPageEditor extends StatefulWidget {
+  const _DraftPageEditor({
+    super.key,
     required this.isNewPage,
     required this.initialTitle,
     required this.initialBody,
     required this.draftKey,
+    this.live = false,
+    this.pageLocalId,
+    this.onSaved,
+    this.onCancel,
+    this.onLiveCommit,
+    this.onDelete,
   });
 
   final bool isNewPage;
+  final bool live;
+  final String? pageLocalId;
   final String initialTitle;
   final String initialBody;
   final String draftKey;
+  final ValueChanged<AdminDraftPage>? onSaved;
+  final VoidCallback? onCancel;
+  /// Called while typing (debounced) and from [commitNow].
+  final ValueChanged<AdminDraftPage>? onLiveCommit;
+  final VoidCallback? onDelete;
 
   @override
-  State<_DraftPageEditorDialog> createState() => _DraftPageEditorDialogState();
+  State<_DraftPageEditor> createState() => _DraftPageEditorState();
 }
 
-class _DraftPageEditorDialogState extends State<_DraftPageEditorDialog> {
+class _DraftPageEditorState extends State<_DraftPageEditor> {
   late final TextEditingController _title;
   late final QuillController _bodyQuill;
   late final FormDraftController _draft;
+  Timer? _liveCommitTimer;
+  bool _suppressLiveCommit = false;
 
-  /// Full Quill toolbar lives in the bottom sheet; collapsed by default for typing space.
-  bool _toolbarExpanded = false;
+  AdminDraftPage _snapshot() => AdminDraftPage(
+    pageNumber: 0,
+    title: _title.text.trim(),
+    body: jsonEncode(_bodyQuill.document.toDelta().toJson()),
+    localId: widget.pageLocalId,
+  );
 
-  /// Converts the Western/Arabic digits in the current selection to Ge'ez
-  /// numerals (e.g. "3" → "፫", "16" → "፲፮"). No-op when nothing is selected.
+  void commitNow() {
+    _liveCommitTimer?.cancel();
+    if (!widget.live || widget.onLiveCommit == null) return;
+    widget.onLiveCommit!(_snapshot());
+  }
+
+  void _scheduleLiveCommit() {
+    if (_suppressLiveCommit) return;
+    if (!widget.live || widget.onLiveCommit == null) return;
+    _liveCommitTimer?.cancel();
+    _liveCommitTimer = Timer(const Duration(milliseconds: 280), () {
+      if (!mounted || _suppressLiveCommit) return;
+      widget.onLiveCommit!(_snapshot());
+    });
+  }
+
+  void _loadPage(String title, String body) {
+    _suppressLiveCommit = true;
+    _title.text = title;
+    _applyBodyFromStored(body);
+    _suppressLiveCommit = false;
+  }
+
   void _convertSelectionToGeez() {
     final sel = _bodyQuill.selection;
     if (!sel.isValid || sel.isCollapsed) return;
@@ -2272,19 +3917,35 @@ class _DraftPageEditorDialogState extends State<_DraftPageEditorDialog> {
         return title.isEmpty && body.isEmpty;
       },
     );
-    _title.addListener(_draft.onChanged);
-    _bodyQuill.document.changes.listen((_) => _draft.onChanged());
+    void onEdit() {
+      if (_suppressLiveCommit) return;
+      _draft.onChanged();
+      _scheduleLiveCommit();
+    }
+
+    _title.addListener(onEdit);
+    _bodyQuill.document.changes.listen((_) => onEdit());
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final restored = await _draft.restoreIfPresent();
       if (!mounted || !restored) return;
       setState(() {});
       showFormDraftRestoredSnackBar(context);
+      _scheduleLiveCommit();
     });
   }
 
   @override
+  void didUpdateWidget(covariant _DraftPageEditor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pageLocalId != widget.pageLocalId) {
+      _liveCommitTimer?.cancel();
+      _loadPage(widget.initialTitle, widget.initialBody);
+    }
+  }
+
+  @override
   void dispose() {
-    _title.removeListener(_draft.onChanged);
+    _liveCommitTimer?.cancel();
     _title.dispose();
     _bodyQuill.dispose();
     _draft.dispose();
@@ -2294,17 +3955,14 @@ class _DraftPageEditorDialogState extends State<_DraftPageEditorDialog> {
   Future<void> _cancel() async {
     await _draft.persistNow();
     if (!mounted) return;
-    Navigator.of(context).pop();
+    widget.onCancel?.call();
   }
 
-  Future<void> _saveAndPop() async {
-    final t = _title.text.trim();
-    final body = jsonEncode(_bodyQuill.document.toDelta().toJson());
+  Future<void> _save() async {
+    final page = _snapshot();
     await _draft.clear();
     if (!mounted) return;
-    Navigator.of(
-      context,
-    ).pop(AdminDraftPage(pageNumber: 0, title: t, body: body));
+    widget.onSaved?.call(page);
   }
 
   @override
@@ -2312,151 +3970,98 @@ class _DraftPageEditorDialogState extends State<_DraftPageEditorDialog> {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) async {
-        if (didPop) return;
-        await _cancel();
-      },
-      child: Scaffold(
-        resizeToAvoidBottomInset: true,
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          centerTitle: true,
-          title: Text(
-            widget.isNewPage ? l10n.addPageTooltip : l10n.editPageTitle,
-          ),
-          actions: [
-            IconButton(
-              tooltip: l10n.cancel,
-              icon: const Icon(Icons.close),
-              onPressed: _cancel,
-            ),
-          ],
-        ),
-        body: SafeArea(
-          bottom: false,
-          child: CustomScrollView(
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                sliver: SliverToBoxAdapter(
-                  child: Column(
+    return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      TextField(
-                        controller: _title,
-                        decoration: InputDecoration(
-                          labelText: l10n.pageTitleFieldLabel,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        l10n.pageContentHeading,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                  ),
-                ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                sliver: SliverFillRemaining(
-                  hasScrollBody: true,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHigh,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: theme.colorScheme.outlineVariant,
-                      ),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(11),
-                      child: Consumer(
-                        builder: (context, ref, _) {
-                          final geez = ref.watch(useGeezNumeralsProvider);
-                          return QuillEditor.basic(
-                            controller: _bodyQuill,
-                            config: QuillEditorConfig(
-                              placeholder: l10n.pageEditorPlaceholder,
-                              expands: false,
-                              scrollable: true,
-                              padding: const EdgeInsets.all(12),
-                              embedBuilders: const [],
-                              unknownEmbedBuilder:
-                                  const _UnsupportedEmbedBuilder(),
-                              // Render ordered-list numbers in Ge'ez when enabled.
-                              customLeadingBlockBuilder: geez
-                                  ? _geezOrderedLeadingBuilder
-                                  : null,
-                            ),
-                          );
-                        },
-                      ),
+        if (!widget.live) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 12, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.isNewPage
+                        ? l10n.addPageTooltip
+                        : l10n.editPageTitle,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ),
+                TextButton(onPressed: _cancel, child: Text(l10n.cancel)),
+                const SizedBox(width: 4),
+                FilledButton(
+                  onPressed: _save,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _BookFormColors.accent,
+                    minimumSize: const Size(0, 36),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                  child: Text(l10n.save),
               ),
             ],
           ),
         ),
-        bottomNavigationBar: SafeArea(
-          top: false,
-          child: Material(
-            elevation: 10,
-            color: theme.colorScheme.surface,
+          const Divider(height: 1, color: _BookFormColors.line),
+        ],
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Material(
-                  color: theme.colorScheme.surfaceContainerHighest.withValues(
-                    alpha: 0.55,
-                  ),
-                  child: InkWell(
-                    onTap: () =>
-                        setState(() => _toolbarExpanded = !_toolbarExpanded),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.edit_note_outlined,
-                            color: theme.colorScheme.primary,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              _toolbarExpanded
-                                  ? l10n.pageEditorFormattingHide
-                                  : l10n.pageEditorFormattingToggle,
-                              style: theme.textTheme.titleSmall,
-                            ),
-                          ),
-                          Icon(
-                            _toolbarExpanded
-                                ? Icons.expand_less
-                                : Icons.expand_more,
-                          ),
-                        ],
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _title,
+                        decoration: _bookFieldDecoration(
+                          hintText: l10n.pageTitleFieldLabel,
+                        ),
                       ),
                     ),
+                    if (widget.onDelete != null) ...[
+                      const SizedBox(width: 8),
+                      Tooltip(
+                        message: l10n.deletePageTooltip,
+                        child: OutlinedButton(
+                          onPressed: widget.onDelete,
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(40, 40),
+                            padding: EdgeInsets.zero,
+                            foregroundColor: const Color(0xFFB42318),
+                            side: const BorderSide(
+                              color: Color(0xFFFECACA),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: const Icon(Icons.delete_outline, size: 18),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  l10n.pageContentHeading,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                AnimatedSize(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeInOut,
-                  alignment: Alignment.topCenter,
-                  child: _toolbarExpanded
-                      ? ColoredBox(
+                const SizedBox(height: 8),
+                DecoratedBox(
+                  decoration: BoxDecoration(
                           color: theme.colorScheme.surfaceContainerHigh,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(12),
+                    ),
+                    border: Border.all(color: _BookFormColors.line),
+                  ),
                           child: QuillSimpleToolbar(
                             controller: _bodyQuill,
                             config: QuillSimpleToolbarConfig(
@@ -2499,16 +4104,44 @@ class _DraftPageEditorDialogState extends State<_DraftPageEditorDialog> {
                               showIndent: true,
                             ),
                           ),
-                        )
-                      : const SizedBox.shrink(),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: _saveAndPop,
-                      child: Text(l10n.save),
+                Expanded(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: const BorderRadius.vertical(
+                        bottom: Radius.circular(12),
+                      ),
+                      border: const Border(
+                        left: BorderSide(color: _BookFormColors.line),
+                        right: BorderSide(color: _BookFormColors.line),
+                        bottom: BorderSide(color: _BookFormColors.line),
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        bottom: Radius.circular(11),
+                      ),
+                      child: Consumer(
+                        builder: (context, ref, _) {
+                          final geez = ref.watch(useGeezNumeralsProvider);
+                          return QuillEditor.basic(
+                            controller: _bodyQuill,
+                            config: QuillEditorConfig(
+                              placeholder: l10n.pageEditorPlaceholder,
+                              expands: true,
+                              scrollable: true,
+                              padding: const EdgeInsets.all(16),
+                              embedBuilders: const [],
+                              unknownEmbedBuilder:
+                                  const _UnsupportedEmbedBuilder(),
+                              customLeadingBlockBuilder: geez
+                                  ? _geezOrderedLeadingBuilder
+                                  : null,
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),
@@ -2516,7 +4149,7 @@ class _DraftPageEditorDialogState extends State<_DraftPageEditorDialog> {
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -2619,6 +4252,118 @@ class _ChangesRequestedBanner extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Embedded PDF viewer for the admin book editor (pending bytes or server draft).
+class _AdminPdfPreviewPane extends ConsumerWidget {
+  const _AdminPdfPreviewPane({
+    required this.bookId,
+    required this.revisionId,
+    required this.pendingBytes,
+    required this.pendingName,
+    required this.hasServerPdf,
+    this.onlyPages,
+  });
+
+  final String? bookId;
+  final String? revisionId;
+  final Uint8List? pendingBytes;
+  final String? pendingName;
+  final bool hasServerPdf;
+
+  /// When non-null, only these 1-based pages are shown (Look Inside live preview).
+  final List<int>? onlyPages;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final filtered = onlyPages;
+
+    if (filtered != null && filtered.isEmpty) {
+      return AppStateView(
+        icon: Icons.preview_outlined,
+        title: l10n.pdfPreviewPagesSection,
+        message: l10n.pdfLookInsideLivePreviewEmpty,
+      );
+    }
+
+    final pending = pendingBytes;
+    if (pending != null && pending.isNotEmpty) {
+      final pagesKey = filtered?.join(',') ?? '';
+      return PdfDocumentReader(
+        key: ValueKey(
+          'admin-pdf-pending-${pending.length}-$pendingName-$pagesKey',
+        ),
+        bytes: pending,
+        sourceName: pendingName ?? 'pending.pdf',
+        preferFitWidth: true,
+        onlyPages: filtered,
+        loadingLabel: l10n.pdfLoadingLabel,
+        errorTitle: l10n.pdfOpenFailed,
+      );
+    }
+
+    final id = bookId;
+    if (id == null || !hasServerPdf) {
+      return AppStateView(
+        icon: Icons.picture_as_pdf_outlined,
+        title: l10n.pdfAdminPreviewHeading,
+        message: l10n.pdfAdminPreviewEmpty,
+      );
+    }
+
+    final asyncSource = ref.watch(pdfViewerSourceProvider(id));
+    return asyncSource.when(
+      loading: () => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 12),
+            Text(l10n.pdfLoadingLabel),
+          ],
+        ),
+      ),
+      error: (e, _) => AppStateView(
+        icon: Icons.error_outline,
+        title: l10n.pdfOpenFailed,
+        message: e is DioException
+            ? (messageFromDioResponse(e.response?.data) ?? l10n.pdfOpenFailed)
+            : l10n.pdfOpenFailed,
+        actionLabel: l10n.retry,
+        onAction: () {
+          ref.invalidate(pdfBookAccessProvider(id));
+          ref.invalidate(pdfViewerSourceProvider(id));
+        },
+      ),
+      data: (PdfViewerSource source) {
+        final pagesKey = filtered?.join(',') ?? 'all';
+        return PdfDocumentReader(
+          key: ValueKey(
+            'admin-pdf-$id-${revisionId ?? ''}-$pagesKey-'
+            '${source.sourceName ?? source.uri}',
+          ),
+          bookId: id,
+          filePath: source.filePath,
+          uri: source.uri,
+          bytes: source.bytes,
+          fileSize: source.fileSize,
+          read: source.read,
+          sourceName: source.sourceName,
+          headers: source.headers,
+          preferRangeAccess: source.preferRangeAccess,
+          preferFitWidth: true,
+          onlyPages: filtered,
+          loadingLabel: l10n.pdfLoadingLabel,
+          errorTitle: l10n.pdfOpenFailed,
+          onRetry: () {
+            ref.invalidate(pdfBookAccessProvider(id));
+            ref.invalidate(pdfViewerSourceProvider(id));
+          },
+        );
+      },
     );
   }
 }

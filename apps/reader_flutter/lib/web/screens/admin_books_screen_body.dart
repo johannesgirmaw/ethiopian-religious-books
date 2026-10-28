@@ -14,7 +14,6 @@ import '../../widgets/admin_book_status_chip.dart';
 import '../../widgets/app_state_view.dart';
 import '../../widgets/primitives/shell_primitives.dart';
 import '../design/web_tokens.dart';
-import '../layout/app_layout_scope.dart';
 import '../widgets/common/web_page_header.dart';
 import '../widgets/common/web_section.dart';
 
@@ -58,7 +57,7 @@ class _AdminBooksScreenBodyState extends ConsumerState<AdminBooksScreenBody> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final async = ref.watch(adminBooksProvider);
-    final padding = WebTokens.pagePadding(AppLayoutScope.tierOf(context));
+    final padding = WebTokens.pagePaddingOf(context);
 
     return async.when(
       data: (page) {

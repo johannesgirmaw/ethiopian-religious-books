@@ -42,6 +42,42 @@ class AppLocalizationsAm extends AppLocalizations {
   String get pdfReaderTitle => 'የPDF አንባቢ';
 
   @override
+  String get lookInside => 'ውስጥ ይመልከቱ';
+
+  @override
+  String get lookInsideTitle => 'ውስጥ ይመልከቱ';
+
+  @override
+  String lookInsideBanner(int count) {
+    return 'ቅድመ እይታ · $count ናሙና ገጾች';
+  }
+
+  @override
+  String get lookInsideUnavailable => 'ለዚህ መጽሐፍ ቅድመ እይታ የለም።';
+
+  @override
+  String get pdfPreviewPagesSection => 'የውስጥ ቅድመ እይታ ገጾች';
+
+  @override
+  String get pdfPreviewPagesHint =>
+      'ገዢዎች ከመግዛታቸው በፊት ማየት የሚችሉትን የPDF ገጾች ይምረጡ (ከፍተኛ 10)።';
+
+  @override
+  String get pdfPreviewPagesSuggest => 'የመጀመሪያዎቹን 5 ጠቁም';
+
+  @override
+  String get pdfPreviewPagesAdd => 'ገጽ ጨምር';
+
+  @override
+  String get pdfPreviewPagesSave => 'የቅድመ እይታ ገጾችን አስቀምጥ';
+
+  @override
+  String get pdfPreviewPagesSaved => 'የቅድመ እይታ ገጾች ተቀምጠዋል';
+
+  @override
+  String get pdfPreviewPageField => 'የገጽ ቁጥር';
+
+  @override
   String get pdfLoadingLabel => 'PDF እየተከፈተ ነው…';
 
   @override
@@ -60,6 +96,16 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get pdfDocumentSection => 'የPDF መጽሐፍ';
+
+  @override
+  String get pdfAdminPreviewHeading => 'የPDF ቅድመ እይታ';
+
+  @override
+  String get pdfAdminPreviewEmpty => 'እዚህ ለማየት PDF ይስቀሉ።';
+
+  @override
+  String get pdfLookInsideLivePreviewEmpty =>
+      'የLook Inside ቅድመ እይታ ለማየት ከላይ ገጾችን ያክሉ።';
 
   @override
   String get pdfPickFile => 'PDF ምረጥ';
@@ -1131,6 +1177,29 @@ class AppLocalizationsAm extends AppLocalizations {
   String get pdfPageModeSingle => 'አንድ ገጽ በአንድ ጊዜ';
 
   @override
+  String get pdfAutoScrollStart => 'ራስ-ሰር መሸብለል';
+
+  @override
+  String get pdfAutoScrollStop => 'ራስ-ሰር መሸብለል አቁም';
+
+  @override
+  String get pdfAutoScrollSpeedVerySlow => 'በጣም ዝግ';
+
+  @override
+  String get pdfAutoScrollSpeedSlow => 'ዝግ';
+
+  @override
+  String get pdfAutoScrollSpeedMedium => 'መካከለኛ';
+
+  @override
+  String get pdfAutoScrollSpeedFast => 'ፈጣን';
+
+  @override
+  String pdfAutoScrollSpeedTooltip(String speed) {
+    return 'የራስ-ሰር መሸብለል ፍጥነት፡ $speed';
+  }
+
+  @override
   String get pdfOutlineTitle => 'ይዘቶች';
 
   @override
@@ -1174,6 +1243,12 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get pdfShowControls => 'መቆጣጠሪያዎችን አሳይ';
+
+  @override
+  String get pdfEnterFullscreen => 'ሙሉ ማያ';
+
+  @override
+  String get pdfExitFullscreen => 'ሙሉ ማያ ውጣ';
 
   @override
   String pdfOfflineLargeWarning(String size) {
@@ -1725,6 +1800,15 @@ class AppLocalizationsAm extends AppLocalizations {
   String get addChapter => 'ምዕራፍ ጨምር';
 
   @override
+  String get addPage => 'ገጽ ጨምር';
+
+  @override
+  String get chapterNameHint => 'የምዕራፍ ስም';
+
+  @override
+  String get selectChapterToManagePages => 'ገጾቹን ለማስተዳደር ምዕራፍ ይምረጡ።';
+
+  @override
   String get noPagesYet => 'እስካሁን ገጽ የለም';
 
   @override
@@ -1831,7 +1915,55 @@ class AppLocalizationsAm extends AppLocalizations {
   String get editBookAppBar => 'መጽሐፍ አርም';
 
   @override
-  String get metadataSection => 'መግለጫ';
+  String get newBookPageSubtitle => 'ለዚህ መጽሐፍ ዝርዝር፣ ሽፋን እና ምዕራፎችን ያክሉ።';
+
+  @override
+  String get editBookPageSubtitle => 'የዚህን መጽሐፍ ዝርዝር፣ ሽፋን እና ምዕራፎች ያዘምኑ።';
+
+  @override
+  String get bookDetailsHelp => 'አንባቢዎች መጀመሪያ የሚያዩት መሠረታዊ መረጃ።';
+
+  @override
+  String get titleFieldLabel => 'ርዕስ';
+
+  @override
+  String get titlePlaceholder => 'የመጽሐፉን ርዕስ ያስገቡ';
+
+  @override
+  String get subtitlePlaceholder => 'አማራጭ';
+
+  @override
+  String get summaryPlaceholder => 'አንባቢዎች የሚያዩት አጭር መግለጫ';
+
+  @override
+  String get authorPlaceholder => 'የደራሲ ወይም የአዘጋጅ ስም';
+
+  @override
+  String get coverSectionHelp => 'በመነሻ ገጽ እና በፍለጋ ውጤቶች ላይ ይታያል።';
+
+  @override
+  String get genreSectionHelp => 'አንባቢዎች ይህን መጽሐፍ እንዲያገኙ ይረዳል።';
+
+  @override
+  String get bookTypeSection => 'የመጽሐፍ ዓይነት እና ታይነት';
+
+  @override
+  String get bookTypeSectionHelp => 'መጽሐፉ እንዴት እንደሚነበብ እና የት እንደሚታይ ይቆጣጠሩ።';
+
+  @override
+  String get chaptersSectionHelp => 'ለዚህ መጽሐፍ የአንባቢ አሰሳ።';
+
+  @override
+  String get noChaptersYetTitle => 'እስካሁን ምዕራፍ የለም';
+
+  @override
+  String get createBookAction => 'መጽሐፍ ፍጠር';
+
+  @override
+  String get addTagTooltip => 'ምልክት ጨምር';
+
+  @override
+  String get metadataSection => 'የመጽሐፍ ዝርዝር';
 
   @override
   String get titleLabelRequired => 'ርዕስ *';
@@ -1864,7 +1996,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get chaptersPagesSection => 'ምዕራፎችና ገጾች';
 
   @override
-  String get noChaptersYetHelp => 'እስካሁን ምዕራፍ የለም። ለአንባቢ እንዲዞር ምዕራፍና ገጽ ይጨምሩ።';
+  String get bookEditSectionBible => 'የመጽሐፍ ቅዱስ ጽሑፍ';
+
+  @override
+  String get noChaptersYetHelp => 'ለአንባቢ እንዲዞር ምዕራፍና ገጽ ይጨምሩ።';
 
   @override
   String chapterKeyPageCount(String key, int count) {
@@ -2131,7 +2266,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get tagsLabel => 'መለያዎች';
 
   @override
-  String get adminChipAddHint => 'ጨምረው Enter ይጫኑ';
+  String get adminChipAddHint => 'ምልክት ጨምረው Enter ይጫኑ';
 
   @override
   String get adminIsFeaturedLabel => 'የተመረጠ';

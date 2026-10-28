@@ -733,6 +733,52 @@ def _entitled_pdf_revision(request, book_id):
     return (book, rev), None
 
 
+def _preview_pdf_revision(request, book_id):
+    """Return (book, rev) for Look Inside — readable book + sample object, no purchase."""
+    book = _readable_book(request, book_id)
+    if book is None:
+        return None, _book_not_found_response()
+    rev = book.published_revision
+    from apps.catalog.pdf_books import _coerce_preview_page_list, is_pdf_revision, latest_pdf_draft
+
+    user = getattr(request, "user", None)
+    is_manager = can_manage_book(book, user)
+    if not is_pdf_revision(rev):
+        rev = latest_pdf_draft(book) if is_manager else None
+    if not is_pdf_revision(rev):
+        return None, Response(
+            {
+                "error": {
+                    "code": "NOT_PDF",
+                    "message": "This book is not a PDF document.",
+                }
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    pages = _coerce_preview_page_list(rev.preview_page_numbers)
+    if not rev.preview_object_key or not pages:
+        return None, Response(
+            {
+                "error": {
+                    "code": "NO_PREVIEW",
+                    "message": "No Look Inside preview is available for this book.",
+                }
+            },
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    if not is_object_storage_configured():
+        return None, Response(
+            {
+                "error": {
+                    "code": "STORAGE_UNAVAILABLE",
+                    "message": "PDF preview is not available from object storage.",
+                }
+            },
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+    return (book, rev), None
+
+
 # Native apps open MinIO directly; keep the capability short-lived so a leaked
 # URL cannot be shared for hours. Web uses delivery=proxy (no MinIO URL).
 _PDF_PRESIGN_TTL_SECONDS = 15 * 60
@@ -893,6 +939,145 @@ class BookPdfBytesView(APIView):
             response["Content-Range"] = content_range
         filename = _pdf_filename_for_revision(rev)
         response["Content-Disposition"] = f'inline; filename="{filename}"'
+        response["Cache-Control"] = "private, no-store"
+        response["X-Content-Type-Options"] = "nosniff"
+        response["Vary"] = "Authorization"
+        return response
+
+
+class BookPdfPreviewView(APIView):
+    """Look Inside sample metadata — readable catalog book, no purchase required."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, book_id):
+        from apps.catalog.pdf_books import _coerce_preview_page_list
+
+        resolved, error = _preview_pdf_revision(request, book_id)
+        if error is not None:
+            return error
+        book, rev = resolved
+        size_bytes = 0
+        try:
+            size_bytes = int(head_object(rev.preview_object_key)["ContentLength"])
+        except Exception:
+            pass
+        pages = _coerce_preview_page_list(rev.preview_page_numbers)
+        filename = "preview.pdf"
+        linearized = pdf_object_looks_linearized(rev.preview_object_key)
+        delivery = (request.query_params.get("delivery") or "").strip().lower()
+        if delivery == "proxy":
+            return Response(
+                {
+                    "book_id": str(book.id),
+                    "content_format": "pdf",
+                    "url": "",
+                    "size_bytes": size_bytes,
+                    "filename": filename,
+                    "revision_id": str(rev.id),
+                    "delivery": "proxy",
+                    "linearized": linearized,
+                    "preview": True,
+                    "preview_page_count": len(pages),
+                }
+            )
+
+        presign_endpoint = dev_presign_endpoint_from_request(request)
+        try:
+            url = presign_get(
+                rev.preview_object_key,
+                expires_in=_PDF_PRESIGN_TTL_SECONDS,
+                presign_endpoint_url=presign_endpoint,
+            )
+        except Exception as exc:
+            logger.exception("pdf preview presign failed: %s", exc)
+            return Response(
+                {
+                    "error": {
+                        "code": "PRESIGN_FAILED",
+                        "message": "Could not generate preview PDF URL.",
+                    }
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        return Response(
+            {
+                "book_id": str(book.id),
+                "content_format": "pdf",
+                "url": url,
+                "size_bytes": size_bytes,
+                "filename": filename,
+                "revision_id": str(rev.id),
+                "expires_in": _PDF_PRESIGN_TTL_SECONDS,
+                "linearized": linearized,
+                "preview": True,
+                "preview_page_count": len(pages),
+            }
+        )
+
+
+class BookPdfPreviewBytesView(APIView):
+    """Stream Look Inside sample bytes (with Range) for the web reader proxy."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, book_id):
+        resolved, error = _preview_pdf_revision(request, book_id)
+        if error is not None:
+            return error
+        _book, rev = resolved
+        range_header = (request.META.get("HTTP_RANGE") or "").strip() or None
+        if range_header and not _PDF_RANGE_RE.fullmatch(range_header):
+            return HttpResponse(status=416)
+        try:
+            obj = open_object_stream(rev.preview_object_key, byte_range=range_header)
+        except Exception as exc:
+            err = str(exc)
+            if "InvalidRange" in err or "416" in err:
+                resp = HttpResponse(status=416)
+                return resp
+            logger.exception("pdf preview byte stream failed: %s", exc)
+            return Response(
+                {
+                    "error": {
+                        "code": "STORAGE_UNAVAILABLE",
+                        "message": "Could not read preview PDF bytes.",
+                    }
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        body = obj.get("Body")
+        if body is None:
+            return HttpResponse(status=404)
+
+        def chunks():
+            try:
+                while True:
+                    chunk = body.read(64 * 1024)
+                    if not chunk:
+                        break
+                    yield chunk
+            finally:
+                try:
+                    body.close()
+                except Exception:
+                    pass
+
+        status_code = 206 if range_header else 200
+        response = StreamingHttpResponse(
+            chunks(),
+            status=status_code,
+            content_type=obj.get("ContentType") or "application/pdf",
+        )
+        response["Accept-Ranges"] = "bytes"
+        content_length = obj.get("ContentLength")
+        if content_length is not None:
+            response["Content-Length"] = str(content_length)
+        content_range = obj.get("ContentRange")
+        if content_range:
+            response["Content-Range"] = content_range
+        response["Content-Disposition"] = 'inline; filename="preview.pdf"'
         response["Cache-Control"] = "private, no-store"
         response["X-Content-Type-Options"] = "nosniff"
         response["Vary"] = "Authorization"

@@ -145,23 +145,36 @@ class DesktopFeaturedCard extends ConsumerWidget {
                     ),
                   ],
                   const SizedBox(height: 10),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Text(
-                        l10n.homeReadMore,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            l10n.homeReadMore,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                          const Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 15,
+                            color: AppColors.primary,
+                          ),
+                        ],
+                      ),
+                      if (bookOffersLookInside(book))
+                        LookInsideBadge(
+                          label: l10n.lookInside,
+                          compact: true,
+                          onTap: () => openBookLookInside(context, book.id),
                         ),
-                      ),
-                      const SizedBox(width: 3),
-                      const Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 15,
-                        color: AppColors.primary,
-                      ),
                     ],
                   ),
                 ],

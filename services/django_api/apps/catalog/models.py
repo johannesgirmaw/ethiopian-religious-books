@@ -196,6 +196,10 @@ class BookRevision(models.Model):
     total_bytes = models.BigIntegerField(default=0)
     manifest_sha256 = models.CharField(max_length=64, blank=True)
     content_sha256 = models.CharField(max_length=64, blank=True)
+    # Look Inside: admin-chosen 1-based page numbers; empty = no public preview.
+    preview_page_numbers = models.JSONField(default=list, blank=True)
+    preview_object_key = models.CharField(max_length=500, blank=True)
+    preview_sha256 = models.CharField(max_length=64, blank=True)
     cek_wrapped = models.TextField(blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
