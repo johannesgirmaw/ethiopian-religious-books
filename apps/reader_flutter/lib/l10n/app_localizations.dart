@@ -1688,6 +1688,168 @@ abstract class AppLocalizations {
   /// **'Update your account password'**
   String get changePasswordLinkSubtitle;
 
+  /// No description provided for @continueWithTelegram.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Telegram'**
+  String get continueWithTelegram;
+
+  /// No description provided for @telegramContinueTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Telegram'**
+  String get telegramContinueTitle;
+
+  /// No description provided for @telegramContinueSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the phone number linked to your Telegram account. We\'ll open Telegram so you can share your contact and receive a one-time code.'**
+  String get telegramContinueSubtitle;
+
+  /// No description provided for @telegramLinkTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Link Telegram'**
+  String get telegramLinkTitle;
+
+  /// No description provided for @telegramLinkSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Link Telegram to sign in with a code, reset your password via Telegram, and receive free notifications.'**
+  String get telegramLinkSubtitle;
+
+  /// No description provided for @telegramOtpSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your contact in Telegram, then enter the 6-digit code here.'**
+  String get telegramOtpSubtitle;
+
+  /// No description provided for @telegramCompleteSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish creating your account with an email. Password is optional if you\'ll keep using Telegram to sign in.'**
+  String get telegramCompleteSubtitle;
+
+  /// No description provided for @telegramPhoneHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the same number that is registered on your Telegram account (for example 09… or +251…).'**
+  String get telegramPhoneHelper;
+
+  /// No description provided for @phoneFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number'**
+  String get phoneFieldLabel;
+
+  /// No description provided for @phoneFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'0912345678'**
+  String get phoneFieldHint;
+
+  /// No description provided for @phoneRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number is required'**
+  String get phoneRequired;
+
+  /// No description provided for @phoneInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid phone number'**
+  String get phoneInvalid;
+
+  /// No description provided for @telegramOpenBotCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Telegram & get code'**
+  String get telegramOpenBotCta;
+
+  /// No description provided for @telegramOtpInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'In Telegram, tap Start, share your number, then enter the code below.'**
+  String get telegramOtpInstructions;
+
+  /// No description provided for @telegramReopenBot.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-open Telegram bot'**
+  String get telegramReopenBot;
+
+  /// No description provided for @telegramVerifyCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify code'**
+  String get telegramVerifyCta;
+
+  /// No description provided for @telegramCompleteCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Create account'**
+  String get telegramCompleteCta;
+
+  /// No description provided for @telegramPasswordOptionalHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional — leave blank to use Telegram only'**
+  String get telegramPasswordOptionalHint;
+
+  /// No description provided for @telegramAuthFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Telegram sign-in failed. Try again.'**
+  String get telegramAuthFailed;
+
+  /// No description provided for @telegramLinkedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Telegram linked. You can receive codes and notifications there.'**
+  String get telegramLinkedSuccess;
+
+  /// No description provided for @telegramLinkedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Telegram linked'**
+  String get telegramLinkedLabel;
+
+  /// No description provided for @telegramNotLinkedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Telegram not linked'**
+  String get telegramNotLinkedLabel;
+
+  /// No description provided for @telegramLinkNavSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Free login codes, password reset, and notifications'**
+  String get telegramLinkNavSubtitle;
+
+  /// No description provided for @telegramLinkedNavSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications and Telegram login are enabled'**
+  String get telegramLinkedNavSubtitle;
+
+  /// No description provided for @telegramLinkCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Link'**
+  String get telegramLinkCta;
+
+  /// No description provided for @telegramLinkedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked'**
+  String get telegramLinkedBadge;
+
+  /// No description provided for @telegramSettingsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Telegram'**
+  String get telegramSettingsSection;
+
   /// No description provided for @languagePreferenceTitle.
   ///
   /// In en, this message translates to:

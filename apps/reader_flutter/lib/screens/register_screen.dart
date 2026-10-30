@@ -17,6 +17,7 @@ import '../common/platform/platform_shell.dart';
 import '../web/widgets/shell/adaptive_auth_layout.dart';
 import '../widgets/primitives/auth_form_kit.dart';
 import '../widgets/primitives/shared_widgets.dart';
+import '../widgets/telegram_icon.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -164,6 +165,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               label: l10n.createAccountTitle,
               busy: _busy,
               onPressed: _busy ? null : _submit,
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _busy ? null : () => context.go('/auth/telegram'),
+              icon: const TelegramIcon(size: 18),
+              label: Text(l10n.continueWithTelegram),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF229ED9),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
             ),
           ],
         ),

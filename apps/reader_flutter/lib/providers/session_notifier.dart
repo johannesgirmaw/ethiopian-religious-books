@@ -84,6 +84,35 @@ class SessionNotifier extends AsyncNotifier<Session?> {
     );
   }
 
+  /// Updates the cached user profile (e.g. after linking Telegram).
+  Future<void> updateUser(UserProfile user) async {
+    final cur = state.valueOrNull;
+    if (cur == null) return;
+    await _storage.saveSession(
+      accessToken: cur.accessToken,
+      refreshToken: cur.refreshToken,
+      userJson: jsonEncode({
+        'id': user.id,
+        'email': user.email,
+        'role': user.role,
+        'is_superuser': user.isSuperuser,
+        'display_name': user.displayName,
+        'preferred_ui_language': user.preferredUiLanguage,
+        'phone': user.phone,
+        'phone_verified': user.phoneVerified,
+        'telegram_linked': user.telegramLinked,
+        'telegram_username': user.telegramUsername,
+      }),
+    );
+    state = AsyncData(
+      Session(
+        accessToken: cur.accessToken,
+        refreshToken: cur.refreshToken,
+        user: user,
+      ),
+    );
+  }
+
   Future<bool> tryRefresh() async {
     final cur = state.valueOrNull;
     if (cur == null) return false;

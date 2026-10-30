@@ -889,6 +889,97 @@ class AppLocalizationsEn extends AppLocalizations {
   String get changePasswordLinkSubtitle => 'Update your account password';
 
   @override
+  String get continueWithTelegram => 'Continue with Telegram';
+
+  @override
+  String get telegramContinueTitle => 'Continue with Telegram';
+
+  @override
+  String get telegramContinueSubtitle =>
+      'Enter the phone number linked to your Telegram account. We\'ll open Telegram so you can share your contact and receive a one-time code.';
+
+  @override
+  String get telegramLinkTitle => 'Link Telegram';
+
+  @override
+  String get telegramLinkSubtitle =>
+      'Link Telegram to sign in with a code, reset your password via Telegram, and receive free notifications.';
+
+  @override
+  String get telegramOtpSubtitle =>
+      'Share your contact in Telegram, then enter the 6-digit code here.';
+
+  @override
+  String get telegramCompleteSubtitle =>
+      'Finish creating your account with an email. Password is optional if you\'ll keep using Telegram to sign in.';
+
+  @override
+  String get telegramPhoneHelper =>
+      'Use the same number that is registered on your Telegram account (for example 09… or +251…).';
+
+  @override
+  String get phoneFieldLabel => 'Phone number';
+
+  @override
+  String get phoneFieldHint => '0912345678';
+
+  @override
+  String get phoneRequired => 'Phone number is required';
+
+  @override
+  String get phoneInvalid => 'Enter a valid phone number';
+
+  @override
+  String get telegramOpenBotCta => 'Open Telegram & get code';
+
+  @override
+  String get telegramOtpInstructions =>
+      'In Telegram, tap Start, share your number, then enter the code below.';
+
+  @override
+  String get telegramReopenBot => 'Re-open Telegram bot';
+
+  @override
+  String get telegramVerifyCta => 'Verify code';
+
+  @override
+  String get telegramCompleteCta => 'Create account';
+
+  @override
+  String get telegramPasswordOptionalHint =>
+      'Optional — leave blank to use Telegram only';
+
+  @override
+  String get telegramAuthFailed => 'Telegram sign-in failed. Try again.';
+
+  @override
+  String get telegramLinkedSuccess =>
+      'Telegram linked. You can receive codes and notifications there.';
+
+  @override
+  String get telegramLinkedLabel => 'Telegram linked';
+
+  @override
+  String get telegramNotLinkedLabel => 'Telegram not linked';
+
+  @override
+  String get telegramLinkNavSubtitle =>
+      'Free login codes, password reset, and notifications';
+
+  @override
+  String get telegramLinkedNavSubtitle =>
+      'Notifications and Telegram login are enabled';
+
+  @override
+  String get telegramLinkCta => 'Link';
+
+  @override
+  String get telegramLinkedBadge => 'Linked';
+
+  @override
+  String get telegramSettingsSection => 'Telegram';
+
+  @override
   String get languagePreferenceTitle => 'Language';
 
   @override

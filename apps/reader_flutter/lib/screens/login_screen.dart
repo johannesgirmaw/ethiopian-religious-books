@@ -17,6 +17,7 @@ import '../common/platform/platform_shell.dart';
 import '../web/widgets/shell/adaptive_auth_layout.dart';
 import '../widgets/primitives/auth_form_kit.dart';
 import '../widgets/primitives/shared_widgets.dart';
+import '../widgets/telegram_icon.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -155,6 +156,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               label: l10n.signIn,
               busy: _busy,
               onPressed: _busy ? null : _submit,
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _busy ? null : () => context.go('/auth/telegram'),
+              icon: const TelegramIcon(size: 18),
+              label: Text(l10n.continueWithTelegram),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF229ED9),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
             ),
           ],
         ),

@@ -6,6 +6,10 @@ class UserProfile {
     this.isSuperuser = false,
     this.displayName,
     this.preferredUiLanguage,
+    this.phone,
+    this.phoneVerified = false,
+    this.telegramLinked = false,
+    this.telegramUsername,
   });
 
   final String id;
@@ -14,6 +18,10 @@ class UserProfile {
   final bool isSuperuser;
   final String? displayName;
   final String? preferredUiLanguage;
+  final String? phone;
+  final bool phoneVerified;
+  final bool telegramLinked;
+  final String? telegramUsername;
 
   /// May administer the whole platform (orders, settings, every book).
   bool get isPlatformAdmin => isSuperuser || role == 'admin';
@@ -32,6 +40,10 @@ class UserProfile {
       isSuperuser: j['is_superuser'] as bool? ?? false,
       displayName: j['display_name'] as String?,
       preferredUiLanguage: j['preferred_ui_language'] as String?,
+      phone: j['phone'] as String?,
+      phoneVerified: j['phone_verified'] as bool? ?? false,
+      telegramLinked: j['telegram_linked'] as bool? ?? false,
+      telegramUsername: j['telegram_username'] as String?,
     );
   }
 }

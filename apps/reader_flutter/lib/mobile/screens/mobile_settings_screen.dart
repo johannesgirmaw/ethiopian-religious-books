@@ -13,6 +13,7 @@ import '../../widgets/language_preference_card.dart';
 import '../../widgets/number_system_preference_card.dart';
 import '../../widgets/primitives/shell_primitives.dart';
 import '../../widgets/skeleton_loader.dart';
+import '../../widgets/telegram_link_settings_card.dart';
 import '../widgets/shell/shell_page_scaffold.dart';
 
 class MobileSettingsScreen extends ConsumerWidget {
@@ -135,6 +136,14 @@ class MobileSettingsScreen extends ConsumerWidget {
               ),
             ].join('\n'),
             onTap: () => context.go('/downloads'),
+          ),
+          const SizedBox(height: AppLayout.sectionGap),
+          AppSectionAccent(label: l10n.telegramSettingsSection.toUpperCase()),
+          const SizedBox(height: AppLayout.itemGap),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: AppDecorations.listRow(),
+            child: const TelegramLinkSettingsCard(),
           ),
           const SizedBox(height: AppLayout.sectionGap),
           AppSectionAccent(label: l10n.languagePreferenceTitle.toUpperCase()),

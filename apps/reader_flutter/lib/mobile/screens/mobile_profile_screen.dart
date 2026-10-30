@@ -161,6 +161,20 @@ class MobileProfileScreen extends ConsumerWidget {
               subtitle: l10n.changePasswordLinkSubtitle,
               onTap: () => context.push('/change-password'),
             ),
+            const SizedBox(height: AppLayout.itemGap),
+            _ProfileLinkRow(
+              icon: Icons.send_rounded,
+              title: user.telegramLinked
+                  ? l10n.telegramLinkedLabel
+                  : l10n.telegramNotLinkedLabel,
+              subtitle: user.telegramLinked
+                  ? l10n.telegramLinkedNavSubtitle
+                  : l10n.telegramLinkNavSubtitle,
+              onTap: () {
+                if (user.telegramLinked) return;
+                context.push('/profile/link-telegram');
+              },
+            ),
           ],
           if (user != null) ...[
             const SizedBox(height: AppLayout.sectionGap),

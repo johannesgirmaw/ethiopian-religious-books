@@ -28,6 +28,7 @@ import '../screens/main_shell_screen.dart';
 import '../screens/register_screen.dart';
 import '../screens/reset_password_screen.dart';
 import '../screens/splash_screen.dart';
+import '../screens/telegram_auth_screen.dart';
 import 'deferred_screen.dart';
 
 // --- Deferred route targets -------------------------------------------------
@@ -118,7 +119,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           loc == '/login' ||
           loc == '/register' ||
           loc == '/forgot-password' ||
-          loc == '/reset-password';
+          loc == '/reset-password' ||
+          loc == '/auth/telegram';
       final isPublicRoute = loc == '/splash' || isAuthRoute;
       final isProtectedRoute = !isPublicRoute;
 
@@ -189,6 +191,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               child: ResetPasswordScreen(
                 initialEmail: state.uri.queryParameters['email'],
               ),
+            ),
+          ),
+          GoRoute(
+            path: '/auth/telegram',
+            pageBuilder: (context, state) => NoTransitionPage<void>(
+              key: state.pageKey,
+              child: const TelegramAuthScreen(),
             ),
           ),
         ],
@@ -278,6 +287,18 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         },
         pageBuilder: (context, state) =>
             _fadeSlide(key: state.pageKey, child: const ChangePasswordScreen()),
+      ),
+      GoRoute(
+        path: '/profile/link-telegram',
+        parentNavigatorKey: rootNavigatorKey,
+        redirect: (context, state) {
+          final session = ref.read(sessionNotifierProvider).valueOrNull;
+          return session == null ? '/login' : null;
+        },
+        pageBuilder: (context, state) => _fadeSlide(
+          key: state.pageKey,
+          child: const TelegramAuthScreen(linkMode: true),
+        ),
       ),
       GoRoute(
         path: '/bible/book/:bookId',

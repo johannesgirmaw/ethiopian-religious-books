@@ -70,6 +70,13 @@ services:
       # Must match published MinIO port (override in .env for LAN IP / emulators).
       AWS_S3_PRESIGN_ENDPOINT_URL: ${AWS_S3_PRESIGN_ENDPOINT_URL:-http://localhost:${MINIO_API_PORT:-19000}}
       AWS_S3_REGION_NAME: us-east-1
+      # Telegram auth bot (optional — leave empty to disable)
+      TELEGRAM_AUTH_BOT_TOKEN: ${TELEGRAM_AUTH_BOT_TOKEN:-}
+      TELEGRAM_AUTH_BOT_USERNAME: ${TELEGRAM_AUTH_BOT_USERNAME:-}
+      TELEGRAM_AUTH_WEBHOOK_URL: ${TELEGRAM_AUTH_WEBHOOK_URL:-}
+      TELEGRAM_AUTH_WEBHOOK_SECRET: ${TELEGRAM_AUTH_WEBHOOK_SECRET:-}
+      TELEGRAM_AUTH_REQUIRE_WEBHOOK_SECRET: ${TELEGRAM_AUTH_REQUIRE_WEBHOOK_SECRET:-false}
+      TELEGRAM_AUTH_REGISTER_WEBHOOK_ON_START: ${TELEGRAM_AUTH_REGISTER_WEBHOOK_ON_START:-0}
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ../services/django_api:/app

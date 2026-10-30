@@ -1,8 +1,13 @@
+import logging
+
 from celery import shared_task
 from django.conf import settings
+from django.core.cache import cache
 from django.utils import timezone
 
 from apps.study.models import DailyReadingPlan, ReminderPreference, StudyReminder
+
+logger = logging.getLogger(__name__)
 
 
 @shared_task
@@ -15,6 +20,58 @@ def send_password_reset_email_task(email: str, code: str, display_name: str = ""
     from apps.accounts.emails import send_password_reset_email
 
     send_password_reset_email(email=email, code=code, display_name=display_name)
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=30)
+def send_telegram_notification_task(
+    self, chat_id: int, title: str, body: str = "", user_id: str | None = None
+) -> bool:
+    """Deliver a free Bot API DM. Rate-limited per user/chat."""
+    from apps.accounts.telegram_bot import TelegramBotError, notify_telegram_user
+
+    limit = getattr(settings, "TELEGRAM_NOTIFY_RATE_LIMIT_PER_HOUR", 30)
+    bucket_key = f"tg_notify:{user_id or chat_id}:{timezone.now():%Y%m%d%H}"
+    try:
+        count = cache.get(bucket_key, 0)
+        if count >= limit:
+            logger.info("Telegram notify rate-limited for %s", bucket_key)
+            return False
+        cache.set(bucket_key, count + 1, timeout=3600)
+        notify_telegram_user(chat_id=chat_id, title=title, body=body)
+        return True
+    except TelegramBotError as exc:
+        logger.warning("Telegram notify failed: %s", exc)
+        try:
+            raise self.retry(exc=exc)
+        except self.MaxRetriesExceededError:
+            return False
+
+
+def dispatch_telegram_notification(*, user, title: str, body: str = "") -> None:
+    """Enqueue a Telegram DM when the user has linked Telegram (best-effort)."""
+    chat_id = getattr(user, "telegram_chat_id", None)
+    if not chat_id:
+        return
+    from apps.accounts.telegram_bot import bot_configured
+
+    if not bot_configured():
+        return
+    try:
+        send_telegram_notification_task.delay(
+            int(chat_id),
+            title,
+            body or "",
+            str(getattr(user, "pk", "") or ""),
+        )
+    except Exception:
+        # Broker down — try inline so notifications still reach Telegram in dev.
+        logger.warning("Telegram notify enqueue failed; sending inline.", exc_info=True)
+        try:
+            from apps.accounts.telegram_bot import notify_telegram_user
+
+            notify_telegram_user(chat_id=int(chat_id), title=title, body=body or "")
+        except Exception:
+            logger.warning("Inline Telegram notify failed", exc_info=True)
 
 
 @shared_task

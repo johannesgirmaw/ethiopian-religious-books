@@ -872,6 +872,94 @@ class AppLocalizationsAm extends AppLocalizations {
   String get changePasswordLinkSubtitle => 'የመለያዎን የይለፍ ቃል ያድሱ';
 
   @override
+  String get continueWithTelegram => 'በቴሌግራም ይቀጥሉ';
+
+  @override
+  String get telegramContinueTitle => 'በቴሌግራም ይቀጥሉ';
+
+  @override
+  String get telegramContinueSubtitle =>
+      'ከቴሌግራም መለያዎ ጋር የተገናኘውን ስልክ ቁጥር ያስገቡ። ቴሌግራምን እንከፍታለን፣ እውቂያዎን ያጋሩና አንድ ጊዜ የሚያገለግል ኮድ ይቀበሉ።';
+
+  @override
+  String get telegramLinkTitle => 'ቴሌግራምን ያገናኙ';
+
+  @override
+  String get telegramLinkSubtitle =>
+      'በኮድ ለመግባት፣ የይለፍ ቃል በቴሌግራም ለመቀየር እና ነጻ ማሳወቂያዎችን ለመቀበል ቴሌግራምን ያገናኙ።';
+
+  @override
+  String get telegramOtpSubtitle =>
+      'በቴሌግራም እውቂያዎን ያጋሩ፣ ከዚያ 6-አሃዝ ኮዱን እዚህ ያስገቡ።';
+
+  @override
+  String get telegramCompleteSubtitle =>
+      'መለያዎን በኢሜይል ያጠናቅቁ። በቴሌግራም ብቻ የሚገቡ ከሆነ የይለፍ ቃል አማራጭ ነው።';
+
+  @override
+  String get telegramPhoneHelper =>
+      'በቴሌግራም የተመዘገበውን ቁጥር ይጠቀሙ (ለምሳሌ 09… ወይም +251…).';
+
+  @override
+  String get phoneFieldLabel => 'ስልክ ቁጥር';
+
+  @override
+  String get phoneFieldHint => '0912345678';
+
+  @override
+  String get phoneRequired => 'ስልክ ቁጥር ያስፈልጋል';
+
+  @override
+  String get phoneInvalid => 'ትክክለኛ ስልክ ቁጥር ያስገቡ';
+
+  @override
+  String get telegramOpenBotCta => 'ቴሌግራምን ክፈቱና ኮድ ያግኙ';
+
+  @override
+  String get telegramOtpInstructions =>
+      'በቴሌግራም Start ይጫኑ፣ ቁጥርዎን ያጋሩ፣ ከዚያ ኮዱን ከታች ያስገቡ።';
+
+  @override
+  String get telegramReopenBot => 'የቴሌግራም ቦትን እንደገና ክፈቱ';
+
+  @override
+  String get telegramVerifyCta => 'ኮድ ያረጋግጡ';
+
+  @override
+  String get telegramCompleteCta => 'መለያ ፍጠር';
+
+  @override
+  String get telegramPasswordOptionalHint => 'አማራጭ — ባዶ ይተዉት በቴሌግራም ብቻ ለመግባት';
+
+  @override
+  String get telegramAuthFailed => 'በቴሌግራም መግባት አልተሳካም። እንደገና ይሞክሩ።';
+
+  @override
+  String get telegramLinkedSuccess =>
+      'ቴሌግራም ተገናኝቷል። ኮዶችና ማሳወቂያዎችን እዚያ መቀበል ይችላሉ።';
+
+  @override
+  String get telegramLinkedLabel => 'ቴሌግራም ተገናኝቷል';
+
+  @override
+  String get telegramNotLinkedLabel => 'ቴሌግራም አልተገናኘም';
+
+  @override
+  String get telegramLinkNavSubtitle => 'ነጻ የመግቢያ ኮዶች፣ የይለፍ ቃል መቀየር እና ማሳወቂያዎች';
+
+  @override
+  String get telegramLinkedNavSubtitle => 'ማሳወቂያዎችና በቴሌግራም መግባት ነቅተዋል';
+
+  @override
+  String get telegramLinkCta => 'አገናኝ';
+
+  @override
+  String get telegramLinkedBadge => 'ተገናኝቷል';
+
+  @override
+  String get telegramSettingsSection => 'ቴሌግራም';
+
+  @override
   String get languagePreferenceTitle => 'ቋንቋ';
 
   @override

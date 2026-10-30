@@ -11,6 +11,7 @@ import '../../utils/format_catalog_cache_age.dart';
 import '../../widgets/language_preference_card.dart';
 import '../../widgets/number_system_preference_card.dart';
 import '../../widgets/skeleton_loader.dart';
+import '../../widgets/telegram_link_settings_card.dart';
 import '../design/desktop_tokens.dart';
 import '../layout/desktop_layout_scope.dart';
 import '../widgets/common/desktop_page_header.dart';
@@ -124,6 +125,11 @@ class DesktopSettingsScreenBody extends ConsumerWidget {
               ),
             ),
           ),
+        ),
+        const SizedBox(height: 20),
+        DesktopSection(
+          title: l10n.telegramSettingsSection.toUpperCase(),
+          child: const DesktopPanel(child: TelegramLinkSettingsCard()),
         ),
         const SizedBox(height: 20),
         DesktopSection(

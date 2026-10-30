@@ -87,6 +87,55 @@ class AuthApi {
     );
     return res.data!;
   }
+
+  /// Starts Telegram bot OTP. [purpose] is `login` or `phone_link`.
+  Future<Map<String, dynamic>> telegramInitiate({
+    required String phone,
+    required String purpose,
+  }) async {
+    final Dio dio =
+        purpose == 'phone_link' ? _ref.read(apiDioProvider) : _public();
+    final res = await dio.post<Map<String, dynamic>>(
+      'auth/telegram/initiate',
+      data: {'phone': phone, 'purpose': purpose},
+    );
+    return res.data!;
+  }
+
+  Future<Map<String, dynamic>> telegramVerify({
+    required String phone,
+    required String code,
+    required String purpose,
+  }) async {
+    final Dio dio =
+        purpose == 'phone_link' ? _ref.read(apiDioProvider) : _public();
+    final res = await dio.post<Map<String, dynamic>>(
+      'auth/telegram/verify',
+      data: {'phone': phone, 'code': code, 'purpose': purpose},
+    );
+    return res.data!;
+  }
+
+  Future<Map<String, dynamic>> telegramComplete({
+    required String phone,
+    required String code,
+    required String email,
+    String? password,
+    String? displayName,
+  }) async {
+    final res = await _public().post<Map<String, dynamic>>(
+      'auth/telegram/complete',
+      data: {
+        'phone': phone,
+        'code': code,
+        'email': email,
+        if (password != null && password.isNotEmpty) 'password': password,
+        if (displayName != null && displayName.isNotEmpty)
+          'display_name': displayName,
+      },
+    );
+    return res.data!;
+  }
 }
 
 final authApiProvider = Provider<AuthApi>((ref) => AuthApi(ref));

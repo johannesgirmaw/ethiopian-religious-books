@@ -186,10 +186,27 @@ class ProfileScreenBody extends ConsumerWidget {
             title: l10n.profileSecuritySection.toUpperCase(),
             child: WebPanel(
               padding: EdgeInsets.zero,
-              child: _LinkRow(
-                title: l10n.changePasswordTitle,
-                subtitle: l10n.changePasswordLinkSubtitle,
-                onTap: () => context.push('/change-password'),
+              child: Column(
+                children: [
+                  _LinkRow(
+                    title: l10n.changePasswordTitle,
+                    subtitle: l10n.changePasswordLinkSubtitle,
+                    onTap: () => context.push('/change-password'),
+                  ),
+                  const Divider(height: 1),
+                  _LinkRow(
+                    title: user.telegramLinked
+                        ? l10n.telegramLinkedLabel
+                        : l10n.telegramNotLinkedLabel,
+                    subtitle: user.telegramLinked
+                        ? l10n.telegramLinkedNavSubtitle
+                        : l10n.telegramLinkNavSubtitle,
+                    onTap: () {
+                      if (user.telegramLinked) return;
+                      context.push('/profile/link-telegram');
+                    },
+                  ),
+                ],
               ),
             ),
           ),

@@ -397,6 +397,7 @@ def notify_user(user, *, title: str, body: str = "") -> None:
 
     Kept here so the study ``UserNotification`` model has a single writer reused
     by the API/admin/Celery, mirroring how ``record_audit`` centralises audit rows.
+    Also mirrors to Telegram when the user has linked the auth bot (free Bot API).
     """
     # Imported lazily to avoid a payments -> study import at module load.
     from apps.study.models import UserNotification
@@ -409,6 +410,15 @@ def notify_user(user, *, title: str, body: str = "") -> None:
         title=title[:200],
         body=(body or "")[:500],
     )
+    try:
+        from apps.accounts.tasks import dispatch_telegram_notification
+
+        dispatch_telegram_notification(
+            user=user, title=title[:200], body=(body or "")[:500]
+        )
+    except Exception:
+        # Never fail the caller because a Telegram DM failed.
+        pass
 
 
 @db_transaction.atomic

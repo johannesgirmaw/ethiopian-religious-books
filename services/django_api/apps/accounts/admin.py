@@ -8,7 +8,7 @@ from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, Ou
 from unfold.admin import ModelAdmin
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 
-from apps.accounts.models import User, UserDevice
+from apps.accounts.models import TelegramAuthSession, User, UserDevice
 
 
 @admin.register(User)
@@ -22,6 +22,8 @@ class UserAdmin(DjangoUserAdmin, ModelAdmin):
         "email",
         "display_name",
         "role",
+        "phone",
+        "telegram_user_id",
         "offline_downloads_count",
         "devices_count",
         "is_staff",
@@ -30,8 +32,13 @@ class UserAdmin(DjangoUserAdmin, ModelAdmin):
         "last_login",
     )
     list_filter = ("role", "is_staff", "is_active")
-    search_fields = ("email", "display_name")
-    readonly_fields = ("last_login", "date_joined")
+    search_fields = ("email", "display_name", "phone", "telegram_username")
+    readonly_fields = (
+        "last_login",
+        "date_joined",
+        "phone_verified_at",
+        "telegram_linked_at",
+    )
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(
@@ -49,6 +56,19 @@ class UserAdmin(DjangoUserAdmin, ModelAdmin):
     fieldsets = (
         (None, {"fields": ("email", "password")}),
         ("Profile", {"fields": ("display_name", "preferred_ui_language", "role")}),
+        (
+            "Telegram / phone",
+            {
+                "fields": (
+                    "phone",
+                    "phone_verified_at",
+                    "telegram_user_id",
+                    "telegram_chat_id",
+                    "telegram_username",
+                    "telegram_linked_at",
+                )
+            },
+        ),
         (
             "Permissions",
             {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")},
@@ -96,6 +116,23 @@ class BlacklistedTokenAdmin(ModelAdmin):
     search_fields = ("token__jti",)
     raw_id_fields = ("token",)
     readonly_fields = ("blacklisted_at",)
+
+
+@admin.register(TelegramAuthSession)
+class TelegramAuthSessionAdmin(ModelAdmin):
+    list_display = (
+        "id",
+        "phone",
+        "purpose",
+        "status",
+        "telegram_user_id",
+        "created_at",
+        "expires_at",
+    )
+    list_filter = ("purpose", "status")
+    search_fields = ("phone", "telegram_username")
+    readonly_fields = ("created_at", "code_hash")
+    raw_id_fields = ("user",)
 
 
 @admin.register(UserDevice)

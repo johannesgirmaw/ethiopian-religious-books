@@ -23,3 +23,13 @@ String? validateEmail(String? value, AppLocalizations l10n) {
   if (!_emailRegExp.hasMatch(s)) return l10n.emailInvalid;
   return null;
 }
+
+/// Ethiopian-friendly phone validator (local or E.164).
+String? validatePhone(String? value, AppLocalizations l10n) {
+  final s = (value ?? '').trim();
+  if (s.isEmpty) return l10n.phoneRequired;
+  final digits = s.replaceAll(RegExp(r'\D'), '');
+  final ok = digits.length >= 9 && digits.length <= 15;
+  if (!ok) return l10n.phoneInvalid;
+  return null;
+}

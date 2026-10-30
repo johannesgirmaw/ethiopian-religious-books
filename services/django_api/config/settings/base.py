@@ -134,6 +134,24 @@ CORS_ALLOW_HEADERS = (*default_headers, "x-dev-s3-origin")
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://localhost:6379/0")
 
+# Shared cache (Telegram notify rate limits). LocMem by default; set CACHE_URL
+# (e.g. redis://redis:6379/1) in production for multi-worker consistency.
+_CACHE_URL = env("CACHE_URL", default="")
+if _CACHE_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": _CACHE_URL,
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "felege-default",
+        }
+    }
+
 EMAIL_BACKEND = env(
     "EMAIL_BACKEND",
     default="django.core.mail.backends.console.EmailBackend",
@@ -190,6 +208,22 @@ PAYMENTS_FERNET_KEY = env("PAYMENTS_FERNET_KEY", default="")
 # how long a downloaded book stays readable offline before it must be renewed.
 OFFLINE_LICENSE_SIGNING_KEY = env("OFFLINE_LICENSE_SIGNING_KEY", default="")
 OFFLINE_LICENSE_LEASE_DAYS = env.int("OFFLINE_LICENSE_LEASE_DAYS", default=30)
+
+# Telegram auth bot (free Bot API — login OTP, phone link, reset OTP, DMs).
+# Leave empty in local/dev to disable; set all four in production.
+TELEGRAM_AUTH_BOT_TOKEN = env("TELEGRAM_AUTH_BOT_TOKEN", default="")
+TELEGRAM_AUTH_BOT_USERNAME = env("TELEGRAM_AUTH_BOT_USERNAME", default="")
+TELEGRAM_AUTH_WEBHOOK_URL = env("TELEGRAM_AUTH_WEBHOOK_URL", default="")
+TELEGRAM_AUTH_WEBHOOK_SECRET = env("TELEGRAM_AUTH_WEBHOOK_SECRET", default="")
+# Fail closed: refuse webhook registration / reject updates when secret unset.
+TELEGRAM_AUTH_REQUIRE_WEBHOOK_SECRET = env.bool(
+    "TELEGRAM_AUTH_REQUIRE_WEBHOOK_SECRET",
+    default=not DEBUG,
+)
+TELEGRAM_NOTIFY_RATE_LIMIT_PER_HOUR = env.int(
+    "TELEGRAM_NOTIFY_RATE_LIMIT_PER_HOUR",
+    default=30,
+)
 
 
 def _admin_environment(request):

@@ -12,6 +12,7 @@ import '../../utils/format_catalog_cache_age.dart';
 import '../../widgets/language_preference_card.dart';
 import '../../widgets/number_system_preference_card.dart';
 import '../../widgets/skeleton_loader.dart';
+import '../../widgets/telegram_link_settings_card.dart';
 import '../layout/app_layout_scope.dart';
 import '../widgets/common/web_page_header.dart';
 import '../widgets/common/web_section.dart';
@@ -99,6 +100,11 @@ class SettingsScreenBody extends ConsumerWidget {
               ),
             ),
           ),
+        ),
+        const SizedBox(height: 24),
+        WebSection(
+          title: l10n.telegramSettingsSection.toUpperCase(),
+          child: const WebPanel(child: TelegramLinkSettingsCard()),
         ),
         const SizedBox(height: 24),
         WebSection(

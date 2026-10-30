@@ -10,6 +10,10 @@ from apps.accounts.views import (
     RefreshView,
     RegisterView,
     ResetPasswordView,
+    TelegramCompleteView,
+    TelegramInitiateView,
+    TelegramVerifyView,
+    TelegramWebhookView,
 )
 from apps.catalog.admin_views import (
     AdminBookApproveReviewView,
@@ -130,6 +134,10 @@ urlpatterns = [
     path("auth/forgot-password", ForgotPasswordView.as_view()),
     path("auth/reset-password", ResetPasswordView.as_view()),
     path("auth/change-password", ChangePasswordView.as_view()),
+    path("auth/telegram/initiate", TelegramInitiateView.as_view()),
+    path("auth/telegram/verify", TelegramVerifyView.as_view()),
+    path("auth/telegram/complete", TelegramCompleteView.as_view()),
+    path("auth/telegram/webhook", TelegramWebhookView.as_view()),
     path("me", MeView.as_view()),
     path("devices/register", DeviceRegisterView.as_view()),
     path("legal/documents", LegalDocumentListView.as_view()),
