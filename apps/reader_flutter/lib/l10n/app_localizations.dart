@@ -1529,7 +1529,7 @@ abstract class AppLocalizations {
   /// No description provided for @forgotPasswordSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Enter your email. If an account exists, we’ll send a 6-digit code to your linked Telegram (or email if Telegram isn’t linked).'**
+  /// **'Enter your email. We’ll open Telegram and send a 6-digit reset code there (not email).'**
   String get forgotPasswordSubtitle;
 
   /// No description provided for @sendResetCode.
@@ -1537,6 +1537,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send reset code'**
   String get sendResetCode;
+
+  /// No description provided for @sendResetCodeTelegram.
+  ///
+  /// In en, this message translates to:
+  /// **'Send code on Telegram'**
+  String get sendResetCodeTelegram;
+
+  /// No description provided for @forgotPasswordWaitingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for Telegram…'**
+  String get forgotPasswordWaitingTitle;
+
+  /// No description provided for @forgotPasswordWaitingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm your phone in Telegram to receive the reset code.'**
+  String get forgotPasswordWaitingSubtitle;
+
+  /// No description provided for @forgotPasswordWaitingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'In Telegram, tap Start, then “Confirm my phone”. We’ll send your reset code in the chat. This screen continues automatically.'**
+  String get forgotPasswordWaitingBody;
 
   /// No description provided for @resetPasswordTitle.
   ///
@@ -1547,7 +1571,7 @@ abstract class AppLocalizations {
   /// No description provided for @resetPasswordSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Enter the code from Telegram (or email) for {email} and choose a new password.'**
+  /// **'Enter the code from Telegram for {email} and choose a new password.'**
   String resetPasswordSubtitle(String email);
 
   /// No description provided for @resetCodeFieldLabel.

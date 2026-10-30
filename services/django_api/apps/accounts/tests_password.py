@@ -1,7 +1,8 @@
-"""Tests for the password reset (email OTP) and password change flows."""
+"""Tests for the password reset (Telegram OTP) and password change flows."""
+
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.core import mail
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -18,9 +19,16 @@ User = get_user_model()
 OLD_PASSWORD = "old-password-123"
 NEW_PASSWORD = "fresh-password-456"
 
+_TG = dict(
+    TELEGRAM_AUTH_BOT_TOKEN="test-token",
+    TELEGRAM_AUTH_BOT_USERNAME="FelegeAuthBot",
+)
 
-@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+
+@override_settings(**_TG)
 class ForgotPasswordTests(TestCase):
+    """Password reset is Telegram-only for now (no email delivery)."""
+
     def setUp(self):
         self.client = APIClient()
         self.user = User.objects.create_user(
@@ -28,21 +36,26 @@ class ForgotPasswordTests(TestCase):
             password=OLD_PASSWORD,
             display_name="Test Reader",
         )
+        self.user.telegram_chat_id = 42
+        self.user.telegram_user_id = 42
+        self.user.telegram_linked_at = timezone.now()
+        self.user.save()
 
     def _latest_code(self):
         return PasswordResetCode.objects.filter(user=self.user).order_by("-created_at").first()
 
-    def test_issues_code_and_sends_email(self):
+    @patch("apps.accounts.telegram_bot.send_password_reset_code")
+    def test_issues_code_and_sends_telegram(self, mock_send):
         resp = self.client.post(
             "/v1/auth/forgot-password", {"email": self.user.email}, format="json"
         )
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, {"ok": True})
-        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(resp.data.get("channel"), "telegram")
+        self.assertTrue(resp.data.get("sent"))
+        mock_send.assert_called_once()
         entry = self._latest_code()
         self.assertIsNotNone(entry)
-        # Raw code is never stored.
-        self.assertNotIn(entry.code_hash, mail.outbox[0].body)
+        self.assertEqual(entry.channel, PasswordResetCode.Channel.TELEGRAM)
         self.assertEqual(len(entry.code_hash), 64)
 
     def test_unknown_email_is_silent_no_enumeration(self):
@@ -50,20 +63,23 @@ class ForgotPasswordTests(TestCase):
             "/v1/auth/forgot-password", {"email": "nobody@example.com"}, format="json"
         )
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, {"ok": True})
-        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(resp.data, {"ok": True, "channel": "telegram"})
 
-    def test_resend_within_cooldown_does_not_send_again(self):
+    @patch("apps.accounts.telegram_bot.send_password_reset_code")
+    def test_resend_within_cooldown_does_not_send_again(self, mock_send):
         self.client.post("/v1/auth/forgot-password", {"email": self.user.email}, format="json")
         self.client.post("/v1/auth/forgot-password", {"email": self.user.email}, format="json")
-        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mock_send.call_count, 1)
         self.assertEqual(
             PasswordResetCode.objects.filter(user=self.user, consumed_at__isnull=True).count(),
             1,
         )
 
-    def test_new_request_retires_previous_codes(self):
-        first, raw1 = PasswordResetCode.issue(self.user)
+    @patch("apps.accounts.telegram_bot.send_password_reset_code")
+    def test_new_request_retires_previous_codes(self, mock_send):
+        first, _raw1 = PasswordResetCode.issue(
+            self.user, channel=PasswordResetCode.Channel.TELEGRAM
+        )
         # Push it outside the resend cooldown window.
         PasswordResetCode.objects.filter(pk=first.pk).update(
             created_at=timezone.now() - PasswordResetCode.RESEND_COOLDOWN * 2
@@ -71,6 +87,7 @@ class ForgotPasswordTests(TestCase):
         self.client.post("/v1/auth/forgot-password", {"email": self.user.email}, format="json")
         first.refresh_from_db()
         self.assertIsNotNone(first.consumed_at)
+        mock_send.assert_called_once()
 
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")

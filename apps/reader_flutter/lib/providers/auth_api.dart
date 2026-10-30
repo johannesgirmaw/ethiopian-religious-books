@@ -51,13 +51,21 @@ class AuthApi {
     return res.data!;
   }
 
-  /// Requests a reset code. The server always responds 200 (no account
-  /// enumeration), so a successful return does not imply the email exists.
-  Future<void> forgotPassword({required String email}) async {
-    await _public().post<Map<String, dynamic>>(
+  /// Requests a reset code via Telegram. Returns channel / bot_link when the
+  /// account still needs to confirm phone in Telegram.
+  Future<Map<String, dynamic>> forgotPassword({
+    required String email,
+    String? returnUrl,
+  }) async {
+    final res = await _public().post<Map<String, dynamic>>(
       'auth/forgot-password',
-      data: {'email': email},
+      data: {
+        'email': email,
+        if (returnUrl != null && returnUrl.trim().isNotEmpty)
+          'return_url': returnUrl.trim(),
+      },
     );
+    return res.data ?? {'ok': true};
   }
 
   Future<void> resetPassword({
@@ -121,6 +129,8 @@ class AuthApi {
     );
     return res.data!;
   }
+
+  // password_reset / login use the public client (session id is the secret).
 
   /// Finish login after Telegram contact confirm (no OTP).
   Future<Map<String, dynamic>> telegramClaim(String sessionId) async {

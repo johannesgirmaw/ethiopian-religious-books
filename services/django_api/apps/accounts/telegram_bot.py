@@ -17,7 +17,7 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
 
-from apps.accounts.models import TelegramAuthSession
+from apps.accounts.models import PasswordResetCode, TelegramAuthSession
 from apps.accounts.phone import mask_phone, normalize_phone
 
 User = get_user_model()
@@ -161,13 +161,24 @@ def final_app_url_for_session(session: TelegramAuthSession) -> str | None:
     return None
 
 
-def send_contact_request(chat_id: int | str, *, link_mode: bool = False) -> None:
+def send_contact_request(
+    chat_id: int | str,
+    *,
+    link_mode: bool = False,
+    password_reset: bool = False,
+) -> None:
     """Ask once for the user's own Telegram phone (Telegram's consent UI).
 
     Telegram always shows its own share-phone dialog — bots cannot skip it.
     Returning linked users never reach this (see ``_handle_start``).
     """
-    if link_mode:
+    if password_reset:
+        text = (
+            "<b>Password reset</b>\n\n"
+            "Tap <b>Confirm my phone</b>, then OK on Telegram’s prompt.\n"
+            "We will send your reset code here."
+        )
+    elif link_mode:
         text = (
             "<b>One-time setup</b>\n\n"
             "Tap <b>Confirm my phone</b>, then OK on Telegram’s prompt.\n"
@@ -279,11 +290,19 @@ def initiate_session(
     if purpose not in {
         TelegramAuthSession.Purpose.LOGIN,
         TelegramAuthSession.Purpose.PHONE_LINK,
+        TelegramAuthSession.Purpose.PASSWORD_RESET,
     }:
         raise ValueError("Invalid purpose.")
 
-    if purpose == TelegramAuthSession.Purpose.PHONE_LINK and user is None:
-        raise ValueError("phone_link requires an authenticated user.")
+    if (
+        purpose
+        in {
+            TelegramAuthSession.Purpose.PHONE_LINK,
+            TelegramAuthSession.Purpose.PASSWORD_RESET,
+        }
+        and user is None
+    ):
+        raise ValueError(f"{purpose} requires a user.")
 
     phone = ""
     if raw_phone and str(raw_phone).strip():
@@ -292,13 +311,16 @@ def initiate_session(
     safe_return = sanitize_client_return_url(return_url)
 
     now = timezone.now()
-    # Cooldown: per user for link, per phone (or user) for login.
+    # Cooldown: per user for link/reset, per phone (or IP) for login.
     cooldown_qs = TelegramAuthSession.objects.filter(
         purpose=purpose,
         created_at__gte=now - TelegramAuthSession.INITIATE_COOLDOWN,
         consumed_at__isnull=True,
     )
-    if purpose == TelegramAuthSession.Purpose.PHONE_LINK:
+    if purpose in {
+        TelegramAuthSession.Purpose.PHONE_LINK,
+        TelegramAuthSession.Purpose.PASSWORD_RESET,
+    }:
         cooldown_qs = cooldown_qs.filter(user=user)
     elif phone:
         cooldown_qs = cooldown_qs.filter(phone=phone)
@@ -319,16 +341,23 @@ def initiate_session(
     expire_qs = TelegramAuthSession.objects.filter(
         purpose=purpose, consumed_at__isnull=True
     )
-    if purpose == TelegramAuthSession.Purpose.PHONE_LINK:
+    if purpose in {
+        TelegramAuthSession.Purpose.PHONE_LINK,
+        TelegramAuthSession.Purpose.PASSWORD_RESET,
+    }:
         expire_qs = expire_qs.filter(user=user)
     elif phone:
         expire_qs = expire_qs.filter(phone=phone)
     expire_qs.update(status=TelegramAuthSession.Status.EXPIRED, consumed_at=now)
 
+    bind_user = purpose in {
+        TelegramAuthSession.Purpose.PHONE_LINK,
+        TelegramAuthSession.Purpose.PASSWORD_RESET,
+    }
     session = TelegramAuthSession.objects.create(
         phone=phone,
         purpose=purpose,
-        user=user if purpose == TelegramAuthSession.Purpose.PHONE_LINK else None,
+        user=user if bind_user else None,
         expires_at=now + TelegramAuthSession.SESSION_TTL,
         requested_ip=ip,
         client_return_url=safe_return,
@@ -455,6 +484,34 @@ def _handle_start(*, chat_id: int, from_user: dict, session_id: str) -> None:
         send_done_with_return(chat_id, session_id=session.id, linked=True)
         return
 
+    # Password reset: if this Telegram is already on the account, send code now.
+    if (
+        session.purpose == TelegramAuthSession.Purpose.PASSWORD_RESET
+        and session.user_id
+        and (
+            session.user.telegram_user_id == from_id
+            or session.user.telegram_chat_id == int(chat_id)
+        )
+    ):
+        session.telegram_chat_id = int(chat_id)
+        session.telegram_user_id = from_id
+        session.telegram_username = (from_user.get("username") or "")[:64]
+        if session.user.phone and not session.phone:
+            session.phone = session.user.phone
+        session.save(
+            update_fields=[
+                "phone",
+                "telegram_chat_id",
+                "telegram_user_id",
+                "telegram_username",
+            ]
+        )
+        try:
+            deliver_password_reset_code(session=session, user=session.user)
+        except TelegramBotError as exc:
+            send_message(chat_id, f"Could not send reset code: {exc}")
+        return
+
     session.status = TelegramAuthSession.Status.AWAITING_CONTACT
     session.save(
         update_fields=[
@@ -467,6 +524,8 @@ def _handle_start(*, chat_id: int, from_user: dict, session_id: str) -> None:
     send_contact_request(
         chat_id,
         link_mode=session.purpose == TelegramAuthSession.Purpose.PHONE_LINK,
+        password_reset=session.purpose
+        == TelegramAuthSession.Purpose.PASSWORD_RESET,
     )
 
 
@@ -554,6 +613,35 @@ def _handle_contact(
         logger.info("Telegram linked for user %s via %s", session.user_id, mask_phone(shared_phone))
         return
 
+    # Password reset: link Telegram if needed, then DM the reset code.
+    if session.purpose == TelegramAuthSession.Purpose.PASSWORD_RESET:
+        if session.user_id is None:
+            send_message(chat_id, "Session expired. Start over in the app.")
+            return
+        session.save(
+            update_fields=[
+                "phone",
+                "telegram_user_id",
+                "telegram_chat_id",
+                "telegram_username",
+            ]
+        )
+        try:
+            if not session.user.telegram_linked:
+                attach_telegram_to_user(session.user, session)
+            else:
+                # Refresh chat id if the user reinstalled Telegram, etc.
+                if session.user.telegram_user_id != session.telegram_user_id:
+                    raise TelegramBotError(
+                        "This Telegram account does not match the one on file."
+                    )
+                session.user.telegram_chat_id = session.telegram_chat_id
+                session.user.save(update_fields=["telegram_chat_id"])
+            deliver_password_reset_code(session=session, user=session.user)
+        except TelegramBotError as exc:
+            remove_keyboard(chat_id, f"Could not reset password: {exc}")
+        return
+
     # Login / sign-up: contact proof verifies the session; the app claims tokens
     # (or asks for email) — no OTP to type.
     session.attempts = 0
@@ -588,6 +676,48 @@ def send_password_reset_code(*, chat_id: int, code: str, display_name: str = "")
         f"Your password reset code:\n\n"
         f"<code>{code}</code>\n\n"
         f"Expires in 15 minutes. If you did not request this, ignore this message.",
+    )
+
+
+def deliver_password_reset_code(*, session: TelegramAuthSession, user) -> None:
+    """Issue a PasswordResetCode and DM it; mark the Telegram session CODE_SENT."""
+    if session.telegram_chat_id is None:
+        raise TelegramBotError("Missing Telegram chat.")
+
+    now = timezone.now()
+    PasswordResetCode.objects.filter(user=user, consumed_at__isnull=True).update(
+        consumed_at=now
+    )
+    _, raw_code = PasswordResetCode.issue(
+        user,
+        ip=session.requested_ip,
+        channel=PasswordResetCode.Channel.TELEGRAM,
+    )
+    send_password_reset_code(
+        chat_id=int(session.telegram_chat_id),
+        code=raw_code,
+        display_name=user.display_name,
+    )
+    session.status = TelegramAuthSession.Status.CODE_SENT
+    session.consumed_at = now
+    session.save(update_fields=["status", "consumed_at"])
+    remove_keyboard(
+        session.telegram_chat_id,
+        "<b>Reset code sent.</b>\n\n"
+        "Enter it in Felege Metsahft to choose a new password.",
+    )
+    url = public_return_button_url(session.id)
+    if url:
+        send_message(
+            session.telegram_chat_id,
+            "Tap below to open the app:",
+            reply_markup={
+                "inline_keyboard": [[{"text": "Open Felege Metsahft", "url": url}]],
+            },
+        )
+    logger.info(
+        "Password reset code sent via Telegram for user %s",
+        user.pk,
     )
 
 

@@ -420,10 +420,14 @@
   "alreadyHaveAccount": "መለያ አለዎት? ይግቡ",
   "forgotPassword": "የይለፍ ቃልዎን ረሱ?",
   "forgotPasswordTitle": "የይለፍ ቃል ይቀይሩ",
-  "forgotPasswordSubtitle": "ኢሜይልዎን ያስገቡ። መለያ ካለ፣ ባለ 6 አሃዝ ቁጥር ወደ የተገናኘው ቴሌግራምዎ እንልካለን (ቴሌግራም ካልተገናኘ ወደ ኢሜይል)።",
+  "forgotPasswordSubtitle": "ኢሜይልዎን ያስገቡ። ቴሌግራምን እንከፍታለንና ባለ 6 አሃዝ የይለፍ ቃል መቀየሪያ ቁጥር እዚያ እንልካለን (ኢሜይል አይደለም)።",
   "sendResetCode": "ቁጥሩን ላክ",
+  "sendResetCodeTelegram": "ቁጥሩን በቴሌግራም ላክ",
+  "forgotPasswordWaitingTitle": "ቴሌግራምን በመጠባበቅ ላይ…",
+  "forgotPasswordWaitingSubtitle": "ቁጥሩን ለመቀበል በቴሌግራም ስልክዎን ያረጋግጡ።",
+  "forgotPasswordWaitingBody": "በቴሌግራም Start ይጫኑ፣ ከዚያ “Confirm my phone”። የመቀየሪያ ቁጥሩን በቻት እንልካለን። ይህ ገጽ በራስ-ሰር ይቀጥላል።",
   "resetPasswordTitle": "አዲስ የይለፍ ቃል ያስቀምጡ",
-  "resetPasswordSubtitle": "ከቴሌግራም (ወይም ኢሜይል) ለ {email} የመጣውን ቁጥር ያስገቡና አዲስ የይለፍ ቃል ይምረጡ።",
+  "resetPasswordSubtitle": "ከቴሌግራም ለ {email} የመጣውን ቁጥር ያስገቡና አዲስ የይለፍ ቃል ይምረጡ።",
   "@resetPasswordSubtitle": {
     "placeholders": {
       "email": {

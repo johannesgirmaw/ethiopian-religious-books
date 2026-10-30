@@ -170,61 +170,99 @@ class ForgotPasswordView(APIView):
 
     @extend_schema(request=ForgotPasswordSerializer, responses={200: None})
     def post(self, request):
+        """Password reset via Telegram only (for now).
+
+        - If Telegram is already linked: DM the code immediately.
+        - Otherwise: return a bot deep-link so the user can confirm phone,
+          link Telegram, and receive the code there.
+        """
         ser = ForgotPasswordSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         email = ser.validated_data["email"].strip()
+        return_url = (request.data.get("return_url") or "").strip() or None
 
         user = User.objects.filter(
             email__iexact=email, deleted_at__isnull=True, is_active=True
         ).first()
-        if user is not None:
-            now = timezone.now()
-            recently_sent = PasswordResetCode.objects.filter(
+        # Always 200 when the account is unknown (no email enumeration).
+        if user is None:
+            return Response({"ok": True, "channel": "telegram"})
+
+        if not telegram_bot.bot_configured():
+            return _error(
+                "TELEGRAM_UNAVAILABLE",
+                "Telegram reset is temporarily unavailable. Try again later.",
+                http_status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        now = timezone.now()
+        recently_sent = PasswordResetCode.objects.filter(
+            user=user,
+            consumed_at__isnull=True,
+            created_at__gte=now - PasswordResetCode.RESEND_COOLDOWN,
+        ).exists()
+
+        # Already linked → send code in Telegram DM (no email).
+        if user.telegram_chat_id and not recently_sent:
+            with transaction.atomic():
+                PasswordResetCode.objects.filter(
+                    user=user, consumed_at__isnull=True
+                ).update(consumed_at=now)
+                _, raw_code = PasswordResetCode.issue(
+                    user,
+                    ip=_client_ip(request),
+                    channel=PasswordResetCode.Channel.TELEGRAM,
+                )
+            try:
+                telegram_bot.send_password_reset_code(
+                    chat_id=user.telegram_chat_id,
+                    code=raw_code,
+                    display_name=user.display_name,
+                )
+            except telegram_bot.TelegramBotError as exc:
+                return _error(
+                    "TELEGRAM_UNAVAILABLE",
+                    str(exc) or "Could not send the code on Telegram.",
+                    http_status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                )
+            return Response(
+                {"ok": True, "channel": "telegram", "sent": True}
+            )
+
+        if recently_sent and user.telegram_chat_id:
+            return Response(
+                {"ok": True, "channel": "telegram", "sent": True}
+            )
+
+        # Not linked yet → open bot to confirm phone, link, then receive code.
+        try:
+            session, bot_link = telegram_bot.initiate_session(
+                purpose=TelegramAuthSession.Purpose.PASSWORD_RESET,
                 user=user,
-                consumed_at__isnull=True,
-                created_at__gte=now - PasswordResetCode.RESEND_COOLDOWN,
-            ).exists()
-            if not recently_sent:
-                prefer_telegram = bool(
-                    user.telegram_chat_id
-                    and telegram_bot.bot_configured()
-                )
-                channel = (
-                    PasswordResetCode.Channel.TELEGRAM
-                    if prefer_telegram
-                    else PasswordResetCode.Channel.EMAIL
-                )
-                with transaction.atomic():
-                    # Retire any still-valid codes before issuing a fresh one.
-                    PasswordResetCode.objects.filter(
-                        user=user, consumed_at__isnull=True
-                    ).update(consumed_at=now)
-                    _, raw_code = PasswordResetCode.issue(
-                        user,
-                        ip=_client_ip(request),
-                        channel=channel,
-                    )
-                if prefer_telegram:
-                    try:
-                        telegram_bot.send_password_reset_code(
-                            chat_id=user.telegram_chat_id,
-                            code=raw_code,
-                            display_name=user.display_name,
-                        )
-                    except telegram_bot.TelegramBotError:
-                        # Fall back to email so a blocked bot never traps the user.
-                        dispatch_password_reset_email(
-                            email=user.email,
-                            code=raw_code,
-                            display_name=user.display_name,
-                        )
-                else:
-                    dispatch_password_reset_email(
-                        email=user.email,
-                        code=raw_code,
-                        display_name=user.display_name,
-                    )
-        return Response({"ok": True})
+                ip=_client_ip(request),
+                return_url=return_url,
+            )
+        except telegram_bot.TelegramBotError as exc:
+            return _error(
+                "TELEGRAM_UNAVAILABLE",
+                str(exc),
+                http_status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        from django.conf import settings as dj_settings
+
+        return Response(
+            {
+                "ok": True,
+                "channel": "telegram",
+                "needs_telegram": True,
+                "session_id": str(session.id),
+                "bot_link": bot_link,
+                "bot_username": (dj_settings.TELEGRAM_AUTH_BOT_USERNAME or "").lstrip(
+                    "@"
+                ),
+            }
+        )
 
 
 class ResetPasswordView(APIView):
@@ -514,12 +552,19 @@ class TelegramSessionStatusView(APIView):
         if ready:
             needs_email = _find_user_for_telegram_session(session) is None
 
+        code_sent = (
+            session.purpose == TelegramAuthSession.Purpose.PASSWORD_RESET
+            and session.status == TelegramAuthSession.Status.CODE_SENT
+            and not session.is_expired()
+        )
+
         payload = {
             "session_id": str(session.id),
             "purpose": session.purpose,
             "status": session.status,
             "ready": ready,
             "needs_email": needs_email,
+            "code_sent": code_sent,
             "phone": session.phone or "",
             "linked": (
                 session.purpose == TelegramAuthSession.Purpose.PHONE_LINK

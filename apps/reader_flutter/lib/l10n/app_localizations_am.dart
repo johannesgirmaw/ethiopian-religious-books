@@ -786,17 +786,30 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get forgotPasswordSubtitle =>
-      'ኢሜይልዎን ያስገቡ። መለያ ካለ፣ ባለ 6 አሃዝ ቁጥር ወደ የተገናኘው ቴሌግራምዎ እንልካለን (ቴሌግራም ካልተገናኘ ወደ ኢሜይል)።';
+      'ኢሜይልዎን ያስገቡ። ቴሌግራምን እንከፍታለንና ባለ 6 አሃዝ የይለፍ ቃል መቀየሪያ ቁጥር እዚያ እንልካለን (ኢሜይል አይደለም)።';
 
   @override
   String get sendResetCode => 'ቁጥሩን ላክ';
+
+  @override
+  String get sendResetCodeTelegram => 'ቁጥሩን በቴሌግራም ላክ';
+
+  @override
+  String get forgotPasswordWaitingTitle => 'ቴሌግራምን በመጠባበቅ ላይ…';
+
+  @override
+  String get forgotPasswordWaitingSubtitle => 'ቁጥሩን ለመቀበል በቴሌግራም ስልክዎን ያረጋግጡ።';
+
+  @override
+  String get forgotPasswordWaitingBody =>
+      'በቴሌግራም Start ይጫኑ፣ ከዚያ “Confirm my phone”። የመቀየሪያ ቁጥሩን በቻት እንልካለን። ይህ ገጽ በራስ-ሰር ይቀጥላል።';
 
   @override
   String get resetPasswordTitle => 'አዲስ የይለፍ ቃል ያስቀምጡ';
 
   @override
   String resetPasswordSubtitle(String email) {
-    return 'ከቴሌግራም (ወይም ኢሜይል) ለ $email የመጣውን ቁጥር ያስገቡና አዲስ የይለፍ ቃል ይምረጡ።';
+    return 'ከቴሌግራም ለ $email የመጣውን ቁጥር ያስገቡና አዲስ የይለፍ ቃል ይምረጡ።';
   }
 
   @override

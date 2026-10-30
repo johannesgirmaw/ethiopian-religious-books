@@ -209,6 +209,7 @@ class TelegramWebhookAndVerifyTests(TestCase):
 
 
 @override_settings(**BOT_SETTINGS, EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+@override_settings(**BOT_SETTINGS)
 class ForgotPasswordTelegramChannelTests(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -222,16 +223,40 @@ class ForgotPasswordTelegramChannelTests(TestCase):
         self.user.save()
 
     @patch("apps.accounts.telegram_bot.send_password_reset_code")
-    def test_prefers_telegram_when_linked(self, mock_send):
+    def test_sends_telegram_when_linked(self, mock_send):
         resp = self.client.post(
             "/v1/auth/forgot-password",
             {"email": self.user.email},
             format="json",
         )
         self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data.get("channel"), "telegram")
+        self.assertTrue(resp.data.get("sent"))
         mock_send.assert_called_once()
         entry = PasswordResetCode.objects.filter(user=self.user).latest("created_at")
         self.assertEqual(entry.channel, PasswordResetCode.Channel.TELEGRAM)
+
+    @patch("apps.accounts.telegram_bot.bot_api")
+    def test_unlinked_returns_bot_link(self, mock_api):
+        mock_api.return_value = {"ok": True, "result": {}}
+        user = User.objects.create_user(
+            email="nolink@example.com",
+            password="password-12345",
+        )
+        resp = self.client.post(
+            "/v1/auth/forgot-password",
+            {"email": user.email},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.data.get("needs_telegram"))
+        self.assertIn("bot_link", resp.data)
+        self.assertEqual(
+            TelegramAuthSession.objects.filter(
+                user=user, purpose=TelegramAuthSession.Purpose.PASSWORD_RESET
+            ).count(),
+            1,
+        )
 
 
 @override_settings(**BOT_SETTINGS)

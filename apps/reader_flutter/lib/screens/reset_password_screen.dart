@@ -12,6 +12,7 @@ import '../providers/auth_api.dart';
 import '../utils/api_error_message.dart';
 import '../utils/auth_validators.dart';
 import '../utils/dio_connection_message.dart';
+import '../utils/telegram_return_url.dart';
 import '../common/platform/platform_shell.dart';
 import '../web/widgets/shell/adaptive_auth_layout.dart';
 import '../widgets/primitives/auth_form_kit.dart';
@@ -79,8 +80,16 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     final email = _email.text.trim();
     if (email.isEmpty) return;
     try {
-      await ref.read(authApiProvider).forgotPassword(email: email);
+      final data = await ref.read(authApiProvider).forgotPassword(
+            email: email,
+            returnUrl: telegramAppReturnUrl(),
+          );
       if (!mounted) return;
+      if (data['needs_telegram'] == true) {
+        // Account not linked yet — send them back to open Telegram.
+        context.go('/forgot-password?email=${Uri.encodeComponent(email)}');
+        return;
+      }
       _startCooldown();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

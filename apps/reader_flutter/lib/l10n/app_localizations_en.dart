@@ -801,17 +801,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get forgotPasswordSubtitle =>
-      'Enter your email. If an account exists, we’ll send a 6-digit code to your linked Telegram (or email if Telegram isn’t linked).';
+      'Enter your email. We’ll open Telegram and send a 6-digit reset code there (not email).';
 
   @override
   String get sendResetCode => 'Send reset code';
+
+  @override
+  String get sendResetCodeTelegram => 'Send code on Telegram';
+
+  @override
+  String get forgotPasswordWaitingTitle => 'Waiting for Telegram…';
+
+  @override
+  String get forgotPasswordWaitingSubtitle =>
+      'Confirm your phone in Telegram to receive the reset code.';
+
+  @override
+  String get forgotPasswordWaitingBody =>
+      'In Telegram, tap Start, then “Confirm my phone”. We’ll send your reset code in the chat. This screen continues automatically.';
 
   @override
   String get resetPasswordTitle => 'Set a new password';
 
   @override
   String resetPasswordSubtitle(String email) {
-    return 'Enter the code from Telegram (or email) for $email and choose a new password.';
+    return 'Enter the code from Telegram for $email and choose a new password.';
   }
 
   @override

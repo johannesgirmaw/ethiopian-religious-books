@@ -366,10 +366,14 @@
   "alreadyHaveAccount": "Already have an account? Sign in",
   "forgotPassword": "Forgot password?",
   "forgotPasswordTitle": "Reset password",
-  "forgotPasswordSubtitle": "Enter your email. If an account exists, we’ll send a 6-digit code to your linked Telegram (or email if Telegram isn’t linked).",
+  "forgotPasswordSubtitle": "Enter your email. We’ll open Telegram and send a 6-digit reset code there (not email).",
   "sendResetCode": "Send reset code",
+  "sendResetCodeTelegram": "Send code on Telegram",
+  "forgotPasswordWaitingTitle": "Waiting for Telegram…",
+  "forgotPasswordWaitingSubtitle": "Confirm your phone in Telegram to receive the reset code.",
+  "forgotPasswordWaitingBody": "In Telegram, tap Start, then “Confirm my phone”. We’ll send your reset code in the chat. This screen continues automatically.",
   "resetPasswordTitle": "Set a new password",
-  "resetPasswordSubtitle": "Enter the code from Telegram (or email) for {email} and choose a new password.",
+  "resetPasswordSubtitle": "Enter the code from Telegram for {email} and choose a new password.",
   "@resetPasswordSubtitle": {
     "placeholders": {
       "email": {"type": "String"}

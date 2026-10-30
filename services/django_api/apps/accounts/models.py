@@ -230,6 +230,7 @@ class TelegramAuthSession(models.Model):
     class Purpose(models.TextChoices):
         LOGIN = "login", "login"
         PHONE_LINK = "phone_link", "phone_link"
+        PASSWORD_RESET = "password_reset", "password_reset"
 
     class Status(models.TextChoices):
         PENDING = "pending", "pending"
