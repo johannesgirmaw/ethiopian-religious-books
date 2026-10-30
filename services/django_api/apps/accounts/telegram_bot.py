@@ -10,17 +10,33 @@ import logging
 import urllib.error
 import urllib.request
 from typing import Any
+from urllib.parse import urlparse
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
 
 from apps.accounts.models import TelegramAuthSession
 from apps.accounts.phone import mask_phone, normalize_phone
 
+User = get_user_model()
+
 logger = logging.getLogger(__name__)
 
 _API_TIMEOUT_S = 10
+
+# Hosts allowed for post-confirm return deep links (client-supplied).
+_ALLOWED_RETURN_HOSTS = frozenset(
+    {
+        "localhost",
+        "127.0.0.1",
+        "[::1]",
+        "app.felegemetsahft.com",
+        "felegemetsahft.com",
+        "www.felegemetsahft.com",
+    }
+)
 
 
 class TelegramBotError(Exception):
@@ -82,32 +98,128 @@ def send_message(chat_id: int | str, text: str, *, reply_markup: dict | None = N
     bot_api("sendMessage", payload)
 
 
+def sanitize_client_return_url(raw: str | None) -> str:
+    """Allow only localhost / production app hosts for return deep links."""
+    value = (raw or "").strip()
+    if not value:
+        return ""
+    try:
+        parsed = urlparse(value)
+    except Exception:
+        return ""
+    if parsed.scheme not in ("http", "https"):
+        return ""
+    host = (parsed.hostname or "").lower()
+    if host not in _ALLOWED_RETURN_HOSTS and not host.endswith(".felegemetsahft.com"):
+        return ""
+    # Normalize: drop query/fragment noise; keep path (incl. hash routes as path+fragment).
+    # Flutter web uses /#/auth/telegram — fragment is significant.
+    path = parsed.path or "/"
+    fragment = parsed.fragment or ""
+    if fragment:
+        return f"{parsed.scheme}://{parsed.netloc}{path}#{fragment}"
+    return f"{parsed.scheme}://{parsed.netloc}{path.rstrip('/')}"
+
+
+def append_session_query(base: str, session_id: str | Any) -> str:
+    """Attach ``session=`` to a client or settings return base URL."""
+    base = (base or "").strip()
+    if not base:
+        return ""
+    # Hash routes: https://host/#/path → https://host/#/path?session=
+    if "#" in base:
+        before, after = base.split("#", 1)
+        if "?" in after:
+            return f"{before}#{after}&session={session_id}"
+        return f"{before}#{after}?session={session_id}"
+    sep = "&" if "?" in base else "?"
+    return f"{base}{sep}session={session_id}"
+
+
+def public_return_button_url(session_id: str | Any) -> str | None:
+    """HTTPS URL Telegram can put on an inline button (localhost is rejected).
+
+    Uses the public API host from the webhook URL so a cloudflared / prod API
+    can 302-redirect to the client's local or production app URL.
+    """
+    webhook = (getattr(settings, "TELEGRAM_AUTH_WEBHOOK_URL", "") or "").strip()
+    if webhook.endswith("/webhook"):
+        return f"{webhook[: -len('/webhook')]}/return?session={session_id}"
+    base = (getattr(settings, "TELEGRAM_AUTH_APP_RETURN_BASE", "") or "").strip()
+    if base:
+        return append_session_query(base, session_id) or None
+    return None
+
+
+def final_app_url_for_session(session: TelegramAuthSession) -> str | None:
+    """Where the browser should land after the Telegram return redirect."""
+    if session.client_return_url:
+        return append_session_query(session.client_return_url, session.id) or None
+    base = (getattr(settings, "TELEGRAM_AUTH_APP_RETURN_BASE", "") or "").strip()
+    if base:
+        return append_session_query(base, session.id) or None
+    return None
+
+
 def send_contact_request(chat_id: int | str, *, link_mode: bool = False) -> None:
     """Ask once for the user's own Telegram phone (Telegram's consent UI).
 
-    Linking skips the OTP step afterward; login still sends a short code.
+    Telegram always shows its own share-phone dialog — bots cannot skip it.
+    Returning linked users never reach this (see ``_handle_start``).
     """
     if link_mode:
         text = (
-            "Tap the button below to confirm your Telegram phone number.\n"
-            "This is a one-time step — you will be linked automatically."
+            "<b>One-time setup</b>\n\n"
+            "Tap <b>Confirm my phone</b>, then OK on Telegram’s prompt.\n"
+            "We only need this once to link your account."
         )
-        button = "Confirm my phone"
     else:
         text = (
-            "Tap the button below to confirm your Telegram phone number.\n"
-            "We will then send a short login code."
+            "<b>First-time sign-in</b>\n\n"
+            "Tap <b>Confirm my phone</b>, then OK on Telegram’s prompt.\n"
+            "Next time you sign in, this step is skipped."
         )
-        button = "Confirm my phone"
     send_message(
         chat_id,
         text,
         reply_markup={
-            "keyboard": [[{"text": button, "request_contact": True}]],
+            "keyboard": [[{"text": "Confirm my phone", "request_contact": True}]],
             "resize_keyboard": True,
             "one_time_keyboard": True,
         },
     )
+
+
+def send_done_with_return(
+    chat_id: int | str,
+    *,
+    session_id: str | Any,
+    linked: bool,
+) -> None:
+    """Remove the contact keyboard and offer a one-tap return to the app."""
+    if linked:
+        body = (
+            "<b>Telegram linked.</b>\n\n"
+            "Return to Felege Metsahft — you are done."
+        )
+        button = "Open Felege Metsahft"
+    else:
+        body = (
+            "<b>Phone confirmed.</b>\n\n"
+            "Return to Felege Metsahft to finish signing in."
+        )
+        button = "Open Felege Metsahft"
+
+    remove_keyboard(chat_id, body)
+    url = public_return_button_url(session_id)
+    if url:
+        send_message(
+            chat_id,
+            "Tap below to open the app:",
+            reply_markup={
+                "inline_keyboard": [[{"text": button, "url": url}]],
+            },
+        )
 
 
 def remove_keyboard(chat_id: int | str, text: str) -> None:
@@ -153,11 +265,13 @@ def initiate_session(
     purpose: str,
     user=None,
     ip: str | None = None,
+    return_url: str | None = None,
 ) -> tuple[TelegramAuthSession, str]:
     """Create a deep-link session; returns (session, bot_link).
 
     ``phone_link`` may omit the phone — it is taken from Telegram contact share.
     ``login`` still accepts an optional phone; if omitted, contact sets it.
+    ``return_url`` is the local or production app URL opened after Confirm.
     """
     if not bot_configured():
         raise TelegramBotError("Telegram auth is not configured.")
@@ -174,6 +288,8 @@ def initiate_session(
     phone = ""
     if raw_phone and str(raw_phone).strip():
         phone = normalize_phone(str(raw_phone))
+
+    safe_return = sanitize_client_return_url(return_url)
 
     now = timezone.now()
     # Cooldown: per user for link, per phone (or user) for login.
@@ -193,6 +309,9 @@ def initiate_session(
         cooldown_qs.filter(expires_at__gt=now).order_by("-created_at").first()
     )
     if existing is not None:
+        if safe_return and existing.client_return_url != safe_return:
+            existing.client_return_url = safe_return
+            existing.save(update_fields=["client_return_url"])
         username = settings.TELEGRAM_AUTH_BOT_USERNAME.lstrip("@")
         return existing, f"https://t.me/{username}?start={existing.id}"
 
@@ -212,6 +331,7 @@ def initiate_session(
         user=user if purpose == TelegramAuthSession.Purpose.PHONE_LINK else None,
         expires_at=now + TelegramAuthSession.SESSION_TTL,
         requested_ip=ip,
+        client_return_url=safe_return,
     )
     username = settings.TELEGRAM_AUTH_BOT_USERNAME.lstrip("@")
     bot_link = f"https://t.me/{username}?start={session.id}"
@@ -259,7 +379,7 @@ def _handle_start(*, chat_id: int, from_user: dict, session_id: str) -> None:
     if not session_id:
         send_message(
             chat_id,
-            "Open Felege Metsahft and tap <b>Continue with Telegram</b> to get a fresh link.",
+            "Open Felege Metsahft and tap <b>Sign in with Telegram</b> to get a fresh link.",
         )
         return
 
@@ -274,9 +394,67 @@ def _handle_start(*, chat_id: int, from_user: dict, session_id: str) -> None:
         send_message(chat_id, "This link has expired. Go back to the app and try again.")
         return
 
+    from_id = int(from_user.get("id"))
     session.telegram_chat_id = int(chat_id)
-    session.telegram_user_id = int(from_user.get("id"))
+    session.telegram_user_id = from_id
     session.telegram_username = (from_user.get("username") or "")[:64]
+
+    # Returning linked user: Telegram already proved identity via /start —
+    # skip the share-phone modal entirely.
+    if session.purpose == TelegramAuthSession.Purpose.LOGIN:
+        linked = (
+            User.objects.filter(
+                telegram_user_id=from_id,
+                deleted_at__isnull=True,
+                is_active=True,
+            )
+            .only("id", "phone")
+            .first()
+        )
+        if linked is not None:
+            if linked.phone and not session.phone:
+                session.phone = linked.phone
+            session.status = TelegramAuthSession.Status.VERIFIED
+            session.save(
+                update_fields=[
+                    "phone",
+                    "telegram_chat_id",
+                    "telegram_user_id",
+                    "telegram_username",
+                    "status",
+                ]
+            )
+            send_done_with_return(chat_id, session_id=session.id, linked=False)
+            logger.info(
+                "Telegram login session %s verified without contact (linked user %s)",
+                session.id,
+                linked.id,
+            )
+            return
+
+    # Already linked to this account (Settings → Link again).
+    if (
+        session.purpose == TelegramAuthSession.Purpose.PHONE_LINK
+        and session.user_id
+        and session.user.telegram_user_id == from_id
+    ):
+        session.status = TelegramAuthSession.Status.VERIFIED
+        session.consumed_at = now
+        if session.user.phone and not session.phone:
+            session.phone = session.user.phone
+        session.save(
+            update_fields=[
+                "phone",
+                "telegram_chat_id",
+                "telegram_user_id",
+                "telegram_username",
+                "status",
+                "consumed_at",
+            ]
+        )
+        send_done_with_return(chat_id, session_id=session.id, linked=True)
+        return
+
     session.status = TelegramAuthSession.Status.AWAITING_CONTACT
     session.save(
         update_fields=[
@@ -372,39 +550,34 @@ def _handle_contact(
                 "consumed_at",
             ]
         )
-        remove_keyboard(
-            chat_id,
-            "<b>Telegram linked.</b>\n\nReturn to Felege Metsahft — you are done.",
-        )
+        send_done_with_return(chat_id, session_id=session.id, linked=True)
         logger.info("Telegram linked for user %s via %s", session.user_id, mask_phone(shared_phone))
         return
 
-    raw_code = TelegramAuthSession.generate_raw_code()
-    session.code_hash = TelegramAuthSession.hash_code(raw_code)
-    session.code_expires_at = now + TelegramAuthSession.CODE_TTL
+    # Login / sign-up: contact proof verifies the session; the app claims tokens
+    # (or asks for email) — no OTP to type.
     session.attempts = 0
-    session.status = TelegramAuthSession.Status.CODE_SENT
+    session.status = TelegramAuthSession.Status.VERIFIED
+    session.code_hash = ""
+    session.code_expires_at = None
     session.save(
         update_fields=[
             "phone",
-            "code_hash",
-            "code_expires_at",
             "attempts",
             "telegram_user_id",
             "telegram_chat_id",
             "telegram_username",
             "status",
+            "code_hash",
+            "code_expires_at",
         ]
     )
-
-    remove_keyboard(
-        chat_id,
-        f"<b>Your Felege Metsahft code</b>\n\n"
-        f"<code>{raw_code}</code>\n\n"
-        f"Expires in {int(TelegramAuthSession.CODE_TTL.total_seconds() // 60)} minutes. "
-        f"Enter it in the app.",
+    send_done_with_return(chat_id, session_id=session.id, linked=False)
+    logger.info(
+        "Telegram login session %s verified via contact for %s",
+        session.id,
+        mask_phone(session.phone),
     )
-    logger.info("OTP delivered via Telegram for %s", mask_phone(session.phone))
 
 
 def send_password_reset_code(*, chat_id: int, code: str, display_name: str = "") -> None:

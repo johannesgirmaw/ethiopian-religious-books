@@ -88,11 +88,13 @@ class AuthApi {
     return res.data!;
   }
 
-  /// Starts Telegram bot OTP / link. [purpose] is `login` or `phone_link`.
-  /// [phone] is optional for link (taken from Telegram contact).
+  /// Starts Telegram bot login / link. [purpose] is `login` or `phone_link`.
+  /// [phone] is optional (taken from Telegram contact share).
+  /// [returnUrl] is the local or production app URL opened after Confirm.
   Future<Map<String, dynamic>> telegramInitiate({
     String? phone,
     required String purpose,
+    String? returnUrl,
   }) async {
     final Dio dio =
         purpose == 'phone_link' ? _ref.read(apiDioProvider) : _public();
@@ -101,15 +103,30 @@ class AuthApi {
       data: {
         'purpose': purpose,
         if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
+        if (returnUrl != null && returnUrl.trim().isNotEmpty)
+          'return_url': returnUrl.trim(),
       },
     );
     return res.data!;
   }
 
-  Future<Map<String, dynamic>> telegramSessionStatus(String sessionId) async {
-    final dio = _ref.read(apiDioProvider);
+  Future<Map<String, dynamic>> telegramSessionStatus(
+    String sessionId, {
+    required String purpose,
+  }) async {
+    final Dio dio =
+        purpose == 'phone_link' ? _ref.read(apiDioProvider) : _public();
     final res = await dio.get<Map<String, dynamic>>(
       'auth/telegram/session/$sessionId',
+    );
+    return res.data!;
+  }
+
+  /// Finish login after Telegram contact confirm (no OTP).
+  Future<Map<String, dynamic>> telegramClaim(String sessionId) async {
+    final res = await _public().post<Map<String, dynamic>>(
+      'auth/telegram/claim',
+      data: {'session_id': sessionId},
     );
     return res.data!;
   }
@@ -129,8 +146,9 @@ class AuthApi {
   }
 
   Future<Map<String, dynamic>> telegramComplete({
-    required String phone,
-    required String code,
+    String? sessionId,
+    String? phone,
+    String? code,
     required String email,
     String? password,
     String? displayName,
@@ -138,8 +156,9 @@ class AuthApi {
     final res = await _public().post<Map<String, dynamic>>(
       'auth/telegram/complete',
       data: {
-        'phone': phone,
-        'code': code,
+        if (sessionId != null && sessionId.isNotEmpty) 'session_id': sessionId,
+        if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
+        if (code != null && code.trim().isNotEmpty) 'code': code.trim(),
         'email': email,
         if (password != null && password.isNotEmpty) 'password': password,
         if (displayName != null && displayName.isNotEmpty)

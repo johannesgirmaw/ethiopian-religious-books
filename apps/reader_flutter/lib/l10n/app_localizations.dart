@@ -1529,7 +1529,7 @@ abstract class AppLocalizations {
   /// No description provided for @forgotPasswordSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Enter your email and we\'ll send you a 6-digit code to reset your password.'**
+  /// **'Enter your email. If an account exists, we’ll send a 6-digit code to your linked Telegram (or email if Telegram isn’t linked).'**
   String get forgotPasswordSubtitle;
 
   /// No description provided for @sendResetCode.
@@ -1547,7 +1547,7 @@ abstract class AppLocalizations {
   /// No description provided for @resetPasswordSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Enter the code we sent to {email} and choose a new password.'**
+  /// **'Enter the code from Telegram (or email) for {email} and choose a new password.'**
   String resetPasswordSubtitle(String email);
 
   /// No description provided for @resetCodeFieldLabel.
@@ -1694,16 +1694,22 @@ abstract class AppLocalizations {
   /// **'Continue with Telegram'**
   String get continueWithTelegram;
 
+  /// No description provided for @signInWithTelegram.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with Telegram'**
+  String get signInWithTelegram;
+
   /// No description provided for @telegramContinueTitle.
   ///
   /// In en, this message translates to:
-  /// **'Continue with Telegram'**
+  /// **'Sign in with Telegram'**
   String get telegramContinueTitle;
 
   /// No description provided for @telegramContinueSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Enter the phone number linked to your Telegram account. We\'ll open Telegram so you can share your contact and receive a one-time code.'**
+  /// **'We\'ll open the Telegram app. Tap Start, then “Confirm my phone”. No code to type — this screen finishes automatically.'**
   String get telegramContinueSubtitle;
 
   /// No description provided for @telegramLinkTitle.
@@ -1715,14 +1721,32 @@ abstract class AppLocalizations {
   /// No description provided for @telegramLinkSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Link Telegram to sign in with a code, reset your password via Telegram, and receive free notifications.'**
+  /// **'Link Telegram to sign in, reset your password via Telegram, and receive free notifications.'**
   String get telegramLinkSubtitle;
 
   /// No description provided for @telegramOtpSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Share your contact in Telegram, then enter the 6-digit code here.'**
+  /// **'Confirm your phone in Telegram. This screen updates automatically.'**
   String get telegramOtpSubtitle;
+
+  /// No description provided for @telegramWaitingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for Telegram…'**
+  String get telegramWaitingTitle;
+
+  /// No description provided for @telegramWaitingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm your phone in Telegram, then return here.'**
+  String get telegramWaitingSubtitle;
+
+  /// No description provided for @telegramWaitingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'In Telegram, tap Start, then “Confirm my phone”. You can also tap “Open Felege Metsahft” in the bot. This screen will update when you are signed in.'**
+  String get telegramWaitingBody;
 
   /// No description provided for @telegramCompleteSubtitle.
   ///
@@ -1763,19 +1787,19 @@ abstract class AppLocalizations {
   /// No description provided for @telegramOpenBotCta.
   ///
   /// In en, this message translates to:
-  /// **'Open Telegram & get code'**
+  /// **'Open Telegram'**
   String get telegramOpenBotCta;
 
   /// No description provided for @telegramOtpInstructions.
   ///
   /// In en, this message translates to:
-  /// **'In Telegram, tap Start, share your number, then enter the code below.'**
+  /// **'In Telegram, tap Start, then Confirm my phone.'**
   String get telegramOtpInstructions;
 
   /// No description provided for @telegramReopenBot.
   ///
   /// In en, this message translates to:
-  /// **'Re-open Telegram bot'**
+  /// **'Re-open Telegram'**
   String get telegramReopenBot;
 
   /// No description provided for @telegramVerifyCta.
@@ -1823,7 +1847,7 @@ abstract class AppLocalizations {
   /// No description provided for @telegramLinkNavSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Free login codes, password reset, and notifications'**
+  /// **'Free login, password reset, and notifications'**
   String get telegramLinkNavSubtitle;
 
   /// No description provided for @telegramLinkedNavSubtitle.

@@ -269,6 +269,8 @@ class TelegramAuthSession(models.Model):
     code_expires_at = models.DateTimeField(null=True, blank=True)
     consumed_at = models.DateTimeField(null=True, blank=True)
     requested_ip = models.GenericIPAddressField(null=True, blank=True)
+    # Where to send the user after Confirm my phone (local localhost or prod app URL).
+    client_return_url = models.CharField(max_length=512, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

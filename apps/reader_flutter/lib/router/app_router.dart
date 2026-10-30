@@ -197,7 +197,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             path: '/auth/telegram',
             pageBuilder: (context, state) => NoTransitionPage<void>(
               key: state.pageKey,
-              child: const TelegramAuthScreen(),
+              child: TelegramAuthScreen(
+                initialSessionId: state.uri.queryParameters['session'],
+              ),
             ),
           ),
         ],

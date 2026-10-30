@@ -220,6 +220,12 @@ TELEGRAM_AUTH_REQUIRE_WEBHOOK_SECRET = env.bool(
     "TELEGRAM_AUTH_REQUIRE_WEBHOOK_SECRET",
     default=not DEBUG,
 )
+# HTTPS URL opened from the bot after Confirm my phone (Telegram only allows http/https).
+# Example: https://app.felegemetsahft.com/#/auth/telegram
+TELEGRAM_AUTH_APP_RETURN_BASE = env(
+    "TELEGRAM_AUTH_APP_RETURN_BASE",
+    default="https://app.felegemetsahft.com/#/auth/telegram",
+)
 TELEGRAM_NOTIFY_RATE_LIMIT_PER_HOUR = env.int(
     "TELEGRAM_NOTIFY_RATE_LIMIT_PER_HOUR",
     default=30,

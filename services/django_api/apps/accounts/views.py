@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.http import HttpResponseRedirect
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
@@ -23,6 +24,7 @@ from apps.accounts.serializers import (
     ForgotPasswordSerializer,
     RegisterSerializer,
     ResetPasswordSerializer,
+    TelegramClaimSerializer,
     TelegramCompleteSerializer,
     TelegramInitiateSerializer,
     TelegramVerifySerializer,
@@ -376,6 +378,25 @@ def _auth_payload(user) -> dict:
     return {**_tokens_for(user), "user": UserSerializer(user).data}
 
 
+def _find_user_for_telegram_session(session: TelegramAuthSession):
+    """Match an existing account by Telegram id, then verified phone."""
+    user = None
+    if session.telegram_user_id is not None:
+        user = User.objects.filter(
+            telegram_user_id=session.telegram_user_id,
+            deleted_at__isnull=True,
+            is_active=True,
+        ).first()
+    if user is None and session.phone:
+        user = User.objects.filter(
+            phone=session.phone,
+            phone_verified_at__isnull=False,
+            deleted_at__isnull=True,
+            is_active=True,
+        ).first()
+    return user
+
+
 def _load_usable_telegram_session(*, phone: str, purpose: str):
     now = timezone.now()
     return (
@@ -403,6 +424,7 @@ class TelegramInitiateView(APIView):
         ser.is_valid(raise_exception=True)
         purpose = ser.validated_data["purpose"]
         raw_phone = (ser.validated_data.get("phone") or "").strip() or None
+        return_url = (ser.validated_data.get("return_url") or "").strip() or None
 
         if purpose == TelegramAuthSession.Purpose.PHONE_LINK:
             if not request.user or not request.user.is_authenticated:
@@ -425,6 +447,7 @@ class TelegramInitiateView(APIView):
                 purpose=purpose,
                 user=request.user if purpose == TelegramAuthSession.Purpose.PHONE_LINK else None,
                 ip=_client_ip(request),
+                return_url=return_url,
             )
         except ValueError as exc:
             return _error(
@@ -453,7 +476,7 @@ class TelegramInitiateView(APIView):
 
 
 class TelegramSessionStatusView(APIView):
-    """Poll session status (used by the short link flow — no OTP)."""
+    """Poll session status (login + link — no OTP)."""
 
     permission_classes = [AllowAny]
 
@@ -481,10 +504,23 @@ class TelegramSessionStatusView(APIView):
                     http_status=status.HTTP_403_FORBIDDEN,
                 )
 
+        ready = (
+            session.purpose == TelegramAuthSession.Purpose.LOGIN
+            and session.status == TelegramAuthSession.Status.VERIFIED
+            and session.consumed_at is None
+            and not session.is_expired()
+        )
+        needs_email = False
+        if ready:
+            needs_email = _find_user_for_telegram_session(session) is None
+
         payload = {
             "session_id": str(session.id),
             "purpose": session.purpose,
             "status": session.status,
+            "ready": ready,
+            "needs_email": needs_email,
+            "phone": session.phone or "",
             "linked": (
                 session.purpose == TelegramAuthSession.Purpose.PHONE_LINK
                 and session.status == TelegramAuthSession.Status.VERIFIED
@@ -494,6 +530,110 @@ class TelegramSessionStatusView(APIView):
             user = session.user
             payload["user"] = UserSerializer(user).data
         return Response(payload)
+
+
+class TelegramClaimView(APIView):
+    """Exchange a contact-verified login session for JWT (or needs_email)."""
+
+    permission_classes = [AllowAny]
+
+    @extend_schema(request=TelegramClaimSerializer, responses={200: None})
+    def post(self, request):
+        ser = TelegramClaimSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        session_id = ser.validated_data["session_id"]
+
+        with transaction.atomic():
+            try:
+                session = (
+                    TelegramAuthSession.objects.select_for_update().get(pk=session_id)
+                )
+            except TelegramAuthSession.DoesNotExist:
+                return _error(
+                    "NOT_FOUND",
+                    "Session not found.",
+                    http_status=status.HTTP_404_NOT_FOUND,
+                )
+
+            if session.purpose != TelegramAuthSession.Purpose.LOGIN:
+                return _error(
+                    "INVALID_SESSION",
+                    "This session is not a login session.",
+                    http_status=status.HTTP_400_BAD_REQUEST,
+                )
+            if (
+                session.status != TelegramAuthSession.Status.VERIFIED
+                or session.consumed_at is not None
+                or session.is_expired()
+                or session.telegram_user_id is None
+            ):
+                return _error(
+                    "NOT_READY",
+                    "Confirm your phone in Telegram first, then try again.",
+                    http_status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            user = _find_user_for_telegram_session(session)
+            if user is None:
+                return Response(
+                    {
+                        "ok": True,
+                        "needs_email": True,
+                        "phone": session.phone,
+                        "session_id": str(session.id),
+                    }
+                )
+
+            try:
+                telegram_bot.attach_telegram_to_user(user, session)
+            except telegram_bot.TelegramBotError:
+                if user.telegram_user_id != session.telegram_user_id:
+                    return _error(
+                        "LINK_CONFLICT",
+                        "This Telegram account is linked to another user.",
+                        http_status=status.HTTP_409_CONFLICT,
+                    )
+
+            session.consumed_at = timezone.now()
+            session.save(update_fields=["consumed_at"])
+            return Response(_auth_payload(user))
+
+
+class TelegramReturnRedirectView(APIView):
+    """Public HTTPS bounce used by the bot's Open Felege Metsahft button.
+
+    Telegram rejects ``localhost`` button URLs, so the bot links here and we
+    302 to the client's local or production app URL stored on the session.
+    """
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        session_id = (request.query_params.get("session") or "").strip()
+        if not session_id:
+            return _error(
+                "NOT_FOUND",
+                "Missing session.",
+                http_status=status.HTTP_404_NOT_FOUND,
+            )
+        try:
+            session = TelegramAuthSession.objects.get(pk=session_id)
+        except (TelegramAuthSession.DoesNotExist, ValueError):
+            return _error(
+                "NOT_FOUND",
+                "Session not found.",
+                http_status=status.HTTP_404_NOT_FOUND,
+            )
+        target = telegram_bot.final_app_url_for_session(session)
+        if not target:
+            from django.conf import settings as dj_settings
+
+            fallback = (
+                getattr(dj_settings, "TELEGRAM_AUTH_APP_RETURN_BASE", "") or ""
+            ).strip() or "https://app.felegemetsahft.com/#/auth/telegram"
+            target = telegram_bot.append_session_query(fallback, session.id)
+        return HttpResponseRedirect(target)
 
 
 class TelegramWebhookView(APIView):
@@ -641,7 +781,7 @@ class TelegramVerifyView(APIView):
 
 
 class TelegramCompleteView(APIView):
-    """Finish Telegram signup: attach email (and optional password) after OTP."""
+    """Finish Telegram signup: attach email after contact verify (or legacy OTP)."""
 
     permission_classes = [AllowAny]
 
@@ -649,20 +789,13 @@ class TelegramCompleteView(APIView):
     def post(self, request):
         ser = TelegramCompleteSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
-        code = ser.validated_data["code"]
+        session_id = ser.validated_data.get("session_id")
+        code = (ser.validated_data.get("code") or "").strip()
         email = ser.validated_data["email"].strip().lower()
         password = (ser.validated_data.get("password") or "").strip()
         display_name = (ser.validated_data.get("display_name") or "").strip()
         preferred = (ser.validated_data.get("preferred_ui_language") or "en").strip() or "en"
-
-        try:
-            phone = normalize_phone(ser.validated_data["phone"])
-        except ValueError as exc:
-            return _error(
-                "INVALID_PHONE",
-                str(exc),
-                http_status=status.HTTP_400_BAD_REQUEST,
-            )
+        raw_phone = (ser.validated_data.get("phone") or "").strip()
 
         invalid = _error(
             "INVALID_CODE",
@@ -678,45 +811,66 @@ class TelegramCompleteView(APIView):
             )
 
         with transaction.atomic():
-            # Accept a just-verified session (needs_email path) or a still-usable code_sent one.
-            session = (
-                TelegramAuthSession.objects.select_for_update()
-                .filter(
-                    phone=phone,
-                    purpose=TelegramAuthSession.Purpose.LOGIN,
-                )
-                .order_by("-created_at")
-                .first()
-            )
-            if session is None:
-                return invalid
-
             now = timezone.now()
-            if session.status == TelegramAuthSession.Status.VERIFIED:
-                # Already verified in previous verify call — allow complete within session TTL.
-                if session.is_expired(now=now) or session.telegram_user_id is None:
+            session = None
+            if session_id:
+                try:
+                    session = (
+                        TelegramAuthSession.objects.select_for_update().get(pk=session_id)
+                    )
+                except TelegramAuthSession.DoesNotExist:
                     return invalid
-            elif session.code_is_usable(now=now):
-                session.attempts += 1
-                if not session.verify_code(code):
-                    session.save(update_fields=["attempts"])
-                    return invalid
-                session.consumed_at = now
-                session.status = TelegramAuthSession.Status.VERIFIED
-                session.save(update_fields=["attempts", "consumed_at", "status"])
-            else:
-                # Verified session from prior step: code already consumed; match code via
-                # allowing empty re-check only when status=verified and same code was used
-                # — client resends the same code for complete.
                 if (
-                    session.status != TelegramAuthSession.Status.VERIFIED
+                    session.purpose != TelegramAuthSession.Purpose.LOGIN
+                    or session.status != TelegramAuthSession.Status.VERIFIED
                     or session.telegram_user_id is None
                     or session.is_expired(now=now)
                 ):
                     return invalid
-                # Soft-check: if code_hash still present, verify again.
-                if session.code_hash and not session.verify_code(code):
+                phone = session.phone
+            else:
+                try:
+                    phone = normalize_phone(raw_phone)
+                except ValueError as exc:
+                    return _error(
+                        "INVALID_PHONE",
+                        str(exc),
+                        http_status=status.HTTP_400_BAD_REQUEST,
+                    )
+                session = (
+                    TelegramAuthSession.objects.select_for_update()
+                    .filter(
+                        phone=phone,
+                        purpose=TelegramAuthSession.Purpose.LOGIN,
+                    )
+                    .order_by("-created_at")
+                    .first()
+                )
+                if session is None:
                     return invalid
+
+                if session.status == TelegramAuthSession.Status.VERIFIED:
+                    if session.is_expired(now=now) or session.telegram_user_id is None:
+                        return invalid
+                elif session.code_is_usable(now=now):
+                    session.attempts += 1
+                    if not session.verify_code(code):
+                        session.save(update_fields=["attempts"])
+                        return invalid
+                    session.status = TelegramAuthSession.Status.VERIFIED
+                    session.save(update_fields=["attempts", "status"])
+                else:
+                    if (
+                        session.status != TelegramAuthSession.Status.VERIFIED
+                        or session.telegram_user_id is None
+                        or session.is_expired(now=now)
+                    ):
+                        return invalid
+                    if session.code_hash and code and not session.verify_code(code):
+                        return invalid
+
+            if not phone:
+                return invalid
 
             if session.telegram_user_id and User.objects.filter(
                 telegram_user_id=session.telegram_user_id
@@ -746,5 +900,8 @@ class TelegramCompleteView(APIView):
                 user.set_unusable_password()
             user.save()
             telegram_bot.attach_telegram_to_user(user, session)
+            session.consumed_at = now
+            session.status = TelegramAuthSession.Status.VERIFIED
+            session.save(update_fields=["consumed_at", "status"])
 
         return Response(_auth_payload(user), status=status.HTTP_201_CREATED)

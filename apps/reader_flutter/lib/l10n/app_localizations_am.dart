@@ -786,7 +786,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get forgotPasswordSubtitle =>
-      'ኢሜይልዎን ያስገቡ፤ የይለፍ ቃልዎን ለመቀየር ባለ 6 አሃዝ ቁጥር እንልክልዎታለን።';
+      'ኢሜይልዎን ያስገቡ። መለያ ካለ፣ ባለ 6 አሃዝ ቁጥር ወደ የተገናኘው ቴሌግራምዎ እንልካለን (ቴሌግራም ካልተገናኘ ወደ ኢሜይል)።';
 
   @override
   String get sendResetCode => 'ቁጥሩን ላክ';
@@ -796,7 +796,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String resetPasswordSubtitle(String email) {
-    return 'ወደ $email የላክነውን ቁጥር ያስገቡና አዲስ የይለፍ ቃል ይምረጡ።';
+    return 'ከቴሌግራም (ወይም ኢሜይል) ለ $email የመጣውን ቁጥር ያስገቡና አዲስ የይለፍ ቃል ይምረጡ።';
   }
 
   @override
@@ -875,22 +875,34 @@ class AppLocalizationsAm extends AppLocalizations {
   String get continueWithTelegram => 'በቴሌግራም ይቀጥሉ';
 
   @override
-  String get telegramContinueTitle => 'በቴሌግራም ይቀጥሉ';
+  String get signInWithTelegram => 'በቴሌግራም ይግቡ';
+
+  @override
+  String get telegramContinueTitle => 'በቴሌግራም ይግቡ';
 
   @override
   String get telegramContinueSubtitle =>
-      'ከቴሌግራም መለያዎ ጋር የተገናኘውን ስልክ ቁጥር ያስገቡ። ቴሌግራምን እንከፍታለን፣ እውቂያዎን ያጋሩና አንድ ጊዜ የሚያገለግል ኮድ ይቀበሉ።';
+      'የቴሌግራም መተግበሪያውን እንከፍታለን። Start ይጫኑ፣ ከዚያ “Confirm my phone”። ኮድ ማስገባት አያስፈልግም — ይህ ገጽ በራስ-ሰር ይጠናቀቃል።';
 
   @override
   String get telegramLinkTitle => 'ቴሌግራምን ያገናኙ';
 
   @override
   String get telegramLinkSubtitle =>
-      'በኮድ ለመግባት፣ የይለፍ ቃል በቴሌግራም ለመቀየር እና ነጻ ማሳወቂያዎችን ለመቀበል ቴሌግራምን ያገናኙ።';
+      'ለመግባት፣ የይለፍ ቃል በቴሌግራም ለመቀየር እና ነጻ ማሳወቂያዎችን ለመቀበል ቴሌግራምን ያገናኙ።';
 
   @override
-  String get telegramOtpSubtitle =>
-      'በቴሌግራም እውቂያዎን ያጋሩ፣ ከዚያ 6-አሃዝ ኮዱን እዚህ ያስገቡ።';
+  String get telegramOtpSubtitle => 'በቴሌግራም ስልክዎን ያረጋግጡ። ይህ ገጽ በራስ-ሰር ይዘምናል።';
+
+  @override
+  String get telegramWaitingTitle => 'ቴሌግራምን በመጠባበቅ ላይ…';
+
+  @override
+  String get telegramWaitingSubtitle => 'በቴሌግራም ስልክዎን ያረጋግጡ፣ ከዚያ ወደዚህ ይመለሱ።';
+
+  @override
+  String get telegramWaitingBody =>
+      'በቴሌግራም Start ይጫኑ፣ ከዚያ “Confirm my phone”። በቦቱ “Open Felege Metsahft” መጫንም ይችላሉ። ሲገቡ ይህ ገጽ ይዘምናል።';
 
   @override
   String get telegramCompleteSubtitle =>
@@ -913,14 +925,14 @@ class AppLocalizationsAm extends AppLocalizations {
   String get phoneInvalid => 'ትክክለኛ ስልክ ቁጥር ያስገቡ';
 
   @override
-  String get telegramOpenBotCta => 'ቴሌግራምን ክፈቱና ኮድ ያግኙ';
+  String get telegramOpenBotCta => 'ቴሌግራምን ክፈቱ';
 
   @override
   String get telegramOtpInstructions =>
-      'በቴሌግራም Start ይጫኑ፣ ቁጥርዎን ያጋሩ፣ ከዚያ ኮዱን ከታች ያስገቡ።';
+      'በቴሌግራም Start ይጫኑ፣ ከዚያ Confirm my phone።';
 
   @override
-  String get telegramReopenBot => 'የቴሌግራም ቦትን እንደገና ክፈቱ';
+  String get telegramReopenBot => 'ቴሌግራምን እንደገና ክፈቱ';
 
   @override
   String get telegramVerifyCta => 'ኮድ ያረጋግጡ';
@@ -945,7 +957,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get telegramNotLinkedLabel => 'ቴሌግራም አልተገናኘም';
 
   @override
-  String get telegramLinkNavSubtitle => 'ነጻ የመግቢያ ኮዶች፣ የይለፍ ቃል መቀየር እና ማሳወቂያዎች';
+  String get telegramLinkNavSubtitle => 'ነጻ መግባት፣ የይለፍ ቃል መቀየር እና ማሳወቂያዎች';
 
   @override
   String get telegramLinkedNavSubtitle => 'ማሳወቂያዎችና በቴሌግራም መግባት ነቅተዋል';

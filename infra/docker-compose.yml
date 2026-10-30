@@ -77,6 +77,8 @@ services:
       TELEGRAM_AUTH_WEBHOOK_SECRET: ${TELEGRAM_AUTH_WEBHOOK_SECRET:-}
       TELEGRAM_AUTH_REQUIRE_WEBHOOK_SECRET: ${TELEGRAM_AUTH_REQUIRE_WEBHOOK_SECRET:-false}
       TELEGRAM_AUTH_REGISTER_WEBHOOK_ON_START: ${TELEGRAM_AUTH_REGISTER_WEBHOOK_ON_START:-0}
+      # Empty locally (poll-only). Prod sets https://app.felegemetsahft.com/#/auth/telegram
+      TELEGRAM_AUTH_APP_RETURN_BASE: ${TELEGRAM_AUTH_APP_RETURN_BASE-}
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ../services/django_api:/app

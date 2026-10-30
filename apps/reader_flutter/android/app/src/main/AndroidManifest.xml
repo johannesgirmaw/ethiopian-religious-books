@@ -48,5 +48,14 @@ found in the LICENSE file. -->
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Open Telegram mobile app via tg:// deep links -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="tg"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https" android:host="t.me"/>
+        </intent>
     </queries>
 </manifest>

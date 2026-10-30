@@ -115,7 +115,8 @@ class TelegramWebhookAndVerifyTests(TestCase):
         self.assertFalse(self.session.code_hash)
 
     @patch("apps.accounts.telegram_bot.bot_api")
-    def test_full_login_existing_user(self, mock_api):
+    def test_full_login_existing_user_skips_contact(self, mock_api):
+        """Already-linked Telegram accounts skip the share-phone modal."""
         mock_api.return_value = {"ok": True, "result": {}}
         user = User.objects.create_user(
             email="tg-reader@example.com",
@@ -138,27 +139,19 @@ class TelegramWebhookAndVerifyTests(TestCase):
                 }
             }
         )
-        # Capture code by issuing through contact handler
-        with patch("apps.accounts.telegram_bot.TelegramAuthSession.generate_raw_code", return_value="123456"):
-            handle_webhook_update(
-                {
-                    "message": {
-                        "chat": {"id": 42},
-                        "from": {"id": 42, "username": "alice"},
-                        "contact": {
-                            "phone_number": "251911000001",
-                            "user_id": 42,
-                        },
-                    }
-                }
-            )
 
         self.session.refresh_from_db()
-        self.assertEqual(self.session.status, TelegramAuthSession.Status.CODE_SENT)
+        self.assertEqual(self.session.status, TelegramAuthSession.Status.VERIFIED)
+        self.assertEqual(self.session.phone, self.phone)
+
+        status = self.client.get(f"/v1/auth/telegram/session/{self.session.id}")
+        self.assertEqual(status.status_code, 200)
+        self.assertTrue(status.data["ready"])
+        self.assertFalse(status.data["needs_email"])
 
         resp = self.client.post(
-            "/v1/auth/telegram/verify",
-            {"phone": self.phone, "code": "123456", "purpose": "login"},
+            "/v1/auth/telegram/claim",
+            {"session_id": str(self.session.id)},
             format="json",
         )
         self.assertEqual(resp.status_code, 200)
@@ -177,26 +170,22 @@ class TelegramWebhookAndVerifyTests(TestCase):
                 }
             }
         )
-        with patch(
-            "apps.accounts.telegram_bot.TelegramAuthSession.generate_raw_code",
-            return_value="654321",
-        ):
-            handle_webhook_update(
-                {
-                    "message": {
-                        "chat": {"id": 77},
-                        "from": {"id": 77, "username": "bob"},
-                        "contact": {
-                            "phone_number": "251911000001",
-                            "user_id": 77,
-                        },
-                    }
+        handle_webhook_update(
+            {
+                "message": {
+                    "chat": {"id": 77},
+                    "from": {"id": 77, "username": "bob"},
+                    "contact": {
+                        "phone_number": "251911000001",
+                        "user_id": 77,
+                    },
                 }
-            )
+            }
+        )
 
         resp = self.client.post(
-            "/v1/auth/telegram/verify",
-            {"phone": self.phone, "code": "654321", "purpose": "login"},
+            "/v1/auth/telegram/claim",
+            {"session_id": str(self.session.id)},
             format="json",
         )
         self.assertEqual(resp.status_code, 200)
@@ -205,8 +194,7 @@ class TelegramWebhookAndVerifyTests(TestCase):
         resp2 = self.client.post(
             "/v1/auth/telegram/complete",
             {
-                "phone": self.phone,
-                "code": "654321",
+                "session_id": str(self.session.id),
                 "email": "new-tg@example.com",
                 "display_name": "New TG",
             },

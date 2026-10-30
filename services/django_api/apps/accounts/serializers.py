@@ -61,6 +61,10 @@ class TelegramInitiateSerializer(serializers.Serializer):
         choices=("login", "phone_link"),
         default="login",
     )
+    # Local web origin or production app URL; opened after Confirm my phone.
+    return_url = serializers.CharField(
+        max_length=512, required=False, allow_blank=True
+    )
 
 
 class TelegramVerifySerializer(serializers.Serializer):
@@ -72,9 +76,18 @@ class TelegramVerifySerializer(serializers.Serializer):
     )
 
 
+class TelegramClaimSerializer(serializers.Serializer):
+    """Finish login after Telegram contact confirm (no OTP)."""
+
+    session_id = serializers.UUIDField()
+
+
 class TelegramCompleteSerializer(serializers.Serializer):
-    phone = serializers.CharField(max_length=32)
-    code = serializers.RegexField(r"^\d{6}$", min_length=6, max_length=6)
+    session_id = serializers.UUIDField(required=False)
+    phone = serializers.CharField(max_length=32, required=False, allow_blank=True)
+    code = serializers.RegexField(
+        r"^\d{6}$", min_length=6, max_length=6, required=False, allow_blank=True
+    )
     email = serializers.EmailField()
     password = serializers.CharField(
         write_only=True,
@@ -86,6 +99,17 @@ class TelegramCompleteSerializer(serializers.Serializer):
     preferred_ui_language = serializers.CharField(
         required=False, allow_blank=True, max_length=10
     )
+
+    def validate(self, attrs):
+        if attrs.get("session_id"):
+            return attrs
+        phone = (attrs.get("phone") or "").strip()
+        code = (attrs.get("code") or "").strip()
+        if not phone or not code:
+            raise serializers.ValidationError(
+                "Provide session_id, or phone and code together."
+            )
+        return attrs
 
 
 class RegisterSerializer(serializers.ModelSerializer):

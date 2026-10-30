@@ -801,7 +801,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get forgotPasswordSubtitle =>
-      'Enter your email and we\'ll send you a 6-digit code to reset your password.';
+      'Enter your email. If an account exists, we’ll send a 6-digit code to your linked Telegram (or email if Telegram isn’t linked).';
 
   @override
   String get sendResetCode => 'Send reset code';
@@ -811,7 +811,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String resetPasswordSubtitle(String email) {
-    return 'Enter the code we sent to $email and choose a new password.';
+    return 'Enter the code from Telegram (or email) for $email and choose a new password.';
   }
 
   @override
@@ -892,22 +892,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get continueWithTelegram => 'Continue with Telegram';
 
   @override
-  String get telegramContinueTitle => 'Continue with Telegram';
+  String get signInWithTelegram => 'Sign in with Telegram';
+
+  @override
+  String get telegramContinueTitle => 'Sign in with Telegram';
 
   @override
   String get telegramContinueSubtitle =>
-      'Enter the phone number linked to your Telegram account. We\'ll open Telegram so you can share your contact and receive a one-time code.';
+      'We\'ll open the Telegram app. Tap Start, then “Confirm my phone”. No code to type — this screen finishes automatically.';
 
   @override
   String get telegramLinkTitle => 'Link Telegram';
 
   @override
   String get telegramLinkSubtitle =>
-      'Link Telegram to sign in with a code, reset your password via Telegram, and receive free notifications.';
+      'Link Telegram to sign in, reset your password via Telegram, and receive free notifications.';
 
   @override
   String get telegramOtpSubtitle =>
-      'Share your contact in Telegram, then enter the 6-digit code here.';
+      'Confirm your phone in Telegram. This screen updates automatically.';
+
+  @override
+  String get telegramWaitingTitle => 'Waiting for Telegram…';
+
+  @override
+  String get telegramWaitingSubtitle =>
+      'Confirm your phone in Telegram, then return here.';
+
+  @override
+  String get telegramWaitingBody =>
+      'In Telegram, tap Start, then “Confirm my phone”. You can also tap “Open Felege Metsahft” in the bot. This screen will update when you are signed in.';
 
   @override
   String get telegramCompleteSubtitle =>
@@ -930,14 +944,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneInvalid => 'Enter a valid phone number';
 
   @override
-  String get telegramOpenBotCta => 'Open Telegram & get code';
+  String get telegramOpenBotCta => 'Open Telegram';
 
   @override
   String get telegramOtpInstructions =>
-      'In Telegram, tap Start, share your number, then enter the code below.';
+      'In Telegram, tap Start, then Confirm my phone.';
 
   @override
-  String get telegramReopenBot => 'Re-open Telegram bot';
+  String get telegramReopenBot => 'Re-open Telegram';
 
   @override
   String get telegramVerifyCta => 'Verify code';
@@ -964,7 +978,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get telegramLinkNavSubtitle =>
-      'Free login codes, password reset, and notifications';
+      'Free login, password reset, and notifications';
 
   @override
   String get telegramLinkedNavSubtitle =>

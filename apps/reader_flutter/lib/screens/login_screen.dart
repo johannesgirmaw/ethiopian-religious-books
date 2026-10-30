@@ -161,7 +161,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             OutlinedButton.icon(
               onPressed: _busy ? null : () => context.go('/auth/telegram'),
               icon: const TelegramIcon(size: 18),
-              label: Text(l10n.continueWithTelegram),
+              label: Text(l10n.signInWithTelegram),
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFF229ED9),
                 padding: const EdgeInsets.symmetric(vertical: 14),
