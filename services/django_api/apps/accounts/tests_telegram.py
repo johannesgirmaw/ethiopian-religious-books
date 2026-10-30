@@ -258,12 +258,12 @@ class TelegramLinkTests(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
 
     @patch("apps.accounts.telegram_bot.bot_api")
-    def test_link_phone(self, mock_api):
+    def test_link_phone_no_otp(self, mock_api):
+        """Linking only needs contact share — no OTP round-trip."""
         mock_api.return_value = {"ok": True, "result": {}}
-        phone = "+251922000002"
         resp = self.client.post(
             "/v1/auth/telegram/initiate",
-            {"phone": phone, "purpose": "phone_link"},
+            {"purpose": "phone_link"},
             format="json",
         )
         self.assertEqual(resp.status_code, 200)
@@ -279,27 +279,23 @@ class TelegramLinkTests(TestCase):
                 }
             }
         )
-        with patch(
-            "apps.accounts.telegram_bot.TelegramAuthSession.generate_raw_code",
-            return_value="111222",
-        ):
-            handle_webhook_update(
-                {
-                    "message": {
-                        "chat": {"id": 88},
-                        "from": {"id": 88},
-                        "contact": {"phone_number": "251922000002", "user_id": 88},
-                    }
+        handle_webhook_update(
+            {
+                "message": {
+                    "chat": {"id": 88},
+                    "from": {"id": 88},
+                    "contact": {"phone_number": "251922000002", "user_id": 88},
                 }
-            )
-
-        resp2 = self.client.post(
-            "/v1/auth/telegram/verify",
-            {"phone": phone, "code": "111222", "purpose": "phone_link"},
-            format="json",
+            }
         )
-        self.assertEqual(resp2.status_code, 200)
+
+        session.refresh_from_db()
+        self.assertEqual(session.status, TelegramAuthSession.Status.VERIFIED)
         self.user.refresh_from_db()
         self.assertEqual(self.user.telegram_user_id, 88)
-        self.assertEqual(self.user.phone, phone)
-        self.assertTrue(resp2.data["user"]["telegram_linked"])
+        self.assertEqual(self.user.phone, "+251922000002")
+
+        status = self.client.get(f"/v1/auth/telegram/session/{session.id}")
+        self.assertEqual(status.status_code, 200)
+        self.assertTrue(status.data["linked"])
+        self.assertTrue(status.data["user"]["telegram_linked"])

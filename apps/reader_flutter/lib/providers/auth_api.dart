@@ -88,16 +88,28 @@ class AuthApi {
     return res.data!;
   }
 
-  /// Starts Telegram bot OTP. [purpose] is `login` or `phone_link`.
+  /// Starts Telegram bot OTP / link. [purpose] is `login` or `phone_link`.
+  /// [phone] is optional for link (taken from Telegram contact).
   Future<Map<String, dynamic>> telegramInitiate({
-    required String phone,
+    String? phone,
     required String purpose,
   }) async {
     final Dio dio =
         purpose == 'phone_link' ? _ref.read(apiDioProvider) : _public();
     final res = await dio.post<Map<String, dynamic>>(
       'auth/telegram/initiate',
-      data: {'phone': phone, 'purpose': purpose},
+      data: {
+        'purpose': purpose,
+        if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
+      },
+    );
+    return res.data!;
+  }
+
+  Future<Map<String, dynamic>> telegramSessionStatus(String sessionId) async {
+    final dio = _ref.read(apiDioProvider);
+    final res = await dio.get<Map<String, dynamic>>(
+      'auth/telegram/session/$sessionId',
     );
     return res.data!;
   }

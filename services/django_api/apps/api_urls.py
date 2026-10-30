@@ -12,6 +12,7 @@ from apps.accounts.views import (
     ResetPasswordView,
     TelegramCompleteView,
     TelegramInitiateView,
+    TelegramSessionStatusView,
     TelegramVerifyView,
     TelegramWebhookView,
 )
@@ -137,6 +138,10 @@ urlpatterns = [
     path("auth/telegram/initiate", TelegramInitiateView.as_view()),
     path("auth/telegram/verify", TelegramVerifyView.as_view()),
     path("auth/telegram/complete", TelegramCompleteView.as_view()),
+    path(
+        "auth/telegram/session/<uuid:session_id>",
+        TelegramSessionStatusView.as_view(),
+    ),
     path("auth/telegram/webhook", TelegramWebhookView.as_view()),
     path("me", MeView.as_view()),
     path("devices/register", DeviceRegisterView.as_view()),

@@ -980,6 +980,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get telegramSettingsSection => 'Telegram';
 
   @override
+  String get telegramLinkShortSubtitle =>
+      'Open Telegram once and tap “Confirm my phone”. No code to type — we link automatically.';
+
+  @override
+  String get telegramLinkWaitingTitle => 'Waiting for Telegram…';
+
+  @override
+  String get telegramLinkWaitingBody =>
+      'In Telegram, tap Start, then “Confirm my phone”. This screen will update when you are linked.';
+
+  @override
   String get languagePreferenceTitle => 'Language';
 
   @override

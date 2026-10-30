@@ -960,6 +960,17 @@ class AppLocalizationsAm extends AppLocalizations {
   String get telegramSettingsSection => 'ቴሌግራም';
 
   @override
+  String get telegramLinkShortSubtitle =>
+      'ቴሌግራምን አንዴ ይክፈቱና “Confirm my phone” ይጫኑ። ኮድ ማስገባት አያስፈልግም — በራስ-ሰር ይገናኛል።';
+
+  @override
+  String get telegramLinkWaitingTitle => 'ቴሌግራምን በመጠባበቅ ላይ…';
+
+  @override
+  String get telegramLinkWaitingBody =>
+      'በቴሌግራም Start ይጫኑ፣ ከዚያ “Confirm my phone”። ሲገናኝ ይህ ገጽ ይዘምናል።';
+
+  @override
   String get languagePreferenceTitle => 'ቋንቋ';
 
   @override

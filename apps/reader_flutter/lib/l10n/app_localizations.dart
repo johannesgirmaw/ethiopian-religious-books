@@ -1850,6 +1850,24 @@ abstract class AppLocalizations {
   /// **'Telegram'**
   String get telegramSettingsSection;
 
+  /// No description provided for @telegramLinkShortSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Telegram once and tap “Confirm my phone”. No code to type — we link automatically.'**
+  String get telegramLinkShortSubtitle;
+
+  /// No description provided for @telegramLinkWaitingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for Telegram…'**
+  String get telegramLinkWaitingTitle;
+
+  /// No description provided for @telegramLinkWaitingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'In Telegram, tap Start, then “Confirm my phone”. This screen will update when you are linked.'**
+  String get telegramLinkWaitingBody;
+
   /// No description provided for @languagePreferenceTitle.
   ///
   /// In en, this message translates to:

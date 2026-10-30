@@ -82,19 +82,28 @@ def send_message(chat_id: int | str, text: str, *, reply_markup: dict | None = N
     bot_api("sendMessage", payload)
 
 
-def send_contact_request(chat_id: int | str) -> None:
+def send_contact_request(chat_id: int | str, *, link_mode: bool = False) -> None:
+    """Ask once for the user's own Telegram phone (Telegram's consent UI).
+
+    Linking skips the OTP step afterward; login still sends a short code.
+    """
+    if link_mode:
+        text = (
+            "Tap the button below to confirm your Telegram phone number.\n"
+            "This is a one-time step — you will be linked automatically."
+        )
+        button = "Confirm my phone"
+    else:
+        text = (
+            "Tap the button below to confirm your Telegram phone number.\n"
+            "We will then send a short login code."
+        )
+        button = "Confirm my phone"
     send_message(
         chat_id,
-        "Share the phone number linked to this Telegram account to continue.",
+        text,
         reply_markup={
-            "keyboard": [
-                [
-                    {
-                        "text": "Share Number & Get OTP",
-                        "request_contact": True,
-                    }
-                ]
-            ],
+            "keyboard": [[{"text": button, "request_contact": True}]],
             "resize_keyboard": True,
             "one_time_keyboard": True,
         },
@@ -140,16 +149,19 @@ def register_webhook() -> bool:
 
 def initiate_session(
     *,
-    raw_phone: str,
+    raw_phone: str | None = None,
     purpose: str,
     user=None,
     ip: str | None = None,
 ) -> tuple[TelegramAuthSession, str]:
-    """Create a deep-link session; returns (session, bot_link)."""
+    """Create a deep-link session; returns (session, bot_link).
+
+    ``phone_link`` may omit the phone — it is taken from Telegram contact share.
+    ``login`` still accepts an optional phone; if omitted, contact sets it.
+    """
     if not bot_configured():
         raise TelegramBotError("Telegram auth is not configured.")
 
-    phone = normalize_phone(raw_phone)
     if purpose not in {
         TelegramAuthSession.Purpose.LOGIN,
         TelegramAuthSession.Purpose.PHONE_LINK,
@@ -159,36 +171,40 @@ def initiate_session(
     if purpose == TelegramAuthSession.Purpose.PHONE_LINK and user is None:
         raise ValueError("phone_link requires an authenticated user.")
 
+    phone = ""
+    if raw_phone and str(raw_phone).strip():
+        phone = normalize_phone(str(raw_phone))
+
     now = timezone.now()
-    # Per-phone initiate cooldown (anti-spam).
-    recent = TelegramAuthSession.objects.filter(
-        phone=phone,
+    # Cooldown: per user for link, per phone (or user) for login.
+    cooldown_qs = TelegramAuthSession.objects.filter(
         purpose=purpose,
         created_at__gte=now - TelegramAuthSession.INITIATE_COOLDOWN,
         consumed_at__isnull=True,
-    ).exists()
-    if recent:
-        # Return the latest open session's link instead of creating spam rows.
-        existing = (
-            TelegramAuthSession.objects.filter(
-                phone=phone,
-                purpose=purpose,
-                consumed_at__isnull=True,
-                expires_at__gt=now,
-            )
-            .order_by("-created_at")
-            .first()
-        )
-        if existing is not None:
-            username = settings.TELEGRAM_AUTH_BOT_USERNAME.lstrip("@")
-            return existing, f"https://t.me/{username}?start={existing.id}"
+    )
+    if purpose == TelegramAuthSession.Purpose.PHONE_LINK:
+        cooldown_qs = cooldown_qs.filter(user=user)
+    elif phone:
+        cooldown_qs = cooldown_qs.filter(phone=phone)
+    else:
+        cooldown_qs = cooldown_qs.filter(phone="", requested_ip=ip)
 
-    # Expire prior open sessions for this phone+purpose.
-    TelegramAuthSession.objects.filter(
-        phone=phone,
-        purpose=purpose,
-        consumed_at__isnull=True,
-    ).update(status=TelegramAuthSession.Status.EXPIRED, consumed_at=now)
+    existing = (
+        cooldown_qs.filter(expires_at__gt=now).order_by("-created_at").first()
+    )
+    if existing is not None:
+        username = settings.TELEGRAM_AUTH_BOT_USERNAME.lstrip("@")
+        return existing, f"https://t.me/{username}?start={existing.id}"
+
+    # Expire prior open sessions for this scope.
+    expire_qs = TelegramAuthSession.objects.filter(
+        purpose=purpose, consumed_at__isnull=True
+    )
+    if purpose == TelegramAuthSession.Purpose.PHONE_LINK:
+        expire_qs = expire_qs.filter(user=user)
+    elif phone:
+        expire_qs = expire_qs.filter(phone=phone)
+    expire_qs.update(status=TelegramAuthSession.Status.EXPIRED, consumed_at=now)
 
     session = TelegramAuthSession.objects.create(
         phone=phone,
@@ -202,7 +218,7 @@ def initiate_session(
     logger.info(
         "Telegram auth session %s created for %s (%s)",
         session.id,
-        mask_phone(phone),
+        mask_phone(phone) if phone else "(phone from Telegram)",
         purpose,
     )
     return session, bot_link
@@ -270,7 +286,10 @@ def _handle_start(*, chat_id: int, from_user: dict, session_id: str) -> None:
             "status",
         ]
     )
-    send_contact_request(chat_id)
+    send_contact_request(
+        chat_id,
+        link_mode=session.purpose == TelegramAuthSession.Purpose.PHONE_LINK,
+    )
 
 
 def _handle_contact(
@@ -315,7 +334,7 @@ def _handle_contact(
         send_message(chat_id, "Could not read that phone number. Try again.")
         return
 
-    if shared_phone != session.phone:
+    if session.phone and shared_phone != session.phone:
         send_message(
             chat_id,
             "<b>Number mismatch.</b>\n\n"
@@ -324,18 +343,50 @@ def _handle_contact(
         )
         return
 
+    session.phone = shared_phone
+    session.telegram_user_id = int(from_id)
+    session.telegram_chat_id = int(chat_id)
+    session.telegram_username = (
+        from_user.get("username") or session.telegram_username or ""
+    )[:64]
+
+    # Linking while signed-in: contact proof is enough — no OTP round-trip.
+    if session.purpose == TelegramAuthSession.Purpose.PHONE_LINK:
+        if session.user_id is None:
+            send_message(chat_id, "Session expired. Start over in the app.")
+            return
+        try:
+            attach_telegram_to_user(session.user, session)
+        except TelegramBotError as exc:
+            remove_keyboard(chat_id, f"Could not link: {exc}")
+            return
+        session.status = TelegramAuthSession.Status.VERIFIED
+        session.consumed_at = now
+        session.save(
+            update_fields=[
+                "phone",
+                "telegram_user_id",
+                "telegram_chat_id",
+                "telegram_username",
+                "status",
+                "consumed_at",
+            ]
+        )
+        remove_keyboard(
+            chat_id,
+            "<b>Telegram linked.</b>\n\nReturn to Felege Metsahft — you are done.",
+        )
+        logger.info("Telegram linked for user %s via %s", session.user_id, mask_phone(shared_phone))
+        return
+
     raw_code = TelegramAuthSession.generate_raw_code()
     session.code_hash = TelegramAuthSession.hash_code(raw_code)
     session.code_expires_at = now + TelegramAuthSession.CODE_TTL
     session.attempts = 0
-    session.telegram_user_id = int(from_id)
-    session.telegram_chat_id = int(chat_id)
-    session.telegram_username = (from_user.get("username") or session.telegram_username or "")[
-        :64
-    ]
     session.status = TelegramAuthSession.Status.CODE_SENT
     session.save(
         update_fields=[
+            "phone",
             "code_hash",
             "code_expires_at",
             "attempts",

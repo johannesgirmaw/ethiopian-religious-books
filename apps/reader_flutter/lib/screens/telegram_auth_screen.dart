@@ -20,8 +20,8 @@ import '../widgets/primitives/auth_form_kit.dart';
 import '../widgets/primitives/shared_widgets.dart';
 import '../widgets/telegram_icon.dart';
 
-/// Telegram bot OTP flow for login/register (`purpose=login`) or link
-/// (`purpose=phone_link` while signed in).
+/// Telegram bot flow for login/register (`purpose=login`) or short link
+/// (`linkMode` — open Telegram, confirm phone once, no OTP).
 class TelegramAuthScreen extends ConsumerStatefulWidget {
   const TelegramAuthScreen({
     super.key,
@@ -50,19 +50,22 @@ class _TelegramAuthScreenState extends ConsumerState<TelegramAuthScreen> {
   String? _error;
   String? _botLink;
   String? _botUsername;
+  String? _sessionId;
   String? _normalizedPhone;
   String? _pendingCode;
   bool _awaitingOtp = false;
+  bool _awaitingLink = false;
   bool _needsEmail = false;
   int _resendSeconds = 0;
   Timer? _resendTimer;
+  Timer? _pollTimer;
 
-  String get _purpose =>
-      widget.linkMode ? 'phone_link' : (widget.purpose);
+  String get _purpose => widget.linkMode ? 'phone_link' : widget.purpose;
 
   @override
   void dispose() {
     _resendTimer?.cancel();
+    _pollTimer?.cancel();
     _phone.dispose();
     _code.dispose();
     _email.dispose();
@@ -88,6 +91,38 @@ class _TelegramAuthScreenState extends ConsumerState<TelegramAuthScreen> {
     });
   }
 
+  void _startLinkPoll() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      unawaited(_pollLinkStatus());
+    });
+  }
+
+  Future<void> _pollLinkStatus() async {
+    final id = _sessionId;
+    if (id == null || !mounted) return;
+    try {
+      final data = await ref.read(authApiProvider).telegramSessionStatus(id);
+      if (data['linked'] == true) {
+        _pollTimer?.cancel();
+        final userMap = data['user'] as Map<String, dynamic>?;
+        if (userMap != null) {
+          await ref
+              .read(sessionNotifierProvider.notifier)
+              .updateUser(UserProfile.fromJson(userMap));
+        }
+        if (!mounted) return;
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.telegramLinkedSuccess)),
+        );
+        context.pop();
+      }
+    } catch (_) {
+      // Keep polling; transient network errors are fine.
+    }
+  }
+
   Future<void> _openBot() async {
     final link = _botLink;
     if (link == null) return;
@@ -103,6 +138,37 @@ class _TelegramAuthScreenState extends ConsumerState<TelegramAuthScreen> {
       } catch (_) {}
     }
     await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _startLink() async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final data = await ref.read(authApiProvider).telegramInitiate(
+            purpose: 'phone_link',
+          );
+      _botLink = data['bot_link'] as String?;
+      _botUsername = data['bot_username'] as String?;
+      _sessionId = data['session_id'] as String?;
+      setState(() => _awaitingLink = true);
+      await _openBot();
+      _startLinkPoll();
+    } on DioException catch (e) {
+      final hint = connectionTroubleshootHint(e);
+      setState(() {
+        _error = messageFromDioResponse(e.response?.data) ??
+            hint ??
+            e.message ??
+            l10n.telegramAuthFailed;
+      });
+    } catch (e) {
+      setState(() => _error = '$e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _initiate({bool resend = false}) async {
@@ -122,6 +188,7 @@ class _TelegramAuthScreenState extends ConsumerState<TelegramAuthScreen> {
           );
       _botLink = data['bot_link'] as String?;
       _botUsername = data['bot_username'] as String?;
+      _sessionId = data['session_id'] as String?;
       _normalizedPhone = _phone.text.trim();
       setState(() {
         _awaitingOtp = true;
@@ -160,21 +227,6 @@ class _TelegramAuthScreenState extends ConsumerState<TelegramAuthScreen> {
             code: code,
             purpose: _purpose,
           );
-
-      if (_purpose == 'phone_link') {
-        final userMap = data['user'] as Map<String, dynamic>?;
-        if (userMap != null) {
-          await ref
-              .read(sessionNotifierProvider.notifier)
-              .updateUser(UserProfile.fromJson(userMap));
-        }
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.telegramLinkedSuccess)),
-        );
-        context.pop();
-        return;
-      }
 
       if (data['needs_email'] == true) {
         _pendingCode = code;
@@ -244,16 +296,34 @@ class _TelegramAuthScreenState extends ConsumerState<TelegramAuthScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final headline = widget.linkMode
-        ? l10n.telegramLinkTitle
-        : l10n.telegramContinueTitle;
-    final subtitle = widget.linkMode
-        ? l10n.telegramLinkSubtitle
-        : (_needsEmail
-            ? l10n.telegramCompleteSubtitle
-            : (_awaitingOtp
-                ? l10n.telegramOtpSubtitle
-                : l10n.telegramContinueSubtitle));
+
+    if (widget.linkMode) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.telegramLinkTitle),
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () {
+              _pollTimer?.cancel();
+              context.pop();
+            },
+          ),
+        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: _buildLinkBody(l10n),
+          ),
+        ),
+      );
+    }
+
+    final headline = l10n.telegramContinueTitle;
+    final subtitle = _needsEmail
+        ? l10n.telegramCompleteSubtitle
+        : (_awaitingOtp
+            ? l10n.telegramOtpSubtitle
+            : l10n.telegramContinueSubtitle);
 
     late final Widget formChild;
     if (_needsEmail) {
@@ -262,25 +332,6 @@ class _TelegramAuthScreenState extends ConsumerState<TelegramAuthScreen> {
       formChild = _buildOtpForm(l10n);
     } else {
       formChild = _buildPhoneForm(l10n);
-    }
-
-    if (widget.linkMode) {
-      // Signed-in link flow: simple scaffold (profile push).
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(headline),
-          leading: IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => context.pop(),
-          ),
-        ),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: formChild,
-          ),
-        ),
-      );
     }
 
     if (useWideAuthSplit(context)) {
@@ -294,6 +345,63 @@ class _TelegramAuthScreenState extends ConsumerState<TelegramAuthScreen> {
       headline: headline,
       subtitle: subtitle,
       formChild: formChild,
+    );
+  }
+
+  Widget _buildLinkBody(AppLocalizations l10n) {
+    if (_awaitingLink) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 12),
+          const Center(child: TelegramIcon(size: 48)),
+          const SizedBox(height: 20),
+          Text(
+            l10n.telegramLinkWaitingTitle,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.telegramLinkWaitingBody,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppColors.textSecondary, height: 1.4),
+          ),
+          const SizedBox(height: 24),
+          const Center(child: CircularProgressIndicator()),
+          const SizedBox(height: 24),
+          OutlinedButton.icon(
+            onPressed: _busy ? null : _openBot,
+            icon: const TelegramIcon(size: 18),
+            label: Text(l10n.telegramReopenBot),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 12),
+            AppErrorBanner(message: _error!),
+          ],
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          l10n.telegramLinkShortSubtitle,
+          style: const TextStyle(color: AppColors.textSecondary, height: 1.4),
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: 12),
+          AppErrorBanner(message: _error!),
+        ],
+        const SizedBox(height: 24),
+        AuthPrimaryButton(
+          label: l10n.telegramOpenBotCta,
+          busy: _busy,
+          onPressed: _busy ? null : _startLink,
+          icon: Icons.send_rounded,
+        ),
+      ],
     );
   }
 
@@ -333,13 +441,11 @@ class _TelegramAuthScreenState extends ConsumerState<TelegramAuthScreen> {
             onPressed: _busy ? null : () => _initiate(),
             icon: Icons.send_rounded,
           ),
-          if (!widget.linkMode) ...[
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: () => context.go('/login'),
-              child: Text(l10n.backToSignIn),
-            ),
-          ],
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: () => context.go('/login'),
+            child: Text(l10n.backToSignIn),
+          ),
         ],
       ),
     );

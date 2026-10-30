@@ -56,7 +56,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class TelegramInitiateSerializer(serializers.Serializer):
-    phone = serializers.CharField(max_length=32)
+    phone = serializers.CharField(max_length=32, required=False, allow_blank=True)
     purpose = serializers.ChoiceField(
         choices=("login", "phone_link"),
         default="login",

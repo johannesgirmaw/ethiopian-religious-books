@@ -402,7 +402,7 @@ class TelegramInitiateView(APIView):
         ser = TelegramInitiateSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         purpose = ser.validated_data["purpose"]
-        raw_phone = ser.validated_data["phone"]
+        raw_phone = (ser.validated_data.get("phone") or "").strip() or None
 
         if purpose == TelegramAuthSession.Purpose.PHONE_LINK:
             if not request.user or not request.user.is_authenticated:
@@ -450,6 +450,50 @@ class TelegramInitiateView(APIView):
                 ),
             }
         )
+
+
+class TelegramSessionStatusView(APIView):
+    """Poll session status (used by the short link flow — no OTP)."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, session_id):
+        try:
+            session = TelegramAuthSession.objects.get(pk=session_id)
+        except (TelegramAuthSession.DoesNotExist, ValueError):
+            return _error(
+                "NOT_FOUND",
+                "Session not found.",
+                http_status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if session.purpose == TelegramAuthSession.Purpose.PHONE_LINK:
+            if not request.user or not request.user.is_authenticated:
+                return _error(
+                    "AUTH_REQUIRED",
+                    "Sign in to check link status.",
+                    http_status=status.HTTP_401_UNAUTHORIZED,
+                )
+            if session.user_id != request.user.id:
+                return _error(
+                    "FORBIDDEN",
+                    "This session belongs to another account.",
+                    http_status=status.HTTP_403_FORBIDDEN,
+                )
+
+        payload = {
+            "session_id": str(session.id),
+            "purpose": session.purpose,
+            "status": session.status,
+            "linked": (
+                session.purpose == TelegramAuthSession.Purpose.PHONE_LINK
+                and session.status == TelegramAuthSession.Status.VERIFIED
+            ),
+        }
+        if payload["linked"] and session.user_id:
+            user = session.user
+            payload["user"] = UserSerializer(user).data
+        return Response(payload)
 
 
 class TelegramWebhookView(APIView):
